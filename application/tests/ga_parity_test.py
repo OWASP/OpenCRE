@@ -1,5 +1,9 @@
 """Regression tests for GA Postgres vs Neo materiality helpers."""
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import unittest
 
 from application.utils import gap_analysis

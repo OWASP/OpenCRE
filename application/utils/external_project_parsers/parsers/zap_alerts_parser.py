@@ -1,6 +1,9 @@
 # script to parse zaproxy website md files describing alerts find the CWE ids
 #  and add the alerts to CRE
-import logging
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import os
 import re
 from typing import List
@@ -9,9 +12,6 @@ from application.database import db
 from application.defs import cre_defs as defs
 from application.utils import git
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 from application.prompt_client import prompt_client as prompt_client
 from application.utils.external_project_parsers import base_parser_defs

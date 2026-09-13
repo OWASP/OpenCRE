@@ -1,15 +1,14 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from application.utils.external_project_parsers import base_parser_defs
 from rq import Queue
 from application.utils import redis
-import logging
 import time
 from application.utils.external_project_parsers.parsers import *
 from application.utils import gap_analysis
 import os, json
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class BaseParser:

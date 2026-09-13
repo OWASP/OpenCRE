@@ -7,6 +7,10 @@ the messages it receives and how responses are parsed back into verdicts.
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
 import unittest
 from types import SimpleNamespace

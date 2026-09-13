@@ -32,6 +32,10 @@ Every rejection is a typed ``SectionValidationError`` subclass; raw
 Pydantic ``ValidationError`` never escapes this module.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Optional, Type, TypeVar, Union
 

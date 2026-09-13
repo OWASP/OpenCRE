@@ -5,6 +5,10 @@ decide whether retiring a source row would lose work, so a sink that lies about
 it would silently destroy chunks.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
 import os
 import shutil

@@ -1,15 +1,16 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import subprocess
 from pathlib import Path
 
 from .repository_cache import build_repository_cache_path
 from .repository_client import RepositoryClient
-import logging
 from .repository_lock import repository_lock
 import os
 import shutil
 import tempfile
-
-logger = logging.getLogger(__name__)
 
 
 class GitRepositoryClient(RepositoryClient):

@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from pathlib import Path
 from tempfile import mkdtemp, mkstemp
 import zipfile

@@ -1,8 +1,11 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import re
 import time
 import argparse
 import json
-import logging
 import os
 import shutil
 import tempfile
@@ -29,9 +32,6 @@ from application.utils import cres_csv_export
 if TYPE_CHECKING:
     from application.prompt_client import prompt_client as prompt_client
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 app = None
 

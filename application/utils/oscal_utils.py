@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import random
 from trestle.oscal import catalog
 from trestle.oscal import common

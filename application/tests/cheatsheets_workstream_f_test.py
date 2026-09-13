@@ -14,6 +14,10 @@ F5 (wiring the ParseResult into the live import/register flow) is deliberately
 out of scope here.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import contextlib
 import io
 import json
@@ -304,9 +308,9 @@ def _run_cli(argv):
 
 class TestCliValidate(unittest.TestCase):
     def test_valid_fixture_exits_zero(self) -> None:
-        code, out, _err = _run_cli(["validate", VALID_FIXTURE])
+        code, _out, err = _run_cli(["validate", VALID_FIXTURE])
         self.assertEqual(code, 0)
-        self.assertIn("OK", out)
+        self.assertIn("OK", err)
 
     def test_invalid_fixture_exits_nonzero_and_names_field(self) -> None:
         code, _out, err = _run_cli(["validate", INVALID_FIXTURE])
@@ -358,16 +362,14 @@ class TestCliConvert(unittest.TestCase):
             path = os.path.join(d, "approved.json")
             wf.write_suggestions_json(path, suggestions)
             with mock.patch.object(wf, "_open_cache", return_value=stub):
-                code, out, _err = _run_cli(["convert", path])
+                code, _out, err = _run_cli(["convert", path])
 
         self.assertEqual(code, 0)
-        # Prove the skipped-id reporting actually prints the unknown id.
-        self.assertIn("999-999", out)
-        # One Standard with one resolved link survives.
-        self.assertIn("standards produced:     1", out)
-        self.assertIn("total CRE links:        1", out)
-        # And it is explicit that nothing was registered (F5 follow-up).
-        self.assertIn("F5", out)
+        # Prove the skipped-id reporting actually logs the unknown id.
+        self.assertIn("999-999", err)
+        self.assertIn("standards produced=1", err)
+        self.assertIn("total CRE links=1", err)
+        self.assertIn("F5", err)
 
     def test_convert_missing_file_exits_two(self) -> None:
         with tempfile.TemporaryDirectory() as d:

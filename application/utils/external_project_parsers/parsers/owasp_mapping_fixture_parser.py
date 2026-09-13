@@ -6,6 +6,10 @@ link to OpenCRE; we parse at the source. The exception is GSoC/OIE validation.
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from pathlib import Path
 
 from typing import Optional

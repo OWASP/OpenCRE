@@ -5,6 +5,10 @@ canonical baseline for the harness — kept isolated here so a change touches
 one function only.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from typing import List, Sequence
 
 # Q-D correctness rule (confirmed on PR #922): a predicted set is correct iff

@@ -26,6 +26,10 @@ Or via the convenience generator:
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from fnmatch import fnmatch
 from pathlib import Path
 from typing import Iterable, Iterator, Optional

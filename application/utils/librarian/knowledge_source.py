@@ -22,7 +22,10 @@ from, so a consumer can tell a decision made on a confident chunk from one made
 on an uncertain one.
 """
 
-import logging
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from abc import ABC, abstractmethod
 from typing import Iterator, List, Optional
 
@@ -30,7 +33,6 @@ from pydantic import ValidationError
 
 from application.utils.librarian.schemas import KnowledgeQueueItem
 
-logger = logging.getLogger(__name__)
 
 # The labels Module C acts on; see the module docstring. NOISE never reaches the
 # queue — B drops it — so these two are everything B writes.

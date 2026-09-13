@@ -1,11 +1,10 @@
-import logging
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from typing import Any, Dict, List, Optional
 
 from application.defs import cre_defs as defs
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def is_empty(value: Optional[str]) -> bool:

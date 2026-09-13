@@ -11,6 +11,10 @@ harness golden row, respectively.
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
 import re
 from datetime import datetime

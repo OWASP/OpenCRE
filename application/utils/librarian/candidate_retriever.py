@@ -41,6 +41,10 @@ in-process for in_memory; Postgres enforces it structurally for pgvector via
 the fixed-width ``vector(dim)`` column.)
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Callable, List, Mapping, Optional, Sequence, Tuple

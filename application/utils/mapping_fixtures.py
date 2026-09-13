@@ -8,6 +8,10 @@ spreadsheet. The exception is GSoC/OIE pipeline validation.
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Sequence

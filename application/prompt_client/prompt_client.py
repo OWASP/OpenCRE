@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from application.database import db
 from application.defs import cre_defs
 from datetime import datetime
@@ -12,7 +16,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 from typing import Dict, List, Any, Tuple, Optional
 from pydantic import ValidationError
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
-import logging
 
 try:
     from pypdf import PdfReader
@@ -25,9 +28,6 @@ import re
 import requests
 import time
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 SIMILARITY_THRESHOLD = float(os.environ.get("CHATBOT_SIMILARITY_THRESHOLD", "0.7"))
 PROMPT_TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")

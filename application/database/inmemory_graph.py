@@ -1,13 +1,11 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import sys
-import logging
 import networkx as nx
 from typing import List, Tuple
 from application.defs import cre_defs as defs
-
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class CycleDetectedError(Exception):

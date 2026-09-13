@@ -17,3 +17,7 @@ Data contracts:
             application/database/db.py; Module C contract in
             docs/gsoc_2026_module_b/module_c_contract.md)
 """
+
+from cre_logging import get_logger
+
+logger = get_logger(__name__)

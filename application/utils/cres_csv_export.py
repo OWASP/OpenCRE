@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import csv
-import logging
 import re
 from collections import deque
 from pathlib import Path
@@ -14,8 +17,6 @@ CRE_ID_RE = re.compile(r"^\d{3}-\d{3}$")
 LTYPE_PART_OF = "Is Part Of"
 LTYPE_CONTAINS = "Contains"
 CELL_SEP = "|"
-
-logger = logging.getLogger("cres_csv_export")
 
 
 def _norm_base_url(base_url: str) -> str:

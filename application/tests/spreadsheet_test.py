@@ -1,7 +1,10 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import unittest
 import io
 import csv
-from pprint import pprint
 from unittest import mock
 
 import gspread

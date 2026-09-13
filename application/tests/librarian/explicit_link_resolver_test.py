@@ -5,6 +5,10 @@ Covers extraction (pattern boundaries, ordering, dedup) and resolution
 conflicting references must fall through to review).
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import unittest
 
 from application.utils.librarian.explicit_link_resolver import (

@@ -1,6 +1,9 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import copy
 import json
-from pprint import pprint
 import unittest
 from application.tests.utils import data_gen
 from application.defs import cre_defs as defs
