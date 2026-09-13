@@ -1,12 +1,4 @@
-"""
-Regression test for import_apply's node lookup.
-
-Node's own DB-level identity ("uq_node" in application/database/db.py) is
-(name, section, subsection, version, section_id) -- subsection included. The
-staged-changeset apply path used to look a node up by (name, section,
-sectionID) only, so two standard entries that share a section/sectionID but
-differ by subsection could be confused with one another.
-"""
+"""Test import_apply with nodes that have different subsections."""
 
 import unittest
 from datetime import datetime, timezone
