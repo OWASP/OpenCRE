@@ -2507,6 +2507,31 @@ class TestDB(unittest.TestCase):
             self.collection.standards(),
         )
 
+    def test_delete_gapanalysis_results_for_deletes_and_logs_count(self):
+        node_name = "BarStand"
+        key_1 = f"cache-{node_name}-1"
+        key_2 = f"cache-{node_name}-2"
+        unrelated_key = "cache-unrelated"
+        material = '{"result": {"111-111": {"paths": {}}}}'
+
+        # Insert rows directly: add_gap_analysis_result skips empty primary payloads.
+        for key in (key_1, key_2, unrelated_key):
+            self.collection.session.add(
+                db.GapAnalysisResults(cache_key=key, ga_object=material)
+            )
+        self.collection.session.commit()
+
+        with patch.object(db.logger, "info") as logger_info:
+            deleted = self.collection.delete_gapanalysis_results_for(node_name)
+
+        self.assertEqual(2, len(deleted))
+        self.assertFalse(self.collection.gap_analysis_exists(key_1))
+        self.assertFalse(self.collection.gap_analysis_exists(key_2))
+        self.assertTrue(self.collection.gap_analysis_exists(unrelated_key))
+        logger_info.assert_any_call(
+            "deleted %s gap analysis result objects for node %s", 2, node_name
+        )
+
     def test_all_cres_with_pagination_with_single_digit_cre_ids(self):
         """"""
         cres = []
