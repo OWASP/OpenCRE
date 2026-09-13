@@ -1199,7 +1199,7 @@ class NEO_DB:
          MATCH (CompareStandard:NeoStandard {name: $name2})
          MATCH p = allShortestPaths((BaseStandard)-[*..20]-(CompareStandard))
          WITH p
-         WHERE length(p) > 1 AND ALL (n in NODES(p) where (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist) 
+         WHERE length(p) > 1 AND ALL (n in NODES(p) where (n:NeoCRE or n = BaseStandard or n = CompareStandard) AND NOT n.name in $denylist)
          RETURN p
             """,
             {"name1": name_1, "name2": name_2, "denylist": denylist},
@@ -1655,6 +1655,56 @@ class Node_collection:
                     % (c.id, c.name)
                 )
         return documents
+
+    def get_by_tags_with_pagination(
+        self,
+        tags: List[str],
+        page: int = 1,
+        items_per_page: Optional[int] = None,
+    ) -> Tuple[
+        Optional[int],
+        Optional[List[cre_defs.Document]],
+        Optional[List[cre_defs.Document]],
+    ]:
+        """
+        Paginated version of get_by_tags(). get_by_tags() combines two
+        separate queries (Node, CRE) into one list, so a single page/
+        items_per_page can't map onto one .paginate() call the way
+        get_nodes_with_pagination does for a single query. Instead this
+        paginates the Node and CRE queries independently with the same
+        page/items_per_page and returns them as two labeled lists.
+        Returns (total_pages, node_documents, cre_documents).
+        """
+        if not tags:
+            return None, None, None
+
+        nodes_where_clause = []
+        cre_where_clause = []
+        for tag in tags:
+            nodes_where_clause.append(sqla.and_(Node.tags.like("%{}%".format(tag))))
+            cre_where_clause.append(sqla.and_(CRE.tags.like("%{}%".format(tag))))
+
+        node_page = (
+            Node.query.filter(*nodes_where_clause)
+            .order_by(Node.id)
+            .paginate(page=page, per_page=items_per_page, error_out=False)
+        )
+        cre_page = (
+            CRE.query.filter(*cre_where_clause)
+            .order_by(CRE.id)
+            .paginate(page=page, per_page=items_per_page, error_out=False)
+        )
+
+        node_documents: List[cre_defs.Document] = [
+            nodeFromDB(dbnode=db_node) for db_node in node_page.items
+        ]
+
+        cre_documents: List[cre_defs.Document] = [
+            CREfromDB(dbcre=c) for c in cre_page.items
+        ]
+
+        total_pages = max(node_page.pages, cre_page.pages)
+        return total_pages, node_documents, cre_documents
 
     def get_nodes_with_pagination(
         self,
