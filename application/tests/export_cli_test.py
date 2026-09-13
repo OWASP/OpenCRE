@@ -110,6 +110,28 @@ class TestExportCsvHelpers(unittest.TestCase):
         self.assertIn("ASVS|link_type", keys)
         self.assertEqual(row["ASVS|link_type"], "Linked To|Linked To")
 
+    def test_aggregate_standard_columns_section_and_subsection_stay_distinct(
+        self,
+    ) -> None:
+        # Ensure section and subsection remain distinct in the CSV export.
+        links = [
+            {
+                "name": "ASVS",
+                "sectionID": "V2.1.1",
+                "section": "V2: Authentication",
+                "subsection": "Password Security",
+                "hyperlink": "",
+                "description": "",
+                "version": "",
+                "tooltype": "",
+                "ltype": "Linked To",
+            },
+        ]
+        row, keys = export_mod._aggregate_standard_columns(links)
+        self.assertEqual(row["ASVS|section"], "V2: Authentication")
+        self.assertEqual(row["ASVS|subsection"], "Password Security")
+        self.assertIn("ASVS|subsection", keys)
+
     def test_cre_cell_uses_pipe(self) -> None:
         self.assertEqual(
             export_mod._cre_cell({"id": "155-155", "name": "Architecture"}),

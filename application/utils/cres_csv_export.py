@@ -275,6 +275,10 @@ def _std_key_section(name: str) -> str:
     return f"{name}{CELL_SEP}section"
 
 
+def _std_key_subsection(name: str) -> str:
+    return f"{name}{CELL_SEP}subsection"
+
+
 def _std_key_hyperlink(name: str) -> str:
     return f"{name}{CELL_SEP}hyperlink"
 
@@ -350,7 +354,9 @@ def _aggregate_standard_columns(
     for sname, group in sorted(by_name.items()):
         ids = CELL_SEP.join(r["sectionID"] for r in group)
         names = CELL_SEP.join(r["section"] for r in group)
-        sections = CELL_SEP.join(r["subsection"] for r in group)
+        # Keep section and subsection values in their respective columns.
+        sections = CELL_SEP.join(r["section"] for r in group)
+        subsections = CELL_SEP.join(r["subsection"] for r in group)
         hls = CELL_SEP.join(r["hyperlink"] for r in group)
         descs = CELL_SEP.join(r["description"] for r in group)
         vers = CELL_SEP.join(r["version"] for r in group)
@@ -360,6 +366,7 @@ def _aggregate_standard_columns(
         out[_std_key_id(sname)] = ids
         out[_std_key_name(sname)] = names
         out[_std_key_section(sname)] = sections
+        out[_std_key_subsection(sname)] = subsections
         out[_std_key_hyperlink(sname)] = hls
         out[_std_key_description(sname)] = descs
         out[_std_key_version(sname)] = vers
@@ -370,6 +377,7 @@ def _aggregate_standard_columns(
                 _std_key_id(sname),
                 _std_key_name(sname),
                 _std_key_section(sname),
+                _std_key_subsection(sname),
                 _std_key_hyperlink(sname),
                 _std_key_description(sname),
                 _std_key_version(sname),
