@@ -1502,17 +1502,10 @@ class Node_collection:
     def __get_all_nodes_and_cres(
         self, cres_only: bool = False
     ) -> List[cre_defs.Document]:
-        result = []
-        nodes = []
-        cres = []
+        result: List[cre_defs.Document] = []
         if not cres_only:
-            node_ids = self.session.query(Node.id).all()
-            for nid in node_ids:
-                result.extend(self.get_nodes(db_id=nid[0]))
-
-        cre_ids = self.session.query(CRE.id).all()
-        for cid in cre_ids:
-            result.append(self.get_cre_by_db_id(cid[0]))
+            result.extend(self._hydrate_nodes_batch(self.session.query(Node).all()))
+        result.extend(self._hydrate_cres_batch(self.session.query(CRE).all()))
         return result
 
     @classmethod
@@ -1944,6 +1937,53 @@ class Node_collection:
             return []
 
         return self._hydrate_cres_batch(dbcres, include_only_nodes=include_only)
+
+    def _hydrate_nodes_batch(
+        self,
+        dbnodes: List[Node],
+        include_only: Optional[List[str]] = None,
+    ) -> List[cre_defs.Node]:
+        """Hydrate Standard/Tool/Code nodes and their CRE links without per-row queries."""
+        if not dbnodes:
+            return []
+
+        node_ids = [node.id for node in dbnodes]
+        links_by_node: Dict[str, List[Links]] = defaultdict(list)
+        cre_ids: set = set()
+        for link in self.session.query(Links).filter(Links.node.in_(node_ids)).all():
+            links_by_node[link.node].append(link)
+            cre_ids.add(link.cre)
+
+        cres_by_id: Dict[str, CRE] = {}
+        if cre_ids:
+            cres_by_id = {
+                cre.id: cre
+                for cre in self.session.query(CRE).filter(CRE.id.in_(cre_ids)).all()
+            }
+
+        nodes: List[cre_defs.Node] = []
+        for dbnode in dbnodes:
+            node = nodeFromDB(dbnode=dbnode)
+            for dbcre_link in links_by_node.get(dbnode.id, []):
+                dbcre = cres_by_id.get(dbcre_link.cre)
+                if not dbcre:
+                    logger.fatal(
+                        f"CRE {dbcre_link.cre} exists in the links but not in the cre table, database corrupt?"
+                    )
+                    raise AssertionError(
+                        f"CRE {dbcre_link.cre} exists in the links but not in the cre table, database corrupt?"
+                    )
+                if not include_only or (
+                    dbcre.external_id in include_only or dbcre.name in include_only
+                ):
+                    node.add_link(
+                        cre_defs.Link(
+                            ltype=cre_defs.LinkTypes.from_str(dbcre_link.type),
+                            document=CREfromDB(dbcre),
+                        )
+                    )
+            nodes.append(node)
+        return nodes
 
     def _hydrate_cres_batch(
         self,
