@@ -6,6 +6,13 @@
 sentence-transformers>=5.0.0,<6.0.0
 setuptools
 
+# Workstream E cheat-sheet LLM rationale generation (application/utils/
+# external_project_parsers/parsers/cheatsheet_rerank.py). Not on the
+# production import path (no CLI/cre.py wiring yet) and lazily imported
+# inside the function that needs it, so it's dev/CI-only, same as
+# sentence-transformers above -- never install on Heroku.
+langgraph>=1.0.10,<2
+
 # importer / embeddings scrape tooling (not needed for prod chat)
 playwright
 nltk
