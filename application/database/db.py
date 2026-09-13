@@ -1617,7 +1617,7 @@ class Node_collection:
         #  and it gets paginated
         nodes_where_clause = []
         cre_where_clause = []
-        documents = []
+        documents: List[cre_defs.Document] = []
 
         if not tags:
             return []
@@ -1648,13 +1648,13 @@ class Node_collection:
 
         cres = CRE.query.filter(*cre_where_clause).all() or []
         for c in cres:
-            cre = self.get_CREs(external_id=c.external_id, name=c.name)[0]
-            if cre:
-                documents.append(cre)
+            matching_cres = self.get_CREs(external_id=c.external_id, name=c.name)
+            if matching_cres:
+                documents.extend(matching_cres)
             else:
                 logger.fatal(
-                    "db.get_CRE returned None for CRE %s:%s that exists, BUG!"
-                    % (c.id, c.name)
+                    "get_CREs() returned no documents for CRE %s:%s that exists, BUG!"
+                    % (c.external_id or c.id, c.name)
                 )
         return documents
 
@@ -2194,7 +2194,11 @@ class Node_collection:
             shallow_CRE = self.get_cre_by_db_id(entryID)
 
             if shallow_CRE:
-                cres.append(self.get_CREs(external_id=shallow_CRE.id)[0])
+                matching_cres = self.get_CREs(external_id=shallow_CRE.id)
+                if matching_cres:
+                    cres.append(matching_cres[0])
+                else:
+                    cres.append(shallow_CRE)
         return cres
 
     def get_cre_hierarchy(self, cre: cre_defs.CRE) -> int:
