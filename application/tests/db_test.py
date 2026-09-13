@@ -790,6 +790,40 @@ class TestDB(unittest.TestCase):
         self.assertIsNone(result)
         get_cres_mock.assert_called_once_with(external_id=self.dbcre.external_id)
 
+    def test_get_all_nodes_and_cres_does_not_use_per_id_lookups(self) -> None:
+        with patch.object(self.collection, "get_cre_by_db_id") as per_cre:
+            with patch.object(self.collection, "get_nodes") as per_node:
+                docs = self.collection._Node_collection__get_all_nodes_and_cres()
+        per_cre.assert_not_called()
+        per_node.assert_not_called()
+        self.assertGreaterEqual(len(docs), 4)  # 2 CREs + BarStand + Unlinked
+
+    def test_get_all_nodes_and_cres_cres_only_skips_nodes(self) -> None:
+        docs = self.collection._Node_collection__get_all_nodes_and_cres(cres_only=True)
+        self.assertTrue(all(d.doctype == defs.Credoctypes.CRE for d in docs))
+        self.assertCountEqual(["CREname", "GroupName"], [d.name for d in docs])
+        cre = next(d for d in docs if d.name == "CREname")
+        self.assertTrue(
+            any(
+                link.document.name == "BarStand"
+                for link in cre.links
+                if link.document.doctype != defs.Credoctypes.CRE
+            )
+        )
+
+    def test_get_all_nodes_and_cres_hydrates_same_as_per_id(self) -> None:
+        batch = self.collection._Node_collection__get_all_nodes_and_cres()
+        batch_cres = {d.id: d for d in batch if d.doctype == defs.Credoctypes.CRE}
+        for db_id in [row[0] for row in self.collection.session.query(db.CRE.id).all()]:
+            per_id = self.collection.get_cre_by_db_id(db_id)
+            self.assertIsNotNone(per_id)
+            self.assertEqual(per_id.todict(), batch_cres[per_id.id].todict())
+        batch_nodes = [d for d in batch if d.doctype != defs.Credoctypes.CRE]
+        self.assertTrue(any(n.name == "BarStand" for n in batch_nodes))
+        self.assertTrue(any(n.name == "Unlinked" for n in batch_nodes))
+        bar = next(n for n in batch_nodes if n.name == "BarStand")
+        self.assertTrue(any(link.document.name == "CREname" for link in bar.links))
+
     def test_get_standards(self) -> None:
         """Given: a Standard 'S1' that links to cres
         return the Standard in Document format"""
