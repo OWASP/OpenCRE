@@ -1,0 +1,5 @@
+Source: AAI04
+Section: Memory Poisoning Across Agent Sessions
+Section-ID: AAI04
+
+Persistent agent memory stores plans, secrets, and prior tool results. Memory poisoning injects false facts that later sessions treat as trusted state. Mitigations include memory integrity, provenance tags, TTL, and separation of untrusted retrieval from trusted policy memory.

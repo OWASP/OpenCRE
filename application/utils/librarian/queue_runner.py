@@ -201,6 +201,10 @@ def run_librarian_queue(
         components.scaler,
         threshold=config.link_threshold,
         pipeline_run_id=pipeline_run_id,
+        known_cre_ids=components.known_cre_ids,
+        cre_id_map=getattr(components, "cre_id_map", {}) or {},
+        cre_membership=getattr(components, "cre_membership", None),
+        shortlist_llm_fn=getattr(components, "shortlist_llm_fn", None),
     )
 
     # A locked run must not leave its claim outstanding. `FOR UPDATE SKIP LOCKED`

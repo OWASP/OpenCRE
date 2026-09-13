@@ -1,0 +1,5 @@
+Source: AAI03
+Section: Multi-Agent Collusion and Privilege Escalation
+Section-ID: AAI03
+
+Multi-agent systems share tasks and credentials. Colluding or compromised agents can escalate privileges by chaining weak trust boundaries between agents. Require mutual authentication between agents, scoped capability tokens, and isolation of privileged planner vs worker agents.

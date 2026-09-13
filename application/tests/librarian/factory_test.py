@@ -95,6 +95,12 @@ class BuildComponentsTest(unittest.TestCase):
         fast path validates a cited id against."""
         self.assertEqual(self._build().known_cre_ids, frozenset({"616-305", "111-111"}))
 
+    def test_exposes_hub_keys_as_emit_membership(self) -> None:
+        """Without a CRE session, membership falls back to hub embedding keys."""
+        self.assertEqual(
+            self._build().cre_membership, frozenset({"616-305", "111-111"})
+        )
+
     def test_embed_fn_is_injectable_so_no_paid_call_is_made(self) -> None:
         calls = []
 

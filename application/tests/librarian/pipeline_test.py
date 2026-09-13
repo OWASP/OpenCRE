@@ -110,10 +110,25 @@ class PipelineTest(unittest.TestCase):
         self.assertEqual(env.reason_code, ReasonCode.below_threshold)
 
     def test_empty_shortlist_reviews_no_candidates(self):
-        result = _pipeline([_row()], [], 0.95).run(at=AT)
-        env = result.envelopes[0]
+        # Retriever also returns nothing — true empty shortlist.
+        class EmptyRetriever:
+            def retrieve(self, text):
+                return RetrievalAudit(
+                    retriever="stub", candidates=[], reranked=[], threshold=0.8
+                )
+
+        pipeline = LibrarianPipeline(
+            _Source([_row()]),
+            EmptyRetriever(),
+            _Reranker([]),
+            _Scaler(0.95),
+            threshold=0.8,
+            pipeline_run_id=RUN,
+        )
+        env = pipeline.run(at=AT).envelopes[0]
         self.assertIsInstance(env, ReviewItem)
-        self.assertEqual(env.reason_code, ReasonCode.no_candidates)
+        # Empty cage → CRE_GAP (coverage proposal), not a silent no_candidates.
+        self.assertIn(env.reason_code, (ReasonCode.no_candidates, ReasonCode.cre_gap))
 
     def test_uncertain_row_is_skipped_at_boundary(self):
         result = _pipeline([_row(label="NOISE")], TOP, 0.95).run(at=AT)
@@ -129,6 +144,124 @@ class PipelineTest(unittest.TestCase):
         self.assertEqual(result.stats.skipped, 1)
         self.assertEqual(result.stats.errored, 0)
         self.assertEqual(len(result.envelopes), 2)
+
+    def test_authoritative_opencre_url_skips_retrieval(self):
+        class BoomRetriever:
+            def retrieve(self, text):
+                raise AssertionError("retrieval must not run for authoritative URLs")
+
+        text = "See https://opencre.org/cre/616-305 for MFA."
+        pipeline = LibrarianPipeline(
+            _Source([_row(text=text)]),
+            BoomRetriever(),
+            _Reranker(TOP),
+            _Scaler(0.1),
+            threshold=0.8,
+            pipeline_run_id=RUN,
+            known_cre_ids=frozenset({"616-305"}),
+            cre_id_map={"616-305": "uuid-616"},
+            cre_membership=frozenset({"uuid-616", "616-305"}),
+        )
+        result = pipeline.run(at=AT)
+        self.assertEqual(result.stats.linked, 1)
+        env = result.envelopes[0]
+        self.assertIsInstance(env, LinkProposal)
+        self.assertEqual(env.links[0].cre_id, "uuid-616")
+        self.assertEqual(env.links[0].confidence, 1.0)
+        self.assertEqual(env.retrieval.retriever, "explicit-link/0.1.0")
+
+    def test_empty_retrieve_emits_cre_gap_with_proposal(self):
+        class EmptyRetriever:
+            def retrieve(self, text):
+                return RetrievalAudit(
+                    retriever="stub+prior-cage/authentication:auth:empty",
+                    candidates=[],
+                    reranked=[],
+                    threshold=0.8,
+                )
+
+        pipeline = LibrarianPipeline(
+            _Source([_row(text="Section-ID: A07\nSection: Authentication Failures\n")]),
+            EmptyRetriever(),
+            _Reranker(TOP),
+            _Scaler(0.95),
+            threshold=0.8,
+            pipeline_run_id=RUN,
+            known_cre_ids=frozenset({"616-305", "177-260"}),
+            cre_membership=frozenset({"616-305", "177-260"}),
+        )
+        result = pipeline.run(at=AT)
+        self.assertEqual(result.stats.review, 1)
+        env = result.envelopes[0]
+        self.assertIsInstance(env, ReviewItem)
+        self.assertEqual(env.reason_code, ReasonCode.cre_gap)
+        self.assertIsNotNone(env.suggested_links)
+        self.assertEqual(len(env.suggested_links), 1)
+        link = env.suggested_links[0]
+        self.assertEqual(link.link_type, "Proposed new CRE")
+        self.assertRegex(link.cre_id, r"^\d{3}-\d{3}$")
+        self.assertNotIn(link.cre_id, {"616-305", "177-260"})
+        self.assertIn("Authentication", link.rationale or "")
+
+
+class PipelineCreMembershipGroundingTest(unittest.TestCase):
+    """Emit-time guard: ghost cre_ids must not leave C on a LinkProposal."""
+
+    def test_bogus_cre_id_cannot_produce_link_proposal(self):
+        ghost = [CreCandidate(cre_id="not-a-real-cre", score_rerank=1.5)]
+        pipeline = LibrarianPipeline(
+            _Source([_row()]),
+            _Retriever(),
+            _Reranker(ghost),
+            _Scaler(0.95),
+            threshold=0.8,
+            pipeline_run_id=RUN,
+            cre_membership=frozenset({"616-305"}),
+        )
+        result = pipeline.run(at=AT)
+        self.assertEqual(result.stats.linked, 0)
+        self.assertEqual(result.stats.review, 1)
+        env = result.envelopes[0]
+        self.assertIsInstance(env, ReviewItem)
+        self.assertEqual(env.reason_code, ReasonCode.no_candidates)
+        self.assertFalse(env.suggested_links)
+
+    def test_valid_membership_still_auto_links(self):
+        pipeline = LibrarianPipeline(
+            _Source([_row()]),
+            _Retriever(),
+            _Reranker(TOP),
+            _Scaler(0.95),
+            threshold=0.8,
+            pipeline_run_id=RUN,
+            cre_membership=frozenset({"616-305"}),
+        )
+        result = pipeline.run(at=AT)
+        self.assertEqual(result.stats.linked, 1)
+        env = result.envelopes[0]
+        self.assertIsInstance(env, LinkProposal)
+        self.assertEqual(env.links[0].cre_id, "616-305")
+
+    def test_review_suggested_links_drop_invalid_ids(self):
+        mixed = [CreCandidate(cre_id="ghost-cre", score_rerank=0.2)]
+        # Low confidence forces review; membership drops the ghost suggestion.
+        # Vector union may still surface the retriever's valid 616-305 — that is
+        # intentional (cosine top-2 must survive a bad CE pick).
+        pipeline = LibrarianPipeline(
+            _Source([_row()]),
+            _Retriever(),
+            _Reranker(mixed),
+            _Scaler(0.4),
+            threshold=0.8,
+            pipeline_run_id=RUN,
+            cre_membership=frozenset({"616-305"}),
+        )
+        result = pipeline.run(at=AT)
+        env = result.envelopes[0]
+        self.assertIsInstance(env, ReviewItem)
+        self.assertEqual(env.reason_code, ReasonCode.below_threshold)
+        self.assertEqual([lnk.cre_id for lnk in env.suggested_links], ["616-305"])
+        self.assertNotIn("ghost-cre", [lnk.cre_id for lnk in env.suggested_links])
 
 
 class PipelineErrorContainmentTest(unittest.TestCase):
@@ -247,6 +380,84 @@ class RowOutcomeTest(unittest.TestCase):
         rows = [_row(row_id="ok"), _row(row_id="skip", label="NOISE")]
         result = self._run(rows)
         self.assertEqual(sorted(result.finished_row_ids()), ["ok", "skip"])
+
+
+class ShortlistJudgePipelineTest(unittest.TestCase):
+    def test_judged_ids_lead_suggestions(self) -> None:
+        """Lever C: Gemini shortlist picks prepend into preferred (lead=2)."""
+
+        class MultiRetriever:
+            def retrieve(self, text):
+                return RetrievalAudit(
+                    retriever="stub",
+                    candidates=[
+                        CreCandidate(
+                            cre_id="noise-1", cre_name="Noise", score_vector=0.9
+                        ),
+                        CreCandidate(
+                            cre_id="gold-a", cre_name="Gold A", score_vector=0.5
+                        ),
+                        CreCandidate(
+                            cre_id="gold-b", cre_name="Gold B", score_vector=0.4
+                        ),
+                    ],
+                    reranked=[],
+                    threshold=0.8,
+                )
+
+        def llm(system: str, user: str) -> str:
+            return '["gold-a", "gold-b"]'
+
+        # Below τ → review keeps top-2 suggestions (auto-link stamps top-1 only).
+        pipeline = LibrarianPipeline(
+            _Source(
+                [
+                    _row(
+                        text=(
+                            "Standard: OWASP Top 10\n"
+                            "Section-ID: A01\n"
+                            "Section: Broken Access Control\n"
+                        )
+                    )
+                ]
+            ),
+            MultiRetriever(),
+            _Reranker(
+                [
+                    CreCandidate(cre_id="noise-1", score_rerank=2.0),
+                    CreCandidate(cre_id="gold-a", score_rerank=0.1),
+                    CreCandidate(cre_id="gold-b", score_rerank=0.05),
+                ]
+            ),
+            _Scaler(0.4),
+            threshold=0.8,
+            pipeline_run_id=RUN,
+            shortlist_llm_fn=llm,
+        )
+        result = pipeline.run(at=AT)
+        env = result.envelopes[0]
+        self.assertIsInstance(env, ReviewItem)
+        self.assertEqual(
+            [link.cre_id for link in (env.suggested_links or [])[:2]],
+            ["gold-a", "gold-b"],
+        )
+        self.assertIn("shortlist-judge", env.retrieval.retriever)
+
+    def test_judge_error_fail_open(self) -> None:
+        def llm(system: str, user: str) -> str:
+            raise RuntimeError("gemini down")
+
+        result = LibrarianPipeline(
+            _Source([_row()]),
+            _Retriever(),
+            _Reranker(TOP),
+            _Scaler(0.95),
+            threshold=0.8,
+            pipeline_run_id=RUN,
+            shortlist_llm_fn=llm,
+        ).run(at=AT)
+        self.assertEqual(result.stats.linked, 1)
+        self.assertNotIn("shortlist-judge", result.envelopes[0].retrieval.retriever)
 
 
 def failing_component_stub(kind):

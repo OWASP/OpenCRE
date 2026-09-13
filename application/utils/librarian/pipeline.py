@@ -27,14 +27,32 @@ logger = get_logger(__name__)
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Iterable, List, Optional, Protocol, Sequence, Union
+from typing import (
+    Any,
+    Dict,
+    FrozenSet,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Protocol,
+    Sequence,
+    Union,
+)
 
-from application.utils.librarian.decision_engine import decide
+from application.utils.librarian.cre_registry import CreRegistry, ground_decision
+from application.utils.librarian.decision_engine import DecisionResult, decide
 from application.utils.librarian.emitter import emit
+from application.utils.librarian.explicit_link_resolver import (
+    ResolutionOutcome,
+    resolve,
+)
 from application.utils.librarian.safety_guard import NullSafetyGuard, SafetyGuard
 from application.utils.librarian.schemas import (
+    Decision,
     KnowledgeQueueItem,
     LinkProposal,
+    ReasonCode,
     RetrievalAudit,
     ReviewItem,
 )
@@ -196,7 +214,12 @@ class LibrarianPipeline:
         *,
         threshold: float,
         pipeline_run_id: str,
-        safety_guard: Optional[SafetyGuard] = None
+        safety_guard: Optional[SafetyGuard] = None,
+        known_cre_ids: Optional[FrozenSet[str]] = None,
+        cre_id_map: Optional[Mapping[str, str]] = None,
+        cre_membership: Optional[FrozenSet[str]] = None,
+        cre_registry: Optional[CreRegistry] = None,
+        shortlist_llm_fn: Optional[Any] = None,
     ) -> None:
         self._source = source
         self._retriever = retriever
@@ -208,6 +231,33 @@ class LibrarianPipeline:
         # `decide()` is always called with the safety arguments and the run can
         # report how many rows went unevaluated.
         self._safety_guard: SafetyGuard = safety_guard or NullSafetyGuard()
+        self._known_cre_ids: FrozenSet[str] = known_cre_ids or frozenset()
+        self._cre_id_map: Mapping[str, str] = cre_id_map or {}
+        # Optional grounded Gemini shortlist judge (lever C). None = skip;
+        # hermetic tests omit it. Live factory injects default_litellm_fn.
+        self._shortlist_llm_fn = shortlist_llm_fn
+        # Emit-time grounding: prefer an injected registry; otherwise build from
+        # membership (+ cre_id_map for canonicalisation). None membership keeps
+        # hermetic stubs passthrough until they opt in.
+        if cre_registry is not None:
+            self._cre_registry = cre_registry
+        elif cre_membership is not None:
+            self._cre_registry = CreRegistry.from_membership(
+                cre_membership, self._cre_id_map
+            )
+        else:
+            self._cre_registry = CreRegistry.disabled()
+
+    def _map_cre_ids(self, external_ids: Sequence[str]) -> tuple:
+        return tuple(self._cre_id_map.get(cid, cid) for cid in external_ids)
+
+    def _explicit_audit(self) -> RetrievalAudit:
+        return RetrievalAudit(
+            retriever="explicit-link/0.1.0",
+            candidates=[],
+            reranked=[],
+            threshold=self._threshold,
+        )
 
     def run(self, *, at: datetime) -> RunResult:
         envelopes: List[Envelope] = []
@@ -231,23 +281,199 @@ class LibrarianPipeline:
             # W8, where one timeout or one malformed candidate must not throw away
             # every envelope the run has already built.
             try:
-                audit = self._retriever.retrieve(section.text)
-                audit = self._reranker.rerank(section.text, audit)
-                reranked = [c for c in audit.reranked if c.score_rerank is not None]
-                logits = [float(c.score_rerank) for c in reranked]
-                cre_ids = [c.cre_id for c in reranked]
-                confidence = self._scaler.confidence(logits) if logits else 0.0
+                resolution = resolve(section.text, self._known_cre_ids)
+                if resolution.outcome in (
+                    ResolutionOutcome.resolved,
+                    ResolutionOutcome.authoritative,
+                ):
+                    audit = self._explicit_audit()
+                    result = DecisionResult(
+                        Decision.linked,
+                        1.0,
+                        self._map_cre_ids(resolution.cre_ids),
+                        None,
+                    )
+                    verdict_evaluated = True
+                elif resolution.outcome in (
+                    ResolutionOutcome.unknown_reference,
+                    ResolutionOutcome.conflicting_references,
+                ):
+                    audit = self._explicit_audit()
+                    mapped = self._map_cre_ids(resolution.cre_ids)
+                    reason = (
+                        ReasonCode.no_candidates
+                        if not mapped
+                        else ReasonCode.below_threshold
+                    )
+                    result = DecisionResult(Decision.review, 1.0, mapped, reason)
+                    verdict_evaluated = True
+                else:
+                    audit = self._retriever.retrieve(section.text)
+                    from application.utils.librarian.control_name_seed import (
+                        prefer_audit_ids,
+                        prefer_ids_first,
+                    )
+                    from application.utils.librarian.cross_encoder import (
+                        vector_rerank_union_ids,
+                    )
 
-                verdict = self._safety_guard.evaluate(section)
-                result = decide(
-                    confidence,
-                    cre_ids,
-                    threshold=self._threshold,
-                    adversarial=verdict.adversarial,
-                    update_ambiguous=verdict.update_ambiguous,
-                )
-                if not verdict.evaluated:
+                    if not audit.candidates:
+                        # Empty shortlist after prior (+ relaxed sibling) cage:
+                        # true coverage gap — propose a new CRE. Never CRE_GAP
+                        # when the cage still has below-threshold hits.
+                        from application.utils.librarian.cre_gap_suggester import (
+                            suggest_gap_cre,
+                        )
+
+                        existing: set = set(self._known_cre_ids)
+                        if self._cre_registry.membership is not None:
+                            existing |= set(self._cre_registry.membership)
+                        gap = suggest_gap_cre(section.text, existing)
+                        result = DecisionResult(
+                            Decision.review,
+                            0.0,
+                            (),
+                            ReasonCode.cre_gap,
+                            gap_proposal=gap,
+                        )
+                        verdict_evaluated = True
+                    else:
+                        from application.utils.librarian.control_name_seed import (
+                            prefer_audit_ids,
+                            prefer_ids_first,
+                        )
+                        from application.utils.librarian.cross_encoder import (
+                            vector_rerank_union_ids,
+                        )
+                        from application.utils.librarian.focus_query import (
+                            focus_query_text,
+                        )
+
+                        preferred = list(
+                            getattr(self._retriever, "last_preferred_cre_ids", [])
+                            or []
+                        )
+                        retrieved = audit  # C.1 shortlist — CE must not mutate this
+                        judged: List[str] = []
+
+                        # Lever 4: ensure preferred CREs are on the CE shortlist
+                        # (vector top-K may have dropped them) before focus/CE.
+                        if preferred:
+                            from application.utils.librarian.schemas import CreCandidate
+
+                            have = {
+                                c.cre_id
+                                for c in (retrieved.candidates or [])
+                                if getattr(c, "cre_id", None)
+                            }
+                            injected = [
+                                CreCandidate(cre_id=cid, score_vector=0.01)
+                                for cid in preferred
+                                if cid not in have
+                            ]
+                            if injected:
+                                retrieved = retrieved.model_copy(
+                                    update={
+                                        "candidates": list(retrieved.candidates or [])
+                                        + injected,
+                                        "retriever": (
+                                            f"{retrieved.retriever}+pref-inject"
+                                        ),
+                                    }
+                                )
+
+                        # Lever C: grounded shortlist judge (Gemini) — pick top-2
+                        # from the retrieval allowlist only; fail open on errors.
+                        focus = focus_query_text(section.text)
+                        if self._shortlist_llm_fn is not None:
+                            from application.utils.librarian.shortlist_judge import (
+                                ShortlistJudgeCache,
+                                candidates_from_audit,
+                                default_cache_dir,
+                                judge_enabled,
+                                judge_shortlist,
+                            )
+
+                            if judge_enabled():
+                                judge_query = focus or section.text
+                                judged = judge_shortlist(
+                                    judge_query,
+                                    candidates_from_audit(retrieved),
+                                    llm_fn=self._shortlist_llm_fn,
+                                    cache=ShortlistJudgeCache(
+                                        disk_dir=default_cache_dir()
+                                    ),
+                                )
+                                if judged:
+                                    preferred = prefer_ids_first(
+                                        judged, preferred, limit=12, lead=2
+                                    )
+                                    retrieved = retrieved.model_copy(
+                                        update={
+                                            "retriever": (
+                                                f"{retrieved.retriever}+shortlist-judge"
+                                            )
+                                        }
+                                    )
+
+                        def _decide_from_audit(query_text: str):
+                            ranked_audit = self._reranker.rerank(
+                                query_text, retrieved
+                            )
+                            # Confidence stays on CE logits (fitted T); prefer may
+                            # inject into reranked so focus/CE top-2 sees winners.
+                            ce_logits = [
+                                float(c.score_rerank)
+                                for c in ranked_audit.reranked
+                                if c.score_rerank is not None
+                            ]
+                            ranked_audit = prefer_audit_ids(
+                                ranked_audit,
+                                preferred,
+                                lead=2,
+                                inject_missing=True,
+                            )
+                            ranked_ids = vector_rerank_union_ids(ranked_audit)
+                            cre_ids_local = prefer_ids_first(
+                                preferred, ranked_ids, limit=8
+                            )
+                            conf = (
+                                self._scaler.confidence(ce_logits) if ce_logits else 0.0
+                            )
+                            return ranked_audit, cre_ids_local, conf
+
+                        # Cheap first pass: Standard/Version/Section-ID/Section only.
+                        if focus:
+                            audit, cre_ids, confidence = _decide_from_audit(focus)
+                            # Miss → retry with full narrative chunk.
+                            if confidence < self._threshold:
+                                audit_full, cre_ids_full, conf_full = (
+                                    _decide_from_audit(section.text)
+                                )
+                                if conf_full >= confidence:
+                                    audit, cre_ids, confidence = (
+                                        audit_full,
+                                        cre_ids_full,
+                                        conf_full,
+                                    )
+                        else:
+                            audit, cre_ids, confidence = _decide_from_audit(
+                                section.text
+                            )
+
+                        verdict = self._safety_guard.evaluate(section)
+                        result = decide(
+                            confidence,
+                            cre_ids,
+                            threshold=self._threshold,
+                            adversarial=verdict.adversarial,
+                            update_ambiguous=verdict.update_ambiguous,
+                        )
+                        verdict_evaluated = verdict.evaluated
+
+                if not verdict_evaluated:
                     safety_unevaluated += 1
+                result = ground_decision(result, self._cre_registry)
                 envelope = emit(
                     section, audit, result, pipeline_run_id=self._run_id, at=at
                 )

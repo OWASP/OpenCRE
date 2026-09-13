@@ -47,7 +47,7 @@ logger = get_logger(__name__)
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, List, Mapping, Optional, Sequence, Tuple
+from typing import AbstractSet, Any, Callable, List, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
@@ -146,11 +146,16 @@ class CandidateRetriever:
         self._threshold = threshold
         self._cre_names = dict(cre_names or {})
 
-    def retrieve(self, text: str) -> RetrievalAudit:
+    def retrieve(
+        self, text: str, *, allowlist: Optional[AbstractSet[str]] = None
+    ) -> RetrievalAudit:
         """Return the top-K CRE candidates for ``text`` as a RetrievalAudit.
 
         ``reranked`` is empty — the cross-encoder lands W4. Candidates are
         rank-ordered (highest cosine first) with ``score_vector`` populated.
+
+        When ``allowlist`` is set, rank **only** those CRE ids (in-cage
+        retrieval) instead of post-filtering a global top-K.
         """
         query = np.asarray(list(self._embed_fn(text)), dtype=float)
         if query.shape[0] != self._pool.dim:
@@ -160,12 +165,21 @@ class CandidateRetriever:
             )
 
         scores = cosine_similarity(query.reshape(1, -1), self._pool.matrix)[0]
+        if allowlist:
+            allowed = set(allowlist)
+            for i, cre_id in enumerate(self._pool.cre_ids):
+                if cre_id not in allowed:
+                    scores[i] = float("-inf")
         # Top-K by descending score. argsort is ascending, so take the tail
         # and reverse; cap at pool size when the hub is smaller than K.
-        k = min(self._top_k, len(self._pool.cre_ids))
+        finite = (
+            int(np.isfinite(scores).sum()) if allowlist else len(self._pool.cre_ids)
+        )
+        k = min(self._top_k, finite if finite else len(self._pool.cre_ids))
         # Stable descending sort so tied cosine scores keep hub (index) order —
         # deterministic across runs. argsort(-scores) descends; kind="stable".
         top_idx = np.argsort(-scores, kind="stable")[:k]
+        top_idx = [i for i in top_idx if np.isfinite(scores[i])]
 
         candidates: List[CreCandidate] = [
             CreCandidate(
@@ -206,6 +220,15 @@ class PgVectorRetriever:
         "ORDER BY embedding_vec <=> CAST(:q AS vector) "
         "LIMIT :k"
     )
+    _SQL_CAGED = (
+        "SELECT cre_id, 1 - (embedding_vec <=> CAST(:q AS vector)) AS score "
+        "FROM embeddings "
+        "WHERE doc_type = :doc_type AND cre_id IS NOT NULL "
+        "AND embedding_vec IS NOT NULL "
+        "AND cre_id = ANY(:ids) "
+        "ORDER BY embedding_vec <=> CAST(:q AS vector) "
+        "LIMIT :k"
+    )
 
     def __init__(
         self,
@@ -231,12 +254,16 @@ class PgVectorRetriever:
         self._doc_type = doc_type
         self._cre_names = dict(cre_names or {})
 
-    def retrieve(self, text: str) -> RetrievalAudit:
+    def retrieve(
+        self, text: str, *, allowlist: Optional[AbstractSet[str]] = None
+    ) -> RetrievalAudit:
         """Return the top-K CRE candidates for ``text`` as a RetrievalAudit.
 
         Rows arrive already rank-ordered by the SQL ``ORDER BY``; we preserve
         that order. ``sqlalchemy.text`` is imported lazily so the in-memory
         backend (and CI) never needs a DB driver loaded.
+
+        When ``allowlist`` is set, cosine-rank only those CRE ids (in-cage).
         """
         from sqlalchemy import text as sql_text
 
@@ -244,10 +271,29 @@ class PgVectorRetriever:
 
         require_pgvector_connection(self._conn, context="PgVectorRetriever.retrieve")
         query = to_pgvector_literal(list(self._embed_fn(text)))
-        rows = self._conn.execute(
-            sql_text(self._SQL),
-            {"q": query, "doc_type": self._doc_type, "k": self._top_k},
-        ).fetchall()
+        if allowlist:
+            ids = list(allowlist)
+            if not ids:
+                return RetrievalAudit(
+                    retriever=PGVECTOR_RETRIEVER_NAME,
+                    candidates=[],
+                    reranked=[],
+                    threshold=self._threshold,
+                )
+            rows = self._conn.execute(
+                sql_text(self._SQL_CAGED),
+                {
+                    "q": query,
+                    "doc_type": self._doc_type,
+                    "k": min(self._top_k, len(ids)),
+                    "ids": ids,
+                },
+            ).fetchall()
+        else:
+            rows = self._conn.execute(
+                sql_text(self._SQL),
+                {"q": query, "doc_type": self._doc_type, "k": self._top_k},
+            ).fetchall()
 
         candidates = [
             CreCandidate(

@@ -52,11 +52,14 @@ def fake_score(pairs):
     return [_PAIR_SCORES[(q, cand)] for q, cand in pairs]
 
 
-def make_reranker(top_n=5, cre_texts=None, score_fn=fake_score):
+def make_reranker(top_n=5, cre_texts=None, score_fn=fake_score, **kwargs):
     return CrossEncoderReranker(
         score_fn=score_fn,
         top_n=top_n,
         cre_texts=CRE_TEXTS if cre_texts is None else cre_texts,
+        # Existing CE-order tests: disable hybrid so CE alone drives ranking.
+        hybrid_when_le=kwargs.pop("hybrid_when_le", 0),
+        **kwargs,
     )
 
 
@@ -103,6 +106,62 @@ class RerankTest(unittest.TestCase):
         empty = RetrievalAudit(retriever="r", candidates=[], reranked=[], threshold=0.8)
         out = make_reranker().rerank("q", empty)
         self.assertEqual(out.reranked, [])
+
+
+class HybridRankTest(unittest.TestCase):
+    def test_small_cage_prefers_vector_plus_name_over_ce(self) -> None:
+        # CE loves text-b; hybrid should keep high vector + name match (text-a).
+        audit = RetrievalAudit(
+            retriever="stub",
+            candidates=[
+                CreCandidate(cre_id="111-111", score_vector=0.95),
+                CreCandidate(cre_id="222-222", score_vector=0.50),
+                CreCandidate(cre_id="333-333", score_vector=0.40),
+            ],
+            reranked=[],
+            threshold=0.8,
+        )
+        reranker = CrossEncoderReranker(
+            score_fn=lambda pairs: [0.1, 0.9, 0.5],
+            top_n=3,
+            cre_texts={
+                "111-111": "mechanism details",
+                "222-222": "text-b",
+                "333-333": "text-c",
+            },
+            cre_names={
+                "111-111": "centralized access control",
+                "222-222": "encrypt data",
+                "333-333": "other",
+            },
+            hybrid_when_le=20,
+            hybrid_alpha=1.0,
+            hybrid_beta=3.0,
+            hybrid_gamma=0.15,
+        )
+        out = reranker.rerank("Section: Broken Access Control\n", audit)
+        self.assertEqual(out.reranked[0].cre_id, "111-111")
+
+    def test_vector_rerank_union_keeps_cosine_top2(self) -> None:
+        from application.utils.librarian.cross_encoder import vector_rerank_union_ids
+
+        audit = RetrievalAudit(
+            retriever="stub",
+            candidates=[
+                CreCandidate(cre_id="v1", score_vector=0.9),
+                CreCandidate(cre_id="v2", score_vector=0.8),
+                CreCandidate(cre_id="v3", score_vector=0.7),
+            ],
+            reranked=[
+                CreCandidate(cre_id="r1", score_rerank=1.0, score_vector=0.1),
+                CreCandidate(cre_id="r2", score_rerank=0.9, score_vector=0.1),
+            ],
+            threshold=0.8,
+        )
+        ids = vector_rerank_union_ids(audit, vector_top=2, rerank_top=2)
+        self.assertEqual(ids[:2], ["r1", "r2"])
+        self.assertIn("v1", ids)
+        self.assertIn("v2", ids)
 
 
 class FailureModeTest(unittest.TestCase):

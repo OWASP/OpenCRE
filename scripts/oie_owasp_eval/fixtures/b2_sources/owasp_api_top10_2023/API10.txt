@@ -1,0 +1,182 @@
+Source: API10
+Section: Unsafe Consumption of APIs
+Section-ID: API10
+
+API10:2023 Unsafe Consumption of APIs - OWASP API Security Top 10
+Skip to content
+OWASP API Security Top 10
+API10:2023 Unsafe Consumption of APIs
+Bahasa (Indonesian)
+English
+Français
+Persian
+Português (Portugal)
+Initializing search
+OWASP/API-Security
+Home
+2023
+2019
+OWASP API Security Top 10
+OWASP/API-Security
+Home
+Home
+How-to Contribute
+2023
+2023
+Notice
+Table of Contents
+About OWASP
+Foreword
+Introduction
+Release Notes
+API Security Risks
+OWASP Top 10 API Security Risks – 2023
+API1:2023 Broken Object Level Authorization
+API2:2023 Broken Authentication
+API3:2023 Broken Object Property Level Authorization
+API4:2023 Unrestricted Resource Consumption
+API5:2023 Broken Function Level Authorization
+API6:2023 Unrestricted Access to Sensitive Business Flows
+API7:2023 Server Side Request Forgery
+API8:2023 Security Misconfiguration
+API9:2023 Improper Inventory Management
+API10:2023 Unsafe Consumption of APIs
+API10:2023 Unsafe Consumption of APIs
+Table of contents
+Is the API Vulnerable?
+Example Attack Scenarios
+Scenario #1
+Scenario #2
+Scenario #3
+How To Prevent
+References
+OWASP
+External
+What's Next For Developers
+What's Next For DevSecOps
+Methodology and Data
+Acknowledgments
+2019
+2019
+Notice
+Table of Contents
+About OWASP
+Foreword
+Introduction
+Release Notes
+API Security Risks
+OWASP Top 10 API Security Risks – 2019
+API1:2019 Broken Object Level Authorization
+API2:2019 Broken User Authentication
+API3:2019 Excessive Data Exposure
+API4:2019 Lack of Resources & Rate Limiting
+API5:2019 Broken Function Level Authorization
+API6:2019 - Mass Assignment
+API7:2019 Security Misconfiguration
+API8:2019 Injection
+API9:2019 Improper Assets Management
+API10:2019 Insufficient Logging & Monitoring
+What's Next For Developers
+What's Next For DevSecOps
+Methodology and Data
+Acknowledgments
+Table of contents
+Is the API Vulnerable?
+Example Attack Scenarios
+Scenario #1
+Scenario #2
+Scenario #3
+How To Prevent
+References
+OWASP
+External
+API10:2023 Unsafe Consumption of APIs
+Threat agents/Attack vectors
+Security Weakness
+Impacts
+API Specific : Exploitability
+Easy
+Prevalence
+Common
+: Detectability
+Average
+Technical
+Severe
+: Business Specific
+Exploiting this issue requires attackers to identify and potentially compromise other APIs/services the target API integrated with. Usually, this information is not publicly available or the integrated API/service is not easily exploitable.
+Developers tend to trust and not verify the endpoints that interact with external or third-party APIs, relying on weaker security requirements such as those regarding transport security, authentication/authorization, and input validation and sanitization. Attackers need to identify services the target API integrates with (data sources) and, eventually, compromise them.
+The impact varies according to what the target API does with pulled data. Successful exploitation may lead to sensitive information exposure to unauthorized actors, many kinds of injections, or denial of service.
+Is the API Vulnerable?
+Developers tend to trust data received from third-party APIs more than user
+input. This is especially true for APIs offered by well-known companies.
+Because of that, developers tend to adopt weaker security standards, for
+instance, in regards to input validation and sanitization.
+The API might be vulnerable if:
+Interacts with other APIs over an unencrypted channel;
+Does not properly validate and sanitize data gathered from other APIs prior
+  to processing it or passing it to downstream components;
+Blindly follows redirections;
+Does not limit the number of resources available to process third-party
+  services responses;
+Does not implement timeouts for interactions with third-party services;
+Example Attack Scenarios
+Scenario #1
+An API relies on a third-party service to enrich user provided business
+addresses. When an address is supplied to the API by the end user, it is sent
+to the third-party service and the returned data is then stored on a local
+SQL-enabled database.
+Bad actors use the third-party service to store an SQLi payload associated with
+a business created by them. Then they go after the vulnerable API providing
+specific input that makes it pull their "malicious business" from the
+third-party service. The SQLi payload ends up being executed by the database,
+exfiltrating data to an attacker's controlled server.
+Scenario #2
+An API integrates with a third-party service provider to safely store sensitive
+user medical information. Data is sent over a secure connection using an HTTP
+request like the one below:
+POST /user/store_phr_record
+{
+  "genome": "ACTAGTAG__TTGADDAAIICCTT…"
+}
+Bad actors found a way to compromise the third-party API and it starts
+responding with a
+308 Permanent Redirect
+to requests like the previous one.
+HTTP/1.1 308 Permanent Redirect
+Location: https://attacker.com/
+Since the API blindly follows the third-party redirects, it will repeat the
+exact same request including the user's sensitive data, but this time to the
+attacker's server.
+Scenario #3
+An attacker can prepare a git repository named
+'; drop db;--
+.
+Now, when an integration from an attacked application is done with the
+malicious repository, SQL injection payload is used on an application that
+builds an SQL query believing the repository's name is safe input.
+How To Prevent
+When evaluating service providers, assess their API security posture.
+Ensure all API interactions happen over a secure communication channel (TLS).
+Always validate and properly sanitize data received from integrated APIs
+  before using it.
+Maintain an allowlist of well-known locations integrated APIs may redirect
+  yours to: do not blindly follow redirects.
+References
+OWASP
+Web Service Security Cheat Sheet
+Injection Flaws
+Input Validation Cheat Sheet
+Injection Prevention Cheat Sheet
+Transport Layer Protection Cheat Sheet
+Unvalidated Redirects and Forwards Cheat Sheet
+External
+CWE-20: Improper Input Validation
+CWE-200: Exposure of Sensitive Information to an Unauthorized Actor
+CWE-319: Cleartext Transmission of Sensitive Information
+Previous
+API9:2023 Improper Inventory Management
+Next
+What's Next For Developers
+© Copyright 2023 - OWASP API Security Project team
+Made with
+Material for MkDocs

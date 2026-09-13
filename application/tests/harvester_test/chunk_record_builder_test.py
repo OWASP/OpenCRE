@@ -56,10 +56,45 @@ class ChunkRecordBuilderTests(unittest.TestCase):
         self.assertEqual(record.source_repo, "OWASP/ASVS")
         self.assertEqual(record.locator_path, "README.md")
         self.assertEqual(record.span.heading_path, ["Root"])
+        self.assertTrue(record.text.startswith("Standard: ASVS\n"))
+        self.assertIn("Source: README.md\n", record.text)
+        self.assertIn("Section: Root\n", record.text)
+        self.assertIn("First paragraph.", record.text)
 
         ChunkRecordValidator().validate(record)
         payload = ingest_record_to_payload(record)
         ChangeRecord.model_validate(payload)
+
+    def test_prefixes_section_id_from_filename(self) -> None:
+        text = "# Broken Access Control\n\nDeny by default."
+        document = Document(
+            schema_version="0.2.0",
+            artifact_id="art:B2/owasp_top10_2025:A01",
+            pipeline_run_id="run-1",
+            text=text,
+            source=SourceInfo(
+                type="github",
+                repository="B2/owasp_top10_2025",
+                commit_sha="abc1234",
+                committed_at=datetime(2026, 2, 1, 1, 0, 0, tzinfo=timezone.utc),
+            ),
+            locator=Locator(
+                kind="repo_path",
+                id="b2/owasp_top10_2025/A01.txt",
+                path="b2/owasp_top10_2025/A01.txt",
+            ),
+            heading_structure=[
+                HeadingNode(
+                    level=1, text="Broken Access Control", start_line=1, end_line=3
+                )
+            ],
+        )
+        chunk = ChunkInfo(text=text, start_char_idx=0, end_char_idx=len(text))
+        record = ChunkRecordBuilder().build(document, [chunk])[0]
+        self.assertIn("Standard: owasp_top10_2025", record.text)
+        self.assertIn("Version: 2025", record.text)
+        self.assertIn("Section-ID: A01", record.text)
+        self.assertIn("Section: Broken Access Control", record.text)
 
     def test_indexes_multiple_chunks(self) -> None:
         text = "AAAA\n\nBBBB"

@@ -1,0 +1,5 @@
+Source: AAI01
+Section: Goal Hijacking and Agent Drift
+Section-ID: AAI01
+
+Agentic AI systems pursue long-horizon goals with planning loops. Attackers can hijack agent goals via poisoned instructions, tool outputs, or environment observations so the agent drifts from operator intent into unsafe objectives. Defenses require goal integrity checks, human confirmation gates for high-impact plan changes, and continuous monitoring of objective drift across sessions.
