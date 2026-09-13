@@ -1,6 +1,9 @@
+import csv
+import os
+import tempfile
 import unittest
 from argparse import Namespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from application.cmd import cre_main
 from application.utils import cres_csv_export as export_mod
@@ -131,6 +134,50 @@ class TestExportCsvHelpers(unittest.TestCase):
         self.assertEqual(row["ASVS|section"], "V2: Authentication")
         self.assertEqual(row["ASVS|subsection"], "Password Security")
         self.assertIn("ASVS|subsection", keys)
+
+    def test_export_writes_subsection_column_to_csv(self) -> None:
+        # End-to-end regression test: exercise the real CSV export path
+        # and verify both the header and exported values.
+        cre_payload = {
+            "data": {
+                "id": "001-001",
+                "name": "Root CRE",
+                "links": [
+                    {
+                        "ltype": "Linked To",
+                        "document": {
+                            "doctype": "Standard",
+                            "name": "ASVS",
+                            "sectionID": "V2.1.1",
+                            "section": "V2: Authentication",
+                            "subsection": "Password Security",
+                        },
+                    }
+                ],
+            }
+        }
+        mock_response = MagicMock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = cre_payload
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            out_csv = os.path.join(tmp_dir, "out.csv")
+            with patch.object(
+                export_mod.requests, "get", return_value=mock_response
+            ):
+                rows_written = export_mod.export_cres_and_standards_csv(
+                    output_path=out_csv,
+                    cre_ids=["001-001"],
+                )
+
+            self.assertEqual(rows_written, 1)
+            with open(out_csv, newline="", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                self.assertIn("ASVS|subsection", reader.fieldnames or [])
+                self.assertIn("ASVS|section", reader.fieldnames or [])
+                row = next(reader)
+                self.assertEqual(row["ASVS|section"], "V2: Authentication")
+                self.assertEqual(row["ASVS|subsection"], "Password Security")
 
     def test_cre_cell_uses_pipe(self) -> None:
         self.assertEqual(
