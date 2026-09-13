@@ -8,6 +8,10 @@ Requires ``OPENAI_API_KEY`` or ``GEMINI_API_KEY`` (or set ``CRE_EMBED_ALIGN_E2E=
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import os
 import re
 import json

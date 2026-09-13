@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from typing import Dict, List, Any
 from application.utils import import_diff
 

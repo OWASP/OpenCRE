@@ -11,13 +11,15 @@ A future live AI Exchange parser should produce the same row shape (or call
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import copy
 import csv
-import logging
 import re
 from typing import Any, Dict, List, Optional
 
-logger = logging.getLogger(__name__)
 
 IMPORT_SOURCE_CSV = "ai_exchange_csv"
 

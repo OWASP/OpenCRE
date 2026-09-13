@@ -1,15 +1,17 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from sqlalchemy import CheckConstraint
 import networkx as nx
 import uuid
 import neo4j
 import os
-import logging
 import re
 import time
 import yaml
 
 from datetime import datetime, timezone
-from pprint import pprint
 
 from collections import Counter, defaultdict
 from itertools import permutations
@@ -53,10 +55,6 @@ from application.utils.gap_analysis import (
 
 
 from .. import sqla  # type: ignore
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 BaseModel: DefaultMeta = sqla.Model

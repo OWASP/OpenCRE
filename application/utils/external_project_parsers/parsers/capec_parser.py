@@ -1,4 +1,7 @@
-import logging
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import os
 import tempfile
 import requests
@@ -7,9 +10,6 @@ from application.database import db
 from application.defs import cre_defs as defs
 import xmltodict
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 from application.utils.external_project_parsers import base_parser_defs
 from application.utils.external_project_parsers.base_parser_defs import (

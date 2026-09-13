@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import re
 from functools import wraps
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Type

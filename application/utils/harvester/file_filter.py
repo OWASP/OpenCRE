@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from pathlib import PurePosixPath
 from pathlib import Path
 import pathspec

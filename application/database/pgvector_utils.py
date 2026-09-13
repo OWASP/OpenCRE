@@ -12,6 +12,10 @@ HNSW/IVFFlat indexes are deferred (Essential-1 capacity); see migration
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import os
 from typing import Any, Iterable, Optional, Sequence, Set, Tuple
 
@@ -53,9 +57,7 @@ class PgVectorUnavailableError(RuntimeError):
 
 
 def _exit_with_message(msg: str) -> None:
-    import logging
-
-    logging.getLogger(__name__).error(msg)
+    logger.error(msg)
     raise SystemExit(msg)
 
 

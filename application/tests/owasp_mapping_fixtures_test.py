@@ -1,10 +1,13 @@
-import json
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import re
 import unittest
-from pathlib import Path
+
+from application.utils import mapping_fixtures
 
 
-FIXTURE_DIR = Path(__file__).parent / "fixtures" / "owasp_mappings"
 EXPECTED_FIXTURES = {
     "owasp_aisvs_1_0.json",
     "owasp_api_top10_2023.json",
@@ -19,13 +22,55 @@ CRE_ID_PATTERN = re.compile(r"^\d{3}-\d{3}$")
 
 class TestOwaspMappingFixtures(unittest.TestCase):
     def test_fixture_set_is_complete(self) -> None:
-        actual = {path.name for path in FIXTURE_DIR.glob("*.json")}
-        self.assertEqual(actual, EXPECTED_FIXTURES)
+        self.assertEqual(
+            set(mapping_fixtures.list_owasp_mapping_fixtures()), EXPECTED_FIXTURES
+        )
+
+    def test_load_all_returns_every_named_fixture(self) -> None:
+        loaded = mapping_fixtures.load_all_owasp_mapping_fixtures()
+        self.assertEqual(set(loaded), EXPECTED_FIXTURES)
+        for filename, payload in loaded.items():
+            with self.subTest(fixture=filename):
+                self.assertIsInstance(payload, list)
+                self.assertGreater(len(payload), 0)
+
+    def test_load_accepts_stem_without_json_suffix(self) -> None:
+        by_stem = mapping_fixtures.load_owasp_mapping_fixture("owasp_top10_2025")
+        by_name = mapping_fixtures.load_owasp_mapping_fixture("owasp_top10_2025.json")
+        self.assertEqual(by_stem, by_name)
+
+    def test_load_unknown_fixture_raises(self) -> None:
+        with self.assertRaises(FileNotFoundError) as ctx:
+            mapping_fixtures.load_owasp_mapping_fixture("not_a_real_mapping")
+        self.assertIn("not_a_real_mapping.json", str(ctx.exception))
+
+    def test_k8s_2025_uses_per_item_owasp_hyperlinks(self) -> None:
+        # Data from #953 (Bornunique911): section pages, not the family homepage.
+        entries = mapping_fixtures.load_owasp_mapping_fixture(
+            "owasp_kubernetes_top10_2025"
+        )
+        self.assertEqual(10, len(entries))
+        self.assertEqual("K01", entries[0]["section_id"])
+        self.assertIn("/2025/en/src/K01-", entries[0]["hyperlink"])
+        self.assertEqual(["233-748", "486-813"], entries[0]["cre_ids"])
+
+    def test_resolved_cre_ids_follow_fallback_when_own_ids_empty(self) -> None:
+        by_id = {
+            "K05": {"cre_ids": ["148-420"]},
+            "K10": {
+                "cre_ids": [],
+                "fallback_section_ids": ["K05"],
+            },
+        }
+        self.assertEqual(
+            ["148-420"],
+            mapping_fixtures.resolved_cre_ids(by_id["K10"], by_id),
+        )
 
     def test_fixtures_have_expected_mapping_shape(self) -> None:
-        for path in sorted(FIXTURE_DIR.glob("*.json")):
-            with self.subTest(fixture=path.name):
-                payload = json.loads(path.read_text(encoding="utf-8"))
+        loaded = mapping_fixtures.load_all_owasp_mapping_fixtures()
+        for filename, payload in loaded.items():
+            with self.subTest(fixture=filename):
 
                 self.assertIsInstance(payload, list)
                 self.assertGreater(len(payload), 0)
@@ -53,7 +98,7 @@ class TestOwaspMappingFixtures(unittest.TestCase):
                         self.assertNotIn(
                             entry["section_id"],
                             seen_section_ids,
-                            msg=f"Duplicate section_id {entry['section_id']} in {path.name}",
+                            msg=f"Duplicate section_id {entry['section_id']} in {filename}",
                         )
                         seen_section_ids.add(entry["section_id"])
 
@@ -68,7 +113,7 @@ class TestOwaspMappingFixtures(unittest.TestCase):
                                 known_section_ids,
                                 msg=(
                                     f"Fallback section id {fallback_section_id} "
-                                    f"in {path.name} is not a known section_id"
+                                    f"in {filename} is not a known section_id"
                                 ),
                             )
 

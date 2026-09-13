@@ -6,6 +6,10 @@ W5's review caught in the calibration gate, which skipped and still reported
 success.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import unittest
 from datetime import datetime, timezone
 

@@ -1,5 +1,9 @@
 """Tests for /rest/v1/completion (chatbot) error handling."""
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
 import os
 import unittest
@@ -50,7 +54,7 @@ class TestChatCompletion(unittest.TestCase):
         self.assertIn("error", data)
         self.assertIn("rate-limited", data["error"])
 
-    def test_completion_returns_500_on_non_429_genai_error(self) -> None:
+    def test_completion_returns_provider_status_on_non_429_genai_error(self) -> None:
         os.environ["NO_LOGIN"] = "1"
         err = genai_errors.ClientError(
             400,
@@ -71,7 +75,7 @@ class TestChatCompletion(unittest.TestCase):
                     json={"prompt": "test"},
                     content_type="application/json",
                 )
-        self.assertEqual(500, response.status_code)
+        self.assertEqual(400, response.status_code)
         data = json.loads(response.data)
         self.assertIn("error", data)
         self.assertIn("AI Service Error", data["error"])

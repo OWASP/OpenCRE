@@ -14,6 +14,10 @@ The lock tests cover the other half: that the default read takes no row lock
 cannot honour it fails loudly instead of handing back an unlocked batch.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
 import os
 import tempfile

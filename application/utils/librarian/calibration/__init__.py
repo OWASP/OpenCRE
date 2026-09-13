@@ -13,3 +13,7 @@ so calibration is what makes the threshold trustworthy. Kept dependency-light
 (numpy + scipy) and model-free so it stays hermetically testable — mirrors the
 C.1/C.2 seams.
 """
+
+from cre_logging import get_logger
+
+logger = get_logger(__name__)

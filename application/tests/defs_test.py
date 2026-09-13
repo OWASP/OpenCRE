@@ -1,7 +1,10 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import copy
 import unittest
 from dataclasses import asdict
-from pprint import pprint
 from typing import Set
 
 import dacite

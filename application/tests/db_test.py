@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import networkx as nx
 from application.utils.gap_analysis import make_resources_key, make_subresources_key
 import string
@@ -9,7 +13,6 @@ from unittest import mock
 from unittest.mock import patch
 import uuid
 from copy import copy, deepcopy
-from pprint import pprint
 from typing import Any, Dict, List, Union
 from flask import json as flask_json
 

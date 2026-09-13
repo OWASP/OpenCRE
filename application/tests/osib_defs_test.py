@@ -2,7 +2,10 @@
 # import tempfile
 # from typing import Any, Dict, List, Tuple
 # import unittest
-# from pprint import pprint
+
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
 
 # import yaml
 # from application.defs import cre_defs as cdefs

@@ -162,7 +162,7 @@ lint:
 	[ -d "./venv" ] && . ./venv/bin/activate && black . && yarn lint && make openapi-guardrail
 
 mypy:
-	[ -d "./venv" ] && . ./venv/bin/activate &&  mypy --ignore-missing-imports --implicit-reexport --no-strict-optional --strict application
+	[ -d "./venv" ] && . ./venv/bin/activate &&  mypy --ignore-missing-imports --implicit-reexport --no-strict-optional --strict application cre_logging
 
 frontend:
 	yarn build
