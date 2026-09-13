@@ -171,32 +171,32 @@ def main() -> None:
     parser.add_argument(
         "--owasp_kubernetes_top10_2022_in",
         action="store_true",
-        help="import OWASP Kubernetes Top Ten 2022",
+        help="load OWASP Kubernetes Top Ten 2022 mapping fixture (eval gold, not import-all)",
     )
     parser.add_argument(
         "--owasp_kubernetes_top10_2025_in",
         action="store_true",
-        help="import OWASP Kubernetes Top Ten 2025 draft",
+        help="load OWASP Kubernetes Top Ten 2025 mapping fixture (eval gold, not import-all)",
     )
     parser.add_argument(
         "--owasp_top10_2025_in",
         action="store_true",
-        help="import OWASP Top 10 2025",
+        help="load OWASP Top 10 2025 mapping fixture (eval gold, not import-all)",
     )
     parser.add_argument(
         "--owasp_api_top10_2023_in",
         action="store_true",
-        help="import OWASP API Security Top 10 2023",
+        help="load OWASP API Security Top 10 2023 mapping fixture (eval gold, not import-all)",
     )
     parser.add_argument(
         "--owasp_llm_top10_2025_in",
         action="store_true",
-        help="import OWASP Top 10 for LLM and Gen AI Apps 2025",
+        help="load OWASP LLM Top 10 2025 mapping fixture (eval gold, not import-all)",
     )
     parser.add_argument(
         "--owasp_aisvs_in",
         action="store_true",
-        help="import OWASP AI Security Verification Standard (AISVS)",
+        help="load OWASP AISVS mapping fixture (eval gold, not import-all)",
     )
     parser.add_argument(
         "--pci_dss_3_2_in",
