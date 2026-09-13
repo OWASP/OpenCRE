@@ -1,4 +1,8 @@
 # type: ignore #unused file
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from application.database import Node_collection, Links
 from application.defs.cre_defs import Standard, CRE
 import json

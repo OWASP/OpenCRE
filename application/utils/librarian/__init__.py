@@ -47,3 +47,7 @@ Resync by running:
 
 Update the SHA above, then re-run the schemas test suite.
 """
+
+from cre_logging import get_logger
+
+logger = get_logger(__name__)

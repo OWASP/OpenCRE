@@ -1,5 +1,9 @@
 """Tests for user persistence and per-user resource selection (issue #586, RFC #876 TODO 1/2)."""
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import os
 import threading
 import unittest

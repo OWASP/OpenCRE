@@ -1,4 +1,8 @@
 # type:ignore
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import string
 from typing import Any
 from sqlalchemy import MetaData

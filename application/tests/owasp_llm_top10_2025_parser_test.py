@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import unittest
 
 from application import create_app, sqla  # type: ignore

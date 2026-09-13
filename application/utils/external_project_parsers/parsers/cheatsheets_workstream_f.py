@@ -51,10 +51,13 @@ requirements.txt.
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import argparse
 import dataclasses
 import json
-import logging
 import sys
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
@@ -68,7 +71,6 @@ from application.utils.external_project_parsers.base_parser_defs import ParseRes
 if TYPE_CHECKING:
     from application.database import db
 
-logger = logging.getLogger(__name__)
 
 # --- valid values -----------------------------------------------------------
 
@@ -371,20 +373,24 @@ def _cmd_validate(args: argparse.Namespace) -> int:
     try:
         doc = _load_json_doc(args.suggestions)
     except FileNotFoundError:
-        print(f"file not found: {args.suggestions}", file=sys.stderr)
+        logger.error("file not found: %s", args.suggestions)
         return _EXIT_USAGE
     except json.JSONDecodeError as exc:
-        print(f"invalid JSON in {args.suggestions}: {exc}", file=sys.stderr)
+        logger.error("invalid JSON in %s: %s", args.suggestions, exc)
         return _EXIT_USAGE
 
     try:
         _validate(doc)
     except SuggestionSchemaError as exc:
-        print(str(exc), file=sys.stderr)
+        logger.error("%s", exc)
         return _EXIT_ERROR
 
     count = len(doc) if isinstance(doc, list) else 0
-    print(f"OK: {args.suggestions} is a valid suggestions document ({count} items)")
+    logger.info(
+        "OK: %s is a valid suggestions document (%s items)",
+        args.suggestions,
+        count,
+    )
     return _EXIT_OK
 
 
@@ -398,10 +404,10 @@ def _cmd_generate(args: argparse.Namespace) -> int:
     try:
         doc = _load_json_doc(args.infile)
     except FileNotFoundError:
-        print(f"file not found: {args.infile}", file=sys.stderr)
+        logger.error("file not found: %s", args.infile)
         return _EXIT_USAGE
     except json.JSONDecodeError as exc:
-        print(f"invalid JSON in {args.infile}: {exc}", file=sys.stderr)
+        logger.error("invalid JSON in %s: %s", args.infile, exc)
         return _EXIT_USAGE
 
     try:
@@ -409,13 +415,13 @@ def _cmd_generate(args: argparse.Namespace) -> int:
         suggestions = [_parse_suggestion(raw) for raw in doc]
         write_suggestions_json(args.outfile, suggestions)
     except SuggestionSchemaError as exc:
-        print(str(exc), file=sys.stderr)
+        logger.error("%s", exc)
         return _EXIT_ERROR
     except OSError as exc:
-        print(f"cannot write {args.outfile}: {exc}", file=sys.stderr)
+        logger.error("cannot write %s: %s", args.outfile, exc)
         return _EXIT_USAGE
 
-    print(f"wrote {len(suggestions)} suggestions to {args.outfile}")
+    logger.info("wrote %s suggestions to %s", len(suggestions), args.outfile)
     return _EXIT_OK
 
 
@@ -428,13 +434,13 @@ def _cmd_convert(args: argparse.Namespace) -> int:
     try:
         approved = load_approved_suggestions(args.approved)
     except FileNotFoundError:
-        print(f"file not found: {args.approved}", file=sys.stderr)
+        logger.error("file not found: %s", args.approved)
         return _EXIT_USAGE
     except json.JSONDecodeError as exc:
-        print(f"invalid JSON in {args.approved}: {exc}", file=sys.stderr)
+        logger.error("invalid JSON in %s: %s", args.approved, exc)
         return _EXIT_USAGE
     except SuggestionSchemaError as exc:
-        print(str(exc), file=sys.stderr)
+        logger.error("%s", exc)
         return _EXIT_ERROR
 
     cache = _open_cache(args.db)
@@ -458,13 +464,15 @@ def _cmd_convert(args: argparse.Namespace) -> int:
     skipped = sorted({cid for cid in all_candidate_ids if cid not in resolved})
     total_links = sum(len(standard.links) for standard in standards)
 
-    print(f"approved suggestions:   {len(approved)}")
-    print(f"standards produced:     {len(standards)}")
-    print(f"total CRE links:        {total_links}")
-    print("skipped unknown CREs:   " + (", ".join(skipped) if skipped else "(none)"))
-    print(
-        "note: nothing was registered into the graph; live import/registration "
-        "is F5 (follow-up PR)."
+    logger.info(
+        "approved suggestions=%s standards produced=%s total CRE links=%s skipped unknown CREs=%s",
+        len(approved),
+        len(standards),
+        total_links,
+        ", ".join(skipped) if skipped else "(none)",
+    )
+    logger.info(
+        "note: nothing was registered into the graph; live import/registration is F5 (follow-up PR)."
     )
     return _EXIT_OK
 

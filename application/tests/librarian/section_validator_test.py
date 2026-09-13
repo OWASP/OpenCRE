@@ -5,6 +5,10 @@ upstream shapes (knowledge_queue row and RFC KnowledgeItem envelope).
 Asserts the boundary never leaks a raw Pydantic ValidationError.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import unittest
 from datetime import datetime, timezone
 

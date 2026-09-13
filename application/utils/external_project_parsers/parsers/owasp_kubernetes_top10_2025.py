@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from application.utils.external_project_parsers.parsers.owasp_mapping_fixture_parser import (
     OwaspMappingFixtureParser,
 )

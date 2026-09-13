@@ -1,4 +1,7 @@
-from pprint import pprint
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import io
 import csv
 import random

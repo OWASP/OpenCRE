@@ -1,3 +1,8 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
+
 def generate_artifact_id(repository: str, file_path: str) -> str:
     """
     Generate a stable artifact identifier for a repository file.

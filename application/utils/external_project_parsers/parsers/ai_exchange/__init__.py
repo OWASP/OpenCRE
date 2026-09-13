@@ -1,5 +1,9 @@
 """AI Exchange mappings: CSV export today, live exchange source later."""
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from .csv_source import (
     IMPORT_SOURCE_CSV,
     is_ai_exchange_spreadsheet,

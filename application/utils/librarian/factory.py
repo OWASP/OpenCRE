@@ -14,14 +14,15 @@ the database at module scope, and this module is the boundary where that stops
 being true — keeping the imports inside the call preserves it for everyone else.
 """
 
-import logging
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from dataclasses import dataclass
 from typing import Any, Callable, FrozenSet, Optional, Sequence
 
 from application.utils.librarian.config_loader import LibrarianConfig, load_config
 from application.utils.librarian.pipeline import Reranker, Retriever, Scaler
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)

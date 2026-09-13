@@ -14,8 +14,11 @@ Module B is the cheap gate and must stay decoupled from the chatbot's model.
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
-import logging
 import os
 import time
 from typing import Any, Iterator
@@ -30,7 +33,6 @@ from application.utils.noise_filter.prompts import (
 )
 from application.utils.noise_filter.schemas import ChangeRecord, ClassifyResult
 
-logger = logging.getLogger(__name__)
 
 _SCHEMA_NAME = "noise_filter_classification"
 

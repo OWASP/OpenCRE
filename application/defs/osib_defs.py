@@ -1,6 +1,8 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import networkx as nx
-from pprint import pprint
-import logging
 import os
 import re
 import warnings
@@ -21,10 +23,6 @@ from dacite import (
     UnexpectedDataError,
     from_dict,
 )
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 # used for serialising and deserialising yaml OSIB documents

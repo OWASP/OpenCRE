@@ -1,5 +1,9 @@
 """Tests for /rest/v1/completion (chatbot) error handling."""
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
 import os
 import unittest

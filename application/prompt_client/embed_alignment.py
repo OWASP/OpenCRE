@@ -8,8 +8,11 @@ excerpt text plus a resolved ``embeddings_url`` (``hyperlink`` is never modified
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
-import logging
 import os
 import re
 from dataclasses import dataclass
@@ -17,7 +20,6 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from urllib.parse import urldefrag
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-logger = logging.getLogger(__name__)
 
 SMART_EXTRACT_POLICY_VERSION = os.environ.get("CRE_EMBED_SMART_POLICY_VERSION", "1")
 

@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 # script to parse cheatsheet md files find the links to opencre.org and add the cheatsheets to CRE
 from typing import List
 import subprocess
@@ -8,7 +12,6 @@ import os
 import re
 from application.utils.external_project_parsers import base_parser_defs
 import json
-import logging
 from application.utils.mapping_fixtures import OWASP_MAPPING_FIXTURE_DIR
 from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,
@@ -23,7 +26,7 @@ class Cheatsheets(ParserInterface):
     supplement_data_file = (
         OWASP_MAPPING_FIXTURE_DIR / "owasp_cheatsheets_supplement.json"
     )
-    logger = logging.getLogger(__name__)
+    logger = get_logger(__name__)
 
     def cheatsheet(
         self, section: str, hyperlink: str, tags: List[str]

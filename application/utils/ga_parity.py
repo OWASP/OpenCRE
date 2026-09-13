@@ -6,6 +6,10 @@ Used by ``scripts/verify_ga_postgres_neo_parity.py`` and unit tests.
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from typing import TYPE_CHECKING, Any, List, Sequence, Tuple
 
 if TYPE_CHECKING:

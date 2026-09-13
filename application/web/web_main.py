@@ -1,10 +1,13 @@
 # type: ignore
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 # silence mypy for the routes file
 import csv
 from functools import wraps
 import json
-import logging
 import os
 import io
 import pathlib
@@ -85,10 +88,6 @@ app = Blueprint(
         os.path.dirname(os.path.realpath(__file__)), "../frontend/www"
     ),
 )
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def _ga_timeout_seconds() -> int:

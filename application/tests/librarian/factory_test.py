@@ -8,6 +8,10 @@ stages — is code that only ever runs in production otherwise, and a typo in an
 of it is a crash in the orchestrator's entry point.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import os
 import unittest
 from unittest import mock
