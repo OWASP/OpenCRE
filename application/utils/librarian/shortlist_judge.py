@@ -142,26 +142,13 @@ class ShortlistJudgeCache:
 
 def default_litellm_fn(model: Optional[str] = None) -> LlmFn:
     """LiteLLM completion → text (same stack as edition_remap / Module B)."""
+    from application.prompt_client.litellm_router import system_user_fn
 
     model_name = model or os.environ.get(
         "CRE_LIBRARIAN_SHORTLIST_JUDGE_MODEL",
         os.environ.get("CRE_NOISE_FILTER_LLM_MODEL", "gemini/gemini-2.5-flash-lite"),
     )
-
-    def _call(system: str, user: str) -> str:
-        import litellm
-
-        resp = litellm.completion(
-            model=model_name,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-            temperature=0.0,
-        )
-        return str(resp.choices[0].message.content or "")
-
-    return _call
+    return system_user_fn(model_name, temperature=0.0)
 
 
 def default_cache_dir() -> Path:

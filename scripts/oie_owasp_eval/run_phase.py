@@ -616,9 +616,12 @@ def phase_judge(state: Dict[str, Any]) -> None:
         "disagreements": disagreements,
     }
 
-    import litellm  # type: ignore
+    from application.prompt_client.litellm_router import (
+        completion as litellm_completion,
+        extract_content_text,
+    )
 
-    resp = litellm.completion(
+    resp = litellm_completion(
         model=state["models"]["judge"],
         temperature=0.1,
         messages=[
@@ -638,7 +641,7 @@ def phase_judge(state: Dict[str, Any]) -> None:
         ],
         response_format={"type": "json_object"},
     )
-    text = resp.choices[0].message.content
+    text = extract_content_text(resp, strict=False)
     try:
         verdict = json.loads(text)
     except json.JSONDecodeError:

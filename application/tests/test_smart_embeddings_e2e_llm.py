@@ -19,11 +19,10 @@ from typing import Any, Tuple
 
 import pytest
 import requests
-import litellm
 from pydantic import ValidationError
 
 from application.defs import cre_defs
-from application.prompt_client import embed_alignment
+from application.prompt_client import embed_alignment, litellm_router
 
 pytestmark = pytest.mark.llm_e2e
 
@@ -58,20 +57,20 @@ def _alignment_llm_client() -> Tuple[Any, str]:
                 },
             }
             try:
-                resp = litellm.completion(
+                resp = litellm_router.completion(
                     model=self.model,
                     messages=messages,
                     response_format=strict_format,
                     temperature=0.2,
                 )
             except Exception:
-                resp = litellm.completion(
+                resp = litellm_router.completion(
                     model=self.model,
                     messages=messages,
                     response_format={"type": "json_object"},
                     temperature=0.2,
                 )
-            text = (resp.choices[0].message.content or "").strip()
+            text = litellm_router.extract_content_text(resp)
             try:
                 payload = embed_alignment.AlignmentPayload.model_validate_json(text)
                 return payload.model_dump()

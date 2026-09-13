@@ -50,26 +50,25 @@ def default_metadata_llm_fn(model: Optional[str] = None) -> LlmFn:
     )
 
     def _once(name: str, system: str, user: str) -> str:
-        import litellm
+        from application.prompt_client.litellm_router import completion_text
 
         messages = [
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ]
         try:
-            resp = litellm.completion(
+            return completion_text(
                 model=name,
                 messages=messages,
                 temperature=0.2,
                 reasoning_effort="minimal",
             )
         except Exception:  # noqa: BLE001
-            resp = litellm.completion(
+            return completion_text(
                 model=name,
                 messages=messages,
                 temperature=0.2,
             )
-        return str(resp.choices[0].message.content or "")
 
     def _call(system: str, user: str) -> str:
         import time

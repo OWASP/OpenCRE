@@ -314,6 +314,7 @@ def propose_remap(
 
 def default_litellm_fn(model: Optional[str] = None) -> LlmFn:
     """LiteLLM completion → text (defaults to Gemini 2.5 Pro for remap quality)."""
+    from application.prompt_client.litellm_router import system_user_fn
 
     model_name = model or os.environ.get(
         "CRE_LIBRARIAN_EDITION_REMAP_MODEL",
@@ -322,30 +323,11 @@ def default_litellm_fn(model: Optional[str] = None) -> LlmFn:
             "gemini/gemini-2.5-pro",
         ),
     )
-
-    def _call(system: str, user: str) -> str:
-        import litellm
-
-        messages = [
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ]
-        try:
-            resp = litellm.completion(
-                model=model_name,
-                messages=messages,
-                temperature=0.0,
-                reasoning_effort="minimal",
-            )
-        except Exception:  # noqa: BLE001
-            resp = litellm.completion(
-                model=model_name,
-                messages=messages,
-                temperature=0.0,
-            )
-        return str(resp.choices[0].message.content or "")
-
-    return _call
+    return system_user_fn(
+        model_name,
+        temperature=0.0,
+        extra_try_kwargs={"reasoning_effort": "minimal"},
+    )
 
 
 @dataclass
