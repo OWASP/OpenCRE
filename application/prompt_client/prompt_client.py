@@ -9,7 +9,7 @@ from multiprocessing import Pool
 from io import BytesIO
 from urllib.parse import urlparse
 
-from application.prompt_client import embed_alignment
+from application.prompt_client import embed_alignment, litellm_router
 
 from scipy import sparse
 from sklearn.metrics.pairwise import cosine_similarity
@@ -26,7 +26,6 @@ import os
 import json
 import re
 import requests
-import time
 
 
 SIMILARITY_THRESHOLD = float(os.environ.get("CHATBOT_SIMILARITY_THRESHOLD", "0.7"))
@@ -48,54 +47,11 @@ def _safe_truncate_for_log(text: str, limit: int = 600) -> str:
 
 
 def _extract_content_text(response: Any) -> str:
-    choices = getattr(response, "choices", None)
-    if not choices and isinstance(response, dict):
-        choices = response.get("choices")
-    if not choices:
-        raise ValueError("LLM response did not contain choices")
-    msg = choices[0].message
-    content = getattr(msg, "content", None)
-    if content is None and isinstance(msg, dict):
-        content = msg.get("content")
-    if content is None:
-        raise ValueError("LLM response did not contain message content")
-    if isinstance(content, list):
-        return "".join(
-            c.get("text", "") if isinstance(c, dict) else str(c) for c in content
-        ).strip()
-    return str(content).strip()
+    return litellm_router.extract_content_text(response)
 
 
 def _extract_embeddings(response: Any) -> List[List[float]]:
-    data = getattr(response, "data", None)
-    if data is None and isinstance(response, dict):
-        data = response.get("data")
-    if not isinstance(data, list):
-        raise ValueError("Embedding response missing data list")
-    vectors: List[List[float]] = []
-    for item in data:
-        emb = getattr(item, "embedding", None)
-        if emb is None and isinstance(item, dict):
-            emb = item.get("embedding")
-        if not isinstance(emb, list):
-            raise ValueError("Embedding item missing vector")
-        vectors.append([float(x) for x in emb])
-    return vectors
-
-
-def _is_llm_rate_limit_error(err: Exception) -> bool:
-    msg = str(err).lower()
-    if "rate limit" in msg or "too many requests" in msg:
-        return True
-    if "resource exhausted" in msg or "quota" in msg or "exceeded quota" in msg:
-        return True
-    status = (
-        getattr(err, "status_code", None)
-        or getattr(err, "status", None)
-        or getattr(err, "http_status", None)
-        or getattr(err, "code", None)
-    )
-    return status == 429
+    return litellm_router.extract_embeddings(response)
 
 
 def _render_chat_prompt(*, question: str, retrieved_knowledge: Optional[str]) -> str:
@@ -715,13 +671,7 @@ class PromptHandler:
     embeddings_instance = None  # instance of our in_memory_embeddings singletton
 
     def __init__(self, database: db.Node_collection, load_all_embeddings=False) -> None:
-        try:
-            import litellm  # type: ignore
-        except ImportError as e:
-            raise RuntimeError(
-                "litellm package is required for PromptHandler LLM calls"
-            ) from e
-        self._litellm = litellm
+        self._litellm = litellm_router.get_litellm()
         self.chat_model = os.environ.get(
             "CRE_LLM_CHAT_MODEL", "gemini/gemini-2.5-flash"
         )
@@ -729,9 +679,8 @@ class PromptHandler:
             "CRE_EMBED_MODEL", "gemini/gemini-embedding-001"
         )
         self.align_model = os.environ.get("CRE_EMBED_ALIGN_MODEL", self.chat_model)
-        self._llm_max_retries = int(os.environ.get("CRE_LLM_MAX_RETRIES", "2"))
-        self._llm_retry_sleep_seconds = int(
-            os.environ.get("CRE_LLM_RETRY_SLEEP_SECONDS", "15")
+        self._llm_max_retries, self._llm_retry_sleep_seconds = (
+            litellm_router.retry_policy()
         )
         expected_dim_raw = os.environ.get("CRE_EMBED_EXPECTED_DIM", "").strip()
         self._expected_embed_dim = int(expected_dim_raw) if expected_dim_raw else None
@@ -773,21 +722,12 @@ class PromptHandler:
                 )
 
     def _with_llm_rate_limit_retry(self, fn: Any, *, context: str) -> Any:
-        for attempt in range(self._llm_max_retries + 1):
-            try:
-                return fn()
-            except Exception as e:
-                if not _is_llm_rate_limit_error(e) or attempt >= self._llm_max_retries:
-                    raise
-                logger.info(
-                    "rate/quota limited during %s; sleeping %ss (attempt %s/%s)",
-                    context,
-                    self._llm_retry_sleep_seconds,
-                    attempt + 1,
-                    self._llm_max_retries + 1,
-                )
-                time.sleep(self._llm_retry_sleep_seconds)
-        raise RuntimeError("unreachable: retry loop exited unexpectedly")
+        return litellm_router.with_rate_limit_retry(
+            fn,
+            context=context,
+            max_retries=self._llm_max_retries,
+            retry_sleep_seconds=self._llm_retry_sleep_seconds,
+        )
 
     def get_model_name(self) -> str:
         return self.chat_model
@@ -811,11 +751,15 @@ class PromptHandler:
             else self._truncate_one(text)
         )
 
-        def _call() -> Any:
-            return self._litellm.embedding(model=self.embed_model, input=payload)
-
         vectors = _extract_embeddings(
-            self._with_llm_rate_limit_retry(_call, context="LiteLLM embeddings")
+            litellm_router.embedding(
+                model=self.embed_model,
+                input=payload,
+                client=self._litellm,
+                context="LiteLLM embeddings",
+                max_retries=self._llm_max_retries,
+                retry_sleep_seconds=self._llm_retry_sleep_seconds,
+            )
         )
         if self._expected_embed_dim is not None:
             for v in vectors:
@@ -843,10 +787,14 @@ class PromptHandler:
             {"role": "user", "content": rag_instruction},
         ]
 
-        def _call() -> Any:
-            return self._litellm.completion(model=self.chat_model, messages=messages)
-
-        resp = self._with_llm_rate_limit_retry(_call, context="LiteLLM chat completion")
+        resp = litellm_router.completion(
+            model=self.chat_model,
+            messages=messages,
+            client=self._litellm,
+            context="LiteLLM chat completion",
+            max_retries=self._llm_max_retries,
+            retry_sleep_seconds=self._llm_retry_sleep_seconds,
+        )
         return _extract_content_text(resp)
 
     def align_embedding_span_json(
@@ -865,25 +813,16 @@ class PromptHandler:
             },
         }
 
-        def _call_with_json_schema() -> Any:
-            return self._litellm.completion(
+        try:
+            resp = litellm_router.completion(
                 model=self.align_model,
                 messages=messages,
+                client=self._litellm,
+                context="LiteLLM align_embedding_span_json",
+                max_retries=self._llm_max_retries,
+                retry_sleep_seconds=self._llm_retry_sleep_seconds,
                 response_format=strict_format,
                 temperature=0.2,
-            )
-
-        def _call_json_object_fallback() -> Any:
-            return self._litellm.completion(
-                model=self.align_model,
-                messages=messages,
-                response_format={"type": "json_object"},
-                temperature=0.2,
-            )
-
-        try:
-            resp = self._with_llm_rate_limit_retry(
-                _call_with_json_schema, context="LiteLLM align_embedding_span_json"
             )
         except Exception as e:
             logger.warning(
@@ -891,9 +830,15 @@ class PromptHandler:
                 self.align_model,
                 e,
             )
-            resp = self._with_llm_rate_limit_retry(
-                _call_json_object_fallback,
+            resp = litellm_router.completion(
+                model=self.align_model,
+                messages=messages,
+                client=self._litellm,
                 context="LiteLLM align_embedding_span_json fallback",
+                max_retries=self._llm_max_retries,
+                retry_sleep_seconds=self._llm_retry_sleep_seconds,
+                response_format={"type": "json_object"},
+                temperature=0.2,
             )
 
         text = _extract_content_text(resp)
@@ -929,10 +874,14 @@ class PromptHandler:
             {"role": "user", "content": direct_instruction},
         ]
 
-        def _call() -> Any:
-            return self._litellm.completion(model=self.chat_model, messages=messages)
-
-        resp = self._with_llm_rate_limit_retry(_call, context="LiteLLM query_llm")
+        resp = litellm_router.completion(
+            model=self.chat_model,
+            messages=messages,
+            client=self._litellm,
+            context="LiteLLM query_llm",
+            max_retries=self._llm_max_retries,
+            retry_sleep_seconds=self._llm_retry_sleep_seconds,
+        )
         return _extract_content_text(resp)
 
     def generate_embeddings_for(self, item_name: str):
