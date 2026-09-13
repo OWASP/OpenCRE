@@ -1,27 +1,28 @@
 """Module B Stage 2: LLM relevance classifier (recall-first).
 
-Self-contained by design (decided 2026-06-18, Option B): this module talks to
-LiteLLM directly rather than wrapping PromptHandler, whose constructor is
-DB-coupled and whose retry/litellm members are private. We reuse the one
-shared, public piece -- llm_error_utils.is_rate_limit_error -- inside a small
-retry loop over the upstream CRE_LLM_MAX_RETRIES / CRE_LLM_RETRY_SLEEP_SECONDS
-vars, so noise filtering and the chatbot share one retry policy.
-
-The classifier uses a dedicated cheap model (config.llm_model, default
-gemini/gemini-2.5-flash-lite) and never falls back to CRE_LLM_CHAT_MODEL:
-Module B is the cheap gate and must stay decoupled from the chatbot's model.
+Self-contained by design (decided 2026-06-18, Option B): this module does not
+construct PromptHandler (DB-coupled). Completions go through
+``application.prompt_client.litellm_router`` so retry policy and parsing match
+chat/embeddings. The classifier uses a dedicated cheap model
+(config.llm_model, default gemini/gemini-2.5-flash-lite) and never falls back
+to CRE_LLM_CHAT_MODEL: Module B is the cheap gate and must stay decoupled
+from the chatbot's model.
 """
 
 from __future__ import annotations
 
 import json
 import logging
-import os
-import time
 from typing import Any, Iterator
 
 from pydantic import ValidationError
 
+from application.prompt_client.litellm_router import (
+    completion as litellm_completion,
+    extract_content_text,
+    get_litellm,
+    retry_policy,
+)
 from application.prompt_client.llm_error_utils import is_rate_limit_error
 from application.utils.noise_filter.config_loader import NoiseFilterConfig
 from application.utils.noise_filter.prompts import (
@@ -107,14 +108,7 @@ def _batches(seq: list[Any], size: int) -> Iterator[list[Any]]:
 
 def _extract_text(resp: Any) -> str:
     """Pull message content from a LiteLLM response (object or dict shaped)."""
-    try:
-        choices = resp.choices if hasattr(resp, "choices") else resp["choices"]
-        first = choices[0]
-        msg = first.message if hasattr(first, "message") else first["message"]
-        content = msg.content if hasattr(msg, "content") else msg["content"]
-        return content or ""
-    except (AttributeError, KeyError, IndexError, TypeError):
-        return ""
+    return extract_content_text(resp, strict=False)
 
 
 def _is_schema_unsupported_error(err: Exception) -> bool:
@@ -158,17 +152,8 @@ class LLMClassifier:
 
     def __init__(self, config: NoiseFilterConfig) -> None:
         self.config = config
-        try:
-            import litellm  # type: ignore
-        except ImportError as e:
-            raise RuntimeError(
-                "litellm is required for the Module B Stage 2 classifier"
-            ) from e
-        self._litellm = litellm
-        self._max_retries = int(os.environ.get("CRE_LLM_MAX_RETRIES", "2"))
-        self._retry_sleep_seconds = int(
-            os.environ.get("CRE_LLM_RETRY_SLEEP_SECONDS", "15")
-        )
+        self._litellm = get_litellm()
+        self._max_retries, self._retry_sleep_seconds = retry_policy()
 
     def classify_batch(self, records: list[ChangeRecord]) -> list[ClassifyResult]:
         """Classify records, one verdict per record in input order.
@@ -237,22 +222,14 @@ class LLMClassifier:
         return _extract_text(resp)
 
     def _completion_with_retry(self, **kwargs: Any) -> Any:
-        for attempt in range(self._max_retries + 1):
-            try:
-                return self._litellm.completion(
-                    model=self.config.llm_model, temperature=0.0, **kwargs
-                )
-            except Exception as e:
-                if not is_rate_limit_error(e) or attempt >= self._max_retries:
-                    raise
-                logger.info(
-                    "rate/quota limited; sleeping %ss (attempt %s/%s)",
-                    self._retry_sleep_seconds,
-                    attempt + 1,
-                    self._max_retries + 1,
-                )
-                time.sleep(self._retry_sleep_seconds)
-        raise RuntimeError("unreachable: retry loop exited unexpectedly")
+        return litellm_completion(
+            model=self.config.llm_model,
+            client=self._litellm,
+            max_retries=self._max_retries,
+            retry_sleep_seconds=self._retry_sleep_seconds,
+            temperature=0.0,
+            **kwargs,
+        )
 
     def _parse(self, text: str, n: int) -> list[ClassifyResult]:
         verdicts = [_uncertain(MALFORMED_OUTPUT) for _ in range(n)]

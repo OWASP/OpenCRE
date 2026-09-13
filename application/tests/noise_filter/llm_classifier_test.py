@@ -3,6 +3,7 @@
 Uses unittest (project-wide discovery pattern). The LLM is fully mocked --
 no network calls. We swap LLMClassifier._litellm with a Mock and assert on
 the messages it receives and how responses are parsed back into verdicts.
+Completions go through ``litellm_router.completion`` with that client.
 """
 
 from __future__ import annotations
@@ -273,7 +274,7 @@ class RetryTests(unittest.TestCase):
         clf._litellm = Mock(
             completion=Mock(side_effect=[Exception("HTTP 429 too many requests"), ok])
         )
-        with patch("application.utils.noise_filter.llm_classifier.time.sleep"):
+        with patch("application.prompt_client.litellm_router.time.sleep"):
             out = clf.classify_batch([_record()])
         self.assertEqual(out[0].label, "NOISE")
         self.assertEqual(clf._litellm.completion.call_count, 2)
@@ -284,7 +285,7 @@ class RetryTests(unittest.TestCase):
         clf._litellm = Mock(
             completion=Mock(side_effect=Exception("HTTP 429 too many requests"))
         )
-        with patch("application.utils.noise_filter.llm_classifier.time.sleep"):
+        with patch("application.prompt_client.litellm_router.time.sleep"):
             out = clf.classify_batch([_record(), _record()])
         self.assertEqual([v.label for v in out], ["UNCERTAIN", "UNCERTAIN"])
         self.assertEqual(
