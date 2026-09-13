@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Rebuild B2 LLM Top 10 gold from hub ``OWASP Top10 for LLM`` Links.
+"""Rebuild experimental B2 LLM Top 10 gold from hub ``OWASP Top10 for LLM`` Links.
 
-Harness-only: writes ``scripts/oie_owasp_eval/fixtures/b2_gold/owasp_llm_top10_2025.json``.
-Keeps section titles / hyperlinks from the existing gold file when present.
+Canonical eval gold is ``owasp_llm_top10_2025`` in
+``application/tests/fixtures/owasp_mappings``. This script writes an overlay
+under ``scripts/oie_owasp_eval/fixtures/b2_gold/``; B2 scoring does not read it.
 
 Usage:
   set -a && source tmp/oie.env && set +a

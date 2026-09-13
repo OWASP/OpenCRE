@@ -9,6 +9,7 @@ For eval (path B): leave target families unmapped; Module C must use organic
 hub Links (Top10 2021, CCM, ASVS, LLM/AIX, …) + edition remap / control-name.
 
 This script is for simulating a human map-once into the hub after review.
+Gold rows come from ``application.utils.mapping_fixtures``.
 """
 
 from __future__ import annotations
@@ -18,52 +19,18 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
+
+from application.utils.mapping_fixtures import load_owasp_mapping_fixture
 
 ROOT = Path(__file__).resolve().parents[2]
-GOLD_DIR = ROOT / "scripts" / "oie_owasp_eval" / "fixtures" / "b2_gold"
-FIXTURE_DIR = ROOT / "application" / "tests" / "fixtures" / "owasp_mappings"
 
-# (gold path candidates, Node.name, version string)
-SEED_SPECS: List[Tuple[List[Path], str, str]] = [
-    (
-        [
-            GOLD_DIR / "owasp_kubernetes_top10_2022_pr927.json",
-            FIXTURE_DIR / "owasp_kubernetes_top10_2022.json",
-            ROOT
-            / "application"
-            / "utils"
-            / "external_project_parsers"
-            / "data"
-            / "owasp_kubernetes_top10_2022.json",
-        ],
-        "OWASP Kubernetes Top Ten 2022",
-        "2022",
-    ),
-    (
-        [
-            GOLD_DIR / "owasp_kubernetes_top10_2025.json",
-            FIXTURE_DIR / "owasp_kubernetes_top10_2025.json",
-        ],
-        "OWASP Kubernetes Top Ten 2025",
-        "2025",
-    ),
-    (
-        [
-            GOLD_DIR / "owasp_top10_2025.json",
-            FIXTURE_DIR / "owasp_top10_2025.json",
-        ],
-        "OWASP Top 10 2025",
-        "2025",
-    ),
-    (
-        [
-            GOLD_DIR / "owasp_api_top10_2023.json",
-            FIXTURE_DIR / "owasp_api_top10_2023.json",
-        ],
-        "OWASP API Security Top 10 2023",
-        "2023",
-    ),
+# (fixture stem, Node.name, version string)
+SEED_SPECS: List[Tuple[str, str, str]] = [
+    ("owasp_kubernetes_top10_2022", "OWASP Kubernetes Top Ten 2022", "2022"),
+    ("owasp_kubernetes_top10_2025", "OWASP Kubernetes Top Ten 2025", "2025"),
+    ("owasp_top10_2025", "OWASP Top 10 2025", "2025"),
+    ("owasp_api_top10_2023", "OWASP API Security Top 10 2023", "2023"),
 ]
 
 
@@ -82,20 +49,6 @@ def _load_dotenv() -> None:
                 os.environ[k.strip()] = v.strip()
             else:
                 os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
-
-
-def _first_existing(paths: Sequence[Path]) -> Optional[Path]:
-    for p in paths:
-        if p.is_file():
-            return p
-    return None
-
-
-def _load_rows(path: Path) -> List[Dict[str, Any]]:
-    data = json.loads(path.read_text())
-    if not isinstance(data, list):
-        raise ValueError(f"{path}: expected JSON list")
-    return [r for r in data if isinstance(r, dict)]
 
 
 def seed_standard(
@@ -203,14 +156,14 @@ def main() -> int:
     database = db_module.Node_collection()
 
     report: Dict[str, Any] = {"dry_run": args.dry_run, "standards": []}
-    for paths, name, version in SEED_SPECS:
-        path = _first_existing(paths)
-        if path is None:
+    for fixture_name, name, version in SEED_SPECS:
+        try:
+            rows = load_owasp_mapping_fixture(fixture_name)
+        except FileNotFoundError:
             report["standards"].append(
-                {"name": name, "version": version, "error": "gold file missing"}
+                {"name": name, "version": version, "error": "mapping fixture missing"}
             )
             continue
-        rows = _load_rows(path)
         stats = seed_standard(
             database, name=name, version=version, rows=rows, dry_run=args.dry_run
         )
@@ -218,7 +171,7 @@ def main() -> int:
             {
                 "name": name,
                 "version": version,
-                "source": str(path),
+                "source": fixture_name,
                 **stats,
             }
         )

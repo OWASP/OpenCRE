@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Rebuild B2 gold JSON from hub Links for a known standard family.
+"""Rebuild experimental B2 gold JSON from hub Links.
+
+Canonical eval gold is ``application/tests/fixtures/owasp_mappings``
+(``mapping_fixtures``). This script writes an overlay under
+``scripts/oie_owasp_eval/fixtures/b2_gold/`` for hub-derived experiments;
+B2 scoring does not read those copies.
 
 Usage:
   PYTHONPATH=. python scripts/oie_owasp_eval/rebuild_b2_gold_from_hub.py \\

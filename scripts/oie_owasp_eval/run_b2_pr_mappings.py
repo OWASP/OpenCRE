@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""B2: score Module C against open-PR JSON mapping gold (harness only).
+"""B2: score Module C against OWASP mapping-fixture gold (harness only).
 
-Gold lives under ``scripts/oie_owasp_eval/fixtures/b2_gold/`` (snapshot of the
-harness labels; originally fetched from PR heads — not product code). Source
-material is each row's ``hyperlink``, cached under
+Canonical gold is ``application/tests/fixtures/owasp_mappings`` via
+``application.utils.mapping_fixtures``. The agentic-AI stub (no hub Links)
+stays under ``scripts/oie_owasp_eval/fixtures/b2_gold/``. Source material is
+each row's ``hyperlink``, cached under
 ``scripts/oie_owasp_eval/fixtures/b2_sources/``. Alignment is
 **section grain** (one gold row = one section_id). Hit if ≥1 of the union of
 top-2 suggested CRE external_ids across that section's chunks is in the gold
@@ -34,62 +35,50 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures"
 GOLD_DIR = FIXTURES / "b2_gold"
 SOURCES_DIR = FIXTURES / "b2_sources"
 
-# Open PRs that carry hand-linked JSON mappings (B2 harness registry).
+# Mapping-fixture gold (landed via #953/#960). Agentic stub is harness-only.
 HARNESSES: List[Dict[str, Any]] = [
     {
-        "pr": 960,
-        "repo": "Bornunique911/OpenCRE",
-        "sha": "617172c326e75416d0e8c5ad77608967fa33514b",
-        "path": "application/tests/fixtures/owasp_mappings/owasp_top10_2025.json",
+        "fixture_name": "owasp_top10_2025",
         "gold_file": "owasp_top10_2025.json",
         "label": "OWASP Top 10 2025",
+        "pr": 960,
     },
     {
-        "pr": 960,
-        "repo": "Bornunique911/OpenCRE",
-        "sha": "617172c326e75416d0e8c5ad77608967fa33514b",
-        "path": "application/tests/fixtures/owasp_mappings/owasp_api_top10_2023.json",
+        "fixture_name": "owasp_api_top10_2023",
         "gold_file": "owasp_api_top10_2023.json",
         "label": "OWASP API Top 10 2023",
+        "pr": 960,
     },
     {
-        "pr": 960,
-        "repo": "Bornunique911/OpenCRE",
-        "sha": "617172c326e75416d0e8c5ad77608967fa33514b",
-        "path": "application/tests/fixtures/owasp_mappings/owasp_llm_top10_2025.json",
+        "fixture_name": "owasp_llm_top10_2025",
         "gold_file": "owasp_llm_top10_2025.json",
         "label": "OWASP LLM Top 10 2025",
+        "pr": 960,
     },
     {
-        "pr": 960,
-        "repo": "Bornunique911/OpenCRE",
-        "sha": "617172c326e75416d0e8c5ad77608967fa33514b",
-        "path": "application/tests/fixtures/owasp_mappings/owasp_aisvs_1_0.json",
+        "fixture_name": "owasp_aisvs_1_0",
         "gold_file": "owasp_aisvs_1_0.json",
         "label": "OWASP AISVS 1.0",
+        "pr": 960,
     },
     {
-        "pr": 953,
-        "repo": "Bornunique911/OpenCRE",
-        "sha": "b9997bfe311fab617e6b8077f7a9cd625295069c",
-        "path": "application/tests/fixtures/owasp_mappings/owasp_kubernetes_top10_2025.json",
+        "fixture_name": "owasp_kubernetes_top10_2025",
         "gold_file": "owasp_kubernetes_top10_2025.json",
         "label": "OWASP Kubernetes Top 10 2025",
+        "pr": 953,
     },
     {
-        "pr": 927,
-        "repo": "SurbhiAgarwal1/OpenCRE",
-        "sha": "e16cf6392c4c12f80d918f4ce96698c79cb8fb7c",
-        "path": "application/utils/external_project_parsers/data/owasp_kubernetes_top10_2022.json",
-        "gold_file": "owasp_kubernetes_top10_2022_pr927.json",
-        "label": "OWASP Kubernetes Top 10 2022 (PR #927)",
+        "fixture_name": "owasp_kubernetes_top10_2022",
+        "gold_file": "owasp_kubernetes_top10_2022.json",
+        # Cached hyperlink text still lives under the pre-merge PR #927 folder.
+        "source_dir": "owasp_kubernetes_top10_2022_pr927",
+        "label": "OWASP Kubernetes Top 10 2022",
+        "pr": 953,
     },
     {
         # Harness-only: brand-new family with no hub Nodes/Links → expect weak accuracy.
         "pr": 0,
-        "repo": "local/agentic-stub",
-        "sha": "agentic0000000000000000000000000000000001",
-        "path": "scripts/oie_owasp_eval/fixtures/b2_gold/owasp_agentic_ai_stub.json",
+        "local_gold": True,
         "gold_file": "owasp_agentic_ai_stub.json",
         "label": "OWASP Agentic AI (stub, no hub Links)",
         "local_sources": True,
@@ -230,14 +219,34 @@ def fetch_row_source(row: Dict[str, Any], harness: Dict[str, Any]) -> Tuple[str,
     raise last_exc
 
 
+def gold_filename(harness: Dict[str, Any]) -> str:
+    if harness.get("gold_file"):
+        return str(harness["gold_file"])
+    name = str(harness.get("fixture_name") or "")
+    return name if name.endswith(".json") else f"{name}.json"
+
+
+def gold_stem(harness: Dict[str, Any]) -> str:
+    name = gold_filename(harness)
+    return name[:-5] if name.endswith(".json") else name
+
+
+def source_stem(harness: Dict[str, Any]) -> str:
+    return str(harness.get("source_dir") or gold_stem(harness))
+
+
 def load_gold(harness: Dict[str, Any]) -> List[Dict[str, Any]]:
-    path = GOLD_DIR / harness["gold_file"]
-    if not path.is_file():
-        raise FileNotFoundError(f"missing gold file {path} — fetch PR heads first")
-    data = json.loads(path.read_text())
-    if not isinstance(data, list):
-        raise ValueError(f"gold {path} must be a list of section mappings")
-    return data
+    if harness.get("local_gold"):
+        path = GOLD_DIR / gold_filename(harness)
+        if not path.is_file():
+            raise FileNotFoundError(f"missing local gold file {path}")
+        data = json.loads(path.read_text())
+        if not isinstance(data, list):
+            raise ValueError(f"gold {path} must be a list of section mappings")
+        return data
+    from application.utils.mapping_fixtures import load_owasp_mapping_fixture
+
+    return load_owasp_mapping_fixture(str(harness["fixture_name"]))
 
 
 def top2_cre_external_ids(
@@ -290,7 +299,7 @@ def ensure_sources(harnesses: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
     SOURCES_DIR.mkdir(parents=True, exist_ok=True)
     for harness in harnesses:
         gold = load_gold(harness)
-        dest_dir = SOURCES_DIR / harness["gold_file"].replace(".json", "")
+        dest_dir = SOURCES_DIR / source_stem(harness)
         dest_dir.mkdir(parents=True, exist_ok=True)
         for row in gold:
             sid = str(row.get("section_id") or "").strip()
@@ -360,7 +369,7 @@ def run_pipeline(
         for harness in HARNESSES:
             gold = load_gold(harness)
             summary.repositories += 1
-            src_dir = SOURCES_DIR / harness["gold_file"].replace(".json", "")
+            src_dir = SOURCES_DIR / source_stem(harness)
             for row in gold:
                 sid = str(row.get("section_id") or "").strip()
                 if not sid:
@@ -373,16 +382,16 @@ def run_pipeline(
                 text = path.read_text()
                 if len(text.strip()) < 80:
                     continue
-                rel = f"b2/{harness['gold_file'].replace('.json','')}/{sid}.txt"
+                rel = f"b2/{source_stem(harness)}/{sid}.txt"
                 doc = Document(
                     schema_version="0.2.0",
-                    artifact_id=f"art:B2/{harness['gold_file']}:{sid}",
+                    artifact_id=f"art:B2/{source_stem(harness)}:{sid}",
                     pipeline_run_id=rid,
                     text=text,
                     heading_structure=headings.extract(text),
                     source=SourceInfo(
                         type="github",
-                        repository=f"B2/{harness['gold_file']}",
+                        repository=f"B2/{source_stem(harness)}",
                         commit_sha=sha,
                         committed_at=committed_at,
                     ),
@@ -511,7 +520,7 @@ def score_run(run_id: str, cache: str) -> Dict[str, Any]:
     hits = scorable = unaligned = 0
 
     for harness in HARNESSES:
-        resource = harness["gold_file"].replace(".json", "")
+        resource = source_stem(harness)
         gold_rows = load_gold(harness)
         bucket = by_resource.setdefault(
             harness["label"],
@@ -566,7 +575,12 @@ def score_run(run_id: str, cache: str) -> Dict[str, Any]:
         "run_id": run_id,
         "gate": "B2 PR JSON gold (section grain, ≥1 of union(rerank top-2 ∪ vector top-2) ∈ gold cre_ids)",
         "harnesses": [
-            {"pr": h["pr"], "label": h["label"], "gold_file": h["gold_file"]}
+            {
+                "pr": h["pr"],
+                "label": h["label"],
+                "gold_file": gold_filename(h),
+                "fixture_name": h.get("fixture_name"),
+            }
             for h in HARNESSES
         ],
         "decisions_total": len(decisions),
@@ -608,11 +622,16 @@ def main() -> int:
     )
 
     GOLD_DIR.mkdir(parents=True, exist_ok=True)
-    missing = [h for h in HARNESSES if not (GOLD_DIR / h["gold_file"]).is_file()]
+    missing = []
+    for harness in HARNESSES:
+        try:
+            load_gold(harness)
+        except FileNotFoundError:
+            missing.append(gold_filename(harness))
     if missing:
         print(
-            "missing gold files — run the PR fetch step first:",
-            [h["gold_file"] for h in missing],
+            "missing gold files — mapping fixtures or local stub not found:",
+            missing,
             file=sys.stderr,
         )
         return 2
