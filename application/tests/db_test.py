@@ -164,6 +164,37 @@ class TestDB(unittest.TestCase):
                 % (dbstandard.name, dbstandard.section, dbstandard.section_id)
             )
 
+    @patch("application.database.db.logger")
+    def test_get_by_tags_empty_cres_regression(self, mock_logger) -> None:
+        """
+        Simulate get_CREs returning an empty list to test the error path in get_by_tags.
+        Ensure it logs fatal without crashing with IndexError.
+        """
+        dbcre = db.CRE(
+            external_id="999-999",
+            name="regression_cre",
+            tags="regression_cre_tag",
+            description="regression cre description",
+        )
+        self.collection.session.add(dbcre)
+        self.collection.session.commit()
+
+        with patch.object(
+            self.collection, "get_CREs", return_value=[]
+        ) as mock_get_cres:
+            res = self.collection.get_by_tags(["regression_cre_tag"])
+            self.assertEqual(res, [])
+
+            mock_get_cres.assert_called_once_with(
+                external_id=dbcre.external_id,
+                name=dbcre.name,
+            )
+
+            mock_logger.fatal.assert_called_once_with(
+                "get_CREs() returned no documents for CRE %s:%s that exists, BUG!"
+                % (dbcre.external_id, dbcre.name)
+            )
+
     def test_get_standards_names(self) -> None:
         result = self.collection.get_node_names()
         expected = [("Standard", "BarStand"), ("Standard", "Unlinked")]
