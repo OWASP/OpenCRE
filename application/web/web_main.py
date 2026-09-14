@@ -13,7 +13,7 @@ import io
 import pathlib
 import re
 import urllib.parse
-from typing import Any
+from typing import Any, Dict
 
 from rq import job, exceptions
 from rq import Queue
@@ -693,10 +693,47 @@ def find_root_cres() -> Any:
     database = db.Node_collection()
     # opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
-    documents = database.get_root_cres()
+
+    # Pagination is opt-in. The CLI import (cre_main.download_cre_from_upstream),
+    # the Explorer tree and the MCP tool all read this endpoint as the complete
+    # list of roots, so without page/per_page the response keeps its original
+    # shape. With either present it pages like /rest/v1/all_cres does.
+    paginated = (
+        request.args.get("page") is not None or request.args.get("per_page") is not None
+    )
+    result: Dict[str, Any]
+    if paginated:
+        page = 1
+        per_page = ITEMS_PER_PAGE
+        # Parse once: int() on a non-integer raises ValueError, which has no
+        # handler and would surface as a 500 for what is a client mistake.
+        # A value of zero or less falls back to the default, as in all_cres.
+        try:
+            if request.args.get("page") is not None:
+                requested_page = int(request.args.get("page"))
+                if requested_page > 0:
+                    page = requested_page
+
+            if request.args.get("per_page") is not None:
+                requested_per_page = int(request.args.get("per_page"))
+                if requested_per_page > 0:
+                    per_page = requested_per_page
+        except ValueError:
+            abort(400, "page and per_page must be integers")
+        per_page = min(per_page, MAX_ITEMS_PER_PAGE)
+
+        documents, page, total_pages = database.get_root_cres_with_pagination(
+            page, per_page
+        )
+    else:
+        documents = database.get_root_cres()
+
     if documents:
         res = [doc.todict() for doc in documents]
         result = {"data": res}
+        if paginated:
+            result["page"] = page
+            result["total_pages"] = total_pages
         # if opt_osib:
         #     result["osib"] = odefs.cre2osib(documents).todict()
         if opt_format == SupportedFormats.Markdown.value:
