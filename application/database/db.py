@@ -1,15 +1,17 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from sqlalchemy import CheckConstraint
 import networkx as nx
 import uuid
 import neo4j
 import os
-import logging
 import re
 import time
 import yaml
 
 from datetime import datetime, timezone
-from pprint import pprint
 
 from collections import Counter, defaultdict
 from itertools import permutations
@@ -54,16 +56,19 @@ from application.utils.gap_analysis import (
 
 from .. import sqla  # type: ignore
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
 
 BaseModel: DefaultMeta = sqla.Model
 
 
 def generate_uuid():
     return str(uuid.uuid4())
+
+
+def safe_filename(name: str) -> str:
+    """Turn a document id into a filename that works on every platform."""
+    name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "-", name)
+    name = name.replace(" ", "_")
+    return name.rstrip(" .")
 
 
 class Node(BaseModel):  # type: ignore
@@ -2130,31 +2135,13 @@ class Node_collection:
 
         if not dry_run:
             for _, doc in docs.items():
-                title = ""
-                if hasattr(doc, "id"):
-                    title = (
-                        doc.id.replace("/", "-")
-                        .replace(" ", "_")
-                        .replace('"', "")
-                        .replace("'", "")
-                        + ".yaml"
-                    )
-                elif hasattr(doc, "sectionID"):
-                    title = (
-                        doc.name
-                        + "_"
-                        + doc.sectionID.replace("/", "-")
-                        .replace(" ", "_")
-                        .replace('"', "")
-                        .replace("'", "")
-                        + ".yaml"
-                    )
-                else:
+                if not hasattr(doc, "id"):
                     logger.fatal(
-                        f"doc does not have neither sectionID nor id, this is a bug! {doc.__dict__}"
+                        f"doc does not have an id, this is a bug! {doc.__dict__}"
                     )
+                    continue
                 file.writeToDisk(
-                    file_title=title,
+                    file_title=safe_filename(doc.id) + ".yaml",
                     file_content=yaml.safe_dump(doc.todict()),
                     cres_loc=dir,
                 )
@@ -2253,10 +2240,16 @@ class Node_collection:
             .filter(GapAnalysisResults.cache_key.like(f"%{node_name}%"))
             .all()
         )
+        deleted_count = 0
         for r in res:
-            result = self.session.delete(r)
-            if result:
-                logger.info(f"deleted {result.rowcount} objects")
+            self.session.delete(r)
+            deleted_count += 1
+        if deleted_count:
+            logger.info(
+                "deleted %s gap analysis result objects for node %s",
+                deleted_count,
+                node_name,
+            )
         self.session.commit()
         self.session.flush()
         return res

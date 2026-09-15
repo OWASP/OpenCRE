@@ -1,9 +1,10 @@
-import logging
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import subprocess
 
 from .git_repository_client import GitRepositoryClient
-
-logger = logging.getLogger(__name__)
 
 
 class DiffRetriever:

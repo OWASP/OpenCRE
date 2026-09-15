@@ -5,6 +5,10 @@ controlled values, so re-ordering, top-N truncation, tie stability, the audit
 shape, and the failure modes are all assertable without torch, an LLM, or a DB.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import unittest
 
 from application.utils.librarian.cross_encoder import (

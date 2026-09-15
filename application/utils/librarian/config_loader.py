@@ -14,6 +14,10 @@ Two of these are fitted numbers, not preferences, and both come off a run of
 - ``CRE_LIBRARIAN_LINK_THRESHOLD`` is τ, held at 0.80 by the W7 sweep.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import math
 import os
 from dataclasses import dataclass

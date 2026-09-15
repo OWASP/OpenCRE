@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import unittest
 from unittest.mock import Mock, patch
 

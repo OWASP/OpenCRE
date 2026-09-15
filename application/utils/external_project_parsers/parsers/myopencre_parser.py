@@ -1,4 +1,7 @@
-import logging
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import re
 from typing import Dict, List, Any, Tuple
 
@@ -8,10 +11,6 @@ from application.utils.external_project_parsers.parsers import export_format_par
 from application.utils.external_project_parsers import base_parser_defs
 from application.utils.external_project_parsers.base_parser_defs import ParseResult
 
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 _CRE_ID_TOKEN = re.compile(r"^\d{3}-\d{3}$")
 

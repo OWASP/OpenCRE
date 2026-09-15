@@ -5,6 +5,10 @@ negotiation (browser 302 vs JSON 401), the user_id-keyed session predicate, and
 the NO_LOGIN dev bypass. OpenAPI documentation is intentionally out of scope here.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import os
 import unittest
 from typing import Any

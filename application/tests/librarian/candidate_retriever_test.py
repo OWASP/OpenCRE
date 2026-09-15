@@ -5,6 +5,10 @@ controlled vectors, so cosine ordering, top-K truncation, the dim gate, and
 the RetrievalAudit shape are all assertable without an LLM or a DB.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import unittest
 from unittest.mock import MagicMock
 

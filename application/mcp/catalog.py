@@ -5,6 +5,10 @@ Exposure is determined only by this allowlist — never by enumerating OpenAPI.
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
 

@@ -1,16 +1,16 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import os
 import requests
 import time
-import logging
 from typing import Any, Dict, List, Optional
 from application.utils import redis
 from flask import json as flask_json
 import json
 from application.defs import cre_defs as defs
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 PENALTIES = {
     "RELATED": 2,
@@ -410,16 +410,18 @@ def preload(target_url: str):
             f"{target_url}/rest/v1/map_analysis?standard={sa}&standard={sb}"
         )
         if res.status_code != 200:
-            print(f"{sa}->{sb} returned {res.status_code}")
+            logger.warning("%s->%s returned %s", sa, sb, res.status_code)
             return False
 
         tojson = res.json()
         if tojson.get("result"):
             return True
         if tojson.get("job_id"):
-            print(f"{sa}->{sb} waiting")
+            logger.info("%s->%s waiting", sa, sb)
             return False
-        print(f"{sa}->{sb} returned 200 but has no 'result' or 'job_id' key")
+        logger.warning(
+            "%s->%s returned 200 but has no 'result' or 'job_id' key", sa, sb
+        )
         return False
 
     for sa in standards:
@@ -434,6 +436,6 @@ def preload(target_url: str):
                     continue
                 if calculate_a_to_b(sa, sb):
                     waiting.remove(f"{sa}->{sb}") if f"{sa}->{sb}" in waiting else ""
-        print(f"calculating {len(waiting)} gap analyses")
+        logger.info("calculating %s gap analyses", len(waiting))
         time.sleep(30)
-    print("map analysis preloaded successfully")
+    logger.info("map analysis preloaded successfully")

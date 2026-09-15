@@ -1,5 +1,9 @@
 """Shared logic for extracting one standard family from master spreadsheet rows."""
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from copy import copy
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple

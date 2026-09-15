@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import argparse
 import os
 import sys
@@ -167,6 +171,36 @@ def main() -> None:
         "--owasp_secure_headers_in",
         action="store_true",
         help="import owasp secure headers",
+    )
+    parser.add_argument(
+        "--owasp_kubernetes_top10_2022_in",
+        action="store_true",
+        help="load OWASP Kubernetes Top Ten 2022 mapping fixture (eval gold, not import-all)",
+    )
+    parser.add_argument(
+        "--owasp_kubernetes_top10_2025_in",
+        action="store_true",
+        help="load OWASP Kubernetes Top Ten 2025 mapping fixture (eval gold, not import-all)",
+    )
+    parser.add_argument(
+        "--owasp_top10_2025_in",
+        action="store_true",
+        help="load OWASP Top 10 2025 mapping fixture (eval gold, not import-all)",
+    )
+    parser.add_argument(
+        "--owasp_api_top10_2023_in",
+        action="store_true",
+        help="load OWASP API Security Top 10 2023 mapping fixture (eval gold, not import-all)",
+    )
+    parser.add_argument(
+        "--owasp_llm_top10_2025_in",
+        action="store_true",
+        help="load OWASP LLM Top 10 2025 mapping fixture (eval gold, not import-all)",
+    )
+    parser.add_argument(
+        "--owasp_aisvs_in",
+        action="store_true",
+        help="load OWASP AISVS mapping fixture (eval gold, not import-all)",
     )
     parser.add_argument(
         "--pci_dss_3_2_in",

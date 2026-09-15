@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import networkx as nx
 from application.utils.gap_analysis import make_resources_key, make_subresources_key
 import string
@@ -9,7 +13,6 @@ from unittest import mock
 from unittest.mock import patch
 import uuid
 from copy import copy, deepcopy
-from pprint import pprint
 from typing import Any, Dict, List, Union
 from flask import json as flask_json
 
@@ -316,6 +319,25 @@ class TestDB(unittest.TestCase):
         with open(os.path.join(loc, crename), "r") as f:
             doc = yaml.safe_load(f)
             self.assertCountEqual(cre, doc)
+
+    def test_export_filenames_are_safe(self) -> None:
+        loc = tempfile.mkdtemp()
+        collection = db.Node_collection().with_graph()
+        collection.add_node(
+            defs.Standard(
+                name="A01:2021",
+                section="Broken Access Control",
+                sectionID="A01:2021",
+                hyperlink="https://example.com/a01",
+            )
+        )
+        collection.export(loc)
+        reserved = set('<>:"/\\|?*')
+        for name in os.listdir(loc):
+            self.assertFalse(
+                reserved & set(name),
+                f"exported filename contains a reserved character: {name}",
+            )
 
     def test_StandardFromDB(self) -> None:
         expected = defs.Standard(
@@ -2505,6 +2527,31 @@ class TestDB(unittest.TestCase):
         self.assertCountEqual(
             ["BarStand", "Unlinked", "sa", "sb", "sc", "sd"],
             self.collection.standards(),
+        )
+
+    def test_delete_gapanalysis_results_for_deletes_and_logs_count(self):
+        node_name = "BarStand"
+        key_1 = f"cache-{node_name}-1"
+        key_2 = f"cache-{node_name}-2"
+        unrelated_key = "cache-unrelated"
+        material = '{"result": {"111-111": {"paths": {}}}}'
+
+        # Insert rows directly: add_gap_analysis_result skips empty primary payloads.
+        for key in (key_1, key_2, unrelated_key):
+            self.collection.session.add(
+                db.GapAnalysisResults(cache_key=key, ga_object=material)
+            )
+        self.collection.session.commit()
+
+        with patch.object(db.logger, "info") as logger_info:
+            deleted = self.collection.delete_gapanalysis_results_for(node_name)
+
+        self.assertEqual(2, len(deleted))
+        self.assertFalse(self.collection.gap_analysis_exists(key_1))
+        self.assertFalse(self.collection.gap_analysis_exists(key_2))
+        self.assertTrue(self.collection.gap_analysis_exists(unrelated_key))
+        logger_info.assert_any_call(
+            "deleted %s gap analysis result objects for node %s", 2, node_name
         )
 
     def test_all_cres_with_pagination_with_single_digit_cre_ids(self):

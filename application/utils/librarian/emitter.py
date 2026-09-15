@@ -12,6 +12,10 @@ derived deterministically from the chunk id so the same chunk always maps to the
 same review, with no nondeterministic uuid in a pure builder.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from datetime import datetime
 from typing import Optional, Union
 

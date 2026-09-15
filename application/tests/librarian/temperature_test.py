@@ -7,6 +7,10 @@ T and reducing NLL, ECE on perfectly- and mis-calibrated data (hand-checked), an
 every guard.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import math
 import unittest
 

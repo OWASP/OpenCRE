@@ -6,6 +6,10 @@ The spreadsheet parsing logic has moved under
 Keep these exports so existing tests/callers continue to work.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from application.utils.external_project_parsers.parsers.export_format_parser import (
     parse_export_format,
 )
@@ -23,8 +27,6 @@ __all__ = [
     "parse_standards",
     "supported_resource_mapping",
 ]
-from pprint import pprint
-import logging
 import re
 from copy import copy
 from typing import Any, Dict, List, Optional, Tuple
@@ -34,10 +36,6 @@ from application.defs import cre_defs as defs
 
 # collection of methods to parse different versions of spreadsheet standards
 # each method returns a list of cre_defs documents
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-logging.basicConfig()
 
 
 # the supported resources from the main CSV

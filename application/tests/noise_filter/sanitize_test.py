@@ -11,6 +11,10 @@ Coverage groups:
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import unittest
 
 from application.utils.noise_filter.sanitize import sanitize_text, strip_html
