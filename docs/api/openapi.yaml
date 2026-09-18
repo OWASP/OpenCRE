@@ -313,7 +313,10 @@ paths:
     get:
       tags:
       - CRE
-      summary: Get root CREs
+      summary: Get root CREs (optionally paginated)
+      description: Returns every root CRE by default. Pass page and/or per_page to
+        page through them; the response then also carries page and total_pages, as
+        /rest/v1/all_cres does.
       parameters:
       - name: format
         in: query
@@ -326,13 +329,26 @@ paths:
           - csv
           - oscal
         description: 'Response format (default: json)'
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+        description: Page number. Supplying page or per_page switches the response
+          to paginated form; without either, every root CRE is returned.
+      - name: per_page
+        in: query
+        required: false
+        schema:
+          type: integer
+        description: Items per page (default 20, maximum 100)
       responses:
         '200':
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DataListResponseSchema'
+                $ref: '#/components/schemas/RootCREsResponseSchema'
         '404':
           description: Not found
   /rest/v1/standard/{name}:
@@ -1032,6 +1048,19 @@ components:
           type: integer
         message:
           type: string
+      additionalProperties: false
+    RootCREsResponseSchema:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        page:
+          type: integer
+        total_pages:
+          type: integer
       additionalProperties: false
     AllCREsResponseSchema:
       type: object
