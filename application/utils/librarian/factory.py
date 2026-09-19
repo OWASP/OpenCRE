@@ -125,26 +125,6 @@ def build_components(
         embed_fn = prompt_client.PromptHandler(database=database).get_text_embeddings
 
     cre_embeddings = database.get_embeddings_by_doc_type(defs.Credoctypes.CRE.value)
-    # in_memory holds the hub matrix in RAM; pgvector ranks in the DB over the
-    # embedding_vec column and needs no pool. Both satisfy the same retrieve().
-    pool = (
-        CandidatePool.from_mapping(cre_embeddings)
-        if backend is RetrieverBackend.in_memory
-        else None
-    )
-    retriever = build_retriever(
-        backend,
-        embed_fn=embed_fn,
-        top_k=config.top_k_retrieval,
-        threshold=config.link_threshold,
-        pool=pool,
-        connection=(
-            database.session.connection()
-            if backend is RetrieverBackend.pgvector
-            else None
-        ),
-    )
-
     # C.2 hybrid-ranks the shortlist (vector + CRE name/title + down-weighted CE
     # inside small prior cages). CRE names feed the lexical name boost.
     cre_names = _cre_names_by_hub_key(database)
@@ -158,6 +138,75 @@ def build_components(
         cre_texts = enrich_cre_contents(
             cre_texts, load_linked_standard_refs(database), cre_names
         )
+
+    summary_vectors = None
+    if config.cre_summary:
+        from application.utils.librarian.cre_summary import (
+            default_cache_dir,
+            default_llm_fn,
+            inject_cre_summaries,
+            load_cre_records,
+        )
+        from application.utils.librarian.cre_text import load_linked_standard_refs
+
+        try:
+            cre_texts, summary_vectors = inject_cre_summaries(
+                cre_texts=cre_texts,
+                records=load_cre_records(database),
+                linked=load_linked_standard_refs(database),
+                llm_fn=default_llm_fn(),
+                cache_dir=default_cache_dir(),
+                embed_fn=embed_fn,
+            )
+        except Exception:  # noqa: BLE001
+            logger.warning(
+                "CRE_LIBRARIAN_CRE_SUMMARY inject failed; keeping hub CRE texts",
+                exc_info=True,
+            )
+            summary_vectors = None
+        else:
+            if summary_vectors:
+                logger.info(
+                    "CRE_LIBRARIAN_CRE_SUMMARY: in-memory C.1 pool from %s summaries",
+                    len(summary_vectors),
+                )
+            else:
+                logger.info(
+                    "CRE_LIBRARIAN_CRE_SUMMARY: C.2 text only (no in-memory vectors)"
+                )
+
+    # in_memory holds the hub matrix in RAM; pgvector ranks in the DB over the
+    # embedding_vec column and needs no pool. Both satisfy the same retrieve().
+    # Hidden CRE summaries may replace the C.1 pool for this process only —
+    # never persisted to Postgres embeddings.
+    if summary_vectors:
+        pool = CandidatePool.from_mapping(summary_vectors)
+        retriever = build_retriever(
+            RetrieverBackend.in_memory,
+            embed_fn=embed_fn,
+            top_k=config.top_k_retrieval,
+            threshold=config.link_threshold,
+            pool=pool,
+        )
+    else:
+        pool = (
+            CandidatePool.from_mapping(cre_embeddings)
+            if backend is RetrieverBackend.in_memory
+            else None
+        )
+        retriever = build_retriever(
+            backend,
+            embed_fn=embed_fn,
+            top_k=config.top_k_retrieval,
+            threshold=config.link_threshold,
+            pool=pool,
+            connection=(
+                database.session.connection()
+                if backend is RetrieverBackend.pgvector
+                else None
+            ),
+        )
+
     reranker = CrossEncoderReranker(
         score_fn=build_cross_encoder_score_fn(config.crossencoder_model),
         top_n=config.top_k_rerank,

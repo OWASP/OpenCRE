@@ -56,6 +56,7 @@ class LibrarianConfig:
     standard_top_k: int = 10
     standard_max_cres_per_hit: int = 4
     cre_text_enrich: bool = False
+    cre_summary: bool = False
     prior_cage: bool = True
     focus_query: bool = False
     pref_inject: bool = True
@@ -83,6 +84,7 @@ def load_config() -> LibrarianConfig:
         os.getenv("CRE_LIBRARIAN_STANDARD_MAX_CRES_PER_HIT", "4")
     )
     cre_text_enrich = _env_bool("CRE_LIBRARIAN_CRE_TEXT_ENRICH", False)
+    cre_summary = _env_bool("CRE_LIBRARIAN_CRE_SUMMARY", False)
     # Lawrence OOD audit (17 Sep 2026) + clone A/B: keep cage / Lever 4 /
     # prefer_audit. FOCUS_QUERY defaults off (full narrative). Hybrid is
     # CE-led (β=0 / γ=0.70). Env can restore the name-heavy mix.
@@ -162,6 +164,7 @@ def load_config() -> LibrarianConfig:
         standard_top_k=standard_top_k,
         standard_max_cres_per_hit=standard_max_cres_per_hit,
         cre_text_enrich=cre_text_enrich,
+        cre_summary=cre_summary,
         prior_cage=prior_cage,
         focus_query=focus_query,
         pref_inject=pref_inject,

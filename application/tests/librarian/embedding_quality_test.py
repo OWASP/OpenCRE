@@ -70,6 +70,13 @@ class ClassifyContentTest(unittest.TestCase):
         ) * 8
         self.assertEqual(classify_content(body), "prose")
 
+    def test_usable_text_prose_unchanged(self) -> None:
+        body = (
+            "The organization manages information system accounts, including "
+            "establishing, activating, modifying, disabling, and removing accounts. "
+        ) * 8
+        self.assertEqual(usable_embedding_text(body), body.strip())
+
 
 class SummarizeFamiliesTest(unittest.TestCase):
     def test_duplicate_identical_blobs_are_flagged(self) -> None:

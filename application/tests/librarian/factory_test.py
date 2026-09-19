@@ -122,6 +122,41 @@ class BuildComponentsTest(unittest.TestCase):
         components.retriever.retrieve("verify passwords")
         self.assertEqual(calls, ["verify passwords"])
 
+    def test_cre_summary_replaces_c2_texts_and_can_use_in_memory_c1(self) -> None:
+        hidden = {"616-305": "hidden password blurb", "111-111": "hidden session blurb"}
+        vectors = {"616-305": [0.1, 0.2, 0.3], "111-111": [0.3, 0.2, 0.1]}
+        with mock.patch(
+            "application.utils.librarian.cross_encoder." "build_cross_encoder_score_fn",
+            return_value=lambda pairs: [0.0 for _ in pairs],
+        ):
+            with mock.patch.dict(
+                os.environ,
+                {
+                    "CRE_LIBRARIAN_TEMPERATURE": "1.2",
+                    "CRE_LIBRARIAN_CRE_SUMMARY": "1",
+                },
+                clear=True,
+            ):
+                with mock.patch(
+                    "application.utils.librarian.cre_summary.inject_cre_summaries",
+                    return_value=(hidden, vectors),
+                ):
+                    components = build_components(
+                        _FakeDatabase(),
+                        config=load_config(),
+                        embed_fn=lambda text: [0.1, 0.2, 0.3],
+                    )
+        self.assertEqual(
+            components.reranker._cre_texts["616-305"], "hidden password blurb"
+        )
+        from application.utils.librarian.candidate_retriever import CandidateRetriever
+
+        self.assertIsInstance(components.retriever, CandidateRetriever)
+
+    def test_cre_summary_off_keeps_hub_texts(self) -> None:
+        components = self._build()
+        self.assertEqual(components.reranker._cre_texts["616-305"], "password storage")
+
     def test_standard_retrieval_flag_is_a_noop_without_a_standard_hub(self) -> None:
         with mock.patch(
             "application.utils.librarian.cross_encoder." "build_cross_encoder_score_fn",

@@ -152,6 +152,17 @@ def normalize_embeddings_content(text: Optional[str]) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def indexable_page_text(cleaned: str) -> str:
+    """Page body ``generate_embeddings`` may store.
+
+    Delegates to librarian ``usable_embedding_text``: salvage a buried
+    requirement from chrome, or return empty so we do not index nav/frame-busters.
+    """
+    from application.utils.librarian.embedding_quality import usable_embedding_text
+
+    return normalize_embeddings_content(usable_embedding_text(cleaned))
+
+
 def _cre_embed_linked_titles_enabled() -> bool:
     return os.environ.get("CRE_EMBED_CRE_LINKED_TITLES", "").strip().lower() in (
         "1",
@@ -581,50 +592,56 @@ class in_memory_embeddings:
                                         content_base = normalize_embeddings_content(
                                             self.clean_content(out.embed_plain_text)
                                         )
-                                    marker = ""
-                                    if (
-                                        smart_mode == "on"
-                                        and out.used_excerpt
-                                        and out.marker_start_bid
-                                    ):
-                                        marker = embed_alignment.embedding_cache_marker(
-                                            used_excerpt=True,
-                                            start_bid=out.marker_start_bid,
-                                            end_bid=out.marker_end_bid,
-                                            resolved_url=out.resolved_embeddings_url,
-                                        )
-                                    if getattr(node, "metadata", None):
-                                        metadata_json = stable_json(
-                                            getattr(node, "metadata", None)
-                                        )
-                                        content = normalize_embeddings_content(
-                                            f"{content_base}\nmetadata:{metadata_json}{marker}"
-                                        )
+                                    content_base = indexable_page_text(content_base)
+                                    if not content_base:
+                                        content = ""
                                     else:
-                                        content = normalize_embeddings_content(
-                                            f"{content_base}{marker}"
-                                        )
-                                    if smart_mode == "shadow":
-                                        resolved_embeddings_url = node.hyperlink
-                                    else:
-                                        resolved_embeddings_url = (
-                                            out.resolved_embeddings_url
-                                            or node.hyperlink
-                                        )
-                                    if smart_mode == "shadow":
-                                        logger.info(
-                                            "Smart extract shadow for %s: rationale=%s",
-                                            node.hyperlink,
-                                            out.rationale[:200],
-                                        )
+                                        marker = ""
+                                        if (
+                                            smart_mode == "on"
+                                            and out.used_excerpt
+                                            and out.marker_start_bid
+                                        ):
+                                            marker = embed_alignment.embedding_cache_marker(
+                                                used_excerpt=True,
+                                                start_bid=out.marker_start_bid,
+                                                end_bid=out.marker_end_bid,
+                                                resolved_url=out.resolved_embeddings_url,
+                                            )
+                                        if getattr(node, "metadata", None):
+                                            metadata_json = stable_json(
+                                                getattr(node, "metadata", None)
+                                            )
+                                            content = normalize_embeddings_content(
+                                                f"{content_base}\nmetadata:{metadata_json}{marker}"
+                                            )
+                                        else:
+                                            content = normalize_embeddings_content(
+                                                f"{content_base}{marker}"
+                                            )
+                                        if smart_mode == "shadow":
+                                            resolved_embeddings_url = node.hyperlink
+                                        else:
+                                            resolved_embeddings_url = (
+                                                out.resolved_embeddings_url
+                                                or node.hyperlink
+                                            )
+                                        if smart_mode == "shadow":
+                                            logger.info(
+                                                "Smart extract shadow for %s: rationale=%s",
+                                                node.hyperlink,
+                                                out.rationale[:200],
+                                            )
                         if not content:
                             raw_content = self.get_content(node.hyperlink)
                             content_from_remote = ""
                             if raw_content:
-                                content_from_remote = normalize_embeddings_content(
+                                content_from_remote = indexable_page_text(
                                     self.clean_content(raw_content)
                                 )
-                                if getattr(node, "metadata", None):
+                                if content_from_remote and getattr(
+                                    node, "metadata", None
+                                ):
                                     metadata_json = stable_json(
                                         getattr(node, "metadata", None)
                                     )
