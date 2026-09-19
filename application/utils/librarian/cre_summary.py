@@ -30,11 +30,14 @@ EmbedFn = Callable[[str], Sequence[float]]
 DEFAULT_CACHE_DIR = "tmp/oie_cre_summaries"
 # Linked prose budget for the LLM prompt (not MiniLM pair text).
 MAX_LINKED_PROMPT_CHARS = 8000
+MAX_LEAF_CHARS = 900
 MAX_SUMMARY_CHARS = 1200
 
 _SYSTEM = (
     "You write a hidden librarian blurb for OpenCRE retrieval and categorization. "
     "This text is NOT the public CRE.description and must never be treated as one. "
+    "The CRE name is the topic. Linked Standard/Tool prose is supporting evidence. "
+    "Do not redefine a broad CRE as a single NIST, PCI, or ASVS control. "
     "Summarize what the CRE is about in 2-4 concrete sentences using the CRE name "
     "and any linked Standard/Tool requirement prose. "
     "Ignore website chrome and scanner junk: NIST 'official website of the United "
@@ -99,16 +102,7 @@ def build_summary_prompt(
     refs: Sequence[LinkedStandardRef] = (),
 ) -> Tuple[str, str]:
     """CRE name is always in the user prompt, even with no description/leaves."""
-    leaves = prose_leaves(refs)
-    packed: List[str] = []
-    used = 0
-    for leaf in sorted(leaves, key=len, reverse=True):
-        remaining = MAX_LINKED_PROMPT_CHARS - used
-        if remaining <= 80:
-            break
-        piece = leaf if len(leaf) <= remaining else leaf[:remaining].rstrip()
-        packed.append(piece)
-        used += len(piece) + 1
+    packed = pack_linked_prose(prose_leaves(refs))
     user = json.dumps(
         {
             "cre_id": record.cre_id,
@@ -121,6 +115,32 @@ def build_summary_prompt(
         ensure_ascii=False,
     )
     return _SYSTEM, user
+
+
+def pack_linked_prose(leaves: Sequence[str]) -> List[str]:
+    """Name stays in the JSON envelope; leaves are shortest-first and capped.
+
+    Longest-first packing let one PCI/NIST dump fill the 8k budget and drop
+    short distinctive titles (ISO 27001 8.5 vs PCI A3.4).
+    """
+    capped: List[str] = []
+    for leaf in leaves:
+        blob = (leaf or "").strip()
+        if not blob:
+            continue
+        if len(blob) > MAX_LEAF_CHARS:
+            blob = blob[:MAX_LEAF_CHARS].rstrip()
+        capped.append(blob)
+    packed: List[str] = []
+    used = 0
+    for leaf in sorted(capped, key=len):
+        remaining = MAX_LINKED_PROMPT_CHARS - used
+        if remaining <= 80:
+            break
+        piece = leaf if len(leaf) <= remaining else leaf[:remaining].rstrip()
+        packed.append(piece)
+        used += len(piece) + 1
+    return packed
 
 
 def parse_summary_text(raw: str) -> str:
@@ -304,8 +324,10 @@ def inject_cre_summaries(
 __all__ = [
     "CreRecord",
     "DEFAULT_CACHE_DIR",
+    "MAX_LEAF_CHARS",
     "apply_summaries_to_cre_texts",
     "build_summary_prompt",
+    "pack_linked_prose",
     "default_cache_dir",
     "default_llm_fn",
     "inject_cre_summaries",

@@ -15,6 +15,7 @@ from unittest import mock
 from application.utils.librarian.config_loader import load_config
 from application.utils.librarian.cre_text import LinkedStandardRef
 from application.utils.librarian.cre_summary import (
+    MAX_LEAF_CHARS,
     CreRecord,
     apply_summaries_to_cre_texts,
     build_summary_prompt,
@@ -133,6 +134,38 @@ class BuildSummaryPromptTest(unittest.TestCase):
         self.assertNotIn("official website of the United States", user)
         self.assertNotIn("unauthorized frame window", user.lower())
         self.assertNotIn("javascript disabled", user.lower())
+
+    def test_name_first_packer_keeps_short_leaf_when_pci_is_huge(self) -> None:
+        record = CreRecord(
+            cre_id="cre-auth",
+            name="Authentication",
+            description="",
+            external_id="633-428",
+        )
+        pci = "PCI DSS A3.4 cardholder data environment " + ("verify that " * 400)
+        iso = (
+            "ISO 27001 8.5 Secure authentication requires managing authentication "
+            "information and implementing secure mechanisms for users and devices."
+        )
+        from application.utils.librarian.cre_summary import pack_linked_prose
+
+        packed_direct = pack_linked_prose((pci, iso))
+        self.assertIn("Secure authentication", " ".join(packed_direct))
+        self.assertLessEqual(max(len(p) for p in packed_direct), MAX_LEAF_CHARS)
+
+        refs = (
+            LinkedStandardRef("PCI DSS", "A3.4", "CDE access", pci),
+            LinkedStandardRef("ISO 27001", "8.5", "Secure authentication", iso),
+        )
+        system, user = build_summary_prompt(record, refs)
+        payload = json.loads(user)
+        blob = " ".join(payload["linked_prose"])
+        self.assertEqual(payload["name"], "Authentication")
+        self.assertIn("Secure authentication", blob)
+        self.assertLessEqual(
+            max(len(p) for p in payload["linked_prose"]), MAX_LEAF_CHARS
+        )
+        self.assertIn("CRE name is the topic", system)
 
 
 class ApplySummariesTest(unittest.TestCase):
