@@ -163,6 +163,34 @@ def indexable_page_text(cleaned: str) -> str:
     return normalize_embeddings_content(usable_embedding_text(cleaned))
 
 
+def _embedding_fetch_url(hyperlink: str) -> str:
+    """Prefer GitHub raw file URLs over HTML tree/blob pages."""
+    from application.utils.librarian.embedding_quality import github_raw_content_url
+
+    return github_raw_content_url(hyperlink) or hyperlink
+
+
+def _fetch_plain_http_text(url: str) -> Optional[str]:
+    """Fetch UTF-8 text (GitHub raw markdown) without Playwright."""
+    headers = {
+        "User-Agent": os.environ.get(
+            "CRE_EMBED_REQUEST_USER_AGENT",
+            "OpenCRE-embeddings/1.0 (+https://opencre.org)",
+        ),
+        "Accept": "text/plain, text/markdown, */*",
+    }
+    try:
+        resp = requests.get(
+            url, timeout=(30, 60), headers=headers, allow_redirects=True
+        )
+        resp.raise_for_status()
+        text = resp.text or ""
+        return text if text.strip() else None
+    except requests.RequestException as e:
+        logger.warning("Plain-text fetch failed for %s: %s", url, e)
+        return None
+
+
 def _cre_embed_linked_titles_enabled() -> bool:
     return os.environ.get("CRE_EMBED_CRE_LINKED_TITLES", "").strip().lower() in (
         "1",
@@ -235,8 +263,16 @@ def stable_json(v: Any) -> str:
 
 
 def _embedding_text_from_node_resource_fields(node: Any) -> str:
-    """Text from DB-backed node fields only (no HTTP). ``__repr__`` uses ``todict()``."""
-    return normalize_embeddings_content(node.__repr__())
+    """Text from DB-backed node fields only (no HTTP, no ``__repr__`` / links dump)."""
+    parts: List[str] = []
+    for attr in ("name", "section", "sectionID", "subsection", "description"):
+        val = getattr(node, attr, None)
+        if val is None:
+            continue
+        text = str(val).strip()
+        if text:
+            parts.append(text)
+    return normalize_embeddings_content(" ".join(parts))
 
 
 class in_memory_embeddings:
@@ -254,6 +290,19 @@ class in_memory_embeddings:
 
     # Function to get text content from a URL
     def get_content(self, url) -> Optional[str]:
+        from application.utils.librarian.embedding_quality import (
+            is_plain_text_embed_url,
+        )
+
+        if is_plain_text_embed_url(url):
+            text = _fetch_plain_http_text(url)
+            if text:
+                return text
+            logger.warning(
+                "Plain-text URL %s: empty HTTP body, falling through to Playwright",
+                url,
+            )
+
         for attempts in range(1, 10):
             if _is_likely_pdf_url(url):
                 text = _fetch_pdf_text_for_embeddings(url)
@@ -536,27 +585,33 @@ class in_memory_embeddings:
                 if nodes:
                     node = nodes[0] if isinstance(nodes, list) else nodes
                     resolved_embeddings_url: Optional[str] = None
-                    if is_valid_url(node.hyperlink):
+                    if is_valid_url(node.hyperlink or ""):
+                        fetch_url = _embedding_fetch_url(node.hyperlink or "")
                         smart_mode = (
                             os.environ.get("CRE_EMBED_SMART_EXTRACT", "on")
                             .lower()
                             .strip()
                         )
                         self._ensure_smart_embed_caches()
+                        from application.utils.librarian.embedding_quality import (
+                            is_plain_text_embed_url,
+                        )
+
                         use_smart = (
                             smart_mode in ("on", "shadow")
-                            and not _is_likely_pdf_url(node.hyperlink)
+                            and not _is_likely_pdf_url(fetch_url)
+                            and not is_plain_text_embed_url(fetch_url)
                             and self.ai_client is not None
                             and hasattr(self.ai_client, "align_embedding_span_json")
                         )
                         content = ""
                         if use_smart:
                             page_key = embed_alignment.normalize_page_cache_key(
-                                node.hyperlink
+                                fetch_url
                             )
                             html = self._smart_page_html_cache.get(page_key)
                             if html is None:
-                                html = self.get_html(node.hyperlink)
+                                html = self.get_html(fetch_url)
                                 if html:
                                     self._smart_page_html_cache[page_key] = html
                             if html:
@@ -633,7 +688,7 @@ class in_memory_embeddings:
                                                 out.rationale[:200],
                                             )
                         if not content:
-                            raw_content = self.get_content(node.hyperlink)
+                            raw_content = self.get_content(fetch_url)
                             content_from_remote = ""
                             if raw_content:
                                 content_from_remote = indexable_page_text(
@@ -657,22 +712,22 @@ class in_memory_embeddings:
                                 if raw_content:
                                     logger.info(
                                         "Remote text for %s cleaned to empty; using stored node fields for embedding",
-                                        node.hyperlink,
+                                        fetch_url,
                                     )
                                 else:
                                     logger.info(
                                         "No extractable remote text for %s; using stored node fields for embedding",
-                                        node.hyperlink,
+                                        fetch_url,
                                     )
                             if not content:
                                 logger.warning(
                                     "Skipping embedding for %s: no text from remote or stored node fields",
-                                    node.hyperlink,
+                                    fetch_url,
                                 )
                                 continue
                             resolved_embeddings_url = None
                     else:
-                        content = normalize_embeddings_content(node.__repr__())
+                        content = _embedding_text_from_node_resource_fields(node)
 
                     dbnode = db.dbNodeFromNode(node)
                     if not dbnode:

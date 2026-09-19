@@ -182,6 +182,48 @@ class TestIncrementalEmbeddings(unittest.TestCase):
         self.assertEqual(fake_db.add_embedding.call_count, 1)
         embedding_text = fake_db.add_embedding.call_args[0][3]
         self.assertIn("ISO 27001", embedding_text)
+        self.assertNotIn("links=", embedding_text)
+        self.assertNotIn("doctype=<Credoctypes", embedding_text)
+        self.assertIn("5.10", embedding_text)
+
+    def test_generate_embeddings_github_url_fetches_raw_not_html(self):
+        fake_db = _FakeDB()
+        node = cre_defs.Standard(
+            name="OWASP Cheat Sheets",
+            section="Secrets Management Cheat Sheet",
+            sectionID="",
+            subsection="",
+            hyperlink=(
+                "https://github.com/OWASP/CheatSheetSeries/tree/master/"
+                "cheatsheets/Secrets_Management_Cheat_Sheet.md"
+            ),
+            version="",
+        )
+        fake_db._nodes_by_id = {"node-cs": node}
+        md = (
+            "# Secrets Management Cheat Sheet\n\nKeep secrets out of git. "
+            "Verify that the secret is still active before trusting it."
+        ) * 3
+
+        emb = prompt_client.in_memory_embeddings.__new__(
+            prompt_client.in_memory_embeddings
+        )
+        emb.ai_client = Mock(spec=["get_max_batch_size", "get_text_embeddings"])
+        emb.ai_client.get_max_batch_size.return_value = 16
+        emb.ai_client.get_text_embeddings.return_value = [[0.1, 0.2]]
+        emb.get_content = Mock(return_value=md)
+        emb.clean_content = Mock(side_effect=lambda c: c)
+
+        emb.generate_embeddings(fake_db, ["node-cs"])
+        fetched = emb.get_content.call_args[0][0]
+        self.assertEqual(
+            fetched,
+            "https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/"
+            "cheatsheets/Secrets_Management_Cheat_Sheet.md",
+        )
+        stored = fake_db.add_embedding.call_args[0][3]
+        self.assertIn("Keep secrets out of git", stored)
+        self.assertNotIn("navigation menu", stored.lower())
 
     def test_generate_embeddings_salvages_asvs_verify_that_from_github_chrome(self):
         """Librarian embedding_quality: store the buried requirement, not GitHub nav."""
@@ -251,6 +293,8 @@ class TestIncrementalEmbeddings(unittest.TestCase):
         self.assertNotIn("unauthorized frame window", stored.lower())
         self.assertIn("NIST 800-53", stored)
         self.assertIn("AC-2", stored)
+        self.assertNotIn("links=", stored)
+        self.assertNotIn("doctype=<Credoctypes", stored)
         self.assertEqual(emb.ai_client.get_text_embeddings.call_count, 1)
         provider_texts = emb.ai_client.get_text_embeddings.call_args[0][0]
         for text in provider_texts:
@@ -315,7 +359,7 @@ class TestIncrementalEmbeddings(unittest.TestCase):
         fake_db._nodes_by_id = {"node-1": current_node}
         fake_db._emb_by_id["node-1"] = SimpleNamespace(
             embeddings_content=prompt_client.normalize_embeddings_content(
-                old_node.__repr__()
+                prompt_client._embedding_text_from_node_resource_fields(old_node)
             )
         )
 

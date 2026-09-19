@@ -103,7 +103,7 @@ class StandardHopRetriever:
                 continue
             node_id = hit.cre_id
             content = self._node_contents.get(node_id, "")
-            if classify_content(content) == "junk":
+            if classify_content(content) in ("junk", "repr"):
                 continue
             if content and leaks(text, [HubRep(node_id, content)]):
                 continue
