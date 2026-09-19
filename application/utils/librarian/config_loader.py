@@ -28,6 +28,18 @@ from dataclasses import dataclass
 _RETRIEVER_BACKENDS = frozenset({"in_memory", "pgvector"})
 
 
+def _env_bool(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in ("1", "true", "yes", "on")
+
+
+def _env_csv(name: str) -> tuple[str, ...]:
+    raw = os.getenv(name, "")
+    return tuple(part.strip() for part in raw.split(",") if part.strip())
+
+
 @dataclass(frozen=True)
 class LibrarianConfig:
     crossencoder_model: str
@@ -39,6 +51,17 @@ class LibrarianConfig:
     batch_size: int
     ece_target: float
     conformal_alpha: float
+    standard_retrieval: bool = False
+    standard_retrieval_families: tuple[str, ...] = ()
+    standard_top_k: int = 10
+    standard_max_cres_per_hit: int = 4
+    cre_text_enrich: bool = False
+    prior_cage: bool = True
+    focus_query: bool = False
+    pref_inject: bool = True
+    prefer_audit_ids: bool = True
+    hybrid_beta: float = 0.0
+    hybrid_gamma: float = 0.70
 
 
 def load_config() -> LibrarianConfig:
@@ -53,6 +76,22 @@ def load_config() -> LibrarianConfig:
     batch_size = int(os.getenv("CRE_LIBRARIAN_BATCH_SIZE", "32"))
     ece_target = float(os.getenv("CRE_LIBRARIAN_ECE_TARGET", "0.10"))
     conformal_alpha = float(os.getenv("CRE_LIBRARIAN_CONFORMAL_ALPHA", "0.10"))
+    standard_retrieval = _env_bool("CRE_LIBRARIAN_STANDARD_RETRIEVAL", False)
+    standard_retrieval_families = _env_csv("CRE_LIBRARIAN_STANDARD_RETRIEVAL_FAMILIES")
+    standard_top_k = int(os.getenv("CRE_LIBRARIAN_STANDARD_TOP_K", "10"))
+    standard_max_cres_per_hit = int(
+        os.getenv("CRE_LIBRARIAN_STANDARD_MAX_CRES_PER_HIT", "4")
+    )
+    cre_text_enrich = _env_bool("CRE_LIBRARIAN_CRE_TEXT_ENRICH", False)
+    # Lawrence OOD audit (17 Sep 2026) + clone A/B: keep cage / Lever 4 /
+    # prefer_audit. FOCUS_QUERY defaults off (full narrative). Hybrid is
+    # CE-led (β=0 / γ=0.70). Env can restore the name-heavy mix.
+    prior_cage = _env_bool("CRE_LIBRARIAN_PRIOR_CAGE", True)
+    focus_query = _env_bool("CRE_LIBRARIAN_FOCUS_QUERY", False)
+    pref_inject = _env_bool("CRE_LIBRARIAN_PREF_INJECT", True)
+    prefer_audit_ids = _env_bool("CRE_LIBRARIAN_PREFER_AUDIT_IDS", True)
+    hybrid_beta = float(os.getenv("CRE_LIBRARIAN_HYBRID_BETA", "0"))
+    hybrid_gamma = float(os.getenv("CRE_LIBRARIAN_HYBRID_GAMMA", "0.70"))
 
     if retriever_backend not in _RETRIEVER_BACKENDS:
         raise ValueError(
@@ -90,6 +129,23 @@ def load_config() -> LibrarianConfig:
         raise ValueError(
             f"CRE_LIBRARIAN_CONFORMAL_ALPHA must be in [0.0, 1.0], got {conformal_alpha}"
         )
+    if standard_top_k <= 0:
+        raise ValueError(
+            f"CRE_LIBRARIAN_STANDARD_TOP_K must be > 0, got {standard_top_k}"
+        )
+    if standard_max_cres_per_hit <= 0:
+        raise ValueError(
+            "CRE_LIBRARIAN_STANDARD_MAX_CRES_PER_HIT must be > 0, "
+            f"got {standard_max_cres_per_hit}"
+        )
+    if not math.isfinite(hybrid_beta) or hybrid_beta < 0:
+        raise ValueError(
+            f"CRE_LIBRARIAN_HYBRID_BETA must be finite and >= 0, got {hybrid_beta}"
+        )
+    if not math.isfinite(hybrid_gamma) or hybrid_gamma < 0:
+        raise ValueError(
+            f"CRE_LIBRARIAN_HYBRID_GAMMA must be finite and >= 0, got {hybrid_gamma}"
+        )
 
     return LibrarianConfig(
         crossencoder_model=crossencoder_model,
@@ -101,4 +157,15 @@ def load_config() -> LibrarianConfig:
         batch_size=batch_size,
         ece_target=ece_target,
         conformal_alpha=conformal_alpha,
+        standard_retrieval=standard_retrieval,
+        standard_retrieval_families=standard_retrieval_families,
+        standard_top_k=standard_top_k,
+        standard_max_cres_per_hit=standard_max_cres_per_hit,
+        cre_text_enrich=cre_text_enrich,
+        prior_cage=prior_cage,
+        focus_query=focus_query,
+        pref_inject=pref_inject,
+        prefer_audit_ids=prefer_audit_ids,
+        hybrid_beta=hybrid_beta,
+        hybrid_gamma=hybrid_gamma,
     )

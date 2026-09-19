@@ -220,6 +220,9 @@ class LibrarianPipeline:
         cre_membership: Optional[FrozenSet[str]] = None,
         cre_registry: Optional[CreRegistry] = None,
         shortlist_llm_fn: Optional[Any] = None,
+        use_focus_query: bool = False,
+        pref_inject: bool = True,
+        prefer_audit: bool = True,
     ) -> None:
         self._source = source
         self._retriever = retriever
@@ -236,6 +239,9 @@ class LibrarianPipeline:
         # Optional grounded Gemini shortlist judge (lever C). None = skip;
         # hermetic tests omit it. Live factory injects default_litellm_fn.
         self._shortlist_llm_fn = shortlist_llm_fn
+        self._use_focus_query = use_focus_query
+        self._pref_inject = pref_inject
+        self._prefer_audit = prefer_audit
         # Emit-time grounding: prefer an injected registry; otherwise build from
         # membership (+ cre_id_map for canonicalisation). None membership keeps
         # hermetic stubs passthrough until they opt in.
@@ -350,15 +356,14 @@ class LibrarianPipeline:
                         )
 
                         preferred = list(
-                            getattr(self._retriever, "last_preferred_cre_ids", [])
-                            or []
+                            getattr(self._retriever, "last_preferred_cre_ids", []) or []
                         )
                         retrieved = audit  # C.1 shortlist — CE must not mutate this
                         judged: List[str] = []
 
                         # Lever 4: ensure preferred CREs are on the CE shortlist
                         # (vector top-K may have dropped them) before focus/CE.
-                        if preferred:
+                        if self._pref_inject and preferred:
                             from application.utils.librarian.schemas import CreCandidate
 
                             have = {
@@ -384,7 +389,11 @@ class LibrarianPipeline:
 
                         # Lever C: grounded shortlist judge (Gemini) — pick top-2
                         # from the retrieval allowlist only; fail open on errors.
-                        focus = focus_query_text(section.text)
+                        focus = (
+                            focus_query_text(section.text)
+                            if self._use_focus_query
+                            else ""
+                        )
                         if self._shortlist_llm_fn is not None:
                             from application.utils.librarian.shortlist_judge import (
                                 ShortlistJudgeCache,
@@ -417,9 +426,7 @@ class LibrarianPipeline:
                                     )
 
                         def _decide_from_audit(query_text: str):
-                            ranked_audit = self._reranker.rerank(
-                                query_text, retrieved
-                            )
+                            ranked_audit = self._reranker.rerank(query_text, retrieved)
                             # Confidence stays on CE logits (fitted T); prefer may
                             # inject into reranked so focus/CE top-2 sees winners.
                             ce_logits = [
@@ -427,15 +434,18 @@ class LibrarianPipeline:
                                 for c in ranked_audit.reranked
                                 if c.score_rerank is not None
                             ]
-                            ranked_audit = prefer_audit_ids(
-                                ranked_audit,
-                                preferred,
-                                lead=2,
-                                inject_missing=True,
-                            )
+                            if self._prefer_audit:
+                                ranked_audit = prefer_audit_ids(
+                                    ranked_audit,
+                                    preferred,
+                                    lead=2,
+                                    inject_missing=True,
+                                )
                             ranked_ids = vector_rerank_union_ids(ranked_audit)
-                            cre_ids_local = prefer_ids_first(
-                                preferred, ranked_ids, limit=8
+                            cre_ids_local = (
+                                prefer_ids_first(preferred, ranked_ids, limit=8)
+                                if self._prefer_audit
+                                else ranked_ids
                             )
                             conf = (
                                 self._scaler.confidence(ce_logits) if ce_logits else 0.0

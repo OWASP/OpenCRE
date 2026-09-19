@@ -9,6 +9,7 @@ from typing import ClassVar, Dict
 from unittest import mock
 
 from application.utils.librarian.config_loader import LibrarianConfig, load_config
+from application.utils.librarian.cross_encoder import HYBRID_BETA, HYBRID_GAMMA
 
 
 class TestConfigLoaderDefaults(unittest.TestCase):
@@ -26,6 +27,19 @@ class TestConfigLoaderDefaults(unittest.TestCase):
         self.assertEqual(cfg.batch_size, 32)
         self.assertEqual(cfg.ece_target, 0.10)
         self.assertEqual(cfg.conformal_alpha, 0.10)
+        self.assertFalse(cfg.standard_retrieval)
+        self.assertEqual(cfg.standard_retrieval_families, ())
+        self.assertEqual(cfg.standard_top_k, 10)
+        self.assertEqual(cfg.standard_max_cres_per_hit, 4)
+        self.assertFalse(cfg.cre_text_enrich)
+        self.assertTrue(cfg.prior_cage)
+        self.assertFalse(cfg.focus_query)
+        self.assertTrue(cfg.pref_inject)
+        self.assertTrue(cfg.prefer_audit_ids)
+        self.assertAlmostEqual(cfg.hybrid_beta, 0.0)
+        self.assertAlmostEqual(cfg.hybrid_gamma, 0.70)
+        self.assertAlmostEqual(cfg.hybrid_beta, HYBRID_BETA)
+        self.assertAlmostEqual(cfg.hybrid_gamma, HYBRID_GAMMA)
 
     def test_config_is_frozen(self):
         with mock.patch.dict(os.environ, {}, clear=True):
@@ -45,6 +59,16 @@ class TestConfigLoaderOverrides(unittest.TestCase):
         "CRE_LIBRARIAN_BATCH_SIZE": "64",
         "CRE_LIBRARIAN_ECE_TARGET": "0.05",
         "CRE_LIBRARIAN_CONFORMAL_ALPHA": "0.20",
+        "CRE_LIBRARIAN_STANDARD_RETRIEVAL": "1",
+        "CRE_LIBRARIAN_STANDARD_RETRIEVAL_FAMILIES": "PCI DSS, ISO 27001",
+        "CRE_LIBRARIAN_STANDARD_TOP_K": "8",
+        "CRE_LIBRARIAN_CRE_TEXT_ENRICH": "true",
+        "CRE_LIBRARIAN_PRIOR_CAGE": "0",
+        "CRE_LIBRARIAN_FOCUS_QUERY": "true",
+        "CRE_LIBRARIAN_PREF_INJECT": "off",
+        "CRE_LIBRARIAN_PREFER_AUDIT_IDS": "no",
+        "CRE_LIBRARIAN_HYBRID_BETA": "3.0",
+        "CRE_LIBRARIAN_HYBRID_GAMMA": "0.15",
     }
 
     def test_env_overrides_apply(self):
@@ -59,6 +83,16 @@ class TestConfigLoaderOverrides(unittest.TestCase):
         self.assertEqual(cfg.batch_size, 64)
         self.assertAlmostEqual(cfg.ece_target, 0.05)
         self.assertAlmostEqual(cfg.conformal_alpha, 0.20)
+        self.assertTrue(cfg.standard_retrieval)
+        self.assertEqual(cfg.standard_retrieval_families, ("PCI DSS", "ISO 27001"))
+        self.assertEqual(cfg.standard_top_k, 8)
+        self.assertTrue(cfg.cre_text_enrich)
+        self.assertFalse(cfg.prior_cage)
+        self.assertTrue(cfg.focus_query)
+        self.assertFalse(cfg.pref_inject)
+        self.assertFalse(cfg.prefer_audit_ids)
+        self.assertAlmostEqual(cfg.hybrid_beta, 3.0)
+        self.assertAlmostEqual(cfg.hybrid_gamma, 0.15)
 
     def test_bad_int_env_raises(self):
         with mock.patch.dict(

@@ -99,6 +99,27 @@ than degrade on a dialect that cannot honour the lock, because an unlocked batch
 handed to a caller who asked for a locked one fails far from the cause. See the
 [B → C contract](../../../docs/gsoc_2026_module_b/module_c_contract.md#consumption-semantics).
 
+## Dual retrieval knobs (off by default)
+
+ID merge fence is always on. The rest is env-gated so #1088 B1/B2 can A/B:
+
+| Env | Default | Effect |
+|---|---|---|
+| `CRE_LIBRARIAN_STANDARD_RETRIEVAL` | off | Union CRE cosine with Standard cosine → `cre_node_links` → CRE |
+| `CRE_LIBRARIAN_STANDARD_RETRIEVAL_FAMILIES` | all | Comma-separated `Node.name` allowlist (e.g. `PCI DSS,ISO 27001`) |
+| `CRE_LIBRARIAN_CRE_TEXT_ENRICH` | off | C.2 pair `description` += linked Standard `embeddings_content` (junk skipped, ~1.8k chars, no re-embed) |
+| `CRE_EMBED_CRE_LINKED_TITLES` | off | Rebuild CRE `embeddings_content` with that linked prose (~12k chars), then re-embed |
+| `CRE_LIBRARIAN_PRIOR_CAGE` | on | Wrap C.1 in `PriorCagedRetriever` (`(_tier, score)`). Off = Lawrence unconstrained cosine |
+| `CRE_LIBRARIAN_FOCUS_QUERY` | off | First CE pass on stripped `focus_query_text`. Off = full narrative body |
+| `CRE_LIBRARIAN_PREF_INJECT` | on | Lever 4: inject preferred CRE ids onto the CE shortlist |
+| `CRE_LIBRARIAN_PREFER_AUDIT_IDS` | on | Reorder reranked ids so preferred CREs lead |
+| `CRE_LIBRARIAN_HYBRID_BETA` | 0 | Title-overlap weight in small cages (restore 3.0 for name-heavy mix) |
+| `CRE_LIBRARIAN_HYBRID_GAMMA` | 0.70 | Cross-encoder weight in small cages (restore 0.15 for name-heavy mix) |
+
+```bash
+python scripts/audit_standard_embeddings.py --sqlite standards_cache.sqlite
+```
+
 ## Running it
 
 See [the runbook](../../../docs/gsoc_2026_module_c/runbook.md) for setup, live

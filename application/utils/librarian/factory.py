@@ -148,13 +148,23 @@ def build_components(
     # C.2 hybrid-ranks the shortlist (vector + CRE name/title + down-weighted CE
     # inside small prior cages). CRE names feed the lexical name boost.
     cre_names = _cre_names_by_hub_key(database)
+    cre_texts = database.get_embedding_contents_by_doc_type(defs.Credoctypes.CRE.value)
+    if config.cre_text_enrich:
+        from application.utils.librarian.cre_text import (
+            enrich_cre_contents,
+            load_linked_standard_refs,
+        )
+
+        cre_texts = enrich_cre_contents(
+            cre_texts, load_linked_standard_refs(database), cre_names
+        )
     reranker = CrossEncoderReranker(
         score_fn=build_cross_encoder_score_fn(config.crossencoder_model),
         top_n=config.top_k_rerank,
-        cre_texts=database.get_embedding_contents_by_doc_type(
-            defs.Credoctypes.CRE.value
-        ),
+        cre_texts=cre_texts,
         cre_names=cre_names,
+        hybrid_beta=config.hybrid_beta,
+        hybrid_gamma=config.hybrid_gamma,
     )
 
     known_external, cre_id_map = _hub_external_registry(database, cre_embeddings)
@@ -170,7 +180,7 @@ def build_components(
     parent_index = _build_parent_index(database)
     standard_links = _build_standard_link_index(database)
     neighbor_transfer = _build_neighbor_transfer_index(database)
-    if cre_prior is not None:
+    if cre_prior is not None and config.prior_cage:
         from application.utils.librarian.prior_caged_retriever import (
             PriorCagedRetriever,
         )
@@ -184,6 +194,16 @@ def build_components(
             parent_index=parent_index,
             standard_links=standard_links,
             neighbor_transfer=neighbor_transfer,
+        )
+
+    if config.standard_retrieval:
+        retriever = _maybe_wrap_standard_hop(
+            retriever,
+            database,
+            config=config,
+            embed_fn=embed_fn,
+            backend=backend,
+            cre_names=cre_names,
         )
 
     shortlist_llm = None
@@ -210,6 +230,110 @@ def build_components(
         cre_prior=cre_prior,
         shortlist_llm_fn=shortlist_llm,
     )
+
+
+def _maybe_wrap_standard_hop(
+    retriever: Retriever,
+    database: Any,
+    *,
+    config: LibrarianConfig,
+    embed_fn: Callable[[str], Sequence[float]],
+    backend: Any,
+    cre_names: Mapping[str, str],
+) -> Retriever:
+    """Union Standard-prose hits (via Links) when the Standard hub is usable."""
+    from application.defs import cre_defs as defs
+    from application.utils.librarian.candidate_retriever import (
+        CandidatePool,
+        RetrieverBackend,
+        build_retriever,
+    )
+    from application.utils.librarian.standard_hop_retriever import StandardHopRetriever
+
+    try:
+        std_emb = database.get_embeddings_by_doc_type(defs.Credoctypes.Standard.value)
+    except Exception:  # noqa: BLE001
+        logger.warning("standard embeddings unavailable; skip hop", exc_info=True)
+        return retriever
+    if not std_emb:
+        logger.warning("CRE_LIBRARIAN_STANDARD_RETRIEVAL on but Standard hub is empty")
+        return retriever
+    hops = _node_to_cre_hops(database)
+    if not hops:
+        logger.warning("standard retrieval on but no cre_node_links; skip hop")
+        return retriever
+    try:
+        std_retriever = build_retriever(
+            backend,
+            embed_fn=embed_fn,
+            top_k=config.standard_top_k,
+            threshold=config.link_threshold,
+            pool=(
+                CandidatePool.from_mapping(std_emb)
+                if backend is RetrieverBackend.in_memory
+                else None
+            ),
+            connection=(
+                database.session.connection()
+                if backend is RetrieverBackend.pgvector
+                and getattr(database, "session", None) is not None
+                else None
+            ),
+            doc_type=defs.Credoctypes.Standard.value,
+            id_column="node_id",
+        )
+    except Exception:  # noqa: BLE001
+        logger.warning("could not build Standard retriever; skip hop", exc_info=True)
+        return retriever
+    contents = database.get_embedding_contents_by_doc_type(
+        defs.Credoctypes.Standard.value
+    )
+    return StandardHopRetriever(
+        inner=retriever,
+        standard_retriever=std_retriever,
+        node_to_cres=hops,
+        node_contents=contents,
+        node_names=_node_names_by_id(database),
+        allowed_families=config.standard_retrieval_families or None,
+        max_cres_per_hit=config.standard_max_cres_per_hit,
+        cre_names=cre_names,
+    )
+
+
+def _node_to_cre_hops(database: Any) -> Dict[str, tuple]:
+    session = getattr(database, "session", None)
+    if session is None:
+        return {}
+    try:
+        from collections import defaultdict
+
+        from application.database.db import Links
+
+        grouped: Dict[str, list] = defaultdict(list)
+        for node_id, cre_id in session.query(Links.node, Links.cre).all():
+            if node_id and cre_id:
+                grouped[str(node_id)].append(str(cre_id))
+        return {key: tuple(vals) for key, vals in grouped.items()}
+    except Exception:  # noqa: BLE001
+        logger.debug("node→CRE hop index unavailable", exc_info=True)
+        return {}
+
+
+def _node_names_by_id(database: Any) -> Dict[str, str]:
+    session = getattr(database, "session", None)
+    if session is None:
+        return {}
+    try:
+        from application.database.db import Node
+
+        return {
+            str(row.id): str(row.name or "")
+            for row in session.query(Node.id, Node.name).all()
+            if row.id
+        }
+    except Exception:  # noqa: BLE001
+        logger.debug("node names unavailable", exc_info=True)
+        return {}
 
 
 def _install_taxonomy_index(database: Any) -> None:

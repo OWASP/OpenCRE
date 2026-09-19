@@ -13,7 +13,7 @@ from application.prompt_client import embed_alignment, litellm_router
 
 from scipy import sparse
 from sklearn.metrics.pairwise import cosine_similarity
-from typing import Dict, List, Any, Tuple, Optional
+from typing import Dict, List, Any, Tuple, Optional, Mapping, Sequence
 from pydantic import ValidationError
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
@@ -150,6 +150,63 @@ def normalize_embeddings_content(text: Optional[str]) -> str:
         return ""
     # Normalize whitespace so cache comparisons are stable across import/export and crawling.
     return re.sub(r"\s+", " ", text).strip()
+
+
+def _cre_embed_linked_titles_enabled() -> bool:
+    return os.environ.get("CRE_EMBED_CRE_LINKED_TITLES", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+
+
+def cre_embedding_source_text(
+    cre: Any,
+    db_id: str,
+    *,
+    linked_index: Optional[Mapping[str, Sequence[Any]]] = None,
+) -> str:
+    """Text stored as CRE ``embeddings_content``.
+
+    Default is name+description+id (today's hub). ``CRE_EMBED_CRE_LINKED_TITLES``
+    fills an empty description from linked Standard ``embeddings_content``
+    (junk skipped, length-capped) before the paid embed call.
+    """
+    if not _cre_embed_linked_titles_enabled():
+        content = (
+            f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n "
+            f"id:{cre.id}\n "
+        )
+        if getattr(cre, "metadata", None):
+            content = (
+                f"{content}\nmetadata:{stable_json(getattr(cre, 'metadata', None))}"
+            )
+        return normalize_embeddings_content(content)
+
+    from application.utils.librarian.cre_text import (
+        EMBED_PROSE_CHARS,
+        LinkedStandardRef,
+        build_cre_embedding_text,
+    )
+
+    linked: Sequence[LinkedStandardRef] = ()
+    if linked_index:
+        linked = linked_index.get(db_id, ()) or linked_index.get(
+            str(getattr(cre, "id", "") or ""), ()
+        )
+    content = build_cre_embedding_text(
+        name=str(getattr(cre, "name", "") or ""),
+        description=str(getattr(cre, "description", "") or ""),
+        cre_id=str(getattr(cre, "id", None) or db_id),
+        linked=linked,
+        include_linked_titles=True,
+        max_linked_chars=EMBED_PROSE_CHARS,
+        doctype=str(cre.doctype),
+    )
+    if getattr(cre, "metadata", None):
+        content = f"{content}\nmetadata:{stable_json(getattr(cre, 'metadata', None))}"
+    return normalize_embeddings_content(content)
 
 
 def stable_json(v: Any) -> str:
@@ -402,6 +459,11 @@ class in_memory_embeddings:
         so we send up to the provider's supported `max_batch_size` per embeddings call.
         """
         logger.info(f"generating {len(missing_embeddings)} embeddings")
+        linked_index = None
+        if _cre_embed_linked_titles_enabled():
+            from application.utils.librarian.cre_text import load_linked_standard_refs
+
+            linked_index = load_linked_standard_refs(database)
 
         def get_provider_batch_size() -> int:
             # Prefer provider-reported max batch size.
@@ -425,14 +487,9 @@ class in_memory_embeddings:
                 if not database.has_node_with_db_id(db_id):
                     cre = database.get_cre_by_db_id(db_id)
                     if cre:
-                        content = normalize_embeddings_content(
-                            f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
+                        content = cre_embedding_source_text(
+                            cre, db_id, linked_index=linked_index
                         )
-                        if getattr(cre, "metadata", None):
-                            metadata_json = stable_json(getattr(cre, "metadata", None))
-                            content = normalize_embeddings_content(
-                                f"{content}\nmetadata:{metadata_json}"
-                            )
                         logger.info(f"making embedding for {content}")
                         dbcre = db.dbCREfromCRE(cre)
                         if not dbcre:
@@ -894,16 +951,21 @@ class PromptHandler:
             cre_ids = self.database.list_cre_ids()
             pending: List[str] = []
             cre_by_id: Dict[str, cre_defs.CRE] = {}
+            linked_index = None
+            if _cre_embed_linked_titles_enabled():
+                from application.utils.librarian.cre_text import (
+                    load_linked_standard_refs,
+                )
+
+                linked_index = load_linked_standard_refs(self.database)
 
             for cid in cre_ids:
                 cre = self.database.get_cre_by_db_id(cid)
                 if not cre:
                     continue
-                embedding_text = f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
-                if getattr(cre, "metadata", None):
-                    metadata_json = stable_json(getattr(cre, "metadata", None))
-                    embedding_text = f"{embedding_text}\nmetadata:{metadata_json}"
-                embedding_text = normalize_embeddings_content(embedding_text)
+                embedding_text = cre_embedding_source_text(
+                    cre, cid, linked_index=linked_index
+                )
                 existing = self.database.get_embedding(cid)
                 if (
                     existing
@@ -932,9 +994,8 @@ class PromptHandler:
                 for cid in batch_ids:
                     cre = cre_by_id[cid]
                     contents.append(
-                        f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
+                        cre_embedding_source_text(cre, cid, linked_index=linked_index)
                     )
-                contents = [normalize_embeddings_content(c) for c in contents]
 
                 embeddings = self.ai_client.get_text_embeddings(contents)  # type: ignore[arg-type]
                 if not embeddings:

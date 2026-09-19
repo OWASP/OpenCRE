@@ -43,8 +43,8 @@ class ChunkingConfig(BaseModel):
     merge_profile: Literal["none", "requirements", "narrative"] = Field(
         default="none",
         description=(
-            "A.2 merge profile: none=disabled; requirements=ASVS-like "
-            "(split on requirement ids); narrative=cheat-sheet-like "
+            "A.2 merge profile: none=disabled; requirements=split on "
+            "requirement ids; narrative=cheat-sheet-like "
             "(merge under the same heading up to max_tokens)."
         ),
     )
@@ -60,7 +60,10 @@ class ChunkingConfig(BaseModel):
     )
     split_on_requirement_id: bool | None = Field(
         default=None,
-        description="Do not merge across different V?/N.N.N requirement ids.",
+        description=(
+            "Do not merge across different requirement ids "
+            "(ASVS V2.1.1, NIST AC-2, ISO A.5.1, PCI 3.4, …)."
+        ),
     )
 
     @model_validator(mode="before")

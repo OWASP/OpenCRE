@@ -59,9 +59,13 @@ class _FakeDatabase:
         self.texts = {"616-305": "password storage", "111-111": "session handling"}
 
     def get_embeddings_by_doc_type(self, doc_type):
+        if str(doc_type) != "CRE":
+            return {}
         return self.embeddings
 
     def get_embedding_contents_by_doc_type(self, doc_type):
+        if str(doc_type) != "CRE":
+            return {}
         return self.texts
 
 
@@ -117,6 +121,26 @@ class BuildComponentsTest(unittest.TestCase):
             )
         components.retriever.retrieve("verify passwords")
         self.assertEqual(calls, ["verify passwords"])
+
+    def test_standard_retrieval_flag_is_a_noop_without_a_standard_hub(self) -> None:
+        with mock.patch(
+            "application.utils.librarian.cross_encoder." "build_cross_encoder_score_fn",
+            return_value=lambda pairs: [0.0 for _ in pairs],
+        ):
+            with mock.patch.dict(
+                os.environ,
+                {
+                    "CRE_LIBRARIAN_TEMPERATURE": "1.2",
+                    "CRE_LIBRARIAN_STANDARD_RETRIEVAL": "1",
+                },
+                clear=True,
+            ):
+                components = build_components(
+                    _FakeDatabase(),
+                    config=load_config(),
+                    embed_fn=lambda text: [0.1, 0.2, 0.3],
+                )
+        self.assertTrue(hasattr(components.retriever, "retrieve"))
 
 
 if __name__ == "__main__":

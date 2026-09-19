@@ -6,8 +6,9 @@ hybrid score so the cross-encoder cannot erase a strong vector/name hit:
 
     score = α·vector + β·title_overlap(name+text) + γ·minmax(CE)
 
-With small cages, α/β dominate and γ is small. Larger shortlists keep CE-led
-ordering (legacy behaviour) with a lighter title boost on the CE logits.
+Default mix is β=0 / γ=0.70 (CE-led; title overlap off). Env can restore the
+name-heavy mix (β=3.0 / γ=0.15). Larger shortlists keep CE-led ordering with
+a lighter title boost on the CE logits.
 """
 
 from cre_logging import get_logger
@@ -32,8 +33,8 @@ DEFAULT_CROSSENCODER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 # Small-cage hybrid (prior cages are typically ≤20).
 HYBRID_WHEN_LE = 20
 HYBRID_ALPHA = 1.0
-HYBRID_BETA = 3.0
-HYBRID_GAMMA = 0.15
+HYBRID_BETA = 0.0
+HYBRID_GAMMA = 0.70
 # Large-shortlist: CE-led + light title boost on logits.
 LARGE_TITLE_BOOST_WEIGHT = 2.0
 

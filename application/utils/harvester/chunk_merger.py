@@ -7,32 +7,20 @@ sets knobs (requirements vs narrative). Runs after primary chunking and before
 
 from __future__ import annotations
 
-import re
-from typing import TYPE_CHECKING, FrozenSet, List, Sequence
+from typing import TYPE_CHECKING, List, Sequence
 
 from application.utils.harvester.chunk_record_builder import ChunkRecordBuilder
 from application.utils.harvester.models import ChunkInfo, Document
+from application.utils.harvester.requirement_ids import requirement_ids
 
 if TYPE_CHECKING:
     from application.utils.harvester.schemas import ChunkingConfig
-
-# ASVS / OPC / similar: V2.1.1 or 2.1.1 (optionally bolded).
-_REQUIREMENT_ID_RE = re.compile(
-    r"(?:\*?\*?V)?(\d+\.\d+(?:\.\d+)?)(?:\*?\*)?\b",
-    re.IGNORECASE,
-)
 
 CHARS_PER_TOKEN = 4
 
 
 def estimate_tokens(text: str) -> int:
     return max(1, (len(text) + CHARS_PER_TOKEN - 1) // CHARS_PER_TOKEN)
-
-
-def requirement_ids(text: str) -> FrozenSet[str]:
-    return frozenset(
-        m.group(1).lower() for m in _REQUIREMENT_ID_RE.finditer(text or "")
-    )
 
 
 def heading_path_for(document: Document, chunk: ChunkInfo) -> tuple[str, ...]:

@@ -39,6 +39,36 @@ class ChunkMergerTests(unittest.TestCase):
             requirement_ids("**2.1.1** Verify passwords"), frozenset({"2.1.1"})
         )
         self.assertIn("2.1.1", requirement_ids("V2.1.1 something"))
+        self.assertEqual(
+            requirement_ids("AC-2 Account Management"), frozenset({"ac-2"})
+        )
+        self.assertIn("a.5.1", requirement_ids("ISO A.5.1 policies"))
+        self.assertIn("3.4", requirement_ids("Req 3.4 Protect stored"))
+        self.assertEqual(
+            requirement_ids("Requirement 3.4.1 hashing"), frozenset({"3.4.1"})
+        )
+
+    def test_requirements_does_not_merge_nist_or_iso_ids(self) -> None:
+        t1 = ("AC-2 Account Management. " * 20).strip()
+        t2 = ("AC-3 Access Enforcement. " * 20).strip()
+        text = t1 + "\n\n" + t2
+        mid = len(t1) + 2
+        chunks = [
+            ChunkInfo(text=t1, start_char_idx=0, end_char_idx=len(t1)),
+            ChunkInfo(text=t2, start_char_idx=mid, end_char_idx=len(text)),
+        ]
+        headings = [
+            HeadingNode(level=2, text="Access Control", start_line=1, end_line=99)
+        ]
+        doc = _doc(text, headings)
+        cfg = ChunkingConfig(
+            strategy="docling",
+            max_tokens=1200,
+            overlap_tokens=10,
+            merge_profile="requirements",
+        )
+        out = merge_chunks(doc, chunks, cfg)
+        self.assertEqual(len(out), 2)
 
     def test_none_profile_is_noop(self) -> None:
         text = "aaaa " * 50 + "\n\n" + "bbbb " * 50

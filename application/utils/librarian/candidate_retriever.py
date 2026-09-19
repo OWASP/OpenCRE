@@ -211,25 +211,6 @@ class PgVectorRetriever:
     with ``SystemExit`` — never silently routed to ``in_memory``.
     """
 
-    # Parameterized; :q is bound as a pgvector text literal and cast in-SQL.
-    _SQL = (
-        "SELECT cre_id, 1 - (embedding_vec <=> CAST(:q AS vector)) AS score "
-        "FROM embeddings "
-        "WHERE doc_type = :doc_type AND cre_id IS NOT NULL "
-        "AND embedding_vec IS NOT NULL "
-        "ORDER BY embedding_vec <=> CAST(:q AS vector) "
-        "LIMIT :k"
-    )
-    _SQL_CAGED = (
-        "SELECT cre_id, 1 - (embedding_vec <=> CAST(:q AS vector)) AS score "
-        "FROM embeddings "
-        "WHERE doc_type = :doc_type AND cre_id IS NOT NULL "
-        "AND embedding_vec IS NOT NULL "
-        "AND cre_id = ANY(:ids) "
-        "ORDER BY embedding_vec <=> CAST(:q AS vector) "
-        "LIMIT :k"
-    )
-
     def __init__(
         self,
         embed_fn: EmbedFn,
@@ -239,6 +220,7 @@ class PgVectorRetriever:
         threshold: float,
         doc_type: str = "CRE",
         cre_names: Optional[Mapping[str, str]] = None,
+        id_column: str = "cre_id",
     ) -> None:
         if top_k <= 0:
             raise RetrieverError(f"top_k must be > 0, got {top_k}")
@@ -253,6 +235,30 @@ class PgVectorRetriever:
         self._threshold = threshold
         self._doc_type = doc_type
         self._cre_names = dict(cre_names or {})
+        if id_column not in ("cre_id", "node_id"):
+            raise RetrieverError(
+                f"id_column must be 'cre_id' or 'node_id', got {id_column!r}"
+            )
+        self._id_column = id_column
+        self._SQL = (
+            f"SELECT {id_column} AS cre_id, 1 - (embedding_vec <=> CAST(:q AS vector)) AS score "
+            "FROM embeddings "
+            "WHERE doc_type = :doc_type AND "
+            f"{id_column} IS NOT NULL "
+            "AND embedding_vec IS NOT NULL "
+            "ORDER BY embedding_vec <=> CAST(:q AS vector) "
+            "LIMIT :k"
+        )
+        self._SQL_CAGED = (
+            f"SELECT {id_column} AS cre_id, 1 - (embedding_vec <=> CAST(:q AS vector)) AS score "
+            "FROM embeddings "
+            "WHERE doc_type = :doc_type AND "
+            f"{id_column} IS NOT NULL "
+            "AND embedding_vec IS NOT NULL "
+            f"AND {id_column} = ANY(:ids) "
+            "ORDER BY embedding_vec <=> CAST(:q AS vector) "
+            "LIMIT :k"
+        )
 
     def retrieve(
         self, text: str, *, allowlist: Optional[AbstractSet[str]] = None
@@ -320,6 +326,8 @@ def build_retriever(
     pool: Optional[CandidatePool] = None,
     connection: Any = None,
     cre_names: Optional[Mapping[str, str]] = None,
+    doc_type: str = "CRE",
+    id_column: str = "cre_id",
 ) -> Any:
     """Construct the retriever for ``backend`` behind the shared ``retrieve()``.
 
@@ -336,6 +344,12 @@ def build_retriever(
         if connection is None:
             raise RetrieverError("pgvector backend requires a DB connection")
         return PgVectorRetriever(
-            embed_fn, connection, top_k, threshold=threshold, cre_names=cre_names
+            embed_fn,
+            connection,
+            top_k,
+            threshold=threshold,
+            cre_names=cre_names,
+            doc_type=doc_type,
+            id_column=id_column,
         )
     raise RetrieverError(f"unknown retriever backend {backend!r}")
