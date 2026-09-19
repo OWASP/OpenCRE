@@ -12,7 +12,10 @@ from __future__ import annotations
 
 from typing import Dict, FrozenSet, List, Optional, Set
 
-from application.utils.librarian.control_name_seed import ControlNameIndex
+from application.utils.librarian.control_name_seed import (
+    ControlNameIndex,
+    section_title_from_text,
+)
 from application.utils.librarian.cre_prior import CrePriorIndex
 from application.utils.librarian.edition_remap import (
     EditionTransferService,
@@ -234,8 +237,18 @@ class PriorCagedRetriever:
 
         global_audit = self._retrieve_global(text)
         if not prior_ids:
-            audit = global_audit
+            merged = list(global_audit.candidates or [])
+            if preferred:
+                empty = global_audit.model_copy(update={"candidates": []})
+                merged = self._merge_soft(
+                    empty,
+                    global_audit,
+                    prior_ids=frozenset(preferred),
+                    preferred=preferred,
+                )
             tag = f"{problem.class_id}:{problem.family}+soft/uncaged"
+            if tags:
+                tag = f"{tag}+{'+'.join(tags)}"
         else:
             caged = self._retrieve_allowlist(text, prior_ids)
             tag = f"{problem.class_id}:{problem.family}"
@@ -266,38 +279,52 @@ class PriorCagedRetriever:
             merged = self._merge_soft(
                 caged, global_audit, prior_ids=prior_ids, preferred=preferred
             )
-            # A: parents that cover ≥2 shortlist children lead preferred.
-            if self._parents is not None and merged:
-                parents = self._parents.promote_for_shortlist(
-                    [c.cre_id for c in merged[:20]]
+
+        # Hub vs leaf: umbrella parents + materialize preferred hubs missing
+        # from cosine top-K (runs on soft-caged *and* uncaged paths).
+        if self._parents is not None and merged:
+            parents = self._parents.promote_for_shortlist(
+                [c.cre_id for c in merged[:20]],
+                section_title=section_title_from_text(text),
+            )
+            if parents:
+                preferred |= set(parents)
+                self.last_preferred_cre_ids = merge_preferred(
+                    parents, self.last_preferred_cre_ids, limit=12
                 )
-                if parents:
-                    preferred |= set(parents)
-                    self.last_preferred_cre_ids = merge_preferred(
-                        parents, self.last_preferred_cre_ids, limit=12
-                    )
-                    tag = f"{tag}+umbrella"
-                    # Pull parent vectors into the shortlist when missing.
-                    have = {c.cre_id for c in merged}
-                    missing = [p for p in parents if p not in have]
-                    if missing:
-                        parent_hits = self._retrieve_allowlist(text, frozenset(missing))
-                        if parent_hits.candidates:
-                            merged = self._merge_soft(
-                                parent_hits,
-                                global_audit.model_copy(update={"candidates": merged}),
-                                prior_ids=prior_ids,
-                                preferred=preferred,
-                            )
-                    else:
+                tag = f"{tag}+umbrella"
+                have = {c.cre_id for c in merged}
+                missing = [p for p in parents if p not in have]
+                if missing:
+                    parent_hits = self._retrieve_allowlist(text, frozenset(missing))
+                    if parent_hits.candidates:
                         merged = self._merge_soft(
-                            caged,
+                            parent_hits,
                             global_audit.model_copy(update={"candidates": merged}),
-                            prior_ids=prior_ids,
+                            prior_ids=prior_ids or frozenset(preferred),
                             preferred=preferred,
                         )
-            audit = global_audit.model_copy(update={"candidates": merged})
-            tag = f"{tag}+soft"
+                else:
+                    merged = self._merge_soft(
+                        global_audit.model_copy(update={"candidates": []}),
+                        global_audit.model_copy(update={"candidates": merged}),
+                        prior_ids=prior_ids or frozenset(preferred),
+                        preferred=preferred,
+                    )
+        have = {c.cre_id for c in merged}
+        missing_pref = [p for p in preferred if p and p not in have]
+        if missing_pref:
+            pref_hits = self._retrieve_allowlist(text, frozenset(missing_pref))
+            if pref_hits.candidates:
+                merged = self._merge_soft(
+                    pref_hits,
+                    global_audit.model_copy(update={"candidates": merged}),
+                    prior_ids=prior_ids or frozenset(preferred),
+                    preferred=preferred,
+                )
+                tag = f"{tag}+pref-materialize"
+        audit = global_audit.model_copy(update={"candidates": merged})
+        tag = f"{tag}+soft"
 
         return audit.model_copy(
             update={
