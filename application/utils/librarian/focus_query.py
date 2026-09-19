@@ -30,4 +30,19 @@ def focus_query_text(text: str) -> str:
     return "\n".join(lines)
 
 
-__all__ = ["focus_query_text"]
+def body_query_text(text: str) -> str:
+    """Narrative only — drop Standard/Version/Source/Section-ID/Section lines."""
+    lines: List[str] = []
+    for ln in (text or "").splitlines():
+        if _META.match(ln.strip()):
+            continue
+        lines.append(ln)
+    return "\n".join(lines).strip()
+
+
+def split_retrieval_query(text: str) -> tuple[str, str]:
+    """Header titles vs body. Length is not the split — metadata lines are."""
+    return focus_query_text(text), body_query_text(text)
+
+
+__all__ = ["body_query_text", "focus_query_text", "split_retrieval_query"]

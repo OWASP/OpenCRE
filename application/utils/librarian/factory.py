@@ -178,16 +178,46 @@ def build_components(
     # in_memory holds the hub matrix in RAM; pgvector ranks in the DB over the
     # embedding_vec column and needs no pool. Both satisfy the same retrieve().
     # Hidden CRE summaries may replace the C.1 pool for this process only —
-    # never persisted to Postgres embeddings.
+    # never persisted to Postgres embeddings. Dual index keeps the name-stub
+    # hub *and* the summary hub: header titles search names, body searches
+    # summaries.
     if summary_vectors:
-        pool = CandidatePool.from_mapping(summary_vectors)
-        retriever = build_retriever(
+        summary_pool = CandidatePool.from_mapping(summary_vectors)
+        summary_retriever = build_retriever(
             RetrieverBackend.in_memory,
             embed_fn=embed_fn,
             top_k=config.top_k_retrieval,
             threshold=config.link_threshold,
-            pool=pool,
+            pool=summary_pool,
+            cre_names=cre_names,
         )
+        if config.dual_index and cre_embeddings:
+            from application.utils.librarian.dual_index_retriever import (
+                DualIndexRetriever,
+            )
+
+            name_pool = CandidatePool.from_mapping(cre_embeddings)
+            name_retriever = build_retriever(
+                RetrieverBackend.in_memory,
+                embed_fn=embed_fn,
+                top_k=config.top_k_retrieval,
+                threshold=config.link_threshold,
+                pool=name_pool,
+                cre_names=cre_names,
+            )
+            retriever = DualIndexRetriever(
+                name_retriever,
+                summary_retriever,
+                top_k=config.top_k_retrieval,
+                threshold=config.link_threshold,
+            )
+            logger.info(
+                "CRE_LIBRARIAN_DUAL_INDEX: header→%s names, body→%s summaries",
+                len(cre_embeddings),
+                len(summary_vectors),
+            )
+        else:
+            retriever = summary_retriever
     else:
         pool = (
             CandidatePool.from_mapping(cre_embeddings)

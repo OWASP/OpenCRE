@@ -153,6 +153,36 @@ class BuildComponentsTest(unittest.TestCase):
 
         self.assertIsInstance(components.retriever, CandidateRetriever)
 
+    def test_dual_index_keeps_name_pool_and_summary_pool(self) -> None:
+        hidden = {"616-305": "hidden password blurb", "111-111": "hidden session blurb"}
+        vectors = {"616-305": [0.1, 0.2, 0.3], "111-111": [0.3, 0.2, 0.1]}
+        with mock.patch(
+            "application.utils.librarian.cross_encoder." "build_cross_encoder_score_fn",
+            return_value=lambda pairs: [0.0 for _ in pairs],
+        ):
+            with mock.patch.dict(
+                os.environ,
+                {
+                    "CRE_LIBRARIAN_TEMPERATURE": "1.2",
+                    "CRE_LIBRARIAN_CRE_SUMMARY": "1",
+                    "CRE_LIBRARIAN_DUAL_INDEX": "1",
+                    "CRE_LIBRARIAN_PRIOR_CAGE": "0",
+                },
+                clear=True,
+            ):
+                with mock.patch(
+                    "application.utils.librarian.cre_summary.inject_cre_summaries",
+                    return_value=(hidden, vectors),
+                ):
+                    components = build_components(
+                        _FakeDatabase(),
+                        config=load_config(),
+                        embed_fn=lambda text: [0.1, 0.2, 0.3],
+                    )
+        from application.utils.librarian.dual_index_retriever import DualIndexRetriever
+
+        self.assertIsInstance(components.retriever, DualIndexRetriever)
+
     def test_cre_summary_off_keeps_hub_texts(self) -> None:
         components = self._build()
         self.assertEqual(components.reranker._cre_texts["616-305"], "password storage")
