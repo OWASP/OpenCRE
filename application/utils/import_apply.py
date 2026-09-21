@@ -51,10 +51,12 @@ def _same_doc(a: Dict[str, Any], b: Dict[str, Any]) -> bool:
     return all((a.get(k) or "") == (b.get(k) or "") for k in keys)
 
 
-def _get_node_for_key(key: Tuple[str, str, str]) -> db.Node | None:
+def _get_node_for_key(key: Tuple[str, str, str], subsection: str = "") -> db.Node | None:
+    # Include subsection because it is part of Node identity.
     name, section, section_id = key
     q = sqla.session.query(db.Node).filter(db.Node.name == name)
     q = q.filter(db.Node.section == (section or ""))
+    q = q.filter(sqla.func.coalesce(db.Node.subsection, "") == (subsection or ""))
     q = q.filter(db.Node.section_id == (section_id or ""))
     q = q.filter(db.Node.ntype == defs.Credoctypes.Standard.value)
     return q.first()
@@ -102,10 +104,10 @@ def apply_changeset(
         for op in ops:
             key = tuple(op.key)  # type: ignore[arg-type]
             touched.append(key)  # type: ignore[arg-type]
-            current = _get_node_for_key(key)  # type: ignore[arg-type]
 
             if isinstance(op, import_diff.AddControl):
                 incoming = op.document or {}
+                current = _get_node_for_key(key, subsection=incoming.get("subsection"))  # type: ignore[arg-type]
                 if current:
                     if _same_doc(_doc_from_node(current), incoming):
                         skipped += 1
@@ -132,6 +134,7 @@ def apply_changeset(
 
             elif isinstance(op, import_diff.RemoveControl):
                 expected = op.document or {}
+                current = _get_node_for_key(key, subsection=expected.get("subsection"))  # type: ignore[arg-type]
                 if not current:
                     raise ApplyConflict(f"Remove conflict for key={key}: node missing")
                 if not _same_doc(_doc_from_node(current), expected):
@@ -143,6 +146,7 @@ def apply_changeset(
             elif isinstance(op, import_diff.ModifyControl):
                 before = op.before or {}
                 after = op.after or {}
+                current = _get_node_for_key(key, subsection=before.get("subsection"))  # type: ignore[arg-type]
                 if not current:
                     raise ApplyConflict(f"Modify conflict for key={key}: node missing")
                 if not _same_doc(_doc_from_node(current), before):
