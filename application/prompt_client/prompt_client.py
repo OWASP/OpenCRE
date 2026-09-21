@@ -1143,13 +1143,14 @@ class PromptHandler:
         most_similar_index = 0
         most_similar_id = ""
         for page in range(starting_page, total_pages + 1):
-            existing_cres, existing_cre_ids = self.__load_cre_embeddings(embeddings)
+            if embeddings:
+                existing_cres, existing_cre_ids = self.__load_cre_embeddings(embeddings)
 
-            similarities = cosine_similarity(embedding_array, existing_cres)
-            if np.max(similarities) > max_similarity:
-                max_similarity = np.max(similarities)
-                most_similar_index = np.argmax(similarities)
-                most_similar_id = existing_cre_ids[most_similar_index]
+                similarities = cosine_similarity(embedding_array, existing_cres)
+                if np.max(similarities) > max_similarity:
+                    max_similarity = np.max(similarities)
+                    most_similar_index = np.argmax(similarities)
+                    most_similar_id = existing_cre_ids[most_similar_index]
             if page < total_pages:
                 (
                     embeddings,
@@ -1205,14 +1206,15 @@ class PromptHandler:
         most_similar_index = 0
         most_similar_id = ""
         for page in range(starting_page, total_pages + 1):
-            existing_standards, existing_standard_ids = self.__load_node_embeddings(
-                embeddings
-            )
-            similarities = cosine_similarity(embedding_array, existing_standards)
-            if np.max(similarities) > max_similarity:
-                max_similarity = np.max(similarities)
-                most_similar_index = int(np.argmax(similarities))
-                most_similar_id = existing_standard_ids[most_similar_index]
+            if embeddings:
+                existing_standards, existing_standard_ids = self.__load_node_embeddings(
+                    embeddings
+                )
+                similarities = cosine_similarity(embedding_array, existing_standards)
+                if np.max(similarities) > max_similarity:
+                    max_similarity = np.max(similarities)
+                    most_similar_index = int(np.argmax(similarities))
+                    most_similar_id = existing_standard_ids[most_similar_index]
 
             if page < total_pages:
                 embeddings, _, _ = self.database.get_embeddings_by_doc_type_paginated(
