@@ -31,7 +31,7 @@ def retry_policy() -> tuple[int, int]:
 def get_litellm() -> Any:
     """Import LiteLLM or raise the same RuntimeError PromptHandler uses."""
     try:
-        import litellm  # type: ignore
+        import litellm
     except ImportError as exc:
         raise RuntimeError(
             "litellm package is required for PromptHandler LLM calls"
@@ -212,3 +212,88 @@ def system_user_fn(
         )
 
     return _call
+
+
+# LiteLLM model id is usually ``provider/model-name``. Env var names follow
+# LiteLLM's conventions so any supported chat provider can drive Module B.
+_PROVIDER_API_KEY_ENV: dict[str, tuple[str, ...]] = {
+    "openai": ("OPENAI_API_KEY",),
+    "anthropic": ("ANTHROPIC_API_KEY",),
+    "gemini": ("GEMINI_API_KEY", "GOOGLE_API_KEY"),
+    "google": ("GEMINI_API_KEY", "GOOGLE_API_KEY"),
+    "vertex_ai": ("GOOGLE_APPLICATION_CREDENTIALS", "GEMINI_API_KEY"),
+    "azure": ("AZURE_API_KEY", "AZURE_OPENAI_API_KEY"),
+    "groq": ("GROQ_API_KEY",),
+    "mistral": ("MISTRAL_API_KEY",),
+    "cohere": ("COHERE_API_KEY",),
+    "together_ai": ("TOGETHERAI_API_KEY", "TOGETHER_API_KEY"),
+    "fireworks_ai": ("FIREWORKS_API_KEY",),
+    "deepseek": ("DEEPSEEK_API_KEY",),
+    "openrouter": ("OPENROUTER_API_KEY",),
+}
+
+# Keys we treat as "some LLM is configured" for a soft preflight.
+_ANY_LLM_KEY_ENV: tuple[str, ...] = (
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GEMINI_API_KEY",
+    "GOOGLE_API_KEY",
+    "AZURE_API_KEY",
+    "AZURE_OPENAI_API_KEY",
+    "GROQ_API_KEY",
+    "MISTRAL_API_KEY",
+    "COHERE_API_KEY",
+    "TOGETHERAI_API_KEY",
+    "TOGETHER_API_KEY",
+    "FIREWORKS_API_KEY",
+    "DEEPSEEK_API_KEY",
+    "OPENROUTER_API_KEY",
+)
+
+
+def provider_from_model(model: str) -> str:
+    """Return LiteLLM provider prefix (``openai`` from ``openai/gpt-4o-mini``)."""
+    s = (model or "").strip()
+    if "/" in s:
+        return s.split("/", 1)[0].strip().lower()
+    return "openai"
+
+
+def api_key_env_names_for_model(model: str) -> tuple[str, ...]:
+    """Env var names LiteLLM typically needs for ``model``."""
+    return _PROVIDER_API_KEY_ENV.get(provider_from_model(model), ("OPENAI_API_KEY",))
+
+
+def has_credentials_for_model(model: str) -> bool:
+    """True if any expected API-key env var for ``model`` is set and non-empty."""
+    for name in api_key_env_names_for_model(model):
+        if (os.environ.get(name) or "").strip():
+            return True
+    return False
+
+
+def any_llm_api_key_present() -> bool:
+    """True if any common chat-provider API key env var is set."""
+    return any((os.environ.get(name) or "").strip() for name in _ANY_LLM_KEY_ENV)
+
+
+def missing_credentials_hint(model: str) -> str:
+    """Human-readable hint when credentials for ``model`` are missing."""
+    needed = " or ".join(api_key_env_names_for_model(model))
+    lines = [
+        f"No API key found for model {model!r} (need {needed} in .env).",
+        "Module B uses LiteLLM — set CRE_NOISE_FILTER_LLM_MODEL to a "
+        "provider/model you have a key for, for example:",
+        "  openai/gpt-4o-mini          + OPENAI_API_KEY",
+        "  anthropic/claude-haiku-4-5  + ANTHROPIC_API_KEY",
+        "  gemini/gemini-2.5-flash     + GEMINI_API_KEY",
+        "  groq/llama-3.3-70b-versatile + GROQ_API_KEY",
+        "Or pass --ingest_keep_all for an offline dump (not a real classification test).",
+    ]
+    if any_llm_api_key_present():
+        lines.insert(
+            1,
+            "A different provider key is set — point CRE_NOISE_FILTER_LLM_MODEL "
+            "(or --ingest_model) at a model for that provider.",
+        )
+    return "\n".join(lines)

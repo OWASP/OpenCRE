@@ -392,8 +392,17 @@ def main() -> None:
         "--ingest_keep_all",
         action="store_true",
         help=(
-            "with --ingest_github: skip Gemini and treat every chunk as "
+            "with --ingest_github: skip the LLM and treat every chunk as "
             "KNOWLEDGE (offline dump; not a real classification test)"
+        ),
+    )
+    parser.add_argument(
+        "--ingest_model",
+        default="",
+        help=(
+            "with --ingest_github: LiteLLM model id for Module B "
+            "(sets CRE_NOISE_FILTER_LLM_MODEL), e.g. openai/gpt-4o-mini, "
+            "anthropic/claude-haiku-4-5, gemini/gemini-2.5-flash"
         ),
     )
 
@@ -404,10 +413,12 @@ def main() -> None:
         parser.error("--run_noise_filter requires --run_id <pipeline_run_id>")
     if args.run_harvester and not args.run_id.strip():
         parser.error("--run_harvester requires --run_id <pipeline_run_id>")
-    if (args.ingest_branch or args.ingest_keep_all) and not str(
+    if (args.ingest_branch or args.ingest_keep_all or args.ingest_model) and not str(
         getattr(args, "ingest_github", "") or ""
     ).strip():
-        parser.error("--ingest_branch / --ingest_keep_all require --ingest_github")
+        parser.error(
+            "--ingest_branch / --ingest_keep_all / --ingest_model require --ingest_github"
+        )
     # The live queue path takes its rows from the DB, so a fixture path would be
     # silently ignored rather than doing what the caller plainly asked for.
     if args.librarian_source and args.run_id.strip():

@@ -232,6 +232,7 @@ def ingest_github_url(
     cache_file: str,
     branch_override: Optional[str] = None,
     keep_all: bool = False,
+    model_override: Optional[str] = None,
     run_id: Optional[str] = None,
 ) -> IngestCounts:
     """Harvest ``url``, classify, print knowledge to stdout. Returns counts."""
@@ -336,19 +337,30 @@ def ingest_github_url(
         )
         b_summary = _keep_all_noise_filter(session, rid)
     else:
-        if not (
-            __import__("os").environ.get("GEMINI_API_KEY")
-            or __import__("os").environ.get("GOOGLE_API_KEY")
-        ):
+        import os
+
+        from application.prompt_client.litellm_router import (
+            has_credentials_for_model,
+            missing_credentials_hint,
+        )
+        from application.utils.noise_filter.config_loader import load_config
+
+        if model_override:
+            os.environ["CRE_NOISE_FILTER_LLM_MODEL"] = model_override.strip()
+        cfg = load_config()
+        if not has_credentials_for_model(cfg.llm_model):
             print(
-                "ERROR: GEMINI_API_KEY not set. Add it to .env for real "
-                "classification, or pass --ingest_keep_all for an offline dump.",
+                "ERROR: " + missing_credentials_hint(cfg.llm_model),
                 file=sys.stderr,
                 flush=True,
             )
             counts.errors += 1
             return counts
-        print("Module B: noise filter (Gemini)…", file=sys.stderr, flush=True)
+        print(
+            f"Module B: noise filter via LiteLLM model={cfg.llm_model!r}…",
+            file=sys.stderr,
+            flush=True,
+        )
         b_summary = run_noise_filter(session, rid)
 
     counts.knowledge = getattr(b_summary, "kept_knowledge", 0) or 0

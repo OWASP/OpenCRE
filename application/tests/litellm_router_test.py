@@ -84,5 +84,35 @@ class TestLiteLLMRouter(unittest.TestCase):
         )
 
 
+class TestLiteLLMCredentialHints(unittest.TestCase):
+    def tearDown(self) -> None:
+        for k in (
+            "OPENAI_API_KEY",
+            "ANTHROPIC_API_KEY",
+            "GEMINI_API_KEY",
+            "GOOGLE_API_KEY",
+        ):
+            os.environ.pop(k, None)
+
+    def test_provider_from_model(self) -> None:
+        self.assertEqual(
+            litellm_router.provider_from_model("openai/gpt-4o-mini"), "openai"
+        )
+        self.assertEqual(
+            litellm_router.provider_from_model("anthropic/claude-haiku-4-5"),
+            "anthropic",
+        )
+
+    def test_has_credentials_for_openai(self) -> None:
+        self.assertFalse(litellm_router.has_credentials_for_model("openai/gpt-4o-mini"))
+        os.environ["OPENAI_API_KEY"] = "sk-test"
+        self.assertTrue(litellm_router.has_credentials_for_model("openai/gpt-4o-mini"))
+
+    def test_missing_hint_mentions_litellm(self) -> None:
+        hint = litellm_router.missing_credentials_hint("openai/gpt-4o-mini")
+        self.assertIn("OPENAI_API_KEY", hint)
+        self.assertIn("CRE_NOISE_FILTER_LLM_MODEL", hint)
+
+
 if __name__ == "__main__":
     unittest.main()

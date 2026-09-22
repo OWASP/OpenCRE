@@ -7,7 +7,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 if [[ $# -lt 1 ]]; then
-  echo "usage: $0 https://github.com/owner/repo [--ingest_keep_all] [--ingest_branch BRANCH]" >&2
+  echo "usage: $0 https://github.com/owner/repo [--ingest_model openai/gpt-4o-mini] [--ingest_keep_all] [--ingest_branch BRANCH]" >&2
   exit 2
 fi
 URL="$1"

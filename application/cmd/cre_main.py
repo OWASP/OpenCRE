@@ -924,6 +924,7 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
             cache_file=args.cache_file,
             branch_override=(getattr(args, "ingest_branch", "") or "").strip() or None,
             keep_all=bool(getattr(args, "ingest_keep_all", False)),
+            model_override=(getattr(args, "ingest_model", "") or "").strip() or None,
         )
         if counts.errors or (counts.knowledge + counts.uncertain) == 0:
             sys.exit(1)

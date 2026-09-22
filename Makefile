@@ -202,12 +202,14 @@ oie-full-pipeline:
 #   make ingest URL=https://github.com/OWASP/ASVS/tree/master/5.0/en
 #   ./scripts/ingest_github.sh https://github.com/OWASP/ASVS
 #   PYTHONPATH=. python cre.py --ingest_github https://github.com/OWASP/ASVS
-# Offline (no Gemini): INGEST_ARGS='--ingest_keep_all'
+# Offline (no LLM): INGEST_ARGS='--ingest_keep_all'
+# Other models:     INGEST_ARGS='--ingest_model openai/gpt-4o-mini'
 ingest:
 	@if [ -z "$(URL)" ]; then \
 	  echo 'usage: make ingest URL=https://github.com/owner/repo'; \
 	  echo '   or: ./scripts/ingest_github.sh https://github.com/owner/repo'; \
 	  echo '   or: PYTHONPATH=. python cre.py --ingest_github https://github.com/owner/repo'; \
+	  echo 'optional: INGEST_ARGS='\''--ingest_model openai/gpt-4o-mini'\'''; \
 	  exit 2; \
 	fi; \
 	[ -d "./venv" ] && . ./venv/bin/activate; \
