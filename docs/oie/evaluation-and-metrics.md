@@ -66,4 +66,5 @@ off) established that **CRE summaries on** dominate exact accuracy. Full tables
 live in `scripts/oie_owasp_eval/experiments/WINNERS.md` and (locally)
 `tmp/oie_owasp_eval/experiments/grid/`. Promoted flags are summarized in
 [Feature flags](feature-flags.md). Approaches that did not help the exact bar
-are documented on the `experimental-feature-flags` branch.
+are documented in [experimental-feature-flags.md](experimental-feature-flags.md)
+(dead code; default off).
