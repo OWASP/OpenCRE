@@ -11,6 +11,7 @@ from application.utils import mapping_fixtures
 EXPECTED_FIXTURES = {
     "owasp_aisvs_1_0.json",
     "owasp_api_top10_2023.json",
+    "owasp_asvs_5_0_provisional.json",
     "owasp_cheatsheets_supplement.json",
     "owasp_kubernetes_top10_2022.json",
     "owasp_kubernetes_top10_2025.json",
@@ -43,6 +44,62 @@ class TestOwaspMappingFixtures(unittest.TestCase):
         with self.assertRaises(FileNotFoundError) as ctx:
             mapping_fixtures.load_owasp_mapping_fixture("not_a_real_mapping")
         self.assertIn("not_a_real_mapping.json", str(ctx.exception))
+
+    def test_asvs5_provisional_marks_gold_provenance(self) -> None:
+        entries = mapping_fixtures.load_owasp_mapping_fixture(
+            "owasp_asvs_5_0_provisional"
+        )
+        self.assertGreater(len(entries), 0)
+        for entry in entries:
+            prov = entry.get("gold_provenance")
+            self.assertIsInstance(prov, dict)
+            self.assertEqual(prov.get("kind"), "provisional")
+            self.assertTrue(prov.get("source_v4_section_ids"))
+
+    def test_llm_top10_uses_ai_topic_cres_not_classic(self) -> None:
+        """LLM gold must target AI-topic CREs (hub LLM Links / AI Exchange), not classic web CREs."""
+        entries = mapping_fixtures.load_owasp_mapping_fixture("owasp_llm_top10_2025")
+        self.assertEqual(10, len(entries))
+        classic_leak = {
+            "161-451",
+            "760-764",
+            "126-668",
+            "227-045",
+            "613-285",
+            "613-287",
+            "307-507",
+            "064-808",
+            "117-371",
+            "650-560",
+            "538-770",
+            "141-555",
+            "267-031",
+            "623-550",
+        }
+        hub_ai = {
+            "012-625",
+            "686-110",
+            "034-540",
+            "044-202",
+            "077-772",
+            "701-654",
+            "020-540",
+            "615-663",
+            "867-642",
+            "780-757",
+            "230-318",
+        }
+        for entry in entries:
+            with self.subTest(section=entry["section_id"]):
+                cre_ids = set(entry["cre_ids"])
+                self.assertTrue(cre_ids)
+                self.assertFalse(cre_ids & classic_leak)
+                prov = entry.get("gold_provenance") or {}
+                self.assertIn(prov.get("kind"), {"hub", "provisional"})
+        # Prompt injection must be the AI hub CREs shared with AI Exchange
+        llm01 = next(e for e in entries if e["section_id"] == "LLM01")
+        self.assertEqual(set(llm01["cre_ids"]), {"012-625", "686-110"})
+        self.assertTrue(set(llm01["cre_ids"]) <= hub_ai)
 
     def test_k8s_2025_uses_per_item_owasp_hyperlinks(self) -> None:
         # Data from #953 (Bornunique911): section pages, not the family homepage.

@@ -3,60 +3,124 @@
     "section_id": "LLM01",
     "section": "Prompt Injection",
     "hyperlink": "https://genai.owasp.org/llmrisk/llm01-prompt-injection/",
-    "cre_ids": ["161-451", "760-764"]
+    "cre_ids": ["012-625", "686-110"],
+    "gold_provenance": {
+      "kind": "hub",
+      "method": "owasp_top10_for_llm_links",
+      "also_linked_from": ["OWASP AI Exchange"],
+      "replaced_classic_cre_ids": ["161-451", "760-764"]
+    }
   },
   {
     "section_id": "LLM02",
     "section": "Sensitive Information Disclosure",
     "hyperlink": "https://genai.owasp.org/llmrisk/llm022025-sensitive-information-disclosure/",
-    "cre_ids": ["126-668", "227-045"]
+    "cre_ids": ["034-540", "044-202", "077-772"],
+    "gold_provenance": {
+      "kind": "hub",
+      "method": "owasp_top10_for_llm_links",
+      "also_linked_from": ["OWASP AI Exchange"],
+      "replaced_classic_cre_ids": ["126-668", "227-045"]
+    }
   },
   {
     "section_id": "LLM03",
     "section": "Supply Chain",
     "hyperlink": "https://genai.owasp.org/llmrisk/llm032025-supply-chain/",
-    "cre_ids": ["613-285", "613-287"]
+    "cre_ids": ["701-654"],
+    "gold_provenance": {
+      "kind": "hub",
+      "method": "owasp_top10_for_llm_links",
+      "also_linked_from": ["OWASP AI Exchange"],
+      "replaced_classic_cre_ids": ["613-285", "613-287"]
+    }
   },
   {
     "section_id": "LLM04",
     "section": "Data and Model Poisoning",
     "hyperlink": "https://genai.owasp.org/llmrisk/llm042025-data-and-model-poisoning/",
-    "cre_ids": ["307-507", "613-287"]
+    "cre_ids": ["020-540", "481-710", "615-663", "867-642"],
+    "gold_provenance": {
+      "kind": "hub",
+      "method": "owasp_top10_for_llm_links",
+      "also_linked_from": ["OWASP AI Exchange"],
+      "replaced_classic_cre_ids": ["307-507", "613-287"]
+    }
   },
   {
     "section_id": "LLM05",
     "section": "Improper Output Handling",
     "hyperlink": "https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/",
-    "cre_ids": ["064-808"]
+    "cre_ids": ["044-202", "780-757"],
+    "gold_provenance": {
+      "kind": "hub",
+      "method": "owasp_top10_for_llm_links",
+      "also_linked_from": ["OWASP AI Exchange"],
+      "replaced_classic_cre_ids": ["064-808"]
+    }
   },
   {
     "section_id": "LLM06",
     "section": "Excessive Agency",
     "hyperlink": "https://genai.owasp.org/llmrisk/llm062025-excessive-agency/",
-    "cre_ids": ["117-371", "650-560"]
+    "cre_ids": ["202-604", "220-442"],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "aix_theme_bridge",
+      "note": "No OWASP Top10 for LLM hub Links yet; mapped to AI Exchange CREs (human oversight + model action privilege minimization).",
+      "aix_sections": ["oversight", "leastmodelprivilege"],
+      "replaced_classic_cre_ids": ["117-371", "650-560"]
+    }
   },
   {
     "section_id": "LLM07",
     "section": "System Prompt Leakage",
     "hyperlink": "https://genai.owasp.org/llmrisk/llm072025-system-prompt-leakage/",
-    "cre_ids": ["126-668", "227-045"]
+    "cre_ids": ["182-732", "818-434"],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "aix_theme_bridge",
+      "note": "No hub Links yet; AI Exchange CREs for runtime model leak + protection of technical AI information.",
+      "aix_sections": ["runtimemodelleak", "discrete"],
+      "replaced_classic_cre_ids": ["126-668", "227-045"]
+    }
   },
   {
     "section_id": "LLM08",
     "section": "Vector and Embedding Weaknesses",
     "hyperlink": "https://genai.owasp.org/llmrisk/llm082025-vector-and-embedding-weaknesses/",
-    "cre_ids": ["126-668", "538-770"]
+    "cre_ids": ["077-235", "768-532"],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "aix_theme_bridge",
+      "note": "No hub Links and no dedicated embedding CRE in AIX; closest AI Exchange CREs are model input leak/confidentiality. Mentors should replace when hub Links exist.",
+      "aix_sections": ["inputdataleak", "modelinputconfidentiality"],
+      "replaced_classic_cre_ids": ["126-668", "538-770"]
+    }
   },
   {
     "section_id": "LLM09",
     "section": "Misinformation",
     "hyperlink": "https://genai.owasp.org/llmrisk/llm092025-misinformation/",
-    "cre_ids": ["141-555"]
+    "cre_ids": ["010-108", "860-723"],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "aix_theme_bridge",
+      "note": "No hub Links yet; AI Exchange CREs for GenAI alignment + obscuring confidence in AI output.",
+      "aix_sections": ["modelalignment", "obscureconfidence"],
+      "replaced_classic_cre_ids": ["141-555"]
+    }
   },
   {
     "section_id": "LLM10",
     "section": "Unbounded Consumption",
     "hyperlink": "https://genai.owasp.org/llmrisk/llm102025-unbounded-consumption/",
-    "cre_ids": ["267-031", "623-550"]
+    "cre_ids": ["230-318"],
+    "gold_provenance": {
+      "kind": "hub",
+      "method": "owasp_top10_for_llm_links",
+      "also_linked_from": ["OWASP AI Exchange"],
+      "replaced_classic_cre_ids": ["267-031", "623-550"]
+    }
   }
 ]
