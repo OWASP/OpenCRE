@@ -65,6 +65,15 @@ class ChunkingConfig(BaseModel):
             "(ASVS V2.1.1, NIST AC-2, ISO A.5.1, PCI 3.4, …)."
         ),
     )
+    requirement_extract: Literal["off", "auto", "on"] = Field(
+        default="off",
+        description=(
+            "Optional requirement extractor: off=never; on=always try; "
+            "auto=only when requirements_needed(text) (ASVS-style tables / "
+            "dense control catalogs). When extraction yields segments, they "
+            "replace primary chunks for that document."
+        ),
+    )
 
     @model_validator(mode="before")
     @classmethod

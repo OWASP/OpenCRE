@@ -125,6 +125,49 @@ class DocumentChunkPipelineIntegrationTests(unittest.TestCase):
                 }
             )
 
+    def test_requirement_extract_auto_emits_section_id_chunks(self) -> None:
+        text = """\
+# V1 Encoding
+
+| # | Description | Level |
+| :---: | :--- | :---: |
+| **1.1.1** | Verify that input is decoded once. | 2 |
+| **1.1.2** | Verify that output encoding is applied. | 2 |
+| **1.1.3** | Verify that encoding preserves integrity. | 2 |
+| **1.2.1** | Verify that SQL injection is blocked. | 1 |
+| **1.2.2** | Verify that OS command injection is blocked. | 1 |
+"""
+        document = Document(
+            schema_version="0.2.0",
+            artifact_id="art:OWASP/ASVS:v1.md",
+            pipeline_run_id="run-extract",
+            text=text,
+            source=SourceInfo(
+                type="github",
+                repository="OWASP/ASVS",
+                commit_sha="abc1234deadbeef",
+                committed_at=datetime(2026, 2, 1, tzinfo=timezone.utc),
+            ),
+            locator=Locator(kind="repo_path", id="v1.md", path="5.0/en/0x10-V1.md"),
+            heading_structure=[
+                HeadingNode(level=1, text="V1 Encoding", start_line=1, end_line=10)
+            ],
+        )
+        pipeline = DocumentChunkPipeline(
+            chunking=ChunkingConfig(
+                strategy="markdown_heading",
+                max_tokens=1200,
+                overlap_tokens=100,
+                merge_profile="requirements",
+                requirement_extract="auto",
+            )
+        )
+        records = pipeline.chunk(document)
+        self.assertGreaterEqual(len(records), 5)
+        joined = "\n".join(r.text for r in records)
+        self.assertIn("Section-ID: V1.1.2", joined)
+        self.assertIn("Section-ID: V1.2.2", joined)
+
 
 class OieOrchestratorTests(unittest.TestCase):
     def test_sequences_a_b_c_and_stops_on_a_error(self) -> None:

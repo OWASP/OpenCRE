@@ -7,13 +7,17 @@ from .chunk_record_validator import ChunkRecordValidator
 from .chunker import DocumentChunker
 from .chunk_merger import merge_chunks
 from .models import Document, IngestChunkRecord
+from .requirement_extractor import (
+    extract_requirement_chunks,
+    should_extract_requirements,
+)
 from .schemas import ChunkingConfig
 
 
 class DocumentChunkPipeline:
     """
-    Runs config-driven chunking, optional A.2 merge, then RFC chunk-record
-    construction and validation.
+    Runs config-driven chunking, optional requirement extract, optional A.2
+    merge, then RFC chunk-record construction and validation.
     """
 
     def __init__(
@@ -29,9 +33,29 @@ class DocumentChunkPipeline:
         self._validator = validator or ChunkRecordValidator()
 
     def chunk(self, document: Document) -> list[IngestChunkRecord]:
-        chunks = self._chunker.chunk(document.text, document=document)
+        mode = "off"
         if self._chunking is not None:
-            chunks = merge_chunks(document, chunks, self._chunking)
+            mode = getattr(self._chunking, "requirement_extract", "off") or "off"
+
+        extracted = None
+        if should_extract_requirements(document.text, mode=mode):
+            extracted = extract_requirement_chunks(document.text)
+            if extracted:
+                logger.info(
+                    "requirement_extract=%s: %s segments for %s",
+                    mode,
+                    len(extracted),
+                    document.artifact_id,
+                )
+
+        if extracted:
+            chunks = extracted
+            # Already requirement-grain — skip A.2 merge (would only re-glue).
+        else:
+            chunks = self._chunker.chunk(document.text, document=document)
+            if self._chunking is not None:
+                chunks = merge_chunks(document, chunks, self._chunking)
+
         records = self._record_builder.build(document, chunks)
         for record in records:
             self._validator.validate(record)

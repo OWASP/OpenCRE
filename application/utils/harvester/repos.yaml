@@ -7,17 +7,39 @@ repositories:
     branch: master
     paths:
       include:
+        # 4.0 kept for continuity; 5.0 is the primary full-pipeline target
         - "4.0/en/**/*.md"
-
+        - "5.0/en/**/*.md"
       exclude:
         - "**/archive/**"
-
     chunking:
       strategy: docling
       max_tokens: 1200
       overlap_tokens: 100
       merge_profile: requirements
+      # One chunk per requirement when the doc looks like ASVS tables.
+      requirement_extract: auto
+    polling:
+      mode: incremental
+      interval_minutes: 60
 
+  - id: owasp-aisvs
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: AISVS
+    branch: main
+    paths:
+      include:
+        - "1.0/en/**/*.md"
+      exclude:
+        - "**/archive/**"
+    chunking:
+      strategy: docling
+      max_tokens: 1200
+      overlap_tokens: 100
+      merge_profile: requirements
+      requirement_extract: auto
     polling:
       mode: incremental
       interval_minutes: 60
@@ -25,21 +47,18 @@ repositories:
   - id: owasp-cheatsheets
     type: github
     enabled: true
-
     owner: OWASP
     repo: CheatSheetSeries
     branch: master
-
     paths:
       include:
         - "cheatsheets/**/*.md"
-
     chunking:
       strategy: docling
       max_tokens: 1000
       overlap_tokens: 100
       merge_profile: narrative
-
+      # Narrative sheets — leave requirement_extract off (default).
     polling:
       mode: incremental
       interval_minutes: 120
