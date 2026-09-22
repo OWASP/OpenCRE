@@ -189,6 +189,13 @@ oie-pipeline:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	PYTHONPATH=. python scripts/run_oie_pipeline.py --cache_file "$(or $(CACHE_FILE),sqlite:///$(CURDIR)/standards_cache.sqlite)" $(OIE_ARGS)
 
+# Full-pipeline eval: GitHub tarball A (ASVS/AISVS/CheatSheets) + optional AIX B2 arm.
+# Example: make oie-full-pipeline OIE_FULL_ARGS='--repos asvs,aisvs --keep-all-knowledge'
+oie-full-pipeline:
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
+	PYTHONPATH=. python scripts/oie_owasp_eval/run_full_pipeline.py \
+		--keep-all-knowledge --neighborhood $(OIE_FULL_ARGS)
+
 # Local OIE bootstrap: start cre-postgres, migrate, sync CRE hub (local|upstream).
 # Examples:
 #   make setup-oie

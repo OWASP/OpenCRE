@@ -104,6 +104,15 @@ HARNESSES: List[Dict[str, Any]] = [
         "pr": 953,
     },
     {
+        # Hub Links gold + OSCAL prose sources (see build_nist_800_53_v5_eval.py).
+        "fixture_name": "nist_800_53_v5",
+        "gold_file": "nist_800_53_v5.json",
+        "local_gold": False,
+        "label": "NIST SP 800-53 Rev. 5",
+        "pr": 0,
+        "source_dir": "nist_800_53_v5",
+    },
+    {
         # Harness-only: brand-new family with no hub Nodes/Links → expect weak accuracy.
         "pr": 0,
         "local_gold": True,
@@ -367,11 +376,14 @@ def ensure_sources(harnesses: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
         for row in gold:
             sid = str(row.get("section_id") or "").strip()
             href = str(row.get("hyperlink") or "").strip()
-            if not sid or not href:
+            if not sid:
                 continue
             out = dest_dir / f"{sid}.txt"
             if out.is_file() and out.stat().st_size > 200:
                 report["files"] += 1
+                continue
+            if not href:
+                report["errors"].append(f"{harness.get('gold_file')}:{sid}: no hyperlink and no cached source")
                 continue
             try:
                 kind, text = fetch_row_source(row, harness)
@@ -524,8 +536,12 @@ def run_pipeline(
 
     db_connect(cache)
     for model in (HarvestInput, KnowledgeQueueItem, DecisionQueueItem):
-        deleted = sqla.session.query(model).delete(synchronize_session=False)
-        print(f"cleared {model.__tablename__}: {deleted}", flush=True)
+        deleted = (
+            sqla.session.query(model)
+            .filter_by(pipeline_run_id=run_id)
+            .delete(synchronize_session=False)
+        )
+        print(f"cleared {model.__tablename__} for {run_id}: {deleted}", flush=True)
     sqla.session.commit()
 
     result = run_oie_pipeline(
@@ -710,6 +726,16 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--only-fixtures",
+        nargs="*",
+        default=[],
+        metavar="STEM",
+        help=(
+            "If set, keep only these fixture stems (after agentic default exclude). "
+            "Example: --only-fixtures nist_800_53_v5 owasp_top10_2025"
+        ),
+    )
+    parser.add_argument(
         "--out",
         type=Path,
         default=ART / "b2_accuracy_report.json",
@@ -733,6 +759,7 @@ def main() -> int:
 
     exclude_agentic = not bool(args.include_agentic)
     exclude_fixtures = list(args.exclude_fixtures or [])
+    only_fixtures = {str(s).strip() for s in (args.only_fixtures or []) if str(s).strip()}
     if exclude_fixtures:
         skip = {str(s).strip() for s in exclude_fixtures if str(s).strip()}
         HARNESSES[:] = [
@@ -743,6 +770,13 @@ def main() -> int:
                 not (h.get("fixture_name") or h.get("gold_file"))
                 or gold_stem(h) not in skip
             )
+        ]
+    if only_fixtures:
+        HARNESSES[:] = [
+            h
+            for h in HARNESSES
+            if str(h.get("fixture_name") or "") in only_fixtures
+            or gold_stem(h) in only_fixtures
         ]
     selected = active_harnesses(
         exclude_agentic=exclude_agentic, exclude_fixtures=exclude_fixtures
