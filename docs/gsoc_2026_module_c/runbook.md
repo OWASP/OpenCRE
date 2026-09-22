@@ -2,6 +2,11 @@
 
 How to run Module C, what each knob does, and what to do when a run goes wrong.
 
+Human-oriented OIE overview (pipeline, metrics, promoted flags):
+[`docs/oie/`](../oie/README.md). Experimental flags that did not improve the
+exact Links bar live on branch
+[`experimental-feature-flags`](https://github.com/OWASP/OpenCRE/tree/experimental-feature-flags).
+
 The package overview lives in
 [`application/utils/librarian/README.md`](../../application/utils/librarian/README.md).
 The table C reads from is specified in
