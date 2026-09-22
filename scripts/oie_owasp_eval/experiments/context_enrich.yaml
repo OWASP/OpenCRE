@@ -1,7 +1,0 @@
-experiment_id: context_enrich
-description: >
-  Step 2 — prefix Standard/Section when missing. Flag not yet wired in
-  config_loader; runner still sets env for when it lands.
-flags:
-  CRE_LIBRARIAN_CONTEXT_ENRICH: "1"
-include_agentic: false

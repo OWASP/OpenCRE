@@ -1,7 +1,0 @@
-experiment_id: dual_index
-description: >
-  Step 2 — dual-index (title vs body pools). Requires CRE summaries per PR wiring.
-flags:
-  CRE_LIBRARIAN_CRE_SUMMARY: "1"
-  CRE_LIBRARIAN_DUAL_INDEX: "1"
-include_agentic: false
