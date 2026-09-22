@@ -1,0 +1,11 @@
+Source: CM-11
+Section-ID: CM-11
+Section: CM-11 User-installed Software
+Standard: NIST 800-53 v5
+
+User-installed Software
+
+Establish … governing the installation of software by users;
+Enforce software installation policies through the following methods: … ; and
+Monitor policy compliance ….
+If provided the necessary privileges, users can install software in organizational systems. To maintain control over the software installed, organizations identify permitted and prohibited actions regarding software installation. Permitted software installations include updates and security patches to existing software and downloading new applications from organization-approved "app stores." Prohibited software installations include software with unknown or suspect pedigrees or software that organizations consider potentially malicious. Policies selected for governing user-installed software are organization-developed or provided by some external entity. Policy enforcement methods can include procedural methods and automated methods.

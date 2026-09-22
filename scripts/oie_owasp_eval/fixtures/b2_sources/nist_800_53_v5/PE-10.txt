@@ -1,0 +1,11 @@
+Source: PE-10
+Section-ID: PE-10
+Section: PE-10 Emergency Shutoff
+Standard: NIST 800-53 v5
+
+Emergency Shutoff
+
+Provide the capability of shutting off power to … in emergency situations;
+Place emergency shutoff switches or devices in … to facilitate access for authorized personnel; and
+Protect emergency power shutoff capability from unauthorized activation.
+Emergency power shutoff primarily applies to organizational facilities that contain concentrations of system resources, including data centers, mainframe computer rooms, server rooms, and areas with computer-controlled machinery.

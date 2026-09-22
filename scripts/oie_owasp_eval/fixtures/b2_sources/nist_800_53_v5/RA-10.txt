@@ -1,0 +1,12 @@
+Source: RA-10
+Section-ID: RA-10
+Section: RA-10 Threat Hunting
+Standard: NIST 800-53 v5
+
+Threat Hunting
+
+Establish and maintain a cyber threat hunting capability to:
+Search for indicators of compromise in organizational systems; and
+Detect, track, and disrupt threats that evade existing controls; and
+Employ the threat hunting capability ….
+Threat hunting is an active means of cyber defense in contrast to traditional protection measures, such as firewalls, intrusion detection and prevention systems, quarantining malicious code in sandboxes, and Security Information and Event Management technologies and systems. Cyber threat hunting involves proactively searching organizational systems, networks, and infrastructure for advanced threats. The objective is to track and disrupt cyber adversaries as early as possible in the attack sequence and to measurably improve the speed and accuracy of organizational responses. Indications of compromise include unusual network traffic, unusual file changes, and the presence of malicious code. Threat hunting teams leverage existing threat intelligence and may create new threat intelligence, which is shared with peer organizations, Information Sharing and Analysis Organizations (ISAO), Information Sharing and Analysis Centers (ISAC), and relevant government departments and agencies.
