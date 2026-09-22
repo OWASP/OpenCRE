@@ -9,6 +9,7 @@ decides automatic links, and how the B2 evaluation harness measures accuracy.
 | [How it works](how-it-works.md) | Pipeline stages A→B→C, retrieval and decision theory |
 | [Evaluation and metrics](evaluation-and-metrics.md) | Exact Links bar vs CRE neighborhood soft bar |
 | [Feature flags](feature-flags.md) | Promoted `CRE_LIBRARIAN_*` settings and how to reproduce |
+| [Full pipeline](full-pipeline.md) | Repo URL harvest (ASVS, AISVS, Cheat Sheets) + AIX gold arm |
 | [Experimental feature flags](experimental-feature-flags.md) | Flags tried and not promoted — shipped as dead code (default off) |
 
 Package-level API notes remain in
