@@ -196,6 +196,23 @@ oie-full-pipeline:
 	PYTHONPATH=. python scripts/oie_owasp_eval/run_full_pipeline.py \
 		--keep-all-knowledge --neighborhood $(OIE_FULL_ARGS)
 
+# Point-and-shoot GitHub ingest → print classified knowledge.
+# Make cannot take https://… as a goal (colon is special), so use URL= or the script:
+#   make ingest URL=https://github.com/OWASP/ASVS
+#   make ingest URL=https://github.com/OWASP/ASVS/tree/master/5.0/en
+#   ./scripts/ingest_github.sh https://github.com/OWASP/ASVS
+#   PYTHONPATH=. python cre.py --ingest_github https://github.com/OWASP/ASVS
+# Offline (no Gemini): INGEST_ARGS='--ingest_keep_all'
+ingest:
+	@if [ -z "$(URL)" ]; then \
+	  echo 'usage: make ingest URL=https://github.com/owner/repo'; \
+	  echo '   or: ./scripts/ingest_github.sh https://github.com/owner/repo'; \
+	  echo '   or: PYTHONPATH=. python cre.py --ingest_github https://github.com/owner/repo'; \
+	  exit 2; \
+	fi; \
+	[ -d "./venv" ] && . ./venv/bin/activate; \
+	PYTHONPATH=. python cre.py --ingest_github "$(URL)" $(INGEST_ARGS)
+
 # Local OIE bootstrap: start cre-postgres, migrate, sync CRE hub (local|upstream).
 # Examples:
 #   make setup-oie

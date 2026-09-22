@@ -375,6 +375,27 @@ def main() -> None:
         default="",
         help="optional path to repos.yaml for --run_harvester",
     )
+    parser.add_argument(
+        "--ingest_github",
+        default="",
+        help=(
+            "Point-and-shoot: harvest a public GitHub repo URL, run Module B "
+            "noise filter, print KNOWLEDGE chunks to stdout"
+        ),
+    )
+    parser.add_argument(
+        "--ingest_branch",
+        default="",
+        help="optional branch override for --ingest_github",
+    )
+    parser.add_argument(
+        "--ingest_keep_all",
+        action="store_true",
+        help=(
+            "with --ingest_github: skip Gemini and treat every chunk as "
+            "KNOWLEDGE (offline dump; not a real classification test)"
+        ),
+    )
 
     args = parser.parse_args()
     if args.export and not args.csv:
@@ -383,6 +404,10 @@ def main() -> None:
         parser.error("--run_noise_filter requires --run_id <pipeline_run_id>")
     if args.run_harvester and not args.run_id.strip():
         parser.error("--run_harvester requires --run_id <pipeline_run_id>")
+    if (args.ingest_branch or args.ingest_keep_all) and not str(
+        getattr(args, "ingest_github", "") or ""
+    ).strip():
+        parser.error("--ingest_branch / --ingest_keep_all require --ingest_github")
     # The live queue path takes its rows from the DB, so a fixture path would be
     # silently ignored rather than doing what the caller plainly asked for.
     if args.librarian_source and args.run_id.strip():

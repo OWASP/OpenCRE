@@ -911,6 +911,24 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
             sys.exit(1)
         return
 
+    if str(getattr(args, "ingest_github", "") or "").strip():
+        import sys
+
+        from application import sqla
+        from application.utils.harvester.github_url_ingest import ingest_github_url
+
+        db_connect(args.cache_file)
+        counts = ingest_github_url(
+            str(args.ingest_github).strip(),
+            session=sqla.session,
+            cache_file=args.cache_file,
+            branch_override=(getattr(args, "ingest_branch", "") or "").strip() or None,
+            keep_all=bool(getattr(args, "ingest_keep_all", False)),
+        )
+        if counts.errors or (counts.knowledge + counts.uncertain) == 0:
+            sys.exit(1)
+        return
+
     if getattr(args, "run_noise_filter", False):
         import sys
 
