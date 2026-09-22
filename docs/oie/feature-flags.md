@@ -2,9 +2,9 @@
 
 Environment variables for Module C live under the `CRE_LIBRARIAN_*` prefix
 (loader: `application/utils/librarian/config_loader.py`). This page lists what
-**shipped evaluation** uses. Flags that were tried and did not improve the
-exact Links bar are documented on branch
-[`experimental-feature-flags`](https://github.com/OWASP/OpenCRE/tree/experimental-feature-flags).
+**shipped evaluation** uses. Flags that were tried and did not improve the exact Links bar are documented in
+[experimental-feature-flags.md](experimental-feature-flags.md) (in-tree dead code,
+default off).
 
 ## Promoted stack
 
@@ -29,10 +29,10 @@ These were held constant or selected among tied winners:
 | `CRE_LIBRARIAN_RETRIEVER_BACKEND` | `pgvector` | Live B2 |
 | `CRE_LIBRARIAN_DEVICE` | `cpu` | Eval matrix |
 | `CRE_LIBRARIAN_SHORTLIST_JUDGE` | `0` | Gemini judge hangs blocked judge-ON factorial |
-| `CRE_LIBRARIAN_DUAL_INDEX` | off | See experimental branch |
-| `CRE_LIBRARIAN_USE_RRF` | off | See experimental branch |
-| `CRE_LIBRARIAN_HUB_LEAF_CAGE` | off | See experimental branch |
-| `CRE_LIBRARIAN_CONTEXT_ENRICH` | off | See experimental branch |
+| `CRE_LIBRARIAN_DUAL_INDEX` | off | See [experimental-feature-flags.md](experimental-feature-flags.md) |
+| `CRE_LIBRARIAN_USE_RRF` | off | See [experimental-feature-flags.md](experimental-feature-flags.md) |
+| `CRE_LIBRARIAN_HUB_LEAF_CAGE` | off | See [experimental-feature-flags.md](experimental-feature-flags.md) |
+| `CRE_LIBRARIAN_CONTEXT_ENRICH` | off | See [experimental-feature-flags.md](experimental-feature-flags.md) |
 | `CRE_LIBRARIAN_FOCUS_QUERY` | off | Neutral / slight drag on grid mean |
 | `CRE_LIBRARIAN_CRE_TEXT_ENRICH` | off | Tied at top; mean slightly lower when on |
 

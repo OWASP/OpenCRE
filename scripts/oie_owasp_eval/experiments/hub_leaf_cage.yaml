@@ -1,0 +1,7 @@
+experiment_id: hub_leaf_cage
+description: >
+  Step 3 — hub→leaf cage (high risk; ablate last). Flag not yet wired in
+  config_loader.
+flags:
+  CRE_LIBRARIAN_HUB_LEAF_CAGE: "1"
+include_agentic: false
