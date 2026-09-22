@@ -1,0 +1,154 @@
+Source: K08
+Section: Cluster To Cloud Lateral Movement
+Section-ID: K08
+
+K08: Cluster-To-Cloud Lateral Movement | OWASP Foundation
+Store
+Donate
+Join
+This website uses cookies to analyze our traffic and only share that information with our analytics partners.
+Accept
+x
+Store
+Donate
+Join
+K08: Cluster-To-Cloud Lateral Movement
+Overview
+When Kubernetes is run on a cloud provider, the cluster’s nodes and workloads are often granted permissions to interact with other cloud services (e.g., object storage, databases, metadata services). If an attacker compromises a container within the cluster, they can attempt to abuse these cloud permissions to “move laterally” from the Kubernetes cluster into the underlying cloud provider account, leading to a much wider and more severe breach.
+Securing the boundary between the Kubernetes cluster and the cloud provider’s API is essential to contain the impact of a potential compromise.
+Description
+The connection between a Kubernetes cluster and its host cloud environment is usually established through a cloud-specific Identity and Access Management (IAM) mechanism. The primary ways this access is granted and can be abused include:
+Overly Permissive Node Roles/Policies
+: In many default configurations, the Kubernetes worker nodes are assigned a single, broad IAM role. Every pod running on a given node can, by default, inherit these powerful permissions. An attacker who gains execution in any container on that node can potentially access the node’s credentials and use them to attack other cloud resources.
+Static Cloud Credentials
+: A common anti-pattern is storing static, long-lived cloud provider credentials (e.g., access keys, service principal secrets) directly in Kubernetes Secrets, ConfigMaps, or embedding them in container images. These static credentials are a prime target for attackers, as they are often long-lived and, if compromised, provide persistent access to the cloud account. See K03 for more information on secrets management.
+Unrestricted Access to Instance Metadata
+: Cloud providers expose a metadata service on a special IP address (e.g., 169.254.169.254) that is reachable from the worker nodes. This service provides information about the instance, including the temporary credentials associated with its IAM role. By default, pods can often access this metadata service, allowing them to steal the node’s credentials.
+An attacker exploiting these weaknesses could perform actions like exfiltrating data from S3 buckets or RDS databases, creating new virtual machines, or disrupting cloud infrastructure, all from a single compromised pod.
+How to prevent
+The core principle for preventing cluster-to-cloud lateral movement is following the principle of least privilege, ensuring that pods only have the precise, minimal permissions they need to the specific cloud services they must access.
+Use Workload-Specific Cloud Identities
+The most effective, modern approach is to associate cloud IAM roles directly with Kubernetes ServiceAccounts, rather than with the underlying nodes. This practice is supported by all major cloud providers and ensures that a pod’s cloud permissions are independent of the node it is running on.
+Amazon EKS:
+EKS Pod Identity
+or
+IAM Roles for Service Accounts (IRSA)
+.
+Google Kubernetes Engine (GKE): Called
+Workload Identity
+.
+Azure Kubernetes Service (AKS): Called
+Workload Identity
+.
+This mechanism allows a cluster administrator to create a fine-grained IAM role in the cloud provider and bind it to a specific ServiceAccount in Kubernetes. Pods that use this ServiceAccount are then able to automatically retrieve short-lived, scoped credentials for that role only.
+Example: Kubernetes ServiceAccount with AWS IRSA Annotation
+This ServiceAccount is annotated to request the permissions defined in the specified AWS IAM role.
+# This annotation is specific to Amazon EKS (IRSA)
+apiVersion
+:
+v1
+kind
+:
+ServiceAccount
+metadata
+:
+name
+:
+my-app-sa
+namespace
+:
+my-app
+annotations
+:
+eks.amazonaws.com/role-arn
+:
+"
+arn:aws:iam::123456789012:role/MyApplicationRole"
+Block Access to Node Metadata Service
+To provide defense-in-depth, you should block pods from accessing the underlying node’s metadata service. This prevents a compromised pod from being able to steal the node’s broader IAM credentials. This can be achieved with a Kubernetes NetworkPolicy.
+This policy denies all pods in the namespace from sending traffic to the standard cloud provider metadata IP address (N.B. Some cloud providers have additional metadata IP addresses).
+apiVersion
+:
+networking.k8s.io/v1
+kind
+:
+NetworkPolicy
+metadata
+:
+name
+:
+block-metadata-access
+namespace
+:
+default
+# Apply to the desired namespace
+spec
+:
+podSelector
+:
+{}
+# Applies to all pods in this namespace
+policyTypes
+:
+-
+Egress
+egress
+:
+-
+to
+:
+-
+ipBlock
+:
+cidr
+:
+0.0.0.0/0
+except
+:
+-
+169.254.169.254/32
+Avoid Static Credentials
+Never store static, long-lived cloud credentials in your cluster (or in any infrastructure!). Always prefer using short-lived, automatically rotated credentials that will eliminate the risk of a leaked static secret.
+Implementing behavioral monitoring and runtime security
+Lateral movement typically begins with the execution of unauthorized tools (curl, nmap, or aws-cli) or the spawning of unexpected shells within a compromised container. Implementing runtime security tools (such as Falco or Tetragon) allows for continuous monitoring of container behavior and instant alerting on suspicious activity. By detecting anomalous process execution an attack can be intercepted in its early stages.
+Harden Metadata services
+Where possible look at cloud provider settings which can improve the security of instance metadata services. For example in AWS IMDSv2 should be implemented on all hosts.
+References
+AWS EKS: IAM Roles for Service Accounts
+Google GKE: Workload Identity
+Azure AKS: Microsoft Entra Workload ID
+Kubernetes Docs: Network Policies
+Watch
+Star
+The OWASP
+®
+Foundation
+works to improve the security of software through its community-led open source software projects, 
+     hundreds of chapters worldwide, tens of thousands of members, and by hosting local and global conferences.
+Relevant Links
+OWASP Kubernetes Top 10 Project
+Top 10 Kubernetes Risks
+K01: Insecure Workload Configuration
+K02: Overly Permissive Authorization Configurations
+K03: Secrets Management Failures
+K04: Lack Of Cluster Level Policy Enforcement
+K05: Missing Network Segmentation Controls
+K06: Overly Exposed Kubernetes Components
+K07: Misconfigured And Vulnerable Cluster Components
+K08: Cluster To Cloud Lateral Movement
+K09: Broken Authentication Mechanisms
+K10: Inadequate Logging And Monitoring
+Upcoming OWASP Global Events
+Corporate Supporters
+Become a corporate supporter
+HOME
+PROJECTS
+CHAPTERS
+EVENTS
+ABOUT
+PRIVACY
+SITEMAP
+CONTACT
+OWASP, the OWASP logo, and Global AppSec are registered trademarks and AppSec Days, AppSec California, AppSec Cali, SnowFROC, OWASP Boston Application Security Conference, and LASCON are trademarks of the OWASP Foundation, Inc. Unless otherwise specified, all content on the site is Creative Commons Attribution-ShareAlike v4.0 and provided without warranty of service or accuracy. For more information, please refer to our
+General Disclaimer
+. OWASP does not endorse or recommend commercial products or services, allowing our community to remain vendor neutral with the collective wisdom of the best minds in software security worldwide. Copyright 2026, OWASP Foundation, Inc.

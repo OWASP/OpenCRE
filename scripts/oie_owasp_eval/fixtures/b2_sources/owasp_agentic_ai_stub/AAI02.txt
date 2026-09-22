@@ -1,0 +1,5 @@
+Source: AAI02
+Section: Tool Misuse and Unsafe Actuation
+Section-ID: AAI02
+
+Agents that can call tools (shell, browsers, cloud APIs, tickets) may misuse actuation capabilities when prompts or retrieved context are adversarial. Unsafe actuation includes destructive commands, data exfiltration, and privilege-bearing API calls without authorization. Controls include tool allowlists, least-privilege credentials, and confirmation for irreversible actions.

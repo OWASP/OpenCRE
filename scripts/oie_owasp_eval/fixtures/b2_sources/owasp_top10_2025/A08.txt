@@ -1,0 +1,142 @@
+Source: A08
+Section: Software or Data Integrity Failures
+Section-ID: A08
+
+A08 Software or Data Integrity Failures - OWASP Top 10:2025
+Skip to content
+OWASP Top 10:2025
+A08 Software or Data Integrity Failures
+en - English
+cs - Česky
+es - Español
+it - Italiano
+ja - 日本語 (Japanese)
+ko - 한국어 (Korean)
+fa - فارسی (Persian/Fārsi)
+pt-BR - (Português Brasil)
+zh-Hant - 简体中文
+Initializing search
+OWASP/Top10
+OWASP Top 10:2025
+OWASP/Top10
+Home
+Introduction
+About OWASP
+What are Application Security Risks?
+Establishing a Modern Application Security Program
+Top 10:2025 List
+Top 10:2025 List
+A01 Broken Access Control
+A02 Security Misconfiguration
+A03 Software Supply Chain Failures
+A04 Cryptographic Failures
+A05 Injection
+A06 Insecure Design
+A07 Authentication Failures
+A08 Software or Data Integrity Failures
+A08 Software or Data Integrity Failures
+Table of contents
+Background.
+Score table.
+Description.
+How to prevent.
+Example attack scenarios.
+References.
+List of Mapped CWEs
+A09 Security Logging and Alerting Failures
+A10 Mishandling of Exceptional Conditions
+Next Steps
+Table of contents
+Background.
+Score table.
+Description.
+How to prevent.
+Example attack scenarios.
+References.
+List of Mapped CWEs
+A08:2025 Software or Data Integrity Failures
+Background.
+Software or Data Integrity Failures continues at #8, with a slight, clarifying name change from "Software
+and
+Data Integrity Failures". This category is focused on the failure to maintain trust boundaries and verify the integrity of software, code, and data artifacts at a lower level than Software Supply Chain Failures. This category focuses on making assumptions related to software updates and critical data, without verifying integrity. Notable Common Weakness Enumerations (CWEs) include
+CWE-829: Inclusion of Functionality from Untrusted Control Sphere
+,
+CWE-915: Improperly Controlled Modification of Dynamically-Determined Object Attributes
+, and
+CWE-502: Deserialization of Untrusted Data
+.
+Score table.
+CWEs Mapped
+Max Incidence Rate
+Avg Incidence Rate
+Max Coverage
+Avg Coverage
+Avg Weighted Exploit
+Avg Weighted Impact
+Total Occurrences
+Total CVEs
+14
+8.98%
+2.75%
+78.52%
+45.49%
+7.11
+4.79
+501,327
+3,331
+Description.
+Software and data integrity failures relate to code and infrastructure that does not protect against invalid or untrusted code or data being treated as trusted and valid. An example of this is where an application relies upon plugins, libraries, or modules from untrusted sources, repositories, and content delivery networks (CDNs). An insecure CI/CD pipeline without consuming and providing software integrity checks can introduce the potential for unauthorized access, insecure or malicious code, or system compromise. Another example of this is a CI/CD that pulls code or artifacts from untrusted places and/or doesn’t verify them before use (by checking the signature or similar mechanism). Lastly, many applications now include auto-update functionality, where updates are downloaded without sufficient integrity verification and applied to the previously trusted application. Attackers could potentially upload their own updates to be distributed and run on all installations. Another example is where objects or data are encoded or serialized into a structure that an attacker can see and modify is vulnerable to insecure deserialization.
+How to prevent.
+Use digital signatures or similar mechanisms to verify the software or data is from the expected source and has not been altered.
+Ensure libraries and dependencies, such as npm or Maven, are only consuming trusted repositories. If you have a higher risk profile, consider hosting an internal known-good repository that's vetted.
+Ensure that there is a review process for code and configuration changes to minimize the chance that malicious code or configuration could be introduced into your software pipeline.
+Ensure that your CI/CD pipeline has proper segregation, configuration, and access control to ensure the integrity of the code flowing through the build and deploy processes.
+Ensure that unsigned or unencrypted serialized data is not received from untrusted clients and subsequently used without some form of integrity check or digital signature to detect tampering or replay of the serialized data.
+Example attack scenarios.
+Scenario #1 Inclusion of Web Functionality from an Untrusted Source:
+A company uses an external service provider to provide support functionality. For convenience, it has a DNS mapping for
+myCompany.SupportProvider.com
+to
+support.myCompany.com
+. This means that all cookies, including authentication cookies, set on the
+myCompany.com
+domain will now be sent to the support provider. Anyone with access to the support provider’s infrastructure can steal the cookies of all of your users that have visited
+support.myCompany.com
+and perform a session hijacking attack.
+Scenario #2 Update without signing:
+Many home routers, set-top boxes, device firmware, and others do not verify updates via signed firmware. Unsigned firmware is a growing target for attackers and is expected to only get worse. This is a major concern as many times there is no mechanism to remediate other than to fix in a future version and wait for previous versions to age out.
+Scenario #3 Use of Package from an Untrusted Source:
+A developer has trouble finding the updated version of a package they are looking for, so they download it not from the regular, trusted package manager, but from a website online. The package is not signed, and thus there is no opportunity to ensure integrity. The package includes malicious code.
+Scenario #4 Insecure Deserialization:
+A React application calls a set of Spring Boot microservices. Being functional programmers, they tried to ensure that their code is immutable. The solution they came up with is serializing the user state and passing it back and forth with each request. An attacker notices the "rO0" Java object signature (in base64) and uses the
+Java Deserialization Scanner
+to gain remote code execution on the application server.
+References.
+OWASP Cheat Sheet: Software Supply Chain Security
+OWASP Cheat Sheet: Infrastructure as Code
+OWASP Cheat Sheet: Deserialization
+SAFECode Software Integrity Controls
+A 'Worst Nightmare' Cyberattack: The Untold Story Of The SolarWinds Hack
+CodeCov Bash Uploader Compromise
+Securing DevOps by Julien Vehent
+Insecure Deserialization by Tenendo
+List of Mapped CWEs
+CWE-345 Insufficient Verification of Data Authenticity
+CWE-353 Missing Support for Integrity Check
+CWE-426 Untrusted Search Path
+CWE-427 Uncontrolled Search Path Element
+CWE-494 Download of Code Without Integrity Check
+CWE-502 Deserialization of Untrusted Data
+CWE-506 Embedded Malicious Code
+CWE-509 Replicating Malicious Code (Virus or Worm)
+CWE-565 Reliance on Cookies without Validation and Integrity Checking
+CWE-784 Reliance on Cookies without Validation and Integrity Checking in a Security Decision
+CWE-829 Inclusion of Functionality from Untrusted Control Sphere
+CWE-830 Inclusion of Web Functionality from an Untrusted Source
+CWE-915 Improperly Controlled Modification of Dynamically-Determined Object Attributes
+CWE-926 Improper Export of Android Application Components
+© Copyright 2021-2025 - OWASP Top 10 Team - This work is licensed under a
+Creative Commons Attribution 3.0 Unported License
+.
+Made with
+Material for MkDocs
