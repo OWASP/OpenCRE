@@ -9,11 +9,11 @@ from multiprocessing import Pool
 from io import BytesIO
 from urllib.parse import urlparse
 
-from application.prompt_client import embed_alignment
+from application.prompt_client import embed_alignment, litellm_router
 
 from scipy import sparse
 from sklearn.metrics.pairwise import cosine_similarity
-from typing import Dict, List, Any, Tuple, Optional
+from typing import Dict, List, Any, Tuple, Optional, Mapping, Sequence
 from pydantic import ValidationError
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
@@ -26,7 +26,6 @@ import os
 import json
 import re
 import requests
-import time
 
 
 SIMILARITY_THRESHOLD = float(os.environ.get("CHATBOT_SIMILARITY_THRESHOLD", "0.7"))
@@ -48,54 +47,11 @@ def _safe_truncate_for_log(text: str, limit: int = 600) -> str:
 
 
 def _extract_content_text(response: Any) -> str:
-    choices = getattr(response, "choices", None)
-    if not choices and isinstance(response, dict):
-        choices = response.get("choices")
-    if not choices:
-        raise ValueError("LLM response did not contain choices")
-    msg = choices[0].message
-    content = getattr(msg, "content", None)
-    if content is None and isinstance(msg, dict):
-        content = msg.get("content")
-    if content is None:
-        raise ValueError("LLM response did not contain message content")
-    if isinstance(content, list):
-        return "".join(
-            c.get("text", "") if isinstance(c, dict) else str(c) for c in content
-        ).strip()
-    return str(content).strip()
+    return litellm_router.extract_content_text(response)
 
 
 def _extract_embeddings(response: Any) -> List[List[float]]:
-    data = getattr(response, "data", None)
-    if data is None and isinstance(response, dict):
-        data = response.get("data")
-    if not isinstance(data, list):
-        raise ValueError("Embedding response missing data list")
-    vectors: List[List[float]] = []
-    for item in data:
-        emb = getattr(item, "embedding", None)
-        if emb is None and isinstance(item, dict):
-            emb = item.get("embedding")
-        if not isinstance(emb, list):
-            raise ValueError("Embedding item missing vector")
-        vectors.append([float(x) for x in emb])
-    return vectors
-
-
-def _is_llm_rate_limit_error(err: Exception) -> bool:
-    msg = str(err).lower()
-    if "rate limit" in msg or "too many requests" in msg:
-        return True
-    if "resource exhausted" in msg or "quota" in msg or "exceeded quota" in msg:
-        return True
-    status = (
-        getattr(err, "status_code", None)
-        or getattr(err, "status", None)
-        or getattr(err, "http_status", None)
-        or getattr(err, "code", None)
-    )
-    return status == 429
+    return litellm_router.extract_embeddings(response)
 
 
 def _render_chat_prompt(*, question: str, retrieved_knowledge: Optional[str]) -> str:
@@ -196,6 +152,102 @@ def normalize_embeddings_content(text: Optional[str]) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def indexable_page_text(cleaned: str) -> str:
+    """Page body ``generate_embeddings`` may store.
+
+    Delegates to librarian ``usable_embedding_text``: salvage a buried
+    requirement from chrome, or return empty so we do not index nav/frame-busters.
+    """
+    from application.utils.librarian.embedding_quality import usable_embedding_text
+
+    return normalize_embeddings_content(usable_embedding_text(cleaned))
+
+
+def _embedding_fetch_url(hyperlink: str) -> str:
+    """Prefer GitHub raw file URLs over HTML tree/blob pages."""
+    from application.utils.librarian.embedding_quality import github_raw_content_url
+
+    return github_raw_content_url(hyperlink) or hyperlink
+
+
+def _fetch_plain_http_text(url: str) -> Optional[str]:
+    """Fetch UTF-8 text (GitHub raw markdown) without Playwright."""
+    headers = {
+        "User-Agent": os.environ.get(
+            "CRE_EMBED_REQUEST_USER_AGENT",
+            "OpenCRE-embeddings/1.0 (+https://opencre.org)",
+        ),
+        "Accept": "text/plain, text/markdown, */*",
+    }
+    try:
+        resp = requests.get(
+            url, timeout=(30, 60), headers=headers, allow_redirects=True
+        )
+        resp.raise_for_status()
+        text = resp.text or ""
+        return text if text.strip() else None
+    except requests.RequestException as e:
+        logger.warning("Plain-text fetch failed for %s: %s", url, e)
+        return None
+
+
+def _cre_embed_linked_titles_enabled() -> bool:
+    return os.environ.get("CRE_EMBED_CRE_LINKED_TITLES", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+
+
+def cre_embedding_source_text(
+    cre: Any,
+    db_id: str,
+    *,
+    linked_index: Optional[Mapping[str, Sequence[Any]]] = None,
+) -> str:
+    """Text stored as CRE ``embeddings_content``.
+
+    Default is name+description+id (today's hub). ``CRE_EMBED_CRE_LINKED_TITLES``
+    fills an empty description from linked Standard ``embeddings_content``
+    (junk skipped, length-capped) before the paid embed call.
+    """
+    if not _cre_embed_linked_titles_enabled():
+        content = (
+            f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n "
+            f"id:{cre.id}\n "
+        )
+        if getattr(cre, "metadata", None):
+            content = (
+                f"{content}\nmetadata:{stable_json(getattr(cre, 'metadata', None))}"
+            )
+        return normalize_embeddings_content(content)
+
+    from application.utils.librarian.cre_text import (
+        EMBED_PROSE_CHARS,
+        LinkedStandardRef,
+        build_cre_embedding_text,
+    )
+
+    linked: Sequence[LinkedStandardRef] = ()
+    if linked_index:
+        linked = linked_index.get(db_id, ()) or linked_index.get(
+            str(getattr(cre, "id", "") or ""), ()
+        )
+    content = build_cre_embedding_text(
+        name=str(getattr(cre, "name", "") or ""),
+        description=str(getattr(cre, "description", "") or ""),
+        cre_id=str(getattr(cre, "id", None) or db_id),
+        linked=linked,
+        include_linked_titles=True,
+        max_linked_chars=EMBED_PROSE_CHARS,
+        doctype=str(cre.doctype),
+    )
+    if getattr(cre, "metadata", None):
+        content = f"{content}\nmetadata:{stable_json(getattr(cre, 'metadata', None))}"
+    return normalize_embeddings_content(content)
+
+
 def stable_json(v: Any) -> str:
     """
     Canonical JSON encoding for embedding cache comparisons.
@@ -211,8 +263,16 @@ def stable_json(v: Any) -> str:
 
 
 def _embedding_text_from_node_resource_fields(node: Any) -> str:
-    """Text from DB-backed node fields only (no HTTP). ``__repr__`` uses ``todict()``."""
-    return normalize_embeddings_content(node.__repr__())
+    """Text from DB-backed node fields only (no HTTP, no ``__repr__`` / links dump)."""
+    parts: List[str] = []
+    for attr in ("name", "section", "sectionID", "subsection", "description"):
+        val = getattr(node, attr, None)
+        if val is None:
+            continue
+        text = str(val).strip()
+        if text:
+            parts.append(text)
+    return normalize_embeddings_content(" ".join(parts))
 
 
 class in_memory_embeddings:
@@ -230,6 +290,19 @@ class in_memory_embeddings:
 
     # Function to get text content from a URL
     def get_content(self, url) -> Optional[str]:
+        from application.utils.librarian.embedding_quality import (
+            is_plain_text_embed_url,
+        )
+
+        if is_plain_text_embed_url(url):
+            text = _fetch_plain_http_text(url)
+            if text:
+                return text
+            logger.warning(
+                "Plain-text URL %s: empty HTTP body, falling through to Playwright",
+                url,
+            )
+
         for attempts in range(1, 10):
             if _is_likely_pdf_url(url):
                 text = _fetch_pdf_text_for_embeddings(url)
@@ -446,6 +519,11 @@ class in_memory_embeddings:
         so we send up to the provider's supported `max_batch_size` per embeddings call.
         """
         logger.info(f"generating {len(missing_embeddings)} embeddings")
+        linked_index = None
+        if _cre_embed_linked_titles_enabled():
+            from application.utils.librarian.cre_text import load_linked_standard_refs
+
+            linked_index = load_linked_standard_refs(database)
 
         def get_provider_batch_size() -> int:
             # Prefer provider-reported max batch size.
@@ -469,14 +547,9 @@ class in_memory_embeddings:
                 if not database.has_node_with_db_id(db_id):
                     cre = database.get_cre_by_db_id(db_id)
                     if cre:
-                        content = normalize_embeddings_content(
-                            f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
+                        content = cre_embedding_source_text(
+                            cre, db_id, linked_index=linked_index
                         )
-                        if getattr(cre, "metadata", None):
-                            metadata_json = stable_json(getattr(cre, "metadata", None))
-                            content = normalize_embeddings_content(
-                                f"{content}\nmetadata:{metadata_json}"
-                            )
                         logger.info(f"making embedding for {content}")
                         dbcre = db.dbCREfromCRE(cre)
                         if not dbcre:
@@ -512,27 +585,33 @@ class in_memory_embeddings:
                 if nodes:
                     node = nodes[0] if isinstance(nodes, list) else nodes
                     resolved_embeddings_url: Optional[str] = None
-                    if is_valid_url(node.hyperlink):
+                    if is_valid_url(node.hyperlink or ""):
+                        fetch_url = _embedding_fetch_url(node.hyperlink or "")
                         smart_mode = (
                             os.environ.get("CRE_EMBED_SMART_EXTRACT", "on")
                             .lower()
                             .strip()
                         )
                         self._ensure_smart_embed_caches()
+                        from application.utils.librarian.embedding_quality import (
+                            is_plain_text_embed_url,
+                        )
+
                         use_smart = (
                             smart_mode in ("on", "shadow")
-                            and not _is_likely_pdf_url(node.hyperlink)
+                            and not _is_likely_pdf_url(fetch_url)
+                            and not is_plain_text_embed_url(fetch_url)
                             and self.ai_client is not None
                             and hasattr(self.ai_client, "align_embedding_span_json")
                         )
                         content = ""
                         if use_smart:
                             page_key = embed_alignment.normalize_page_cache_key(
-                                node.hyperlink
+                                fetch_url
                             )
                             html = self._smart_page_html_cache.get(page_key)
                             if html is None:
-                                html = self.get_html(node.hyperlink)
+                                html = self.get_html(fetch_url)
                                 if html:
                                     self._smart_page_html_cache[page_key] = html
                             if html:
@@ -568,50 +647,56 @@ class in_memory_embeddings:
                                         content_base = normalize_embeddings_content(
                                             self.clean_content(out.embed_plain_text)
                                         )
-                                    marker = ""
-                                    if (
-                                        smart_mode == "on"
-                                        and out.used_excerpt
-                                        and out.marker_start_bid
-                                    ):
-                                        marker = embed_alignment.embedding_cache_marker(
-                                            used_excerpt=True,
-                                            start_bid=out.marker_start_bid,
-                                            end_bid=out.marker_end_bid,
-                                            resolved_url=out.resolved_embeddings_url,
-                                        )
-                                    if getattr(node, "metadata", None):
-                                        metadata_json = stable_json(
-                                            getattr(node, "metadata", None)
-                                        )
-                                        content = normalize_embeddings_content(
-                                            f"{content_base}\nmetadata:{metadata_json}{marker}"
-                                        )
+                                    content_base = indexable_page_text(content_base)
+                                    if not content_base:
+                                        content = ""
                                     else:
-                                        content = normalize_embeddings_content(
-                                            f"{content_base}{marker}"
-                                        )
-                                    if smart_mode == "shadow":
-                                        resolved_embeddings_url = node.hyperlink
-                                    else:
-                                        resolved_embeddings_url = (
-                                            out.resolved_embeddings_url
-                                            or node.hyperlink
-                                        )
-                                    if smart_mode == "shadow":
-                                        logger.info(
-                                            "Smart extract shadow for %s: rationale=%s",
-                                            node.hyperlink,
-                                            out.rationale[:200],
-                                        )
+                                        marker = ""
+                                        if (
+                                            smart_mode == "on"
+                                            and out.used_excerpt
+                                            and out.marker_start_bid
+                                        ):
+                                            marker = embed_alignment.embedding_cache_marker(
+                                                used_excerpt=True,
+                                                start_bid=out.marker_start_bid,
+                                                end_bid=out.marker_end_bid,
+                                                resolved_url=out.resolved_embeddings_url,
+                                            )
+                                        if getattr(node, "metadata", None):
+                                            metadata_json = stable_json(
+                                                getattr(node, "metadata", None)
+                                            )
+                                            content = normalize_embeddings_content(
+                                                f"{content_base}\nmetadata:{metadata_json}{marker}"
+                                            )
+                                        else:
+                                            content = normalize_embeddings_content(
+                                                f"{content_base}{marker}"
+                                            )
+                                        if smart_mode == "shadow":
+                                            resolved_embeddings_url = node.hyperlink
+                                        else:
+                                            resolved_embeddings_url = (
+                                                out.resolved_embeddings_url
+                                                or node.hyperlink
+                                            )
+                                        if smart_mode == "shadow":
+                                            logger.info(
+                                                "Smart extract shadow for %s: rationale=%s",
+                                                node.hyperlink,
+                                                out.rationale[:200],
+                                            )
                         if not content:
-                            raw_content = self.get_content(node.hyperlink)
+                            raw_content = self.get_content(fetch_url)
                             content_from_remote = ""
                             if raw_content:
-                                content_from_remote = normalize_embeddings_content(
+                                content_from_remote = indexable_page_text(
                                     self.clean_content(raw_content)
                                 )
-                                if getattr(node, "metadata", None):
+                                if content_from_remote and getattr(
+                                    node, "metadata", None
+                                ):
                                     metadata_json = stable_json(
                                         getattr(node, "metadata", None)
                                     )
@@ -627,22 +712,22 @@ class in_memory_embeddings:
                                 if raw_content:
                                     logger.info(
                                         "Remote text for %s cleaned to empty; using stored node fields for embedding",
-                                        node.hyperlink,
+                                        fetch_url,
                                     )
                                 else:
                                     logger.info(
                                         "No extractable remote text for %s; using stored node fields for embedding",
-                                        node.hyperlink,
+                                        fetch_url,
                                     )
                             if not content:
                                 logger.warning(
                                     "Skipping embedding for %s: no text from remote or stored node fields",
-                                    node.hyperlink,
+                                    fetch_url,
                                 )
                                 continue
                             resolved_embeddings_url = None
                     else:
-                        content = normalize_embeddings_content(node.__repr__())
+                        content = _embedding_text_from_node_resource_fields(node)
 
                     dbnode = db.dbNodeFromNode(node)
                     if not dbnode:
@@ -715,13 +800,7 @@ class PromptHandler:
     embeddings_instance = None  # instance of our in_memory_embeddings singletton
 
     def __init__(self, database: db.Node_collection, load_all_embeddings=False) -> None:
-        try:
-            import litellm  # type: ignore
-        except ImportError as e:
-            raise RuntimeError(
-                "litellm package is required for PromptHandler LLM calls"
-            ) from e
-        self._litellm = litellm
+        self._litellm = litellm_router.get_litellm()
         self.chat_model = os.environ.get(
             "CRE_LLM_CHAT_MODEL", "gemini/gemini-2.5-flash"
         )
@@ -729,9 +808,8 @@ class PromptHandler:
             "CRE_EMBED_MODEL", "gemini/gemini-embedding-001"
         )
         self.align_model = os.environ.get("CRE_EMBED_ALIGN_MODEL", self.chat_model)
-        self._llm_max_retries = int(os.environ.get("CRE_LLM_MAX_RETRIES", "2"))
-        self._llm_retry_sleep_seconds = int(
-            os.environ.get("CRE_LLM_RETRY_SLEEP_SECONDS", "15")
+        self._llm_max_retries, self._llm_retry_sleep_seconds = (
+            litellm_router.retry_policy()
         )
         expected_dim_raw = os.environ.get("CRE_EMBED_EXPECTED_DIM", "").strip()
         self._expected_embed_dim = int(expected_dim_raw) if expected_dim_raw else None
@@ -773,21 +851,12 @@ class PromptHandler:
                 )
 
     def _with_llm_rate_limit_retry(self, fn: Any, *, context: str) -> Any:
-        for attempt in range(self._llm_max_retries + 1):
-            try:
-                return fn()
-            except Exception as e:
-                if not _is_llm_rate_limit_error(e) or attempt >= self._llm_max_retries:
-                    raise
-                logger.info(
-                    "rate/quota limited during %s; sleeping %ss (attempt %s/%s)",
-                    context,
-                    self._llm_retry_sleep_seconds,
-                    attempt + 1,
-                    self._llm_max_retries + 1,
-                )
-                time.sleep(self._llm_retry_sleep_seconds)
-        raise RuntimeError("unreachable: retry loop exited unexpectedly")
+        return litellm_router.with_rate_limit_retry(
+            fn,
+            context=context,
+            max_retries=self._llm_max_retries,
+            retry_sleep_seconds=self._llm_retry_sleep_seconds,
+        )
 
     def get_model_name(self) -> str:
         return self.chat_model
@@ -811,11 +880,15 @@ class PromptHandler:
             else self._truncate_one(text)
         )
 
-        def _call() -> Any:
-            return self._litellm.embedding(model=self.embed_model, input=payload)
-
         vectors = _extract_embeddings(
-            self._with_llm_rate_limit_retry(_call, context="LiteLLM embeddings")
+            litellm_router.embedding(
+                model=self.embed_model,
+                input=payload,
+                client=self._litellm,
+                context="LiteLLM embeddings",
+                max_retries=self._llm_max_retries,
+                retry_sleep_seconds=self._llm_retry_sleep_seconds,
+            )
         )
         if self._expected_embed_dim is not None:
             for v in vectors:
@@ -843,10 +916,14 @@ class PromptHandler:
             {"role": "user", "content": rag_instruction},
         ]
 
-        def _call() -> Any:
-            return self._litellm.completion(model=self.chat_model, messages=messages)
-
-        resp = self._with_llm_rate_limit_retry(_call, context="LiteLLM chat completion")
+        resp = litellm_router.completion(
+            model=self.chat_model,
+            messages=messages,
+            client=self._litellm,
+            context="LiteLLM chat completion",
+            max_retries=self._llm_max_retries,
+            retry_sleep_seconds=self._llm_retry_sleep_seconds,
+        )
         return _extract_content_text(resp)
 
     def align_embedding_span_json(
@@ -865,25 +942,16 @@ class PromptHandler:
             },
         }
 
-        def _call_with_json_schema() -> Any:
-            return self._litellm.completion(
+        try:
+            resp = litellm_router.completion(
                 model=self.align_model,
                 messages=messages,
+                client=self._litellm,
+                context="LiteLLM align_embedding_span_json",
+                max_retries=self._llm_max_retries,
+                retry_sleep_seconds=self._llm_retry_sleep_seconds,
                 response_format=strict_format,
                 temperature=0.2,
-            )
-
-        def _call_json_object_fallback() -> Any:
-            return self._litellm.completion(
-                model=self.align_model,
-                messages=messages,
-                response_format={"type": "json_object"},
-                temperature=0.2,
-            )
-
-        try:
-            resp = self._with_llm_rate_limit_retry(
-                _call_with_json_schema, context="LiteLLM align_embedding_span_json"
             )
         except Exception as e:
             logger.warning(
@@ -891,9 +959,15 @@ class PromptHandler:
                 self.align_model,
                 e,
             )
-            resp = self._with_llm_rate_limit_retry(
-                _call_json_object_fallback,
+            resp = litellm_router.completion(
+                model=self.align_model,
+                messages=messages,
+                client=self._litellm,
                 context="LiteLLM align_embedding_span_json fallback",
+                max_retries=self._llm_max_retries,
+                retry_sleep_seconds=self._llm_retry_sleep_seconds,
+                response_format={"type": "json_object"},
+                temperature=0.2,
             )
 
         text = _extract_content_text(resp)
@@ -929,10 +1003,14 @@ class PromptHandler:
             {"role": "user", "content": direct_instruction},
         ]
 
-        def _call() -> Any:
-            return self._litellm.completion(model=self.chat_model, messages=messages)
-
-        resp = self._with_llm_rate_limit_retry(_call, context="LiteLLM query_llm")
+        resp = litellm_router.completion(
+            model=self.chat_model,
+            messages=messages,
+            client=self._litellm,
+            context="LiteLLM query_llm",
+            max_retries=self._llm_max_retries,
+            retry_sleep_seconds=self._llm_retry_sleep_seconds,
+        )
         return _extract_content_text(resp)
 
     def generate_embeddings_for(self, item_name: str):
@@ -945,16 +1023,21 @@ class PromptHandler:
             cre_ids = self.database.list_cre_ids()
             pending: List[str] = []
             cre_by_id: Dict[str, cre_defs.CRE] = {}
+            linked_index = None
+            if _cre_embed_linked_titles_enabled():
+                from application.utils.librarian.cre_text import (
+                    load_linked_standard_refs,
+                )
+
+                linked_index = load_linked_standard_refs(self.database)
 
             for cid in cre_ids:
                 cre = self.database.get_cre_by_db_id(cid)
                 if not cre:
                     continue
-                embedding_text = f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
-                if getattr(cre, "metadata", None):
-                    metadata_json = stable_json(getattr(cre, "metadata", None))
-                    embedding_text = f"{embedding_text}\nmetadata:{metadata_json}"
-                embedding_text = normalize_embeddings_content(embedding_text)
+                embedding_text = cre_embedding_source_text(
+                    cre, cid, linked_index=linked_index
+                )
                 existing = self.database.get_embedding(cid)
                 if (
                     existing
@@ -983,9 +1066,8 @@ class PromptHandler:
                 for cid in batch_ids:
                     cre = cre_by_id[cid]
                     contents.append(
-                        f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
+                        cre_embedding_source_text(cre, cid, linked_index=linked_index)
                     )
-                contents = [normalize_embeddings_content(c) for c in contents]
 
                 embeddings = self.ai_client.get_text_embeddings(contents)  # type: ignore[arg-type]
                 if not embeddings:

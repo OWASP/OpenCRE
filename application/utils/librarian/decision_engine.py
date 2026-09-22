@@ -32,6 +32,7 @@ import math
 from dataclasses import dataclass
 from typing import Optional, Sequence, Tuple
 
+from application.utils.librarian.cre_gap_suggester import GapProposal
 from application.utils.librarian.schemas import Decision, ReasonCode
 
 # Identify the engine in the RFC audit trail (mirrors RETRIEVER_NAME /
@@ -51,12 +52,14 @@ class DecisionResult:
     ``decision == linked``, or the reviewer's best-guess suggestion when
     ``decision == review`` (empty only when there were no candidates at all).
     ``reason_code`` is set iff ``decision == review``.
+    ``gap_proposal`` is set when ``reason_code == cre_gap``.
     """
 
     decision: Decision
     confidence: float
     cre_ids: Tuple[str, ...]
     reason_code: Optional[ReasonCode] = None
+    gap_proposal: Optional[GapProposal] = None
 
 
 def _validate(confidence: float, threshold: float) -> None:
@@ -93,20 +96,23 @@ def decide(
     """
     _validate(confidence, threshold)
 
-    top = tuple(candidate_cre_ids[:1])
+    # Auto-link stamps top-1 only. Review suggestions keep top-2 so a strong
+    # vector hit that hybrid-ranked #2 is still visible to Module D / eval.
+    top1 = tuple(candidate_cre_ids[:1])
+    top2 = tuple(candidate_cre_ids[:2])
 
     if not candidate_cre_ids:
         return DecisionResult(Decision.review, confidence, (), ReasonCode.no_candidates)
     if adversarial:
         return DecisionResult(
-            Decision.review, confidence, top, ReasonCode.adversarial_flag
+            Decision.review, confidence, top2, ReasonCode.adversarial_flag
         )
     if update_ambiguous:
         return DecisionResult(
-            Decision.review, confidence, top, ReasonCode.update_ambiguous
+            Decision.review, confidence, top2, ReasonCode.update_ambiguous
         )
     if confidence < threshold:
         return DecisionResult(
-            Decision.review, confidence, top, ReasonCode.below_threshold
+            Decision.review, confidence, top2, ReasonCode.below_threshold
         )
-    return DecisionResult(Decision.linked, confidence, top, None)
+    return DecisionResult(Decision.linked, confidence, top1, None)

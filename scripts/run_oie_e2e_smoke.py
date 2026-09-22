@@ -136,6 +136,7 @@ def main() -> int:
                 reranker=_Reranker(),
                 scaler=_Scaler(),
                 known_cre_ids=frozenset({"616-305"}),
+                cre_membership=frozenset({"616-305"}),
             )
             return run_librarian_queue(
                 sqla.session,

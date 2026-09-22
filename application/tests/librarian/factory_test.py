@@ -59,9 +59,13 @@ class _FakeDatabase:
         self.texts = {"616-305": "password storage", "111-111": "session handling"}
 
     def get_embeddings_by_doc_type(self, doc_type):
+        if str(doc_type) != "CRE":
+            return {}
         return self.embeddings
 
     def get_embedding_contents_by_doc_type(self, doc_type):
+        if str(doc_type) != "CRE":
+            return {}
         return self.texts
 
 
@@ -95,6 +99,12 @@ class BuildComponentsTest(unittest.TestCase):
         fast path validates a cited id against."""
         self.assertEqual(self._build().known_cre_ids, frozenset({"616-305", "111-111"}))
 
+    def test_exposes_hub_keys_as_emit_membership(self) -> None:
+        """Without a CRE session, membership falls back to hub embedding keys."""
+        self.assertEqual(
+            self._build().cre_membership, frozenset({"616-305", "111-111"})
+        )
+
     def test_embed_fn_is_injectable_so_no_paid_call_is_made(self) -> None:
         calls = []
 
@@ -111,6 +121,91 @@ class BuildComponentsTest(unittest.TestCase):
             )
         components.retriever.retrieve("verify passwords")
         self.assertEqual(calls, ["verify passwords"])
+
+    def test_cre_summary_replaces_c2_texts_and_can_use_in_memory_c1(self) -> None:
+        hidden = {"616-305": "hidden password blurb", "111-111": "hidden session blurb"}
+        vectors = {"616-305": [0.1, 0.2, 0.3], "111-111": [0.3, 0.2, 0.1]}
+        with mock.patch(
+            "application.utils.librarian.cross_encoder." "build_cross_encoder_score_fn",
+            return_value=lambda pairs: [0.0 for _ in pairs],
+        ):
+            with mock.patch.dict(
+                os.environ,
+                {
+                    "CRE_LIBRARIAN_TEMPERATURE": "1.2",
+                    "CRE_LIBRARIAN_CRE_SUMMARY": "1",
+                },
+                clear=True,
+            ):
+                with mock.patch(
+                    "application.utils.librarian.cre_summary.inject_cre_summaries",
+                    return_value=(hidden, vectors),
+                ):
+                    components = build_components(
+                        _FakeDatabase(),
+                        config=load_config(),
+                        embed_fn=lambda text: [0.1, 0.2, 0.3],
+                    )
+        self.assertEqual(
+            components.reranker._cre_texts["616-305"], "hidden password blurb"
+        )
+        from application.utils.librarian.candidate_retriever import CandidateRetriever
+
+        self.assertIsInstance(components.retriever, CandidateRetriever)
+
+    def test_dual_index_keeps_name_pool_and_summary_pool(self) -> None:
+        hidden = {"616-305": "hidden password blurb", "111-111": "hidden session blurb"}
+        vectors = {"616-305": [0.1, 0.2, 0.3], "111-111": [0.3, 0.2, 0.1]}
+        with mock.patch(
+            "application.utils.librarian.cross_encoder." "build_cross_encoder_score_fn",
+            return_value=lambda pairs: [0.0 for _ in pairs],
+        ):
+            with mock.patch.dict(
+                os.environ,
+                {
+                    "CRE_LIBRARIAN_TEMPERATURE": "1.2",
+                    "CRE_LIBRARIAN_CRE_SUMMARY": "1",
+                    "CRE_LIBRARIAN_DUAL_INDEX": "1",
+                    "CRE_LIBRARIAN_PRIOR_CAGE": "0",
+                },
+                clear=True,
+            ):
+                with mock.patch(
+                    "application.utils.librarian.cre_summary.inject_cre_summaries",
+                    return_value=(hidden, vectors),
+                ):
+                    components = build_components(
+                        _FakeDatabase(),
+                        config=load_config(),
+                        embed_fn=lambda text: [0.1, 0.2, 0.3],
+                    )
+        from application.utils.librarian.dual_index_retriever import DualIndexRetriever
+
+        self.assertIsInstance(components.retriever, DualIndexRetriever)
+
+    def test_cre_summary_off_keeps_hub_texts(self) -> None:
+        components = self._build()
+        self.assertEqual(components.reranker._cre_texts["616-305"], "password storage")
+
+    def test_standard_retrieval_flag_is_a_noop_without_a_standard_hub(self) -> None:
+        with mock.patch(
+            "application.utils.librarian.cross_encoder." "build_cross_encoder_score_fn",
+            return_value=lambda pairs: [0.0 for _ in pairs],
+        ):
+            with mock.patch.dict(
+                os.environ,
+                {
+                    "CRE_LIBRARIAN_TEMPERATURE": "1.2",
+                    "CRE_LIBRARIAN_STANDARD_RETRIEVAL": "1",
+                },
+                clear=True,
+            ):
+                components = build_components(
+                    _FakeDatabase(),
+                    config=load_config(),
+                    embed_fn=lambda text: [0.1, 0.2, 0.3],
+                )
+        self.assertTrue(hasattr(components.retriever, "retrieve"))
 
 
 if __name__ == "__main__":

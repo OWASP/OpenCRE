@@ -1,45 +1,42 @@
-"""Module C.2 — cross-encoder reranker (Week 4). The careful re-reader.
+"""Module C.2 — cross-encoder + hybrid reranker (Week 4).
 
-C.1 (the bi-encoder, W3) fingerprints the section and each CRE *separately* and
-cosine-ranks the whole hub — fast enough to scan every CRE, but it never reads a
-section and a candidate *together*, so the ordering inside the top-K shortlist is
-rough: the right CRE can sit at #7, not #1. C.2 fixes that ordering. It reads
-each ``(section text, candidate CRE text)`` *pair* together as one input, scores
-"do these two actually match?", re-sorts the shortlist by that score, and keeps
-the best N. Slow per pair, so it runs only over the K candidates C.1 already
-narrowed to — never the whole hub.
+C.1 (the bi-encoder) cosine-ranks the hub; C.2 re-orders that shortlist. For
+**small cages** (≤ ``hybrid_when_le``, typical prior-caged retrieval) we use a
+hybrid score so the cross-encoder cannot erase a strong vector/name hit:
 
-Like C.1, the reranker is a thin dependency-injected seam over its model:
+    score = α·vector + β·title_overlap(name+text) + γ·minmax(CE)
 
-  - ``score_fn(pairs) -> Sequence[float]`` — scores a batch of
-    ``(query_text, candidate_text)`` pairs, higher = better match. Prod wires a
-    pinned cross-encoder (``ms-marco-MiniLM-L-6-v2``); the harness and tests
-    inject a deterministic stub. C.2 never imports the model directly, so it
-    stays import-light and hermetically testable (mirrors C.1's ``embed_fn``).
-
-The text a candidate CRE is scored against is its ``embeddings_content`` — the
-same signal the hub vectors were built from — supplied as a ``{cre_id -> text}``
-map. The RFC is silent on ranking tech; it mandates only the
-``candidates[]``/``reranked[]`` audit trail. C.2 fills ``reranked[]`` (the slot
-C.1 deliberately left empty), populating ``score_rerank`` and re-ordering, while
-leaving ``candidates[]`` untouched so the pre-rerank shortlist stays auditable.
+Default mix is β=0 / γ=0.70 (CE-led; title overlap off). Env can restore the
+name-heavy mix (β=3.0 / γ=0.15). Larger shortlists keep CE-led ordering with
+a lighter title boost on the CE logits.
 """
 
 from cre_logging import get_logger
 
 logger = get_logger(__name__)
 
-from typing import Callable, List, Mapping, Sequence, Tuple
+from typing import Callable, List, Mapping, Optional, Sequence, Tuple
 
 from application.utils.librarian.schemas import RetrievalAudit
+from application.utils.librarian.title_boost import (
+    apply_title_boost,
+    hybrid_rank_scores,
+    title_overlap_boost,
+)
 
 # A function that scores a batch of (query_text, candidate_text) pairs.
 RerankFn = Callable[[Sequence[Tuple[str, str]]], Sequence[float]]
 
-# Identify the reranker in the RFC audit trail. Bumped when the model or the
-# scoring changes so a stored proposal is traceable to the code that ranked it.
 RERANKER_NAME = "cross-encoder-ms-marco-MiniLM-L-6-v2/0.1.0"
 DEFAULT_CROSSENCODER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+
+# Small-cage hybrid (prior cages are typically ≤20).
+HYBRID_WHEN_LE = 20
+HYBRID_ALPHA = 1.0
+HYBRID_BETA = 0.0
+HYBRID_GAMMA = 0.70
+# Large-shortlist: CE-led + light title boost on logits.
+LARGE_TITLE_BOOST_WEIGHT = 2.0
 
 
 class RerankerError(ValueError):
@@ -51,13 +48,7 @@ class MissingCandidateTextError(RerankerError):
 
 
 class CrossEncoderReranker:
-    """Re-score a C.1 shortlist by reading each (section, CRE) pair together.
-
-    ``top_n`` is ``CRE_LIBRARIAN_TOP_K_RERANK`` (default 5). ``rerank`` reads
-    ``audit.candidates`` (C.1's shortlist), scores every pair, re-sorts by the
-    cross-encoder score, keeps the best ``top_n``, and returns a copy of the
-    audit with ``reranked`` filled and ``candidates`` preserved.
-    """
+    """Re-score a C.1 shortlist; hybrid when the shortlist is a small cage."""
 
     def __init__(
         self,
@@ -65,27 +56,38 @@ class CrossEncoderReranker:
         top_n: int,
         *,
         cre_texts: Mapping[str, str],
+        cre_names: Optional[Mapping[str, str]] = None,
+        hybrid_when_le: int = HYBRID_WHEN_LE,
+        hybrid_alpha: float = HYBRID_ALPHA,
+        hybrid_beta: float = HYBRID_BETA,
+        hybrid_gamma: float = HYBRID_GAMMA,
+        large_title_boost_weight: float = LARGE_TITLE_BOOST_WEIGHT,
     ) -> None:
         if top_n <= 0:
             raise RerankerError(f"top_n must be > 0, got {top_n}")
         self._score_fn = score_fn
         self._top_n = top_n
         self._cre_texts = dict(cre_texts)
+        self._cre_names = dict(cre_names or {})
+        self._hybrid_when_le = hybrid_when_le
+        self._hybrid_alpha = hybrid_alpha
+        self._hybrid_beta = hybrid_beta
+        self._hybrid_gamma = hybrid_gamma
+        self._large_title_boost_weight = large_title_boost_weight
+
+    def _cre_blob(self, cre_id: str, cre_text: str) -> str:
+        name = self._cre_names.get(cre_id) or ""
+        return f"{name}\n{cre_text}".strip()
 
     def rerank(self, text: str, audit: RetrievalAudit) -> RetrievalAudit:
-        """Return a copy of ``audit`` with ``reranked`` filled from ``candidates``.
-
-        Raises ``MissingCandidateTextError`` if a shortlisted CRE has no text to
-        score (a silent-quality trap otherwise) and ``RerankerError`` if the
-        model returns the wrong number of scores.
-        """
+        """Return a copy of ``audit`` with ``reranked`` filled from ``candidates``."""
         candidates = audit.candidates
         if not candidates:
-            # Nothing to rerank (e.g. an empty hub upstream); keep the audit
-            # shape consistent — an explicit, empty reranked list.
             return audit.model_copy(update={"reranked": []})
 
         pairs: List[Tuple[str, str]] = []
+        blobs: List[str] = []
+        vectors: List[float] = []
         for c in candidates:
             cre_text = self._cre_texts.get(c.cre_id)
             if not cre_text:
@@ -94,22 +96,50 @@ class CrossEncoderReranker:
                     "the CRE's embeddings_content to score the pair"
                 )
             pairs.append((text, cre_text))
+            blobs.append(self._cre_blob(c.cre_id, cre_text))
+            vectors.append(float(c.score_vector or 0.0))
 
-        scores = list(self._score_fn(pairs))
-        if len(scores) != len(candidates):
+        ce_scores = [float(s) for s in self._score_fn(pairs)]
+        if len(ce_scores) != len(candidates):
             raise RerankerError(
-                f"score_fn returned {len(scores)} scores for {len(candidates)} "
+                f"score_fn returned {len(ce_scores)} scores for {len(candidates)} "
                 "candidates; the reranker expects exactly one score per pair"
+            )
+
+        use_hybrid = (
+            self._hybrid_when_le > 0 and len(candidates) <= self._hybrid_when_le
+        )
+        if use_hybrid:
+            title_boosts = [
+                title_overlap_boost(text, blob, weight=1.0) for blob in blobs
+            ]
+            final = hybrid_rank_scores(
+                vectors=vectors,
+                ce_scores=ce_scores,
+                title_boosts=title_boosts,
+                alpha=self._hybrid_alpha,
+                beta=self._hybrid_beta,
+                gamma=self._hybrid_gamma,
+            )
+        else:
+            final = apply_title_boost(
+                text,
+                ce_scores,
+                blobs,
+                weight=self._large_title_boost_weight,
             )
 
         reranked = [
             c.model_copy(update={"score_rerank": float(s)})
-            for c, s in zip(candidates, scores, strict=True)
+            for c, s in zip(candidates, final, strict=True)
         ]
-        # Highest cross-encoder score first, then keep only the best top_n.
-        # Python's sort is stable, so ties preserve C.1's cosine order.
         reranked.sort(key=lambda c: c.score_rerank, reverse=True)
         return audit.model_copy(update={"reranked": reranked[: self._top_n]})
+
+
+# Process-level CE cache: Module C grid / queue runners call build_components
+# per combo; reloading MiniLM every time wastes seconds and can thrash RAM.
+_CE_SCORE_FN_CACHE: dict[tuple[str, str], RerankFn] = {}
 
 
 def build_cross_encoder_score_fn(
@@ -117,16 +147,56 @@ def build_cross_encoder_score_fn(
 ) -> RerankFn:
     """Load a sentence-transformers CrossEncoder and adapt it to ``RerankFn``.
 
-    ``sentence_transformers`` (and torch) is imported lazily so this module —
-    and CI/tests that inject a stub score_fn — never need the heavy ML stack
-    loaded (mirrors C.1 keeping the embedding model out of module import).
+    Caches one score_fn per (model_name, device) in-process so exhaustive
+    switch grids and multi-combo queue runs keep the model warm.
     """
+    import os
+
     from sentence_transformers import CrossEncoder  # lazy, heavy
 
-    model = CrossEncoder(model_name)
+    # CRE_LIBRARIAN_DEVICE=cpu avoids silent MPS aborts on long Module C runs.
+    device = (os.environ.get("CRE_LIBRARIAN_DEVICE") or "").strip() or None
+    cache_key = (model_name, device or "")
+    cached = _CE_SCORE_FN_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
+
+    model = CrossEncoder(model_name, device=device) if device else CrossEncoder(model_name)
 
     def score_fn(pairs: Sequence[Tuple[str, str]]) -> List[float]:
-        # CrossEncoder.predict takes a list of [a, b] pairs, returns an ndarray.
-        return [float(s) for s in model.predict([list(p) for p in pairs])]
+        # show_progress_bar=False: grid logs were drowned in per-chunk bars;
+        # num_workers via default pool stays in-process (no loky CE reloads).
+        return [
+            float(s)
+            for s in model.predict(
+                [list(p) for p in pairs],
+                show_progress_bar=False,
+            )
+        ]
 
+    _CE_SCORE_FN_CACHE[cache_key] = score_fn
     return score_fn
+
+
+def vector_rerank_union_ids(
+    audit: RetrievalAudit, *, vector_top: int = 2, rerank_top: int = 5
+) -> List[str]:
+    """Ordered unique CRE ids: reranked[:rerank_top] then vector top-N not already in."""
+    ordered: List[str] = []
+    seen: set[str] = set()
+
+    def add(cre_id: str) -> None:
+        if cre_id and cre_id not in seen:
+            seen.add(cre_id)
+            ordered.append(cre_id)
+
+    for c in (audit.reranked or [])[:rerank_top]:
+        add(c.cre_id)
+    by_vec = sorted(
+        audit.candidates or [],
+        key=lambda c: float(c.score_vector or 0.0),
+        reverse=True,
+    )
+    for c in by_vec[:vector_top]:
+        add(c.cre_id)
+    return ordered

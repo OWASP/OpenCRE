@@ -181,6 +181,20 @@ class PgVectorRetrieverTest(unittest.TestCase):
         # Cosine via the <=> operator, scored as similarity (1 - distance).
         self.assertIn("<=>", conn.last_sql)
 
+    def test_standard_hub_selects_node_id(self) -> None:
+        conn = _FakeConnection([])
+        PgVectorRetriever(
+            embed_fn=fake_embed,
+            connection=conn,
+            top_k=5,
+            threshold=0.8,
+            doc_type="Standard",
+            id_column="node_id",
+        ).retrieve("about-a")
+        self.assertEqual(conn.last_params["doc_type"], "Standard")
+        self.assertIn("node_id", conn.last_sql)
+        self.assertNotIn("cre_id IS NOT NULL", conn.last_sql)
+
 
 class BuildRetrieverTest(unittest.TestCase):
     def test_in_memory_requires_pool(self) -> None:

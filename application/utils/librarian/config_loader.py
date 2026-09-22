@@ -21,11 +21,39 @@ logger = get_logger(__name__)
 import math
 import os
 from dataclasses import dataclass
+from typing import Optional
 
 # Retrieval backends (see candidate_retriever.RetrieverBackend). Kept as a
 # plain set here so the loader stays dependency-free; the retriever owns the
 # enum it maps to.
 _RETRIEVER_BACKENDS = frozenset({"in_memory", "pgvector"})
+
+# Default γ for CRE_LIBRARIAN_MARGIN_GAMMA when the env is present but empty /
+# boolean-true (distinct from CRE_LIBRARIAN_HYBRID_GAMMA).
+_DEFAULT_MARGIN_GAMMA = 0.85
+
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in ("1", "true", "yes", "on")
+
+
+def _env_csv(name: str) -> tuple[str, ...]:
+    raw = os.getenv(name, "")
+    return tuple(part.strip() for part in raw.split(",") if part.strip())
+
+
+def _env_optional_margin_gamma(name: str) -> Optional[float]:
+    """Unset → off (None). Set → float, or 0.85 for empty / boolean-true."""
+    raw = os.getenv(name)
+    if raw is None:
+        return None
+    stripped = raw.strip()
+    if not stripped or stripped.lower() in ("1", "true", "yes", "on"):
+        return _DEFAULT_MARGIN_GAMMA
+    return float(stripped)
 
 
 @dataclass(frozen=True)
@@ -39,6 +67,24 @@ class LibrarianConfig:
     batch_size: int
     ece_target: float
     conformal_alpha: float
+    standard_retrieval: bool = False
+    standard_retrieval_families: tuple[str, ...] = ()
+    standard_top_k: int = 10
+    standard_max_cres_per_hit: int = 4
+    cre_text_enrich: bool = False
+    cre_summary: bool = False
+    dual_index: bool = False
+    use_rrf: bool = False
+    context_enrich: bool = False
+    prior_cage: bool = True
+    focus_query: bool = False
+    pref_inject: bool = True
+    prefer_audit_ids: bool = True
+    hybrid_beta: float = 0.0
+    hybrid_gamma: float = 0.70
+    #: Relative margin cutoff for decision shortlist; None disables.
+    margin_gamma: Optional[float] = None
+    hub_leaf_cage: bool = False
 
 
 def load_config() -> LibrarianConfig:
@@ -53,7 +99,28 @@ def load_config() -> LibrarianConfig:
     batch_size = int(os.getenv("CRE_LIBRARIAN_BATCH_SIZE", "32"))
     ece_target = float(os.getenv("CRE_LIBRARIAN_ECE_TARGET", "0.10"))
     conformal_alpha = float(os.getenv("CRE_LIBRARIAN_CONFORMAL_ALPHA", "0.10"))
-
+    standard_retrieval = _env_bool("CRE_LIBRARIAN_STANDARD_RETRIEVAL", False)
+    standard_retrieval_families = _env_csv("CRE_LIBRARIAN_STANDARD_RETRIEVAL_FAMILIES")
+    standard_top_k = int(os.getenv("CRE_LIBRARIAN_STANDARD_TOP_K", "10"))
+    standard_max_cres_per_hit = int(
+        os.getenv("CRE_LIBRARIAN_STANDARD_MAX_CRES_PER_HIT", "4")
+    )
+    cre_text_enrich = _env_bool("CRE_LIBRARIAN_CRE_TEXT_ENRICH", False)
+    cre_summary = _env_bool("CRE_LIBRARIAN_CRE_SUMMARY", False)
+    dual_index = _env_bool("CRE_LIBRARIAN_DUAL_INDEX", False)
+    use_rrf = _env_bool("CRE_LIBRARIAN_USE_RRF", False)
+    context_enrich = _env_bool("CRE_LIBRARIAN_CONTEXT_ENRICH", False)
+    # Lawrence OOD audit (17 Sep 2026) + clone A/B: keep cage / Lever 4 /
+    # prefer_audit. FOCUS_QUERY defaults off (full narrative). Hybrid is
+    # CE-led (β=0 / γ=0.70). Env can restore the name-heavy mix.
+    prior_cage = _env_bool("CRE_LIBRARIAN_PRIOR_CAGE", True)
+    focus_query = _env_bool("CRE_LIBRARIAN_FOCUS_QUERY", False)
+    pref_inject = _env_bool("CRE_LIBRARIAN_PREF_INJECT", True)
+    prefer_audit_ids = _env_bool("CRE_LIBRARIAN_PREFER_AUDIT_IDS", True)
+    hybrid_beta = float(os.getenv("CRE_LIBRARIAN_HYBRID_BETA", "0"))
+    hybrid_gamma = float(os.getenv("CRE_LIBRARIAN_HYBRID_GAMMA", "0.70"))
+    margin_gamma = _env_optional_margin_gamma("CRE_LIBRARIAN_MARGIN_GAMMA")
+    hub_leaf_cage = _env_bool("CRE_LIBRARIAN_HUB_LEAF_CAGE", False)
     if retriever_backend not in _RETRIEVER_BACKENDS:
         raise ValueError(
             f"CRE_LIBRARIAN_RETRIEVER_BACKEND must be one of "
@@ -90,6 +157,30 @@ def load_config() -> LibrarianConfig:
         raise ValueError(
             f"CRE_LIBRARIAN_CONFORMAL_ALPHA must be in [0.0, 1.0], got {conformal_alpha}"
         )
+    if standard_top_k <= 0:
+        raise ValueError(
+            f"CRE_LIBRARIAN_STANDARD_TOP_K must be > 0, got {standard_top_k}"
+        )
+    if standard_max_cres_per_hit <= 0:
+        raise ValueError(
+            "CRE_LIBRARIAN_STANDARD_MAX_CRES_PER_HIT must be > 0, "
+            f"got {standard_max_cres_per_hit}"
+        )
+    if not math.isfinite(hybrid_beta) or hybrid_beta < 0:
+        raise ValueError(
+            f"CRE_LIBRARIAN_HYBRID_BETA must be finite and >= 0, got {hybrid_beta}"
+        )
+    if not math.isfinite(hybrid_gamma) or hybrid_gamma < 0:
+        raise ValueError(
+            f"CRE_LIBRARIAN_HYBRID_GAMMA must be finite and >= 0, got {hybrid_gamma}"
+        )
+    if margin_gamma is not None and (
+        not math.isfinite(margin_gamma) or not 0.0 < margin_gamma <= 1.0
+    ):
+        raise ValueError(
+            "CRE_LIBRARIAN_MARGIN_GAMMA must be finite in (0.0, 1.0], "
+            f"got {margin_gamma}"
+        )
 
     return LibrarianConfig(
         crossencoder_model=crossencoder_model,
@@ -101,4 +192,21 @@ def load_config() -> LibrarianConfig:
         batch_size=batch_size,
         ece_target=ece_target,
         conformal_alpha=conformal_alpha,
+        standard_retrieval=standard_retrieval,
+        standard_retrieval_families=standard_retrieval_families,
+        standard_top_k=standard_top_k,
+        standard_max_cres_per_hit=standard_max_cres_per_hit,
+        cre_text_enrich=cre_text_enrich,
+        cre_summary=cre_summary,
+        dual_index=dual_index,
+        use_rrf=use_rrf,
+        context_enrich=context_enrich,
+        prior_cage=prior_cage,
+        focus_query=focus_query,
+        pref_inject=pref_inject,
+        prefer_audit_ids=prefer_audit_ids,
+        hybrid_beta=hybrid_beta,
+        hybrid_gamma=hybrid_gamma,
+        margin_gamma=margin_gamma,
+        hub_leaf_cage=hub_leaf_cage,
     )
