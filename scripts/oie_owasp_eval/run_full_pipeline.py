@@ -139,9 +139,7 @@ def _download_tarball(repo: str, branch: str, dest: Path) -> str:
         except Exception:
             dest.unlink(missing_ok=True)
     for try_branch in (branch, "main" if branch == "master" else "master"):
-        url = (
-            f"https://codeload.github.com/OWASP/{repo}/tar.gz/refs/heads/{try_branch}"
-        )
+        url = f"https://codeload.github.com/OWASP/{repo}/tar.gz/refs/heads/{try_branch}"
         print(f"GET {url}", flush=True)
         try:
             urllib.request.urlretrieve(url, dest)
@@ -330,31 +328,46 @@ def _cheatsheet_section_id(row: Dict[str, Any]) -> str:
 
 
 def _top2_cre_ids(envelope: Dict[str, Any], uuid_to_ext: Dict[str, str]) -> List[str]:
+    """Union of rerank top-2 and vector top-2 (up to 4 ids).
+
+    Keep in sync with ``run_b2_pr_mappings.top2_cre_external_ids`` — full-pipeline
+    GitHub scoring must use the same gate as the B2 fixture arm.
+    """
     ordered: List[str] = []
 
-    def add(raw: Any) -> None:
-        if raw is None:
+    def add(cre_id: Any) -> None:
+        if cre_id is None:
             return
-        s = str(raw).strip()
+        s = str(cre_id).strip()
         if not s:
             return
         ext = uuid_to_ext.get(s, s)
         if ext not in ordered:
             ordered.append(ext)
 
+    retrieval = envelope.get("retrieval") or {}
+    reranked = list(retrieval.get("reranked") or [])
+    candidates = list(retrieval.get("candidates") or [])
+
+    for cand in reranked[:2]:
+        if isinstance(cand, dict):
+            add(cand.get("cre_id"))
+
+    by_vec = sorted(
+        (c for c in candidates if isinstance(c, dict)),
+        key=lambda c: float(c.get("score_vector") or 0.0),
+        reverse=True,
+    )
+    for cand in by_vec[:2]:
+        add(cand.get("cre_id"))
+
+    if ordered:
+        return ordered
+
     for field in ("links", "suggested_links"):
         for link in envelope.get(field) or []:
             if isinstance(link, dict):
                 add(link.get("cre_id"))
-            if len(ordered) >= 2:
-                return ordered[:2]
-    retrieval = envelope.get("retrieval") or {}
-    for field in ("rerank_top", "vector_top", "shortlist"):
-        for item in retrieval.get(field) or []:
-            if isinstance(item, dict):
-                add(item.get("cre_id") or item.get("id"))
-            else:
-                add(item)
             if len(ordered) >= 2:
                 return ordered[:2]
     return ordered
@@ -377,21 +390,34 @@ def _guess_keys_for_decision(
     is_cs = "cheatsheet" in repo_l or "cheatsheet" in path_l
 
     if is_asvs and not is_aisvs:
-        for m in ASVS_SID_RE.finditer(blob):
-            sid = m.group(1).upper()
-            # Prefer requirement grain (V1.1.2); keep V1.1 for rare gold rows
-            keys.add(f"asvs::{sid}")
-        for m in ASVS_BARE_REQ_RE.finditer(blob):
-            keys.add(f"asvs::V{m.group(1)}")
-        for m in re.finditer(
-            r"Section-ID:\s*([^\n]+)", blob, flags=re.IGNORECASE
-        ):
-            for part in re.split(r"[,;\s]+", m.group(1)):
-                part = part.strip()
-                if ASVS_SID_RE.fullmatch(part):
-                    keys.add(f"asvs::{part.upper()}")
+        # Prefer an explicit single requirement Section-ID (extractor / B2 shape).
+        primary: Set[str] = set()
+        for m in re.finditer(r"Section-ID:\s*([^\n]+)", blob, flags=re.IGNORECASE):
+            parts = [p.strip() for p in re.split(r"[,;]+", m.group(1)) if p.strip()]
+            three: List[str] = []
+            for part in parts:
+                if ASVS_SID_RE.fullmatch(part) and part.count(".") == 2:
+                    three.append(f"asvs::{part.upper()}")
                 elif ASVS_BARE_REQ_RE.fullmatch(part):
-                    keys.add(f"asvs::V{part}")
+                    three.append(f"asvs::V{part}")
+            if len(parts) == 1 and three:
+                primary.add(three[0])
+        if primary:
+            keys |= primary
+        else:
+            for m in ASVS_SID_RE.finditer(blob):
+                sid = m.group(1).upper()
+                # Prefer requirement grain (V1.1.2); keep V1.1 for rare gold rows
+                keys.add(f"asvs::{sid}")
+            for m in ASVS_BARE_REQ_RE.finditer(blob):
+                keys.add(f"asvs::V{m.group(1)}")
+            for m in re.finditer(r"Section-ID:\s*([^\n]+)", blob, flags=re.IGNORECASE):
+                for part in re.split(r"[,;\s]+", m.group(1)):
+                    part = part.strip()
+                    if ASVS_SID_RE.fullmatch(part):
+                        keys.add(f"asvs::{part.upper()}")
+                    elif ASVS_BARE_REQ_RE.fullmatch(part):
+                        keys.add(f"asvs::V{part}")
     if is_aisvs:
         for m in AISVS_SID_RE.finditer(blob):
             keys.add(f"aisvs::{m.group(1).upper()}")
@@ -439,11 +465,9 @@ def score_github_decisions(
             gold_map[key] = {c for c in (row.get("cre_ids") or []) if c}
             gold_meta[key] = {"logical": logical, "section_id": sid, "row": row}
 
-    # Accumulate predictions per gold key.
-    # Chapter-sized harvest: union all preds from a path onto every section id
-    # seen in any chunk of that same path (ASVS requirement grain).
-    path_preds: Dict[str, Set[str]] = {}
-    path_keys: Dict[str, Set[str]] = {}
+    # Per-chunk attribution: each decision's preds only land on section ids
+    # found in that chunk (no chapter-file union that smears CRE soup).
+    pred: Dict[str, Set[str]] = {}
     for row in decisions:
         env = row.envelope if isinstance(row.envelope, dict) else {}
         knowledge = env.get("knowledge") or {}
@@ -451,15 +475,20 @@ def score_github_decisions(
         path = str(loc.get("path") or loc.get("id") or "")
         text = str(knowledge.get("text") or knowledge.get("body") or "")
         src = knowledge.get("source") or {}
-        repo = str(
-            src.get("repository") or src.get("repo") or src.get("name") or ""
-        )
+        repo = str(src.get("repository") or src.get("repo") or src.get("name") or "")
         if not repo:
             repo = str(env.get("artifact_id") or path)
         suggested = set(_top2_cre_ids(env, uuid_to_ext))
         if not suggested and not path:
             continue
         keys = _guess_keys_for_decision(path=path, text=text, repo=repo)
+        asvs_three = {
+            k
+            for k in keys
+            if k.startswith("asvs::") and k.split("::", 1)[1].count(".") == 2
+        }
+        if asvs_three:
+            keys = (keys - {k for k in keys if k.startswith("asvs::")}) | asvs_three
         # Normalize cheatsheet keys against gold
         norm_keys: Set[str] = set()
         for key in keys:
@@ -467,24 +496,21 @@ def score_github_decisions(
                 stem = key.split("::", 1)[1]
                 matched = None
                 for gk in gold_map:
-                    if gk.startswith("cheatsheets::") and gk.split("::", 1)[
-                        1
-                    ].casefold() == stem.casefold():
+                    if (
+                        gk.startswith("cheatsheets::")
+                        and gk.split("::", 1)[1].casefold() == stem.casefold()
+                    ):
                         matched = gk
                         break
                 if matched:
                     norm_keys.add(matched)
             else:
                 norm_keys.add(key)
-        path_preds.setdefault(path, set()).update(suggested)
-        path_keys.setdefault(path, set()).update(norm_keys)
-
-    pred: Dict[str, Set[str]] = {}
-    for path, keys in path_keys.items():
-        suggested = path_preds.get(path) or set()
         if not suggested:
+            for key in norm_keys:
+                pred.setdefault(key, set())
             continue
-        for key in keys:
+        for key in norm_keys:
             pred.setdefault(key, set()).update(suggested)
 
     details: List[Dict[str, Any]] = []
@@ -720,9 +746,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             pipeline_run_id=run_id,
             sync_repos=False,
             run_harvester_fn=harvester,
-            run_noise_filter_fn=_keep_all_noise_filter
-            if args.keep_all_knowledge
-            else None,
+            run_noise_filter_fn=(
+                _keep_all_noise_filter if args.keep_all_knowledge else None
+            ),
             use_langgraph=True,
         )
         orch_path = out_dir / "orchestrator_result.json"
@@ -736,7 +762,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             EXP.mkdir(parents=True, exist_ok=True)
             _write_b2_shaped_report(github_report, gh_out)
             # Mirror under ART for humans browsing full_pipeline/
-            _write_b2_shaped_report(github_report, out_dir / "github_arms.b2_report.json")
+            _write_b2_shaped_report(
+                github_report, out_dir / "github_arms.b2_report.json"
+            )
             print(
                 json.dumps(
                     {k: github_report[k] for k in github_report if k != "details"},
@@ -775,9 +803,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "github_accuracy": (github_report or {}).get("accuracy"),
         "github_hits": (github_report or {}).get("hits"),
         "github_scorable": (github_report or {}).get("scorable"),
-        "orchestrator_ok": None
-        if orch_result is None
-        else orch_result.to_dict().get("ok"),
+        "orchestrator_ok": (
+            None if orch_result is None else orch_result.to_dict().get("ok")
+        ),
         "b2_arms": {
             name: {
                 "accuracy": rep.get("accuracy"),

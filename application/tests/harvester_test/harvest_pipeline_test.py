@@ -167,6 +167,13 @@ class DocumentChunkPipelineIntegrationTests(unittest.TestCase):
         joined = "\n".join(r.text for r in records)
         self.assertIn("Section-ID: V1.1.2", joined)
         self.assertIn("Section-ID: V1.2.2", joined)
+        for record in records:
+            sid_lines = [
+                ln for ln in record.text.splitlines() if ln.startswith("Section-ID:")
+            ]
+            self.assertEqual(len(sid_lines), 1, msg=record.text[:240])
+            self.assertRegex(sid_lines[0], r"^Section-ID: V\d+\.\d+\.\d+$")
+            self.assertNotIn("|", record.text.split("\n\n", 1)[-1])
 
 
 class OieOrchestratorTests(unittest.TestCase):

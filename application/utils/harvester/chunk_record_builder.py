@@ -29,6 +29,12 @@ _SECTION_ID_RE = re.compile(
     re.IGNORECASE,
 )
 
+# B2 / requirement-extractor grain: Source + Section-ID already on the chunk.
+_REQUIREMENT_PREFIX_RE = re.compile(
+    r"^\s*Source:\s*(V\d+\.\d+\.\d+)\s*\nSection-ID:\s*(V\d+\.\d+\.\d+)\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+
 
 @dataclass(slots=True)
 class ChunkRecordBuilder:
@@ -162,13 +168,22 @@ class ChunkRecordBuilder:
         heading_path: list[str],
         locator_path: str,
     ) -> str:
-        """Enrich chunk text for Module C retrieval (standard + section identity)."""
-        section_ids = ChunkRecordBuilder._extract_section_ids(
-            source_name,
-            locator_path,
-            " ".join(heading_path),
-            text[:800],
-        )
+        """Enrich chunk text for Module C retrieval (standard + section identity).
+
+        When the chunk already carries a B2-shaped requirement prefix
+        (``Source: Vn.n.n`` + ``Section-ID: Vn.n.n``), keep that single id —
+        do not re-scrape heading/path soup into a comma-list Section-ID.
+        """
+        primary = ChunkRecordBuilder._requirement_section_id(text)
+        if primary:
+            section_ids = [primary]
+        else:
+            section_ids = ChunkRecordBuilder._extract_section_ids(
+                source_name,
+                locator_path,
+                " ".join(heading_path),
+                text[:800],
+            )
         lines: list[str] = []
         if standard:
             lines.append(f"Standard: {standard}")
@@ -177,11 +192,45 @@ class ChunkRecordBuilder:
         lines.append(f"Source: {source_name}")
         if section_ids:
             lines.append("Section-ID: " + ", ".join(section_ids[:6]))
-        if heading_path:
+        if heading_path and not primary:
             lines.append("Section: " + " > ".join(heading_path))
         lines.append("")
-        lines.append(text)
+        # Avoid a duplicate Section-ID block when the body already has one.
+        body = text
+        if primary:
+            body = ChunkRecordBuilder._strip_leading_requirement_prefix(text)
+        lines.append(body)
         return "\n".join(lines)
+
+    @staticmethod
+    def _requirement_section_id(text: str) -> Optional[str]:
+        """Return Vn.n.n when ``text`` starts with a matching Source/Section-ID pair."""
+        m = _REQUIREMENT_PREFIX_RE.search(text or "")
+        if not m:
+            return None
+        src = m.group(1).upper()
+        sid = m.group(2).upper()
+        if src != sid:
+            return None
+        return sid
+
+    @staticmethod
+    def _strip_leading_requirement_prefix(text: str) -> str:
+        """Drop Source/Section-ID/Section header so the outer enricher owns metadata."""
+        lines = (text or "").splitlines()
+        i = 0
+        # Skip blank lines then Source / Section-ID / optional Section
+        while i < len(lines) and not lines[i].strip():
+            i += 1
+        if i < len(lines) and lines[i].lower().startswith("source:"):
+            i += 1
+        if i < len(lines) and lines[i].lower().startswith("section-id:"):
+            i += 1
+        if i < len(lines) and lines[i].lower().startswith("section:"):
+            i += 1
+        if i < len(lines) and not lines[i].strip():
+            i += 1
+        return "\n".join(lines[i:])
 
     @staticmethod
     def _heading_path_for_chunk(

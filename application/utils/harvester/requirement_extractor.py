@@ -100,14 +100,20 @@ def extract_requirement_segments(text: str) -> List[RequirementSegment]:
 
 
 def extract_requirement_chunks(text: str) -> List[ChunkInfo]:
-    """Build ``ChunkInfo`` list with B2-style Section-ID prefixes."""
+    """Build ``ChunkInfo`` list with B2-style Section-ID prefixes.
+
+    Body is requirement prose only (no raw markdown table pipes) so Module C
+    retrieval is not biased by table chrome or neighboring section headings.
+    """
     out: List[ChunkInfo] = []
     for seg in extract_requirement_segments(text):
+        body = (seg.text or "").strip()
+        section_line = body.splitlines()[0][:200] if body else seg.requirement_id
         prefixed = (
             f"Source: {seg.requirement_id}\n"
             f"Section-ID: {seg.requirement_id}\n"
-            f"Section: {seg.text.splitlines()[0][:200] if seg.text else seg.requirement_id}\n\n"
-            f"{seg.text}"
+            f"Section: {section_line}\n\n"
+            f"{body}"
         )
         # Prefix is synthetic — keep offsets pointing at the original span so
         # validators that check idx ordering still see start < end on body.
@@ -142,24 +148,20 @@ def _segments_from_table_rows(body: str) -> List[RequirementSegment]:
     if len(matches) < 2:
         return []
     segs: List[RequirementSegment] = []
-    for i, match in enumerate(matches):
+    for match in matches:
         rid = normalize_asvs_id(match.group(1))
         desc = match.group(2).strip()
+        # One row only — do not span to the next requirement (that pulled in
+        # intervening ``## Vn.n`` headings and polluted Module C queries).
         start = match.start()
-        end = (
-            matches[i + 1].start()
-            if i + 1 < len(matches)
-            else _paragraph_end(body, match.end())
-        )
-        snippet = body[start:end].strip()
-        if not snippet:
-            snippet = f"{rid} {desc}".strip()
+        end = match.end()
+        snippet = desc or f"{rid}".strip()
         segs.append(
             RequirementSegment(
                 requirement_id=rid,
                 text=snippet,
                 start_char_idx=start,
-                end_char_idx=end,
+                end_char_idx=max(end, start + 1),
             )
         )
     return segs

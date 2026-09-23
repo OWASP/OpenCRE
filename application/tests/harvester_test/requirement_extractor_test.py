@@ -70,6 +70,41 @@ class RequirementExtractorTests(unittest.TestCase):
         for c in chunks:
             self.assertLess(c.start_char_idx, c.end_char_idx)
 
+    def test_table_segment_is_prose_only_no_next_heading_bleed(self) -> None:
+        body = """\
+## V1.1 Encoding Architecture
+
+| # | Description | Level |
+| :---: | :--- | :---: |
+| **1.1.2** | Verify that the application performs output encoding. | 2 |
+| **1.1.3** | Verify that output encoding preserves integrity. | 2 |
+
+## V1.2 Injection Prevention
+
+| # | Description | Level |
+| :---: | :--- | :---: |
+| **1.2.1** | Verify that the application protects against SQL injection. | 1 |
+"""
+        segs = {s.requirement_id: s for s in extract_requirement_segments(body)}
+        self.assertIn("V1.1.3", segs)
+        # Must not pull the next subsection heading into the prior requirement.
+        self.assertNotIn("V1.2 Injection", segs["V1.1.3"].text)
+        self.assertNotIn("SQL injection", segs["V1.1.3"].text)
+        # Body is clean requirement prose (no raw table pipes).
+        self.assertIn("preserves integrity", segs["V1.1.3"].text)
+        self.assertNotIn("|", segs["V1.1.3"].text)
+
+    def test_extract_chunk_single_section_id_line(self) -> None:
+        chunks = extract_requirement_chunks(_ASVS_SNIPPET)
+        v112 = next(c for c in chunks if "Section-ID: V1.1.2\n" in c.text)
+        # Exactly one Section-ID line, matching Source id (B2-shaped).
+        sid_lines = [
+            ln for ln in v112.text.splitlines() if ln.startswith("Section-ID:")
+        ]
+        self.assertEqual(sid_lines, ["Section-ID: V1.1.2"])
+        self.assertTrue(v112.text.startswith("Source: V1.1.2\n"))
+        self.assertNotIn("|", v112.text)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -109,6 +109,48 @@ class ChunkRecordBuilderTests(unittest.TestCase):
         self.assertEqual(records[1].span.index, 1)
         self.assertEqual(records[1].chunk_id, "chk:art:OWASP/ASVS:README.md:1")
 
+    def test_requirement_extract_chunk_keeps_single_section_id(self) -> None:
+        """Do not re-scrape heading/path ids over a clean extractor prefix."""
+        body = (
+            "Source: V1.1.2\n"
+            "Section-ID: V1.1.2\n"
+            "Section: Verify that output encoding is applied.\n\n"
+            "Verify that output encoding is applied."
+        )
+        document = Document(
+            schema_version="0.2.0",
+            artifact_id="art:OWASP/ASVS:0x10-V1.md",
+            pipeline_run_id="run-1",
+            text="# V1 Encoding\n\n## V1.1 Architecture\n\n" + body,
+            source=SourceInfo(
+                type="github",
+                repository="OWASP/ASVS",
+                commit_sha="abc1234deadbeef",
+                committed_at=datetime(2026, 2, 1, 1, 0, 0, tzinfo=timezone.utc),
+            ),
+            locator=Locator(
+                kind="repo_path",
+                id="0x10-V1.md",
+                path="5.0/en/0x10-V1-Encoding-and-Sanitization.md",
+            ),
+            heading_structure=[
+                HeadingNode(level=1, text="V1 Encoding", start_line=1, end_line=10),
+                HeadingNode(
+                    level=2, text="V1.1 Architecture", start_line=3, end_line=10
+                ),
+            ],
+        )
+        chunk = ChunkInfo(text=body, start_char_idx=0, end_char_idx=len(body))
+        record = ChunkRecordBuilder().build(document, [chunk])[0]
+        sid_lines = [
+            ln for ln in record.text.splitlines() if ln.startswith("Section-ID:")
+        ]
+        # Outer enricher may add Standard/Version/Source, but Section-ID stays one.
+        self.assertEqual(len(sid_lines), 1)
+        self.assertEqual(sid_lines[0], "Section-ID: V1.1.2")
+        self.assertNotIn("V1.1,", record.text)
+        self.assertNotIn("5.0,", record.text)
+
 
 if __name__ == "__main__":
     unittest.main()
