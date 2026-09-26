@@ -2,7 +2,9 @@
 """B2: score Module C against OWASP mapping-fixture gold (harness only).
 
 Canonical gold is ``application/tests/fixtures/owasp_mappings`` via
-``application.utils.mapping_fixtures``. The agentic-AI stub (no hub Links)
+``application.utils.mapping_fixtures``. Orphan umbrella CREs with no
+Contains children include their ``Related`` neighbors in ``cre_ids``
+(``gold_remap: related_expand_orphan``). The agentic-AI stub (no hub Links)
 stays under ``scripts/oie_owasp_eval/fixtures/b2_gold/``. Source material is
 each row's ``hyperlink``, cached under
 ``scripts/oie_owasp_eval/fixtures/b2_sources/``. Alignment is
@@ -35,49 +37,43 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures"
 GOLD_DIR = FIXTURES / "b2_gold"
 SOURCES_DIR = FIXTURES / "b2_sources"
 
-# Mapping-fixture gold (landed via #953/#960). Agentic stub is harness-only.
-# local_gold=True → scripts/oie_owasp_eval/fixtures/b2_gold/ (Related-expanded
-# orphan umbrellas). Canonical fixtures stay under application/tests/fixtures.
+# Canonical gold lives under application/tests/fixtures/owasp_mappings
+# (Related-expanded orphan umbrellas are part of those fixtures). Agentic stub
+# stays harness-only under scripts/oie_owasp_eval/fixtures/b2_gold/.
 HARNESSES: List[Dict[str, Any]] = [
     {
         "fixture_name": "owasp_top10_2025",
         "gold_file": "owasp_top10_2025.json",
-        "local_gold": True,
         "label": "OWASP Top 10 2025",
         "pr": 960,
     },
     {
         "fixture_name": "owasp_api_top10_2023",
         "gold_file": "owasp_api_top10_2023.json",
-        "local_gold": True,
         "label": "OWASP API Top 10 2023",
         "pr": 960,
     },
     {
         "fixture_name": "owasp_llm_top10_2025",
         "gold_file": "owasp_llm_top10_2025.json",
-        "local_gold": True,
         "label": "OWASP LLM Top 10 2025",
         "pr": 960,
     },
     {
         "fixture_name": "owasp_aisvs_1_0",
         "gold_file": "owasp_aisvs_1_0.json",
-        "local_gold": True,
         "label": "OWASP AISVS 1.0",
         "pr": 960,
     },
     {
         "fixture_name": "owasp_kubernetes_top10_2025",
         "gold_file": "owasp_kubernetes_top10_2025.json",
-        "local_gold": True,
         "label": "OWASP Kubernetes Top 10 2025",
         "pr": 953,
     },
     {
         "fixture_name": "owasp_kubernetes_top10_2022",
         "gold_file": "owasp_kubernetes_top10_2022.json",
-        "local_gold": True,
         # Cached hyperlink text still lives under the pre-merge PR #927 folder.
         "source_dir": "owasp_kubernetes_top10_2022_pr927",
         "label": "OWASP Kubernetes Top 10 2022",

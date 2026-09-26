@@ -4,6 +4,11 @@ These files are **eval / unit-test gold**, not a production catalog. Other
 projects should link to OpenCRE so we can parse at the source; shipping
 hand-maintained CRE mappings as importers would make OpenCRE another
 spreadsheet. The exception is GSoC/OIE pipeline validation.
+
+Some rows expand orphan umbrella CREs (no Contains children) with their
+``Related`` graph neighbors into ``cre_ids``, keeping the authored ids in
+``cre_ids_original`` and tagging ``gold_remap: related_expand_orphan``.
+B2 grading treats the expanded ``cre_ids`` as the answer key.
 """
 
 from __future__ import annotations
