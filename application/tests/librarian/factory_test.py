@@ -70,6 +70,14 @@ class _FakeDatabase:
 
 
 class BuildComponentsTest(unittest.TestCase):
+    # Baseline factory tests opt out of the shipped summary/dual pair so they
+    # exercise the hub name pool without hitting the summary LLM/cache path.
+    _BASELINE_ENV = {
+        "CRE_LIBRARIAN_TEMPERATURE": "1.2",
+        "CRE_LIBRARIAN_CRE_SUMMARY": "0",
+        "CRE_LIBRARIAN_DUAL_INDEX": "0",
+    }
+
     def _build(self):
         # Only the cross-encoder load is patched — it pulls in torch. The rest
         # of the factory runs for real.
@@ -77,9 +85,7 @@ class BuildComponentsTest(unittest.TestCase):
             "application.utils.librarian.cross_encoder." "build_cross_encoder_score_fn",
             return_value=lambda pairs: [0.0 for _ in pairs],
         ):
-            with mock.patch.dict(
-                os.environ, {"CRE_LIBRARIAN_TEMPERATURE": "1.2"}, clear=True
-            ):
+            with mock.patch.dict(os.environ, self._BASELINE_ENV, clear=True):
                 return build_components(
                     _FakeDatabase(),
                     config=load_config(),
@@ -116,9 +122,10 @@ class BuildComponentsTest(unittest.TestCase):
             "application.utils.librarian.cross_encoder." "build_cross_encoder_score_fn",
             return_value=lambda pairs: [0.0 for _ in pairs],
         ):
-            components = build_components(
-                _FakeDatabase(), config=load_config(), embed_fn=embed
-            )
+            with mock.patch.dict(os.environ, self._BASELINE_ENV, clear=True):
+                components = build_components(
+                    _FakeDatabase(), config=load_config(), embed_fn=embed
+                )
         components.retriever.retrieve("verify passwords")
         self.assertEqual(calls, ["verify passwords"])
 
@@ -134,6 +141,7 @@ class BuildComponentsTest(unittest.TestCase):
                 {
                     "CRE_LIBRARIAN_TEMPERATURE": "1.2",
                     "CRE_LIBRARIAN_CRE_SUMMARY": "1",
+                    "CRE_LIBRARIAN_DUAL_INDEX": "0",
                 },
                 clear=True,
             ):
@@ -196,6 +204,8 @@ class BuildComponentsTest(unittest.TestCase):
                 os.environ,
                 {
                     "CRE_LIBRARIAN_TEMPERATURE": "1.2",
+                    "CRE_LIBRARIAN_CRE_SUMMARY": "0",
+                    "CRE_LIBRARIAN_DUAL_INDEX": "0",
                     "CRE_LIBRARIAN_STANDARD_RETRIEVAL": "1",
                 },
                 clear=True,

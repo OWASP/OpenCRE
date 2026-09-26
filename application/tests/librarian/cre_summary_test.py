@@ -281,15 +281,17 @@ class ApplySummariesTest(unittest.TestCase):
 
 
 class ConfigFlagTest(unittest.TestCase):
-    def test_cre_summary_defaults_off(self) -> None:
+    def test_cre_summary_and_dual_default_on(self) -> None:
         with mock.patch.dict(os.environ, {}, clear=True):
-            self.assertFalse(load_config().cre_summary)
+            cfg = load_config()
+            self.assertTrue(cfg.cre_summary)
+            self.assertTrue(cfg.dual_index)
 
-    def test_cre_summary_env_enables(self) -> None:
+    def test_cre_summary_env_disables(self) -> None:
         with mock.patch.dict(
-            os.environ, {"CRE_LIBRARIAN_CRE_SUMMARY": "1"}, clear=True
+            os.environ, {"CRE_LIBRARIAN_CRE_SUMMARY": "0"}, clear=True
         ):
-            self.assertTrue(load_config().cre_summary)
+            self.assertFalse(load_config().cre_summary)
 
 
 class PublicCrePayloadHidingTest(unittest.TestCase):

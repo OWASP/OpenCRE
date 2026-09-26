@@ -56,8 +56,8 @@ class LibrarianConfig:
     standard_top_k: int = 10
     standard_max_cres_per_hit: int = 4
     cre_text_enrich: bool = False
-    cre_summary: bool = False
-    dual_index: bool = False
+    cre_summary: bool = True
+    dual_index: bool = True
     prior_cage: bool = True
     focus_query: bool = False
     pref_inject: bool = True
@@ -85,8 +85,10 @@ def load_config() -> LibrarianConfig:
         os.getenv("CRE_LIBRARIAN_STANDARD_MAX_CRES_PER_HIT", "4")
     )
     cre_text_enrich = _env_bool("CRE_LIBRARIAN_CRE_TEXT_ENRICH", False)
-    cre_summary = _env_bool("CRE_LIBRARIAN_CRE_SUMMARY", False)
-    dual_index = _env_bool("CRE_LIBRARIAN_DUAL_INDEX", False)
+    # Ship pair: summaries feed C.2 + dual C.1 body pool; dual needs summaries.
+    # Env can still force either off (CRE_LIBRARIAN_CRE_SUMMARY=0 / DUAL_INDEX=0).
+    cre_summary = _env_bool("CRE_LIBRARIAN_CRE_SUMMARY", True)
+    dual_index = _env_bool("CRE_LIBRARIAN_DUAL_INDEX", True)
     # Lawrence OOD audit (17 Sep 2026) + clone A/B: keep cage / Lever 4 /
     # prefer_audit. FOCUS_QUERY defaults off (full narrative). Hybrid is
     # CE-led (β=0 / γ=0.70). Env can restore the name-heavy mix.

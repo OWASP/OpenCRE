@@ -32,8 +32,8 @@ class TestConfigLoaderDefaults(unittest.TestCase):
         self.assertEqual(cfg.standard_top_k, 10)
         self.assertEqual(cfg.standard_max_cres_per_hit, 4)
         self.assertFalse(cfg.cre_text_enrich)
-        self.assertFalse(cfg.cre_summary)
-        self.assertFalse(cfg.dual_index)
+        self.assertTrue(cfg.cre_summary)
+        self.assertTrue(cfg.dual_index)
         self.assertTrue(cfg.prior_cage)
         self.assertFalse(cfg.focus_query)
         self.assertTrue(cfg.pref_inject)
@@ -65,8 +65,8 @@ class TestConfigLoaderOverrides(unittest.TestCase):
         "CRE_LIBRARIAN_STANDARD_RETRIEVAL_FAMILIES": "PCI DSS, ISO 27001",
         "CRE_LIBRARIAN_STANDARD_TOP_K": "8",
         "CRE_LIBRARIAN_CRE_TEXT_ENRICH": "true",
-        "CRE_LIBRARIAN_CRE_SUMMARY": "1",
-        "CRE_LIBRARIAN_DUAL_INDEX": "1",
+        "CRE_LIBRARIAN_CRE_SUMMARY": "0",
+        "CRE_LIBRARIAN_DUAL_INDEX": "0",
         "CRE_LIBRARIAN_PRIOR_CAGE": "0",
         "CRE_LIBRARIAN_FOCUS_QUERY": "true",
         "CRE_LIBRARIAN_PREF_INJECT": "off",
@@ -91,8 +91,8 @@ class TestConfigLoaderOverrides(unittest.TestCase):
         self.assertEqual(cfg.standard_retrieval_families, ("PCI DSS", "ISO 27001"))
         self.assertEqual(cfg.standard_top_k, 8)
         self.assertTrue(cfg.cre_text_enrich)
-        self.assertTrue(cfg.cre_summary)
-        self.assertTrue(cfg.dual_index)
+        self.assertFalse(cfg.cre_summary)
+        self.assertFalse(cfg.dual_index)
         self.assertFalse(cfg.prior_cage)
         self.assertTrue(cfg.focus_query)
         self.assertFalse(cfg.pref_inject)
