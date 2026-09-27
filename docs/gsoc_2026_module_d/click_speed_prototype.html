@@ -87,6 +87,7 @@ function finish() {
 setInterval(() => { if (i < ITEMS.length)
   timer.textContent = ((performance.now()-t0)/1000).toFixed(1) + "s"; }, 100);
 document.addEventListener("keydown", e => {
+  if (e.repeat) return;   // held key must not auto-verdict a run of items
   if (e.key === "y") decide("y");
   else if (e.key === "n") decide("n");
   else if (e.key === "u") undo();

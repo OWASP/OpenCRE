@@ -27,6 +27,37 @@ import os
 from datetime import datetime, timezone
 from typing import Literal, Optional
 
+
+def _fsync_dir_chain(path: str) -> None:
+    """fsync every directory from ``path`` up to the filesystem root.
+
+    ``os.fsync`` on the file makes its *contents* durable, not its *directory
+    entry*: a crash after creating the file can lose the file itself unless the
+    parent directory is synced, and the same holds for each directory
+    ``os.makedirs`` created above it. Which ancestors are newly created cannot
+    be detected without racing a concurrent ``record()``, so the whole chain is
+    synced on every record. Records are human-paced, so the cost is noise.
+
+    Platforms that cannot fsync a directory (or deny it, e.g. on ``/``) raise
+    ``OSError``; those levels are skipped, which leaves durability no worse
+    than it was before the attempt.
+    """
+    current = os.path.abspath(path)
+    while True:
+        try:
+            fd = os.open(current, os.O_RDONLY)
+            try:
+                os.fsync(fd)
+            finally:
+                os.close(fd)
+        except OSError:
+            pass
+        parent = os.path.dirname(current)
+        if parent == current:
+            return
+        current = parent
+
+
 from pydantic import BaseModel, ConfigDict
 
 #: Bumped when a record gains/loses fields; readers filter on it.
@@ -90,6 +121,9 @@ class JsonlCorrectionsLog:
             fh.write(line + "\n")
             fh.flush()
             os.fsync(fh.fileno())
+        # The file's contents are durable; now make its directory entry (and
+        # any directories makedirs created above it) durable too.
+        _fsync_dir_chain(os.path.dirname(self._path) or ".")
 
 
 __all__ = ["CORRECTIONS_SCHEMA_VERSION", "JsonlCorrectionsLog", "ReviewVerdict"]
