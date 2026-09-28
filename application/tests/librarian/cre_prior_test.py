@@ -35,6 +35,103 @@ class CrePriorIndexTest(unittest.TestCase):
         self.assertEqual(len(prior), 10)
         self.assertNotIn("z", prior)
 
+    def test_rich_class_with_section_id_evidence_stays_narrow(self) -> None:
+        idx = CrePriorIndex(
+            class_to_cres={
+                "cryptography": frozenset({f"c{i}" for i in range(10)}),
+            },
+            transfer_to_cres={"transfer:asvs": frozenset({"asvs1"})},
+            family_to_transfer={"crypto": "transfer:top10"},
+            thin_class=8,
+        )
+        prior = idx.prior_for(
+            ProblemClass(
+                "cryptography",
+                "crypto",
+                evidence="section_id:A02",
+                section_id="A02",
+            )
+        )
+        self.assertEqual(len(prior), 10)
+        self.assertNotIn("asvs1", prior)
+
+    def test_weak_body_evidence_expands_despite_rich_class(self) -> None:
+        """Body-keyword class hits are often wrong; do not hard-cage to them."""
+        idx = CrePriorIndex(
+            class_to_cres={
+                "cryptography": frozenset({f"c{i}" for i in range(10)}),
+                "supply_chain": frozenset({"sc1"}),
+            },
+            transfer_to_cres={
+                "transfer:top10": frozenset({"t10"}),
+                "transfer:asvs": frozenset({"asvs1", "gold"}),
+            },
+            related_classes={"cryptography": ("supply_chain",)},
+            family_to_transfer={"crypto": "transfer:top10"},
+            thin_class=8,
+            thin_transfer=15,
+        )
+        prior = idx.prior_for(
+            ProblemClass(
+                "cryptography",
+                "crypto",
+                evidence="keyword:body",
+                standard="OWASP AISVS 1.0",
+            )
+        )
+        self.assertIn("c0", prior)
+        self.assertIn("sc1", prior)  # related
+        self.assertIn("t10", prior)  # family transfer
+        self.assertIn("gold", prior)  # AISVS/AI weak → asvs transfer
+
+    def test_weak_title_evidence_expands_despite_rich_class(self) -> None:
+        idx = CrePriorIndex(
+            class_to_cres={
+                "cryptography": frozenset({f"c{i}" for i in range(10)}),
+            },
+            transfer_to_cres={
+                "transfer:top10": frozenset({"t10"}),
+                "transfer:asvs": frozenset({"gold"}),
+            },
+            family_to_transfer={"crypto": "transfer:top10"},
+            thin_class=8,
+            thin_transfer=15,
+        )
+        prior = idx.prior_for(
+            ProblemClass(
+                "cryptography",
+                "crypto",
+                evidence="keyword:title",
+                standard="OWASP AISVS 1.0",
+            )
+        )
+        self.assertIn("gold", prior)
+        self.assertIn("t10", prior)
+
+    def test_weak_standard_evidence_expands_ai_transfers(self) -> None:
+        idx = CrePriorIndex(
+            class_to_cres={},
+            family_to_cres={"ai": frozenset({"ai_fam"})},
+            transfer_to_cres={
+                "transfer:ai": frozenset({"ai1"}),
+                "transfer:asvs": frozenset({"asvs1"}),
+            },
+            family_to_transfer={"ai": "transfer:ai"},
+            thin_class=8,
+            thin_transfer=15,
+            min_prior=1,
+        )
+        prior = idx.prior_for(
+            ProblemClass(
+                "general",
+                "ai",
+                evidence="standard:OWASP AISVS 1.0",
+                standard="OWASP AISVS 1.0",
+            )
+        )
+        self.assertIn("ai1", prior)
+        self.assertIn("asvs1", prior)
+
     def test_thin_class_expands_related(self) -> None:
         idx = CrePriorIndex(
             class_to_cres={

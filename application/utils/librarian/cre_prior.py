@@ -39,6 +39,23 @@ from application.utils.librarian.problem_class import ProblemClass
 from application.utils.librarian.schemas import CreCandidate
 
 
+def _evidence_is_weak(evidence: str) -> bool:
+    """Phrase / standard-default class hits are low confidence.
+
+    Exact ``section_id:`` latch (and empty evidence for legacy callers) stay
+    strong so rich class cages remain narrow when the id map is trustworthy.
+    """
+    ev = (evidence or "").strip().lower()
+    return ev.startswith("keyword:") or ev.startswith("standard:")
+
+
+def _standard_wants_ai_transfers(problem: ProblemClass) -> bool:
+    if (problem.family or "").lower() == "ai":
+        return True
+    std = (problem.standard or "").lower()
+    return any(tok in std for tok in ("aisvs", "llm", "genai", "ai exchange"))
+
+
 @dataclass(frozen=True)
 class CrePriorIndex:
     """Lookup of prior CRE hub ids by problem class, family, and transfer."""
@@ -61,23 +78,28 @@ class CrePriorIndex:
         """CRE hub ids to cage retrieval to (may be empty = no cage).
 
         Order:
-        1. Fine class alone when rich enough
-        2. Class ∪ related classes when thin
-        3. ∪ sibling-transfer bucket when still thin (brand-new editions)
-        4. Family bucket when class/related empty and family is large enough
+        1. Fine class alone when rich enough **and** evidence is strong
+        2. Class ∪ related classes when thin or evidence is weak
+        3. ∪ sibling-transfer bucket when still thin (brand-new editions) or weak
+        4. For weak AI/AISVS/LLM standards, also ∪ ``transfer:ai`` / ``transfer:asvs``
+        5. Family bucket when class/related empty and family is large enough
         """
         by_class = self.class_to_cres.get(problem.class_id, frozenset())
         related: Set[str] = set()
         for peer in self.related_classes.get(problem.class_id, ()):
             related |= set(self.class_to_cres.get(peer, frozenset()))
 
-        if len(by_class) >= self.thin_class:
+        weak = _evidence_is_weak(problem.evidence)
+        if len(by_class) >= self.thin_class and not weak:
             return by_class
 
         expanded: Set[str] = set(by_class) | related
         transfer_key = self.family_to_transfer.get(problem.family)
-        if transfer_key and len(expanded) < self.thin_transfer:
+        if transfer_key and (weak or len(expanded) < self.thin_transfer):
             expanded |= set(self.transfer_to_cres.get(transfer_key, frozenset()))
+        if weak and _standard_wants_ai_transfers(problem):
+            expanded |= set(self.transfer_to_cres.get("transfer:ai", frozenset()))
+            expanded |= set(self.transfer_to_cres.get("transfer:asvs", frozenset()))
 
         if expanded:
             return frozenset(expanded)
