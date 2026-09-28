@@ -137,17 +137,30 @@ class CrossEncoderReranker:
         return audit.model_copy(update={"reranked": reranked[: self._top_n]})
 
 
+# Process-level CE cache: Module C grid / queue runners call build_components
+# per combo; reloading MiniLM every time wastes seconds and can thrash RAM.
+_CE_SCORE_FN_CACHE: dict[tuple[str, str], RerankFn] = {}
+
+
 def build_cross_encoder_score_fn(
     model_name: str = DEFAULT_CROSSENCODER_MODEL,
 ) -> RerankFn:
     """Load a sentence-transformers CrossEncoder and adapt it to ``RerankFn``."""
     from sentence_transformers import CrossEncoder  # lazy, heavy
 
-    model = CrossEncoder(model_name)
+    # CRE_LIBRARIAN_DEVICE=cpu avoids silent MPS aborts on long Module C runs.
+    device = (os.environ.get("CRE_LIBRARIAN_DEVICE") or "").strip() or None
+    cache_key = (model_name, device or "")
+    cached = _CE_SCORE_FN_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
+
+    model = CrossEncoder(model_name, device=device) if device else CrossEncoder(model_name)
 
     def score_fn(pairs: Sequence[Tuple[str, str]]) -> List[float]:
         return [float(s) for s in model.predict([list(p) for p in pairs])]
 
+    _CE_SCORE_FN_CACHE[cache_key] = score_fn
     return score_fn
 
 

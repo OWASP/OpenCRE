@@ -21,11 +21,39 @@ logger = get_logger(__name__)
 import math
 import os
 from dataclasses import dataclass
+from typing import Optional
 
 # Retrieval backends (see candidate_retriever.RetrieverBackend). Kept as a
 # plain set here so the loader stays dependency-free; the retriever owns the
 # enum it maps to.
 _RETRIEVER_BACKENDS = frozenset({"in_memory", "pgvector"})
+
+# Default γ for CRE_LIBRARIAN_MARGIN_GAMMA when the env is present but empty /
+# boolean-true (distinct from CRE_LIBRARIAN_HYBRID_GAMMA).
+_DEFAULT_MARGIN_GAMMA = 0.85
+
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in ("1", "true", "yes", "on")
+
+
+def _env_csv(name: str) -> tuple[str, ...]:
+    raw = os.getenv(name, "")
+    return tuple(part.strip() for part in raw.split(",") if part.strip())
+
+
+def _env_optional_margin_gamma(name: str) -> Optional[float]:
+    """Unset → off (None). Set → float, or 0.85 for empty / boolean-true."""
+    raw = os.getenv(name)
+    if raw is None:
+        return None
+    stripped = raw.strip()
+    if not stripped or stripped.lower() in ("1", "true", "yes", "on"):
+        return _DEFAULT_MARGIN_GAMMA
+    return float(stripped)
 
 
 def _env_bool(name: str, default: bool = False) -> bool:

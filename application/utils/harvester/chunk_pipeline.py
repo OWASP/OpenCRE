@@ -7,6 +7,10 @@ from .chunk_record_validator import ChunkRecordValidator
 from .chunker import DocumentChunker
 from .chunk_merger import merge_chunks
 from .models import Document, IngestChunkRecord
+from .requirement_extractor import (
+    extract_requirement_chunks,
+    should_extract_requirements,
+)
 from .schemas import ChunkingConfig
 
 
