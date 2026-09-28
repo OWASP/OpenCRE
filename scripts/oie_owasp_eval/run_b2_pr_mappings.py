@@ -239,6 +239,70 @@ def source_stem(harness: Dict[str, Any]) -> str:
     return str(harness.get("source_dir") or gold_stem(harness))
 
 
+_YEAR_TOKEN = re.compile(r"(20\d{2})")
+_SOURCE_META_LINE = re.compile(
+    r"^(Standard|Version|Source|Section-ID|Section)\s*:",
+    re.I,
+)
+
+
+def harness_year(harness: Dict[str, Any]) -> Optional[int]:
+    """Edition year from harness label / fixture / source_dir names."""
+    for blob in (
+        harness.get("label"),
+        harness.get("gold_file"),
+        harness.get("fixture_name"),
+        harness.get("source_dir"),
+    ):
+        if not blob:
+            continue
+        m = _YEAR_TOKEN.search(str(blob))
+        if m:
+            return int(m.group(1))
+    return None
+
+
+def source_identity_prefix(row: Dict[str, Any], harness: Dict[str, Any]) -> str:
+    """Metadata header so Module C can year-scope hub Links / edition remap.
+
+    ``Standard:`` + ``Version:`` are required for ``year_from_text``; without
+    them bare ``K##`` seeds collapse across K8s 2022 and 2025 editions.
+    """
+    sid = str(row.get("section_id") or "").strip()
+    section = str(row.get("section") or sid).strip()
+    label = str(harness.get("label") or harness.get("fixture_name") or "OWASP").strip()
+    year = harness_year(harness)
+    lines = [f"Standard: {label}"]
+    if year is not None:
+        lines.append(f"Version: {year}")
+    lines.extend(
+        [
+            f"Source: {sid}",
+            f"Section: {section}",
+            f"Section-ID: {sid}",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def strip_source_identity_prefix(text: str) -> str:
+    """Drop leading Standard/Version/Source/Section metadata lines (+ blank)."""
+    lines = (text or "").splitlines()
+    i = 0
+    while i < len(lines) and (
+        not lines[i].strip() or _SOURCE_META_LINE.match(lines[i].strip())
+    ):
+        i += 1
+    return "\n".join(lines[i:]).lstrip("\n")
+
+
+def write_source_with_prefix(
+    path: Path, row: Dict[str, Any], harness: Dict[str, Any], body: str
+) -> None:
+    path.write_text(source_identity_prefix(row, harness) + body.lstrip("\n"))
+
+
 def load_gold(harness: Dict[str, Any]) -> List[Dict[str, Any]]:
     if harness.get("local_gold"):
         path = GOLD_DIR / gold_filename(harness)
@@ -297,10 +361,42 @@ def top2_cre_external_ids(
     return ordered
 
 
-def ensure_sources(harnesses: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
-    """Download each gold row's hyperlink into b2_sources/<gold_file>/<section_id>.txt."""
-    report: Dict[str, Any] = {"files": 0, "errors": []}
+def refresh_source_headers(
+    harnesses: Sequence[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Rewrite Standard/Version/Source/Section headers on existing source files."""
+    report: Dict[str, Any] = {"refreshed": 0, "skipped": 0, "errors": []}
+    for harness in harnesses:
+        gold = load_gold(harness)
+        dest_dir = SOURCES_DIR / source_stem(harness)
+        for row in gold:
+            sid = str(row.get("section_id") or "").strip()
+            if not sid:
+                continue
+            out = dest_dir / f"{sid}.txt"
+            if not out.is_file() or out.stat().st_size < 80:
+                report["skipped"] += 1
+                continue
+            try:
+                body = strip_source_identity_prefix(out.read_text())
+                write_source_with_prefix(out, row, harness, body)
+                report["refreshed"] += 1
+            except Exception as exc:  # noqa: BLE001
+                msg = f"{source_stem(harness)}:{sid}: {exc}"
+                report["errors"].append(msg)
+    return report
+
+
+def ensure_sources(
+    harnesses: Sequence[Dict[str, Any]], *, refresh_headers: bool = False
+) -> Dict[str, Any]:
+    """Download each gold row's hyperlink into b2_sources/<stem>/<section_id>.txt."""
+    report: Dict[str, Any] = {"files": 0, "errors": [], "refreshed": 0}
     SOURCES_DIR.mkdir(parents=True, exist_ok=True)
+    if refresh_headers:
+        hdr = refresh_source_headers(harnesses)
+        report["refreshed"] = hdr["refreshed"]
+        report["errors"].extend(hdr["errors"])
     for harness in harnesses:
         gold = load_gold(harness)
         dest_dir = SOURCES_DIR / source_stem(harness)
@@ -308,29 +404,27 @@ def ensure_sources(harnesses: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
         for row in gold:
             sid = str(row.get("section_id") or "").strip()
             href = str(row.get("hyperlink") or "").strip()
-            if not sid or not href:
+            if not sid:
                 continue
             out = dest_dir / f"{sid}.txt"
             if out.is_file() and out.stat().st_size > 200:
                 report["files"] += 1
                 continue
+            if harness.get("local_sources") and not href:
+                report["files"] += 1
+                continue
+            if not href:
+                continue
             try:
                 kind, text = fetch_row_source(row, harness)
-                # Prefix identity so Module C sees section_id even after HTML strip.
-                body = (
-                    f"Source: {sid}\n"
-                    f"Section: {row.get('section') or sid}\n"
-                    f"Section-ID: {sid}\n\n"
-                    f"{text}"
-                )
-                out.write_text(body)
+                write_source_with_prefix(out, row, harness, text)
                 report["files"] += 1
                 print(
-                    f"  fetched {harness['gold_file']} {sid} ({kind}, {len(text)} chars)",
+                    f"  fetched {gold_filename(harness)} {sid} ({kind}, {len(text)} chars)",
                     flush=True,
                 )
             except Exception as exc:  # noqa: BLE001
-                msg = f"{harness['gold_file']}:{sid}: {exc}"
+                msg = f"{gold_filename(harness)}:{sid}: {exc}"
                 report["errors"].append(msg)
                 print(f"  FAIL {msg}", flush=True)
     return report
@@ -611,6 +705,19 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--refresh-source-headers",
+        action="store_true",
+        help=(
+            "Rewrite Standard/Version/Source/Section headers on cached "
+            "b2_sources without re-downloading bodies."
+        ),
+    )
+    parser.add_argument(
+        "--headers-only",
+        action="store_true",
+        help="Only refresh source headers, then exit (no pipeline / score).",
+    )
+    parser.add_argument(
         "--out",
         type=Path,
         default=ART / "b2_accuracy_report.json",
@@ -640,9 +747,16 @@ def main() -> int:
         )
         return 2
 
+    if args.headers_only:
+        hdr = refresh_source_headers(HARNESSES)
+        print(json.dumps(hdr, indent=2), flush=True)
+        return 0 if not hdr["errors"] else 2
+
     if not args.score_only:
         print("fetching source pages…", flush=True)
-        src_report = ensure_sources(HARNESSES)
+        src_report = ensure_sources(
+            HARNESSES, refresh_headers=args.refresh_source_headers
+        )
         print(json.dumps(src_report, indent=2), flush=True)
         run_id = args.run_id or (
             "orch-b2-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")

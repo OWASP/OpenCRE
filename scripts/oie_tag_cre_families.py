@@ -6,9 +6,8 @@ classes, domains, standards, signals, transfers. Inference uses linked standard
 names + CRE text via bootstrap helpers in ``scripts/oie_taxonomy_bootstrap.py``
 (migration seed only — not imported by librarian runtime).
 
-Also recommend tagging standard Nodes first::
-
-  PYTHONPATH=. python scripts/oie_tag_standard_sections.py --cache-file ...
+Fill-if-missing by default (skips CREs that already have ``oie``). Use
+``--force`` to re-seed. Tag standard Nodes first (or use ``make oie-tag-base``).
 
 Usage:
   PYTHONPATH=. python scripts/oie_tag_cre_families.py \\
@@ -42,6 +41,11 @@ def main() -> int:
         ),
     )
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Re-seed oie even when already present (default: fill-if-missing)",
+    )
     args = parser.parse_args()
 
     os.environ.setdefault("FLASK_CONFIG", "development")
@@ -50,6 +54,7 @@ def main() -> int:
     from application import sqla
     from application.cmd.cre_main import db_connect
     from application.database.db import CRE, Links, Node
+    from application.utils.librarian.oie_taxonomy import apply_oie_fill_if_missing
 
     db_connect(args.cache_file)
 
@@ -74,6 +79,8 @@ def main() -> int:
                 node_oie_by_cre[cre_id].append(block)
 
     updated = 0
+    skipped_existing = 0
+    unchanged = 0
     samples: List[Dict[str, Any]] = []
     cres = sqla.session.query(CRE).all()
     for cre in cres:
@@ -105,13 +112,14 @@ def main() -> int:
             oie["transfers"] = sorted(transfers)
             oie["signals"] = sorted(signals)[:24]
 
-        meta = dict(cre.metadata_json or {})
-        prev = meta.get("oie")
-        meta["oie"] = oie
-        # Legacy mirrors for older prior builders / ad-hoc queries.
-        meta["oie_families"] = list(oie.get("families") or [])
-        meta["oie_classes"] = list(oie.get("classes") or [])
-        if prev == oie and meta.get("oie_families") == oie.get("families"):
+        new_meta, action = apply_oie_fill_if_missing(
+            cre.metadata_json, oie, force=args.force, legacy_mirrors=True
+        )
+        if action == "skipped_existing":
+            skipped_existing += 1
+            continue
+        if action == "unchanged":
+            unchanged += 1
             continue
         updated += 1
         if len(samples) < 8:
@@ -122,16 +130,19 @@ def main() -> int:
                     "oie": oie,
                 }
             )
-        if not args.dry_run:
-            cre.metadata_json = meta
+        if not args.dry_run and new_meta is not None:
+            cre.metadata_json = new_meta
 
     if not args.dry_run:
         sqla.session.commit()
 
     report = {
         "dry_run": args.dry_run,
+        "force": args.force,
         "cre_total": len(cres),
         "updated": updated,
+        "skipped_existing": skipped_existing,
+        "unchanged": unchanged,
         "samples": samples,
     }
     print(json.dumps(report, indent=2))

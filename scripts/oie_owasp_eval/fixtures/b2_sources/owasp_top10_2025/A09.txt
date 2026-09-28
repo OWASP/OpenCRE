@@ -1,7 +1,8 @@
+Standard: OWASP Top 10 2025
+Version: 2025
 Source: A09
 Section: Security Logging and Alerting Failures
 Section-ID: A09
-
 A09 Security Logging and Alerting Failures - OWASP Top 10:2025
 Skip to content
 OWASP Top 10:2025

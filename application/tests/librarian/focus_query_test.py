@@ -7,6 +7,7 @@ import unittest
 from application.utils.librarian.focus_query import (
     body_query_text,
     focus_query_text,
+    name_pack_query_text,
     split_retrieval_query,
 )
 
@@ -32,9 +33,30 @@ class FocusQueryTest(unittest.TestCase):
         self.assertEqual(focus_query_text("just a paragraph\n"), "")
 
 
+class NamePackQueryTest(unittest.TestCase):
+    def test_omits_standard_and_version(self) -> None:
+        text = (
+            "Standard: OWASP Kubernetes Top 10 2022\n"
+            "Version: 2022\n"
+            "Source: K06\n"
+            "Section: Broken Authentication Mechanisms\n"
+            "Section-ID: K06\n"
+            "\n"
+            "Narrative about authn.\n"
+        )
+        pack = name_pack_query_text(text)
+        self.assertNotIn("Standard:", pack)
+        self.assertNotIn("Version:", pack)
+        self.assertIn("Section-ID: K06", pack)
+        self.assertIn("Broken Authentication Mechanisms", pack)
+        self.assertNotIn("Narrative", pack)
+
+
 class SplitRetrievalQueryTest(unittest.TestCase):
     def test_header_is_titles_body_is_narrative(self) -> None:
         text = (
+            "Standard: OWASP Top 10 2025\n"
+            "Version: 2025\n"
             "Source: A01\n"
             "Section: Broken Access Control\n"
             "Section-ID: A01\n"
@@ -44,6 +66,8 @@ class SplitRetrievalQueryTest(unittest.TestCase):
         header, body = split_retrieval_query(text)
         self.assertIn("Broken Access Control", header)
         self.assertIn("Section-ID: A01", header)
+        self.assertNotIn("Standard:", header)
+        self.assertNotIn("Version:", header)
         self.assertNotIn("IDOR", header)
         self.assertIn("IDOR", body)
         self.assertNotIn("Section: Broken Access Control", body)

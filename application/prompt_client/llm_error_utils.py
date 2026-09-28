@@ -31,3 +31,38 @@ def is_rate_limit_error(err: BaseException) -> bool:
             if code == 429:
                 return True
     return False
+
+
+def is_transient_llm_error(err: BaseException) -> bool:
+    """Connection / timeout blips that are safe to retry (not model refusal)."""
+    if is_rate_limit_error(err):
+        return True
+    name = type(err).__name__.lower()
+    if any(
+        tok in name
+        for tok in (
+            "connect",
+            "timeout",
+            "apiconnection",
+            "remoteprotocol",
+            "network",
+        )
+    ):
+        return True
+    msg = str(err).lower()
+    return any(
+        tok in msg
+        for tok in (
+            "connection reset",
+            "connection aborted",
+            "connection refused",
+            "temporarily unavailable",
+            "broken pipe",
+            "timed out",
+            "timeout",
+            "errno 54",
+            "errno 104",
+            "server disconnected",
+            "remote end closed",
+        )
+    )

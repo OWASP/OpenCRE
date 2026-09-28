@@ -1,7 +1,8 @@
+Standard: OWASP Top 10 2025
+Version: 2025
 Source: A02
 Section: Security Misconfiguration
 Section-ID: A02
-
 A02 Security Misconfiguration - OWASP Top 10:2025
 Skip to content
 OWASP Top 10:2025

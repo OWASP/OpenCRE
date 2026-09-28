@@ -1,7 +1,8 @@
+Standard: OWASP LLM Top 10 2025
+Version: 2025
 Source: LLM05
 Section: Improper Output Handling
 Section-ID: LLM05
-
 LLM05:2025 Improper Output Handling - OWASP Gen AI Security Project
 Skip to content
 Join us in Orlando, FL 10/11 – 10/15 @ InfoSec World 2026

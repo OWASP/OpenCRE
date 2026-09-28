@@ -1,7 +1,8 @@
+Standard: OWASP Top 10 2025
+Version: 2025
 Source: A07
 Section: Authentication Failures
 Section-ID: A07
-
 A07 Authentication Failures - OWASP Top 10:2025
 Skip to content
 OWASP Top 10:2025

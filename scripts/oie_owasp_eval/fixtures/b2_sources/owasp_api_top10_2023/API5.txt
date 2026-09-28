@@ -1,7 +1,8 @@
+Standard: OWASP API Top 10 2023
+Version: 2023
 Source: API5
 Section: Broken Function Level Authorization
 Section-ID: API5
-
 API5:2023 Broken Function Level Authorization - OWASP API Security Top 10
 Skip to content
 OWASP API Security Top 10

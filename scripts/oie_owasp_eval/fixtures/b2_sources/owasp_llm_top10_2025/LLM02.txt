@@ -1,7 +1,8 @@
+Standard: OWASP LLM Top 10 2025
+Version: 2025
 Source: LLM02
 Section: Sensitive Information Disclosure
 Section-ID: LLM02
-
 LLM02:2025 Sensitive Information Disclosure - OWASP Gen AI Security Project
 Skip to content
 Join us in Orlando, FL 10/11 – 10/15 @ InfoSec World 2026

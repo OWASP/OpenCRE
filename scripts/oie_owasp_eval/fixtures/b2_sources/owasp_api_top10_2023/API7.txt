@@ -1,7 +1,8 @@
+Standard: OWASP API Top 10 2023
+Version: 2023
 Source: API7
 Section: Server Side Request Forgery
 Section-ID: API7
-
 API7:2023 Server Side Request Forgery - OWASP API Security Top 10
 Skip to content
 OWASP API Security Top 10

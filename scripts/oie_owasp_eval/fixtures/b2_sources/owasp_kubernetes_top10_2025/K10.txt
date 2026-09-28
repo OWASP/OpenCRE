@@ -1,7 +1,8 @@
+Standard: OWASP Kubernetes Top 10 2025
+Version: 2025
 Source: K10
 Section: Inadequate Logging And Monitoring
 Section-ID: K10
-
 K10: Inadequate Logging And Monitoring | OWASP Foundation
 Store
 Donate

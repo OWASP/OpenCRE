@@ -1,7 +1,8 @@
+Standard: OWASP Kubernetes Top 10 2022
+Version: 2022
 Source: K10
 Section: Outdated and Vulnerable Kubernetes Components
 Section-ID: K10
-
 ---
 
 layout: col-sidebar

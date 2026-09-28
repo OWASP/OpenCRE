@@ -118,6 +118,40 @@ class TransferServiceTest(unittest.TestCase):
         self.assertIn("cre-crypto", expanded)
         self.assertIn("other", expanded)
 
+    def test_chunk_title_fallback_when_new_edition_missing(self) -> None:
+        """Cold new year (no Nodes yet): remap via chunk Section: title."""
+        old = StandardEdition(
+            family="owasp_top10",
+            year=2021,
+            label="OWASP Top 10 2021",
+            sections=(
+                EditionSection("A02", "Cryptographic Failures"),
+                EditionSection("A05", "Security Misconfiguration"),
+            ),
+        )
+        section_cres = {
+            ("owasp_top10", 2021, "A02"): {"cre-crypto"},
+            ("owasp_top10", 2021, "A05"): {"cre-config"},
+        }
+        svc = EditionTransferService(
+            editions=[old],  # no 2025 edition in hub
+            section_cre_ids=section_cres,
+            llm_fn=None,
+            cache=EditionRemapCache(memory={}),
+        )
+        # Blind same-id would wrongly return cre-crypto for A02.
+        ids = svc.cre_ids_for_new_section(
+            "owasp_top10",
+            2025,
+            "A02",
+            section_title="Security Misconfiguration",
+        )
+        self.assertEqual(ids, {"cre-config"})
+        self.assertEqual(
+            svc.cre_ids_for_new_section("owasp_top10", 2025, "A02"),
+            set(),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

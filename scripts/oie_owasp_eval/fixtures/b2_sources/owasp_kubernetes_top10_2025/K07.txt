@@ -1,7 +1,8 @@
+Standard: OWASP Kubernetes Top 10 2025
+Version: 2025
 Source: K07
 Section: Misconfigured And Vulnerable Cluster Components
 Section-ID: K07
-
 K07: Misconfigured And Vulnerable Cluster Components | OWASP Foundation
 Store
 Donate

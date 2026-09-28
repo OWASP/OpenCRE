@@ -436,14 +436,40 @@ class EditionTransferService:
         return remap
 
     def cre_ids_for_new_section(
-        self, family: str, new_year: int, section_id: str
+        self,
+        family: str,
+        new_year: int,
+        section_id: str,
+        *,
+        section_title: str = "",
     ) -> Set[str]:
-        """CRE hub ids inherited from the predecessor via remap."""
+        """CRE hub ids inherited from the predecessor via title-aware remap.
+
+        Prefer a full new-edition catalog when present. If the new year is not
+        in the hub yet (cold Top10/K8s/API editions), fall back to remapping the
+        chunk's ``Section:`` title against the predecessor — never blind same-id.
+        """
         pred = self.predecessor(family, new_year)
         if pred is None:
             return set()
-        remap = self.remap_for(family, new_year, pred.year)
-        old_ids = remap.get(section_id.upper(), [])
+        sid = (section_id or "").upper().strip()
+        if not sid:
+            return set()
+
+        new_ed = self.edition(family, new_year)
+        if new_ed is not None:
+            remap = self.remap_for(family, new_year, pred.year)
+            old_ids = remap.get(sid, [])
+        elif (section_title or "").strip():
+            # Cold edition: single-section heuristic against predecessor titles.
+            remap = heuristic_remap(
+                [EditionSection(sid, section_title.strip())],
+                pred.sections,
+            )
+            old_ids = remap.get(sid, [])
+        else:
+            return set()
+
         out: Set[str] = set()
         for oid in old_ids:
             out |= set(
@@ -466,7 +492,11 @@ class EditionTransferService:
         family, year, section_id = parsed
         if self.predecessor(family, year) is None:
             return allowlist
-        extra = self.cre_ids_for_new_section(family, year, section_id)
+        title_m = _SECTION_LINE.search(text or "")
+        title = title_m.group(1).strip() if title_m else ""
+        extra = self.cre_ids_for_new_section(
+            family, year, section_id, section_title=title
+        )
         if not extra:
             return allowlist
         return frozenset(set(allowlist) | extra)

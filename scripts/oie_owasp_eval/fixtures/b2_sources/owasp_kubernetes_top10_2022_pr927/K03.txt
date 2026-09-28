@@ -1,7 +1,8 @@
+Standard: OWASP Kubernetes Top 10 2022
+Version: 2022
 Source: K03
 Section: Overly Permissive RBAC Configurations
 Section-ID: K03
-
 ---
 
 layout: col-sidebar

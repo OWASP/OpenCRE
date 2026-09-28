@@ -232,11 +232,23 @@ print_next_steps() {
 
   source env:   set -a && source ${OIE_ENV_FILE} && set +a
   hub check:    psql "\${DEV_DATABASE_URL}" -c "SELECT count(*) FROM embeddings WHERE doc_type='CRE'"
+  oie meta:     make oie-tag-base CACHE_FILE="\${DEV_DATABASE_URL}"   # already run in setup; re-run safe (fill-if-missing)
   run A→B→C:    PYTHONPATH=. python scripts/oie_owasp_eval/run_official_orchestrator_local.py \\
                   --cache-file "\${DEV_DATABASE_URL}" --a-mode tarball --max-chunks 20
   or:           make oie-pipeline CACHE_FILE="\${DEV_DATABASE_URL}" OIE_ARGS='--no-sync-repos'
 
 EOF
+}
+
+ensure_oie_base_metadata() {
+  log "tagging OIE base metadata (Nodes then CREs, fill-if-missing)"
+  (
+    cd "${ROOT}"
+    # shellcheck disable=SC1091
+    [ -d "${ROOT}/venv" ] && . "${ROOT}/venv/bin/activate"
+    PYTHONPATH="${ROOT}" python "${ROOT}/scripts/oie_ensure_base_metadata.py" \
+      --cache-file "${PG_URL}"
+  ) || die "oie_ensure_base_metadata failed — librarian will refuse empty oie"
 }
 
 main() {
@@ -248,6 +260,7 @@ main() {
 
   migrate_local
   sync_hub
+  ensure_oie_base_metadata
   install_ml
   calibrate_temperature
   print_next_steps

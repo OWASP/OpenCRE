@@ -4,6 +4,12 @@ When a chunk carries ``Standard:`` / ``Section-ID:`` that match Nodes already
 Linked in the hub, prefer those CRE UUIDs. Optional catalog bags (e.g. AI
 Exchange) expand the soft-cage allowlist.
 
+**Versioning:** ``Version:`` / year in ``Standard:`` prefers that edition's
+Links only. Never union *all* years at once when a year is set (Top10/K8s/API
+``A##``/``K##`` reshuffle across editions). When the exact year has no Links
+yet, do **not** copy the predecessor's same ``section_id`` — title-aware
+``edition_remap`` (PriorCagedRetriever) inherits via topic match instead.
+
 Loaded from DB Links at factory time — no hand-maintained SECTION_ID maps.
 """
 
@@ -80,7 +86,9 @@ _CATALOGS: Tuple[CatalogSpec, ...] = (
         key="api_top10",
         node_patterns=(re.compile(r"api\s*(security\s*)?top\s*10|owasp\s*api", re.I),),
         chunk_patterns=(
-            re.compile(r"api[_\s-]*(security[_\s-]*)?top[_\s-]*10|owasp[_\s-]*api", re.I),
+            re.compile(
+                r"api[_\s-]*(security[_\s-]*)?top[_\s-]*10|owasp[_\s-]*api", re.I
+            ),
             re.compile(r"(?<![A-Za-z0-9])API\d{1,2}", re.I),
         ),
     ),
@@ -216,17 +224,46 @@ class StandardLinkIndex:
         patterns = catalog.chunk_patterns or catalog.node_patterns
         return any(p.search(blob) for p in patterns)
 
-    def _editions_for(
-        self, catalog_key: str, year: int
-    ) -> Sequence[EditionLinkMap]:
+    def _editions_for(self, catalog_key: str, year: int) -> Sequence[EditionLinkMap]:
+        """Editions considered for hub seed.
+
+        ``year == 0`` (no ``Version:``): all editions (legacy unlabeled chunks).
+        ``year`` set: exact year only (no predecessor walk).
+        """
         eds = self.editions.get(catalog_key) or ()
         if not eds:
             return ()
         if year:
-            matched = [e for e in eds if e.year == year]
-            if matched:
-                return matched
+            return tuple(e for e in eds if e.year == year)
         return eds
+
+    def _cre_ids_for_section(
+        self, catalog_key: str, year: int, sid: str
+    ) -> Tuple[str, ...]:
+        """CRE UUIDs Linked to ``sid`` for ``year``.
+
+        When ``year`` is set: exact edition only. Missing Links for that year
+        return empty — callers use title-aware ``edition_remap`` for predecessor
+        inherit (Top10/K8s/API ids reshuffle; same-id copy seeds the wrong topic).
+
+        When ``year == 0`` (legacy unlabeled chunks): union all editions.
+        """
+        eds = self.editions.get(catalog_key) or ()
+        if not eds or not sid:
+            return ()
+        if year:
+            for ed in eds:
+                if ed.year == year and sid in ed.section_to_cres:
+                    return tuple(ed.section_to_cres[sid])
+            return ()
+        out: List[str] = []
+        seen: Set[str] = set()
+        for ed in eds:
+            for cre_id in ed.section_to_cres.get(sid, ()):
+                if cre_id not in seen:
+                    seen.add(cre_id)
+                    out.append(cre_id)
+        return tuple(out)
 
     def preferred_for(self, problem: ProblemClass, text: str = "") -> List[str]:
         """Ordered CRE UUIDs Linked from matching catalog section Nodes."""
@@ -243,11 +280,10 @@ class StandardLinkIndex:
                 continue
             if not self._catalog_active(catalog, problem, text):
                 continue
-            for ed in self._editions_for(catalog.key, year):
-                for cre_id in ed.section_to_cres.get(sid, ()):
-                    if cre_id not in seen:
-                        seen.add(cre_id)
-                        out.append(cre_id)
+            for cre_id in self._cre_ids_for_section(catalog.key, year, sid):
+                if cre_id not in seen:
+                    seen.add(cre_id)
+                    out.append(cre_id)
         return out
 
     def prior_extra_for(self, problem: ProblemClass, text: str = "") -> FrozenSet[str]:
@@ -303,9 +339,7 @@ def build_standard_link_index(session: Any) -> StandardLinkIndex:
             continue
         year = year_from_node(str(name), str(version or ""))
         bucket = (
-            nested.setdefault(catalog.key, {})
-            .setdefault(year, {})
-            .setdefault(sid, [])
+            nested.setdefault(catalog.key, {}).setdefault(year, {}).setdefault(sid, [])
         )
         if cre_id not in bucket:
             bucket.append(cre_id)

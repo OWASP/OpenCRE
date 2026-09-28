@@ -1,7 +1,8 @@
+Standard: OWASP LLM Top 10 2025
+Version: 2025
 Source: LLM08
 Section: Vector and Embedding Weaknesses
 Section-ID: LLM08
-
 LLM08:2025 Vector and Embedding Weaknesses - OWASP Gen AI Security Project
 Skip to content
 Join us in Orlando, FL 10/11 – 10/15 @ InfoSec World 2026

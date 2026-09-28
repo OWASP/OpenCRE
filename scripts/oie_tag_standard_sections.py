@@ -5,6 +5,11 @@ Writes ``Node.metadata_json["oie"]`` (DB column ``document_metadata``) so
 Module C.0.4 can resolve Section-ID → class/family from the hub instead of
 hardcoded Python maps.
 
+Fill-if-missing by default (skips rows that already have ``oie``). Use
+``--force`` to re-seed. Prefer::
+
+  make oie-tag-base CACHE_FILE=...
+
 Bootstrap seed lives in ``scripts/oie_taxonomy_bootstrap.py`` (migration only).
 After tagging, librarian runtime reads Node metadata only.
 
@@ -22,7 +27,7 @@ import json
 import os
 import re
 import sys
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 # Allow importing sibling bootstrap module when run as a script.
 _SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -115,6 +120,11 @@ def main() -> int:
         ),
     )
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Re-seed oie even when already present (default: fill-if-missing)",
+    )
     args = parser.parse_args()
 
     os.environ.setdefault("FLASK_CONFIG", "development")
@@ -123,10 +133,13 @@ def main() -> int:
     from application import sqla
     from application.cmd.cre_main import db_connect
     from application.database.db import Node
+    from application.utils.librarian.oie_taxonomy import apply_oie_fill_if_missing
 
     db_connect(args.cache_file)
 
     updated = 0
+    skipped_existing = 0
+    unchanged = 0
     scanned = 0
     samples: List[Dict[str, Any]] = []
     nodes = sqla.session.query(Node).all()
@@ -135,10 +148,14 @@ def main() -> int:
         oie = build_node_oie(node)
         if oie is None:
             continue
-        meta = dict(node.metadata_json or {})
-        prev = meta.get("oie")
-        meta["oie"] = oie
-        if prev == oie:
+        new_meta, action = apply_oie_fill_if_missing(
+            node.metadata_json, oie, force=args.force
+        )
+        if action == "skipped_existing":
+            skipped_existing += 1
+            continue
+        if action == "unchanged":
+            unchanged += 1
             continue
         updated += 1
         if len(samples) < 8:
@@ -150,16 +167,19 @@ def main() -> int:
                     "oie": oie,
                 }
             )
-        if not args.dry_run:
-            node.metadata_json = meta
+        if not args.dry_run and new_meta is not None:
+            node.metadata_json = new_meta
 
     if not args.dry_run:
         sqla.session.commit()
 
     report = {
         "dry_run": args.dry_run,
+        "force": args.force,
         "nodes_scanned": scanned,
         "updated": updated,
+        "skipped_existing": skipped_existing,
+        "unchanged": unchanged,
         "samples": samples,
     }
     print(json.dumps(report, indent=2))

@@ -1,7 +1,7 @@
+Standard: OWASP AISVS 1.0
 Source: AISVS11
 Section: Adversarial Robustness & Privacy Defense
 Section-ID: AISVS11
-
 # C11 Adversarial Robustness
 
 ## Control Objective

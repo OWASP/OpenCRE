@@ -1,7 +1,8 @@
+Standard: OWASP Kubernetes Top 10 2025
+Version: 2025
 Source: K08
 Section: Cluster To Cloud Lateral Movement
 Section-ID: K08
-
 K08: Cluster-To-Cloud Lateral Movement | OWASP Foundation
 Store
 Donate

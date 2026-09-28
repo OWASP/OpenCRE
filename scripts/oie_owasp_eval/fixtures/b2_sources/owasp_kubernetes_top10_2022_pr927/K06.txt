@@ -1,7 +1,8 @@
+Standard: OWASP Kubernetes Top 10 2022
+Version: 2022
 Source: K06
 Section: Broken Authentication Mechanisms
 Section-ID: K06
-
 ---
 
 layout: col-sidebar

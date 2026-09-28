@@ -1,7 +1,8 @@
+Standard: OWASP Top 10 2025
+Version: 2025
 Source: A04
 Section: Cryptographic Failures
 Section-ID: A04
-
 A04 Cryptographic Failures - OWASP Top 10:2025
 Skip to content
 OWASP Top 10:2025

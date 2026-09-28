@@ -1,7 +1,8 @@
+Standard: OWASP LLM Top 10 2025
+Version: 2025
 Source: LLM03
 Section: Supply Chain
 Section-ID: LLM03
-
 LLM03:2025 Supply Chain - OWASP Gen AI Security Project
 Skip to content
 Join us in Orlando, FL 10/11 – 10/15 @ InfoSec World 2026

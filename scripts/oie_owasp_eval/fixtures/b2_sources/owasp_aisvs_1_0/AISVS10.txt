@@ -1,7 +1,7 @@
+Standard: OWASP AISVS 1.0
 Source: AISVS10
 Section: Model Context Protocol (MCP) Security
 Section-ID: AISVS10
-
 # C10 Model Context Protocol (MCP) Security
 
 ## Control Objective

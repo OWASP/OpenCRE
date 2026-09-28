@@ -1,7 +1,8 @@
+Standard: OWASP Top 10 2025
+Version: 2025
 Source: A01
 Section: Broken Access Control
 Section-ID: A01
-
 A01 Broken Access Control - OWASP Top 10:2025
 Skip to content
 OWASP Top 10:2025

@@ -1,7 +1,8 @@
+Standard: OWASP Kubernetes Top 10 2022
+Version: 2022
 Source: K05
 Section: Inadequate Logging and Monitoring
 Section-ID: K05
-
 ---
 
 layout: col-sidebar

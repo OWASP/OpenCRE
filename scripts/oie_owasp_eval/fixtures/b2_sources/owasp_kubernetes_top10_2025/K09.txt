@@ -1,7 +1,8 @@
+Standard: OWASP Kubernetes Top 10 2025
+Version: 2025
 Source: K09
 Section: Broken Authentication Mechanisms
 Section-ID: K09
-
 K09: Broken Authentication Mechanisms | OWASP Foundation
 Store
 Donate

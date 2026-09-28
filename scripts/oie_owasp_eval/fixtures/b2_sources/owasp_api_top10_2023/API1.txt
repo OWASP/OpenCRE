@@ -1,7 +1,8 @@
+Standard: OWASP API Top 10 2023
+Version: 2023
 Source: API1
 Section: Broken Object Level Authorization
 Section-ID: API1
-
 API1:2023 Broken Object Level Authorization - OWASP API Security Top 10
 Skip to content
 OWASP API Security Top 10

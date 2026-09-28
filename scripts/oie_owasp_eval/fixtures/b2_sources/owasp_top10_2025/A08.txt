@@ -1,7 +1,8 @@
+Standard: OWASP Top 10 2025
+Version: 2025
 Source: A08
 Section: Software or Data Integrity Failures
 Section-ID: A08
-
 A08 Software or Data Integrity Failures - OWASP Top 10:2025
 Skip to content
 OWASP Top 10:2025

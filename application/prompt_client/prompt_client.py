@@ -880,6 +880,27 @@ class PromptHandler:
             else self._truncate_one(text)
         )
 
+        # Optional disk cache for single-string query embeds (eval stability).
+        # CRE summary vectors are already cached; flaky Gemini hits were query embeds.
+        cache_dir = (os.environ.get("CRE_EMBED_QUERY_CACHE") or "").strip()
+        cache_path = None
+        if cache_dir and not is_batch:
+            import hashlib
+            from pathlib import Path
+
+            digest = hashlib.sha256(
+                f"{self.embed_model}\n{payload}".encode("utf-8")
+            ).hexdigest()
+            cache_path = Path(cache_dir) / f"{digest}.json"
+            if cache_path.is_file():
+                try:
+                    cached = json.loads(cache_path.read_text())
+                    vec = cached.get("embedding")
+                    if isinstance(vec, list) and vec:
+                        return [float(x) for x in vec]
+                except Exception:  # noqa: BLE001
+                    logger.debug("embed query cache read failed", exc_info=True)
+
         vectors = _extract_embeddings(
             litellm_router.embedding(
                 model=self.embed_model,
@@ -896,6 +917,14 @@ class PromptHandler:
                     raise RuntimeError(
                         f"embedding dimension mismatch: expected {self._expected_embed_dim}, got {len(v)}"
                     )
+        if cache_path is not None and not is_batch:
+            try:
+                cache_path.parent.mkdir(parents=True, exist_ok=True)
+                cache_path.write_text(
+                    json.dumps({"model": self.embed_model, "embedding": vectors[0]})
+                )
+            except Exception:  # noqa: BLE001
+                logger.debug("embed query cache write failed", exc_info=True)
         if is_batch:
             return vectors
         return vectors[0]

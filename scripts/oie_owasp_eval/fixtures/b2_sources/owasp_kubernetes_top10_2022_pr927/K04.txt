@@ -1,7 +1,8 @@
+Standard: OWASP Kubernetes Top 10 2022
+Version: 2022
 Source: K04
 Section: Lack of Centralized Policy Enforcement
 Section-ID: K04
-
 ---
 
 layout: col-sidebar

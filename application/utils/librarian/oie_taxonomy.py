@@ -1,17 +1,33 @@
 """OIE taxonomy vocabulary + DB-backed index (no static section/keyword maps).
 
 Runtime classification and priors load from ``Node.metadata_json["oie"]`` and
-``CRE.metadata_json["oie"]`` (SQL column ``document_metadata``). Populate those
-blocks with::
+``CRE.metadata_json["oie"]`` (SQL column ``document_metadata``). Populate the
+deterministic base with::
 
-  PYTHONPATH=. python scripts/oie_tag_standard_sections.py --cache-file ...
-  PYTHONPATH=. python scripts/oie_tag_cre_families.py --cache-file ...
+  make oie-tag-base CACHE_FILE=postgresql://cre:password@127.0.0.1:5432/cre_prodclone
+
+or the Node then CRE tag scripts. Librarian never writes metadata — if base
+``oie`` is missing at ``build_components``, it raises
+``OieMetadataNotPopulatedError``.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
+
+POPULATE_INSTRUCTION = (
+    "OIE base metadata missing. Populate with:\n"
+    "  make oie-tag-base CACHE_FILE=<your-postgres-url>\n"
+    "Example:\n"
+    "  make oie-tag-base "
+    "CACHE_FILE=postgresql://cre:password@127.0.0.1:5432/cre_prodclone"
+)
+
+
+class OieMetadataNotPopulatedError(RuntimeError):
+    """Raised when Module C starts against a DB with no base Node/CRE ``oie``."""
+
 
 # Coarse family vocabulary (names only — not a classification map).
 FAMILIES = frozenset(
@@ -55,6 +71,66 @@ def oie_block(meta: Any) -> Mapping[str, Any]:
         if isinstance(block, Mapping):
             return block
     return {}
+
+
+def cre_oie_populated(meta: Any) -> bool:
+    """True when CRE metadata has an ``oie`` block or legacy family/class mirrors."""
+    if oie_block(meta):
+        return True
+    if isinstance(meta, Mapping):
+        if meta.get("oie_families") or meta.get("oie_classes"):
+            return True
+    return False
+
+
+def apply_oie_fill_if_missing(
+    meta: Any,
+    oie: Mapping[str, Any],
+    *,
+    force: bool = False,
+    legacy_mirrors: bool = False,
+) -> Tuple[Optional[Dict[str, Any]], str]:
+    """Merge seed ``oie`` into metadata.
+
+    Returns ``(new_meta_or_None, action)`` where action is
+    ``updated`` | ``skipped_existing`` | ``unchanged``.
+    """
+    base: Dict[str, Any] = dict(meta) if isinstance(meta, Mapping) else {}
+    prev = base.get("oie")
+    if prev and not force:
+        return None, "skipped_existing"
+    if prev == oie and (
+        not legacy_mirrors
+        or (
+            list(base.get("oie_families") or []) == list(oie.get("families") or [])
+            and list(base.get("oie_classes") or []) == list(oie.get("classes") or [])
+        )
+    ):
+        return None, "unchanged"
+    out = dict(base)
+    out["oie"] = dict(oie)
+    if legacy_mirrors:
+        out["oie_families"] = list(oie.get("families") or [])
+        out["oie_classes"] = list(oie.get("classes") or [])
+    return out, "updated"
+
+
+def require_oie_base_metadata(session: Any) -> "TaxonomyIndex":
+    """Load taxonomy and assert Node section map + CRE ``oie`` are populated.
+
+    Raises ``OieMetadataNotPopulatedError`` with populate instructions when
+    either side is empty.
+    """
+    from application.database.db import CRE
+
+    tax = load_taxonomy_index_from_session(session)
+    cres = session.query(CRE).all()
+    cre_tagged = sum(
+        1 for cre in cres if cre_oie_populated(getattr(cre, "metadata_json", None))
+    )
+    if not tax.section_id_to_class or cre_tagged == 0:
+        raise OieMetadataNotPopulatedError(POPULATE_INSTRUCTION)
+    return tax
 
 
 @dataclass(frozen=True)
@@ -242,9 +318,13 @@ def family_for_standard(
 __all__ = [
     "FAMILIES",
     "OIE_META_VERSION",
+    "OieMetadataNotPopulatedError",
+    "POPULATE_INSTRUCTION",
     "THIN_CLASS_THRESHOLD",
     "THIN_TRANSFER_THRESHOLD",
     "TaxonomyIndex",
+    "apply_oie_fill_if_missing",
+    "cre_oie_populated",
     "family_for_standard",
     "get_default_taxonomy_index",
     "load_taxonomy_index_from_session",
@@ -252,5 +332,6 @@ __all__ = [
     "match_keywords",
     "normalize_section_id",
     "oie_block",
+    "require_oie_base_metadata",
     "set_default_taxonomy_index",
 ]

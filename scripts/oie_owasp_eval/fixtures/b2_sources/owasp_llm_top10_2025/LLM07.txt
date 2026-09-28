@@ -1,7 +1,8 @@
+Standard: OWASP LLM Top 10 2025
+Version: 2025
 Source: LLM07
 Section: System Prompt Leakage
 Section-ID: LLM07
-
 LLM07:2025 System Prompt Leakage - OWASP Gen AI Security Project
 Skip to content
 Join us in Orlando, FL 10/11 – 10/15 @ InfoSec World 2026

@@ -1,7 +1,7 @@
+Standard: OWASP AISVS 1.0
 Source: AISVS8
 Section: Memory, Embeddings & Vector Database Security
 Section-ID: AISVS8
-
 # C8 Memory, Embeddings & Vector Database Security
 
 ## Control Objective

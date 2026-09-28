@@ -1,7 +1,8 @@
+Standard: OWASP API Top 10 2023
+Version: 2023
 Source: API8
 Section: Security Misconfiguration
 Section-ID: API8
-
 API8:2023 Security Misconfiguration - OWASP API Security Top 10
 Skip to content
 OWASP API Security Top 10

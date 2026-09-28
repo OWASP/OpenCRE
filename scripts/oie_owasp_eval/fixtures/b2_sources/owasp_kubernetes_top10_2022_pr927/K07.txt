@@ -1,7 +1,8 @@
+Standard: OWASP Kubernetes Top 10 2022
+Version: 2022
 Source: K07
 Section: Missing Network Segmentation Controls
 Section-ID: K07
-
 ---
 
 layout: col-sidebar

@@ -1,7 +1,8 @@
+Standard: OWASP Kubernetes Top 10 2025
+Version: 2025
 Source: K04
 Section: Lack Of Cluster Level Policy Enforcement
 Section-ID: K04
-
 K04: Lack Of Cluster Level Policy Enforcement | OWASP Foundation
 Store
 Donate

@@ -1,7 +1,8 @@
+Standard: OWASP Kubernetes Top 10 2022
+Version: 2022
 Source: K09
 Section: Misconfigured Cluster Components
 Section-ID: K09
-
 K09: Misconfigured Cluster Components | OWASP Foundation
 Store
 Donate

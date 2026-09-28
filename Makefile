@@ -189,6 +189,15 @@ oie-pipeline:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	PYTHONPATH=. python scripts/run_oie_pipeline.py --cache_file "$(or $(CACHE_FILE),sqlite:///$(CURDIR)/standards_cache.sqlite)" $(OIE_ARGS)
 
+# Deterministic OIE base metadata (Node then CRE document_metadata.oie). Fill-if-missing.
+# Example:
+#   make oie-tag-base CACHE_FILE=postgresql://cre:password@127.0.0.1:5432/cre_prodclone
+oie-tag-base:
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
+	PYTHONPATH=. python scripts/oie_ensure_base_metadata.py \
+		--cache-file "$(or $(CACHE_FILE),$(or $(DEV_DATABASE_URL),postgresql://cre:password@127.0.0.1:5432/cre))" \
+		$(OIE_TAG_ARGS)
+
 # Local OIE bootstrap: start cre-postgres, migrate, sync CRE hub (local|upstream).
 # Examples:
 #   make setup-oie

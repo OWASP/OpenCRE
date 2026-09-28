@@ -1,7 +1,8 @@
+Standard: OWASP Kubernetes Top 10 2022
+Version: 2022
 Source: K01
 Section: Insecure Workload Configurations
 Section-ID: K01
-
 K01: Insecure Workload Configurations | OWASP Foundation
 Store
 Donate

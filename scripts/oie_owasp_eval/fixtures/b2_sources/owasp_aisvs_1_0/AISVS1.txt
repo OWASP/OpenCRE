@@ -1,7 +1,7 @@
+Standard: OWASP AISVS 1.0
 Source: AISVS1
 Section: Training Data Integrity & Traceability
 Section-ID: AISVS1
-
 # C1 Training Data Integrity & Traceability
 
 ## Control Objective

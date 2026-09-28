@@ -81,7 +81,14 @@ class PriorCagedRetriever:
         if not parsed:
             return set()
         family, year, section_id = parsed
-        return set(self._edition.cre_ids_for_new_section(family, year, section_id))
+        return set(
+            self._edition.cre_ids_for_new_section(
+                family,
+                year,
+                section_id,
+                section_title=section_title_from_text(text),
+            )
+        )
 
     def _retrieve_allowlist(
         self, text: str, allowlist: FrozenSet[str]

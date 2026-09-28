@@ -1,7 +1,8 @@
+Standard: OWASP API Top 10 2023
+Version: 2023
 Source: API6
 Section: Unrestricted Access to Sensitive Business Flows
 Section-ID: API6
-
 API6:2023 Unrestricted Access to Sensitive Business Flows - OWASP API Security Top 10
 Skip to content
 OWASP API Security Top 10

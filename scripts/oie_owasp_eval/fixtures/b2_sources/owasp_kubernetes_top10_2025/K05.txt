@@ -1,7 +1,8 @@
+Standard: OWASP Kubernetes Top 10 2025
+Version: 2025
 Source: K05
 Section: Missing Network Segmentation Controls
 Section-ID: K05
-
 K05: Missing Network Segmentation Controls | OWASP Foundation
 Store
 Donate

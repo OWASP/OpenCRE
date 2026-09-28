@@ -1,7 +1,8 @@
+Standard: OWASP API Top 10 2023
+Version: 2023
 Source: API9
 Section: Improper Inventory Management
 Section-ID: API9
-
 API9:2023 Improper Inventory Management - OWASP API Security Top 10
 Skip to content
 OWASP API Security Top 10

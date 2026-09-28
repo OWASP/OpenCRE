@@ -416,19 +416,16 @@ def _node_names_by_id(database: Any) -> Dict[str, str]:
 
 
 def _install_taxonomy_index(database: Any) -> None:
-    """Load Node ``document_metadata.oie`` into the process-wide TaxonomyIndex."""
+    """Load Node ``document_metadata.oie``; hard-fail if base metadata is missing."""
     session = getattr(database, "session", None)
     if session is None:
         return
-    try:
-        from application.utils.librarian.oie_taxonomy import (
-            load_taxonomy_index_from_session,
-            set_default_taxonomy_index,
-        )
+    from application.utils.librarian.oie_taxonomy import (
+        require_oie_base_metadata,
+        set_default_taxonomy_index,
+    )
 
-        set_default_taxonomy_index(load_taxonomy_index_from_session(session))
-    except Exception:  # noqa: BLE001
-        logger.debug("OIE taxonomy index unavailable", exc_info=True)
+    set_default_taxonomy_index(require_oie_base_metadata(session))
 
 
 def _build_cre_prior(database: Any) -> Optional[Any]:
@@ -441,17 +438,10 @@ def _build_cre_prior(database: Any) -> Optional[Any]:
 
         from application.database.db import CRE, Links, Node
         from application.utils.librarian.cre_prior import build_cre_prior_index
-        from application.utils.librarian.oie_taxonomy import (
-            get_default_taxonomy_index,
-            load_taxonomy_index_from_session,
-            set_default_taxonomy_index,
-        )
+        from application.utils.librarian.oie_taxonomy import get_default_taxonomy_index
 
-        # Ensure taxonomy is available for related/transfer maps.
+        # Taxonomy already required/installed by ``_install_taxonomy_index``.
         tax = get_default_taxonomy_index()
-        if not tax.section_id_to_class:
-            tax = load_taxonomy_index_from_session(session)
-            set_default_taxonomy_index(tax)
 
         cres = session.query(CRE).all()
         linked_names: Dict[str, list] = defaultdict(list)

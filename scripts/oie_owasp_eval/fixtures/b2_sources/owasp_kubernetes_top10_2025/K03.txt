@@ -1,7 +1,8 @@
+Standard: OWASP Kubernetes Top 10 2025
+Version: 2025
 Source: K03
 Section: Secrets Management Failures
 Section-ID: K03
-
 K03: Secrets Management Failures | OWASP Foundation
 Store
 Donate

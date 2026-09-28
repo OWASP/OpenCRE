@@ -1,7 +1,7 @@
+Standard: OWASP AISVS 1.0
 Source: AISVS7
 Section: Model Behavior, Output Control & Safety Assurance
 Section-ID: AISVS7
-
 # C7 Model Behavior, Output Control & Safety Assurance
 
 ## Control Objective

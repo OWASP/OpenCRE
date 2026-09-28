@@ -1,7 +1,8 @@
+Standard: OWASP Kubernetes Top 10 2025
+Version: 2025
 Source: K06
 Section: Overly Exposed Kubernetes Components
 Section-ID: K06
-
 K06: Overly Exposed Kubernetes Components | OWASP Foundation
 Store
 Donate

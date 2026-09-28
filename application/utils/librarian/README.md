@@ -22,7 +22,7 @@ explained after the fact.
 | **C.-1** | `schemas.py`, `config_loader.py` | RFC contracts, config, the read-only mirror of B's `knowledge_queue` row |
 | **C.0** | `section_validator.py` | Input boundary — validates and adapts a queue row into an internal `Section` without re-normalizing text |
 | **C.0.5** | `explicit_link_resolver.py` | Deterministic path: a chunk that cites a CRE id resolves with no ML at all |
-| **C.0.4** | `problem_class.py` + `oie_taxonomy.py` | Section-ID / phrases from Node `document_metadata.oie`; CRE prior from CRE `oie` |
+| **C.0.4** | `problem_class.py` + `oie_taxonomy.py` | Section-ID / phrases from Node `document_metadata.oie`; CRE prior from CRE `oie`. **Prerequisite:** deterministic base `oie` must already be on Nodes/CREs (`make oie-tag-base`); `build_components` hard-fails with populate instructions if missing |
 | **C.0.4b** | `edition_remap.py` | If low results **and** a predecessor edition of the same standard exists → LLM (cached) section remap → inherit Links |
 | **C.0.6** | `cre_prior.py`, `prior_caged_retriever.py` | Graph/family prior; cage C.1 candidates to that checklist |
 | **C.1** | `candidate_retriever.py` | Embedding retrieval over the CRE hub — produces a shortlist |
@@ -129,6 +129,10 @@ See [the runbook](../../../docs/gsoc_2026_module_c/runbook.md) for setup, live
 runs, and troubleshooting. The short version:
 
 ```bash
+# After hub sync: seed Node/CRE document_metadata.oie (fill-if-missing).
+# setup_oie.sh runs this automatically; otherwise:
+make oie-tag-base CACHE_FILE=postgresql://cre:password@127.0.0.1:5432/cre_prodclone
+
 # hermetic regression harness — no DB, no key, no model
 python scripts/evaluate_librarian.py \
     --dataset application/tests/librarian/fixtures/golden_dataset.json

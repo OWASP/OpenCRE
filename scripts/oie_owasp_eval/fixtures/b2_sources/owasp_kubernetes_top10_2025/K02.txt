@@ -1,7 +1,8 @@
+Standard: OWASP Kubernetes Top 10 2025
+Version: 2025
 Source: K02
 Section: Overly Permissive Authorization Configurations
 Section-ID: K02
-
 K02: Overly Permissive Authorization Configurations | OWASP Foundation
 Store
 Donate

@@ -1,7 +1,7 @@
+Standard: OWASP AISVS 1.0
 Source: AISVS6
 Section: Supply Chain Security for Models, Frameworks & Data
 Section-ID: AISVS6
-
 # C6 Supply Chain Security for Models
 
 ## Control Objective

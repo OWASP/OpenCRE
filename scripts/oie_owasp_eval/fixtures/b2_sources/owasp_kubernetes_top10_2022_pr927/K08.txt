@@ -1,7 +1,8 @@
+Standard: OWASP Kubernetes Top 10 2022
+Version: 2022
 Source: K08
 Section: Secrets Management Failures
 Section-ID: K08
-
 ---
 
 layout: col-sidebar
