@@ -718,6 +718,16 @@ def main() -> int:
         help="Only refresh source headers, then exit (no pipeline / score).",
     )
     parser.add_argument(
+        "--only-fixtures",
+        nargs="*",
+        default=[],
+        metavar="STEM",
+        help=(
+            "If set, keep only these fixture stems. "
+            "Example: --only-fixtures owasp_aisvs_1_0"
+        ),
+    )
+    parser.add_argument(
         "--out",
         type=Path,
         default=ART / "b2_accuracy_report.json",
@@ -731,6 +741,24 @@ def main() -> int:
     cache = os.environ.get(
         "DEV_DATABASE_URL", "postgresql://cre:password@127.0.0.1:5432/cre"
     )
+
+    only_fixtures = {
+        str(s).strip() for s in (args.only_fixtures or []) if str(s).strip()
+    }
+    if only_fixtures:
+        HARNESSES[:] = [
+            h
+            for h in HARNESSES
+            if str(h.get("fixture_name") or "") in only_fixtures
+            or gold_stem(h) in only_fixtures
+        ]
+        if not HARNESSES:
+            print(
+                "no harnesses match --only-fixtures:",
+                sorted(only_fixtures),
+                file=sys.stderr,
+            )
+            return 2
 
     GOLD_DIR.mkdir(parents=True, exist_ok=True)
     missing = []

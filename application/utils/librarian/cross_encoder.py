@@ -15,6 +15,7 @@ from cre_logging import get_logger
 
 logger = get_logger(__name__)
 
+import os
 from typing import Callable, List, Mapping, Optional, Sequence, Tuple
 
 from application.utils.librarian.schemas import RetrievalAudit
