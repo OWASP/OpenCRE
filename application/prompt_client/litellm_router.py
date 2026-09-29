@@ -8,15 +8,17 @@ in one place.
 
 from __future__ import annotations
 
-from cre_logging import get_logger
-
-logger = get_logger(__name__)
-
+import logging
 import os
 import time
 from typing import Any, Callable, List, Optional, Sequence
 
-from application.prompt_client.llm_error_utils import is_rate_limit_error
+from application.prompt_client.llm_error_utils import (
+    is_rate_limit_error,
+    is_transient_llm_error,
+)
+
+logger = logging.getLogger(__name__)
 
 LlmFn = Callable[[str, str], str]
 
@@ -47,6 +49,7 @@ def with_rate_limit_retry(
     max_retries: Optional[int] = None,
     retry_sleep_seconds: Optional[int] = None,
 ) -> Any:
+    """Retry rate limits and transient connection/timeout blips."""
     default_retries, default_sleep = retry_policy()
     retries = default_retries if max_retries is None else max_retries
     sleep_s = default_sleep if retry_sleep_seconds is None else retry_sleep_seconds
@@ -54,14 +57,18 @@ def with_rate_limit_retry(
         try:
             return fn()
         except Exception as err:
-            if not is_rate_limit_error(err) or attempt >= retries:
+            retriable = is_transient_llm_error(err) or is_rate_limit_error(err)
+            if not retriable or attempt >= retries:
                 raise
+            kind = "rate/quota" if is_rate_limit_error(err) else "transient"
             logger.info(
-                "rate/quota limited during %s; sleeping %ss (attempt %s/%s)",
+                "%s limited during %s; sleeping %ss (attempt %s/%s): %s",
+                kind,
                 context,
                 sleep_s,
                 attempt + 1,
                 retries + 1,
+                type(err).__name__,
             )
             time.sleep(sleep_s)
     raise RuntimeError("unreachable: retry loop exited unexpectedly")
