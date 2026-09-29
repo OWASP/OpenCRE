@@ -3,60 +3,149 @@
     "section_id": "LLM01",
     "section": "Prompt Injection",
     "hyperlink": "https://genai.owasp.org/llmrisk/llm01-prompt-injection/",
-    "cre_ids": ["161-451", "760-764"]
+    "cre_ids": [
+      "012-625",
+      "686-110"
+    ],
+    "gold_provenance": {
+      "kind": "hub",
+      "method": "owasp_top10_for_llm_hub_links",
+      "issue": "https://github.com/OWASP/OpenCRE/issues/1124"
+    }
   },
   {
     "section_id": "LLM02",
     "section": "Sensitive Information Disclosure",
     "hyperlink": "https://genai.owasp.org/llmrisk/llm022025-sensitive-information-disclosure/",
-    "cre_ids": ["126-668", "227-045"]
+    "cre_ids": [
+      "034-540",
+      "044-202",
+      "077-772"
+    ],
+    "gold_provenance": {
+      "kind": "hub",
+      "method": "owasp_top10_for_llm_hub_links",
+      "issue": "https://github.com/OWASP/OpenCRE/issues/1124"
+    }
   },
   {
     "section_id": "LLM03",
     "section": "Supply Chain",
     "hyperlink": "https://genai.owasp.org/llmrisk/llm032025-supply-chain/",
-    "cre_ids": ["613-285", "613-287"]
+    "cre_ids": [
+      "701-654"
+    ],
+    "gold_provenance": {
+      "kind": "hub",
+      "method": "owasp_top10_for_llm_hub_links",
+      "issue": "https://github.com/OWASP/OpenCRE/issues/1124"
+    }
   },
   {
     "section_id": "LLM04",
     "section": "Data and Model Poisoning",
     "hyperlink": "https://genai.owasp.org/llmrisk/llm042025-data-and-model-poisoning/",
-    "cre_ids": ["307-507", "613-287"]
+    "cre_ids": [
+      "020-540",
+      "481-710",
+      "615-663",
+      "867-642"
+    ],
+    "gold_provenance": {
+      "kind": "hub",
+      "method": "owasp_top10_for_llm_hub_links",
+      "issue": "https://github.com/OWASP/OpenCRE/issues/1124"
+    }
   },
   {
     "section_id": "LLM05",
     "section": "Improper Output Handling",
     "hyperlink": "https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/",
-    "cre_ids": ["064-808"]
+    "cre_ids": [
+      "044-202",
+      "780-757"
+    ],
+    "gold_provenance": {
+      "kind": "hub",
+      "method": "owasp_top10_for_llm_hub_links",
+      "issue": "https://github.com/OWASP/OpenCRE/issues/1124"
+    }
   },
   {
     "section_id": "LLM06",
     "section": "Excessive Agency",
     "hyperlink": "https://genai.owasp.org/llmrisk/llm062025-excessive-agency/",
-    "cre_ids": ["117-371", "650-560"]
+    "cre_ids": [
+      "202-604",
+      "205-522",
+      "220-442"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "ai_exchange_topic_match",
+      "note": "Hub Top10-for-LLM Links empty for LLM06; AI Exchange CREs for agency/oversight",
+      "issue": "https://github.com/OWASP/OpenCRE/issues/1124"
+    }
   },
   {
     "section_id": "LLM07",
     "section": "System Prompt Leakage",
     "hyperlink": "https://genai.owasp.org/llmrisk/llm072025-system-prompt-leakage/",
-    "cre_ids": ["126-668", "227-045"]
+    "cre_ids": [
+      "077-235",
+      "106-447",
+      "768-532"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "ai_exchange_topic_match",
+      "note": "Hub Top10-for-LLM Links empty for LLM07; AI Exchange CREs for prompt/input leak",
+      "issue": "https://github.com/OWASP/OpenCRE/issues/1124"
+    }
   },
   {
     "section_id": "LLM08",
     "section": "Vector and Embedding Weaknesses",
     "hyperlink": "https://genai.owasp.org/llmrisk/llm082025-vector-and-embedding-weaknesses/",
-    "cre_ids": ["126-668", "538-770"]
+    "cre_ids": [
+      "088-316",
+      "173-554",
+      "440-372"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "ai_exchange_topic_match",
+      "note": "Hub Top10-for-LLM Links empty for LLM08; AI Exchange augmentation-data CREs (RAG/vector path)",
+      "issue": "https://github.com/OWASP/OpenCRE/issues/1124"
+    }
   },
   {
     "section_id": "LLM09",
     "section": "Misinformation",
     "hyperlink": "https://genai.owasp.org/llmrisk/llm092025-misinformation/",
-    "cre_ids": ["141-555"]
+    "cre_ids": [
+      "010-108",
+      "810-884",
+      "860-723"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "ai_exchange_topic_match",
+      "note": "Hub Top10-for-LLM Links empty for LLM09; AI Exchange CREs for alignment/transparency/confidence",
+      "issue": "https://github.com/OWASP/OpenCRE/issues/1124"
+    }
   },
   {
     "section_id": "LLM10",
     "section": "Unbounded Consumption",
     "hyperlink": "https://genai.owasp.org/llmrisk/llm102025-unbounded-consumption/",
-    "cre_ids": ["267-031", "623-550"]
+    "cre_ids": [
+      "230-318"
+    ],
+    "gold_provenance": {
+      "kind": "hub",
+      "method": "owasp_top10_for_llm_hub_links",
+      "issue": "https://github.com/OWASP/OpenCRE/issues/1124"
+    }
   }
 ]
