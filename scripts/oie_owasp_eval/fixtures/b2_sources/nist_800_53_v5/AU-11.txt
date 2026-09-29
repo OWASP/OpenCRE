@@ -1,0 +1,9 @@
+Source: AU-11
+Section-ID: AU-11
+Section: AU-11 Audit Record Retention
+Standard: NIST 800-53 v5
+
+Audit Record Retention
+
+Retain audit records for … to provide support for after-the-fact investigations of incidents and to meet regulatory and organizational information retention requirements.
+Organizations retain audit records until it is determined that the records are no longer needed for administrative, legal, audit, or other operational purposes. This includes the retention and availability of audit records relative to Freedom of Information Act (FOIA) requests, subpoenas, and law enforcement actions. Organizations develop standard categories of audit records relative to such types of actions and standard response processes for each type of action. The National Archives and Records Administration (NARA) General Records Schedules provide federal policy on records retention.
