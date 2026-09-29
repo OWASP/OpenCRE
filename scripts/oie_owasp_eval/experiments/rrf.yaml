@@ -1,0 +1,9 @@
+experiment_id: rrf
+description: >
+  Step 2 — RRF merge on top of dual-index (k=60). Only meaningful with dual_index.
+  Flag not yet wired in config_loader; runner still sets env for when it lands.
+flags:
+  CRE_LIBRARIAN_CRE_SUMMARY: "1"
+  CRE_LIBRARIAN_DUAL_INDEX: "1"
+  CRE_LIBRARIAN_USE_RRF: "1"
+include_agentic: false
