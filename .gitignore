@@ -79,6 +79,8 @@ standards_cache.sqlite
 !docs/gsoc_2026_module_b/module_c_contract.md
 !docs/gsoc_2026_module_b/module_b_runbook.md
 !docs/gsoc_2026_module_b/final_metrics.md
+!docs/oie/*.md
+!scripts/oie_owasp_eval/experiments/*.md
 
 ### Dev DBDumps
 *.sql

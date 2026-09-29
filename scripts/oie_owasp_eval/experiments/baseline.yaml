@@ -1,0 +1,6 @@
+experiment_id: baseline
+description: >
+  Exp0 — all new retrieval/precision flags off. PR hybrid defaults remain
+  (FOCUS_QUERY off, CE hybrid γ=0.70). Canonical gold only.
+flags: {}
+include_agentic: false

@@ -1,0 +1,9 @@
+experiment_id: stack_winners
+description: >
+  Soft neighborhood winner stack: CRE_SUMMARY=1 + MARGIN_GAMMA=0.85.
+  Exact ~53% on AI-topic LLM gold; neighborhood (Related∪Contains 1-hop) ~84%.
+  Trained CE deferred. No live Links writes.
+flags:
+  CRE_LIBRARIAN_CRE_SUMMARY: "1"
+  CRE_LIBRARIAN_MARGIN_GAMMA: "0.85"
+include_agentic: false

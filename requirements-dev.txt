@@ -6,6 +6,13 @@
 sentence-transformers>=5.0.0,<6.0.0
 setuptools
 
+# OIE ingest + orchestration (worker/dev only — not Heroku web slug)
+docling>=2.0.0
+llama-index-core>=0.14.0
+llama-index-readers-docling>=0.4.0
+llama-index-node-parser-docling>=0.4.0
+langgraph>=0.2.0
+
 # importer / embeddings scrape tooling (not needed for prod chat)
 playwright
 nltk

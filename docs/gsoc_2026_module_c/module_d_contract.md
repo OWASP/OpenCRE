@@ -111,6 +111,7 @@ Review rows carry one, in this precedence order:
 | `reason_code` | meaning |
 |---|---|
 | `NO_CANDIDATES` | retrieval returned nothing to link to |
+| `CRE_GAP` | prior cage found no existing CRE; `suggested_links` has a `Proposed new CRE` |
 | `ADVERSARIAL_FLAG` | the safety guard flagged the content |
 | `UPDATE_AMBIGUOUS` | it restates an existing link, ambiguously |
 | `BELOW_THRESHOLD` | the calibrated confidence did not clear τ |
