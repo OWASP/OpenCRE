@@ -1,0 +1,32 @@
+[
+  {
+    "section_id": "AAI01",
+    "section": "Goal Hijacking and Agent Drift",
+    "hyperlink": "",
+    "cre_ids": ["177-260", "724-770"]
+  },
+  {
+    "section_id": "AAI02",
+    "section": "Tool Misuse and Unsafe Actuation",
+    "hyperlink": "",
+    "cre_ids": ["486-813", "117-371"]
+  },
+  {
+    "section_id": "AAI03",
+    "section": "Multi-Agent Collusion and Privilege Escalation",
+    "hyperlink": "",
+    "cre_ids": ["128-128", "633-428"]
+  },
+  {
+    "section_id": "AAI04",
+    "section": "Memory Poisoning Across Agent Sessions",
+    "hyperlink": "",
+    "cre_ids": ["340-375", "613-287"]
+  },
+  {
+    "section_id": "AAI05",
+    "section": "Unsupervised Cross-System Workflows",
+    "hyperlink": "",
+    "cre_ids": ["132-146", "515-021"]
+  }
+]
