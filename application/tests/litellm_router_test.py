@@ -48,6 +48,31 @@ class TestLiteLLMRouter(unittest.TestCase):
         err = Exception("resource exhausted due to quota")
         self.assertTrue(llm_error_utils.is_rate_limit_error(err))
 
+    def test_transient_error_detects_connection_reset(self) -> None:
+        err = Exception("GeminiException - [Errno 54] Connection reset by peer")
+        self.assertTrue(llm_error_utils.is_transient_llm_error(err))
+        self.assertFalse(llm_error_utils.is_rate_limit_error(err))
+
+    def test_embedding_retries_connection_reset_then_succeeds(self) -> None:
+        client = Mock(
+            embedding=Mock(
+                side_effect=[
+                    Exception("[Errno 54] Connection reset by peer"),
+                    SimpleNamespace(data=[SimpleNamespace(embedding=[0.1, 0.2, 0.3])]),
+                ]
+            )
+        )
+        with patch("application.prompt_client.litellm_router.time.sleep"):
+            resp = litellm_router.embedding(
+                model="gemini/gemini-embedding-001",
+                input="query",
+                client=client,
+                max_retries=2,
+                retry_sleep_seconds=0,
+            )
+        self.assertEqual(resp.data[0].embedding, [0.1, 0.2, 0.3])
+        self.assertEqual(client.embedding.call_count, 2)
+
     def test_completion_retries_rate_limit_then_succeeds(self) -> None:
         client = Mock(
             completion=Mock(
