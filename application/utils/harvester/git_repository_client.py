@@ -64,9 +64,15 @@ class GitRepositoryClient(RepositoryClient):
             subprocess.run(
                 [
                     "git",
+                    "-c",
+                    "core.hooksPath=/dev/null",
                     "clone",
+                    "--template=",
                     "--branch",
                     self.branch,
+                    "--single-branch",
+                    "--depth",
+                    "1",
                     self.repository_url,
                     str(temp_path),
                 ],
@@ -74,6 +80,10 @@ class GitRepositoryClient(RepositoryClient):
                 capture_output=True,
                 text=True,
                 timeout=300,
+                env={
+                    **os.environ,
+                    "GIT_TERMINAL_PROMPT": "0",
+                },
             )
 
             if not self.is_valid_repository(temp_path):
