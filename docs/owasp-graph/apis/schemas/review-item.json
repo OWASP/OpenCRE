@@ -31,7 +31,8 @@
         "BELOW_THRESHOLD",
         "NO_CANDIDATES",
         "ADVERSARIAL_FLAG",
-        "UPDATE_AMBIGUOUS"
+        "UPDATE_AMBIGUOUS",
+        "CRE_GAP"
       ]
     },
     "knowledge": { "$ref": "link-proposal.json#/$defs/knowledge_snapshot" },
