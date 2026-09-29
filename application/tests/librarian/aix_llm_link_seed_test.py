@@ -106,5 +106,43 @@ class PriorCagedWithAixLlmTest(unittest.TestCase):
         self.assertEqual(audit.candidates[0].cre_id, "uuid-direct")
 
 
+class GoldRebuildHelpersTest(unittest.TestCase):
+    def test_build_gold_rows_marks_gaps(self) -> None:
+        # Import from script path via runpy-style relative — keep pure helper copy.
+        import importlib.util
+        from pathlib import Path
+
+        path = (
+            Path(__file__).resolve().parents[3]
+            / "scripts"
+            / "oie_owasp_eval"
+            / "rebuild_b2_llm_gold_from_hub.py"
+        )
+        spec = importlib.util.spec_from_file_location("rebuild_b2_llm_gold", path)
+        assert spec and spec.loader
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+
+        hub = {
+            "LLM01": ["686-110", "012-625"],
+            "LLM03": ["701-654"],
+        }
+        existing = {
+            "LLM01": {
+                "section": "Prompt Injection",
+                "hyperlink": "https://example.test/llm01",
+            }
+        }
+        rows, gaps = mod.build_gold_rows(hub, existing=existing)
+        self.assertEqual(len(rows), 10)
+        llm01 = next(r for r in rows if r["section_id"] == "LLM01")
+        self.assertEqual(llm01["cre_ids"], ["012-625", "686-110"])
+        self.assertEqual(llm01["hyperlink"], "https://example.test/llm01")
+        self.assertIn("LLM06", gaps)
+        self.assertIn("LLM09", gaps)
+        empty = next(r for r in rows if r["section_id"] == "LLM06")
+        self.assertEqual(empty["cre_ids"], [])
+
+
 if __name__ == "__main__":
     unittest.main()
