@@ -1,0 +1,68 @@
+# Full-pipeline GitHub harvest targets (eval / production-shaped).
+# Used by scripts/oie_owasp_eval/run_full_pipeline.py
+#
+# AI Exchange (AIX) is not a GitHub Module A target — see run_full_pipeline.py
+# (--aix uses LLM Top10 / hub CRE gold as the AIX scoring arm).
+
+repositories:
+  - id: owasp-asvs
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: ASVS
+    branch: master
+    paths:
+      include:
+        - "5.0/en/**/*.md"
+      exclude:
+        - "**/archive/**"
+    chunking:
+      strategy: docling
+      max_tokens: 1200
+      overlap_tokens: 100
+      merge_profile: requirements
+      requirement_extract: auto
+    polling:
+      mode: incremental
+      interval_minutes: 60
+
+  - id: owasp-aisvs
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: AISVS
+    branch: main
+    paths:
+      include:
+        - "1.0/en/**/*.md"
+      exclude:
+        - "**/archive/**"
+    chunking:
+      strategy: docling
+      max_tokens: 1200
+      overlap_tokens: 100
+      merge_profile: requirements
+      requirement_extract: auto
+    polling:
+      mode: incremental
+      interval_minutes: 60
+
+  - id: owasp-cheatsheets
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: CheatSheetSeries
+    branch: master
+    paths:
+      include:
+        - "cheatsheets/**/*.md"
+      exclude:
+        - "**/archive/**"
+    chunking:
+      strategy: docling
+      max_tokens: 1000
+      overlap_tokens: 100
+      merge_profile: narrative
+    polling:
+      mode: incremental
+      interval_minutes: 120

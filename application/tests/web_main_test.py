@@ -10,6 +10,7 @@ import re
 import json
 import unittest
 import tempfile
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch, Mock
 
@@ -186,6 +187,37 @@ class TestMain(unittest.TestCase):
             "find_cre",
             f"id:{cre.id};nameNone;source:wstg-v4.2-draft-main",
         )
+
+    def test_rest_cre_payload_omits_librarian_summary(self) -> None:
+        """Hidden librarian blurbs live in the cache, never the public CRE document."""
+        blurb = "HIDDEN_LIBRARIAN_BLURB_MUST_NOT_APPEAR_IN_REST_OR_SPA"
+        cre = defs.CRE(id="481-710", description="", name="Access Control")
+        self.collection.add_cre(cre)
+        with tempfile.TemporaryDirectory() as tmp:
+            cache = Path(tmp) / "481-710.json"
+            cache.write_text(
+                json.dumps(
+                    {
+                        "cre_id": "cre-uuid-1",
+                        "external_id": "481-710",
+                        "name": "Access Control",
+                        "summary": blurb,
+                    }
+                )
+            )
+            with patch.dict(
+                os.environ, {"CRE_LIBRARIAN_CRE_SUMMARY_CACHE": tmp}, clear=False
+            ):
+                with self.app.test_client() as client:
+                    response = client.get(f"/rest/v1/id/{cre.id}")
+        self.assertEqual(200, response.status_code)
+        payload = json.loads(response.data.decode())
+        dumped = json.dumps(payload)
+        self.assertNotIn(blurb, dumped)
+        self.assertNotIn("embeddings_content", dumped)
+        self.assertNotIn("librarian_summary", dumped)
+        self.assertEqual(payload["data"].get("description", ""), "")
+        self.assertEqual(payload["data"]["name"], "Access Control")
 
     @patch("application.web.web_main.posthog")
     def test_find_by_id_ignores_empty_source(self, posthog_mock) -> None:
