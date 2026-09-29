@@ -141,6 +141,7 @@ def _components(confidence: float = 0.95, retriever=None) -> LibrarianComponents
         reranker=_Reranker(),
         scaler=_Scaler(confidence),
         known_cre_ids=frozenset({"616-305"}),
+        cre_membership=frozenset({"616-305"}),
     )
 
 

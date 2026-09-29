@@ -177,6 +177,7 @@ def _build_live_pipeline(
     from application.utils.librarian.candidate_retriever import (
         CandidatePool,
         CandidateRetriever,
+        RetrieverBackend,
     )
     from sqlalchemy import text as _sql_text
     from application.utils.librarian.cross_encoder import (
@@ -186,6 +187,7 @@ def _build_live_pipeline(
 
     database = db_connect(path=cache_file)
     ph = prompt_client.PromptHandler(database=database)
+    cfg = load_config()
 
     # The embeddings pool is keyed by the CRE's internal UUID (add_embedding
     # stores cre_id=db_object.id), but the golden dataset and the explicit
@@ -203,6 +205,19 @@ def _build_live_pipeline(
     def _to_ext(mapping):
         return {id_to_ext.get(k, k): v for k, v in mapping.items()}
 
+    cre_texts = database.get_embedding_contents_by_doc_type(
+        cre_defs.Credoctypes.CRE.value
+    )
+    if cfg.cre_text_enrich:
+        from application.utils.librarian.cre_text import (
+            enrich_cre_contents,
+            load_linked_standard_refs,
+        )
+
+        cre_texts = enrich_cre_contents(
+            cre_texts, load_linked_standard_refs(database)
+        )
+
     pool = CandidatePool.from_mapping(
         _to_ext(database.get_embeddings_by_doc_type(cre_defs.Credoctypes.CRE.value))
     )
@@ -212,12 +227,37 @@ def _build_live_pipeline(
         top_k=top_k,
         threshold=threshold,
     )
+    if cfg.standard_retrieval:
+        from application.utils.librarian.factory import (
+            _maybe_wrap_standard_hop,
+            _node_to_cre_hops,
+        )
+        from application.utils.librarian.standard_hop_retriever import (
+            StandardHopRetriever,
+        )
+
+        wrapped = _maybe_wrap_standard_hop(
+            retriever,
+            database,
+            config=cfg,
+            embed_fn=ph.get_text_embeddings,
+            backend=RetrieverBackend.in_memory,
+            cre_names=_to_ext({}),
+        )
+        if isinstance(wrapped, StandardHopRetriever):
+            hops = {
+                nid: tuple(id_to_ext.get(cid, cid) for cid in cres)
+                for nid, cres in _node_to_cre_hops(database).items()
+            }
+            wrapped._node_to_cres = hops
+        retriever = wrapped
+
     reranker = CrossEncoderReranker(
         score_fn=build_cross_encoder_score_fn(crossencoder_model),
         top_n=top_n_rerank,
-        cre_texts=_to_ext(
-            database.get_embedding_contents_by_doc_type(cre_defs.Credoctypes.CRE.value)
-        ),
+        cre_texts=_to_ext(cre_texts),
+        hybrid_beta=cfg.hybrid_beta,
+        hybrid_gamma=cfg.hybrid_gamma,
     )
     return retriever, reranker
 
