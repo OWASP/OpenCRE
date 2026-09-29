@@ -1,0 +1,9 @@
+Source: AC-10
+Section-ID: AC-10
+Section: AC-10 CONCURRENT SESSION CONTROL
+Standard: NIST 800-53 v5
+
+Concurrent Session Control
+
+Limit the number of concurrent sessions for each … to ….
+Organizations may define the maximum number of concurrent sessions for system accounts globally, by account type, by account, or any combination thereof. For example, organizations may limit the number of concurrent sessions for system administrators or other individuals working in particularly sensitive domains or mission-critical applications. Concurrent session control addresses concurrent sessions for system accounts. It does not, however, address concurrent sessions by single users via multiple system accounts.
