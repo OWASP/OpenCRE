@@ -1,0 +1,3828 @@
+[
+  {
+    "section_id": "V1.1.2",
+    "section": "Verify that the application performs output encoding and escaping either as a final step before being used by the interpreter for which it is intended or by the interpreter itself.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.1.2",
+    "cre_ids": [
+      "806-367"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.5.4"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-1.1.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V1.2.1",
+    "section": "Verify that output encoding for an HTTP response, HTML document, or XML document is relevant for the context required, such as encoding the relevant characters for HTML elements, HTML attributes, HTML comments, CSS, or HTTP header fields, to avoid changing the message or document structure.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.2.1",
+    "cre_ids": [
+      "620-101"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.3.1"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-1.2.1, SPLIT TO v5.0.0-1.2.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V1.2.2",
+    "section": "Verify that when dynamically building URLs, untrusted data is encoded according to its context (e.g., URL encoding or base64url encoding for query or path parameters). Ensure that only safe URL protocols are permitted (e.g., disallow javascript: or data:).",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.2.2",
+    "cre_ids": [
+      "620-101"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.3.1"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-1.2.1, SPLIT TO v5.0.0-1.2.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V1.2.3",
+    "section": "Verify that output encoding or escaping is used when dynamically building JavaScript content (including JSON), to avoid changing the message or document structure (to avoid JavaScript and JSON injection).",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.2.3",
+    "cre_ids": [
+      "366-835",
+      "607-671"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.3.3",
+        "V5.3.6"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-1.2.3, SPLIT TO v5.0.0-3.2.2",
+        "DELETED, COVERED BY v5.0.0-1.2.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V1.2.4",
+    "section": "Verify that data selection or database queries (e.g., SQL, HQL, NoSQL, Cypher) use parameterized queries, ORMs, entity frameworks, or are otherwise protected from SQL Injection and other database injection attacks. This is also relevant when writing stored procedures.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.2.4",
+    "cre_ids": [
+      "732-873",
+      "064-808"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.3.4",
+        "V5.3.5"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-1.2.4",
+        "DELETED, COVERED BY v5.0.0-1.2.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V1.2.5",
+    "section": "Verify that the application protects against OS command injection and that operating system calls use parameterized OS queries or use contextual command line output encoding.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.2.5",
+    "cre_ids": [
+      "857-718",
+      "683-722"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.3.8",
+        "V12.3.5"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-1.2.5",
+        "DELETED, COVERED BY v5.0.0-1.2.5"
+      ]
+    }
+  },
+  {
+    "section_id": "V1.2.6",
+    "section": "Verify that the application protects against LDAP injection vulnerabilities, or that specific security controls to prevent LDAP injection have been implemented.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.2.6",
+    "cre_ids": [
+      "531-558"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.3.7"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-1.2.6"
+      ]
+    }
+  },
+  {
+    "section_id": "V1.2.7",
+    "section": "Verify that the application is protected against XPath injection attacks by using query parameterization or precompiled queries.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.2.7",
+    "cre_ids": [
+      "134-207"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.3.10"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-1.2.7"
+      ]
+    }
+  },
+  {
+    "section_id": "V1.3.1",
+    "section": "Verify that all untrusted HTML input from WYSIWYG editors or similar is sanitized using a well-known and secure HTML sanitization library or framework feature.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.3.1",
+    "cre_ids": [
+      "542-445"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.2.1"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-1.3.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V1.3.2",
+    "section": "Verify that the application avoids the use of eval() or other dynamic code execution features such as Spring Expression Language (SpEL). Where there is no alternative, any user input being included must be sanitized before being executed.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.3.2",
+    "cre_ids": [
+      "317-743",
+      "387-848"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.2.4",
+        "V5.5.4"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-1.3.2",
+        "DELETED, COVERED BY v5.0.0-1.3.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V1.3.3",
+    "section": "Verify that data being passed to a potentially dangerous context is sanitized beforehand to enforce safety measures, such as only allowing characters which are safe for this context and trimming input which is too long.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.3.3",
+    "cre_ids": [
+      "538-446"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.2.2"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-1.3.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V1.3.4",
+    "section": "Verify that user-supplied Scalable Vector Graphics (SVG) scriptable content is validated or sanitized to contain only tags and attributes (such as draw graphics) that are safe for the application, e.g., do not contain scripts and foreignObject.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.3.4",
+    "cre_ids": [
+      "145-310"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.2.7"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-1.3.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V1.3.5",
+    "section": "Verify that the application sanitizes or disables user-supplied scriptable or expression template language content, such as Markdown, CSS or XSL stylesheets, BBCode, or similar.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.3.5",
+    "cre_ids": [
+      "646-462"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.2.8"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-1.3.5"
+      ]
+    }
+  },
+  {
+    "section_id": "V1.3.6",
+    "section": "Verify that the application protects against Server-side Request Forgery (SSRF) attacks, by validating untrusted data against an allowlist of protocols, domains, paths and ports and sanitizing potentially dangerous characters before using the data to call another service.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.3.6",
+    "cre_ids": [
+      "657-084"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.2.6"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-1.3.6"
+      ]
+    }
+  },
+  {
+    "section_id": "V1.3.7",
+    "section": "Verify that the application protects against template injection attacks by not allowing templates to be built based on untrusted input. Where there is no alternative, any untrusted input being included dynamically during template creation must be sanitized or strictly validated.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.3.7",
+    "cre_ids": [
+      "422-005"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.2.5"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-1.3.7"
+      ]
+    }
+  },
+  {
+    "section_id": "V1.3.10",
+    "section": "Verify that format strings which might resolve in an unexpected or malicious way when used are sanitized before being processed.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.3.10",
+    "cre_ids": [
+      "824-732"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.4.2"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-1.3.10"
+      ]
+    }
+  },
+  {
+    "section_id": "V1.3.11",
+    "section": "Verify that the application sanitizes user input before passing to mail systems to protect against SMTP or IMAP injection.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.3.11",
+    "cre_ids": [
+      "881-434"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.2.3"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-1.3.11"
+      ]
+    }
+  },
+  {
+    "section_id": "V1.4.1",
+    "section": "Verify that the application uses memory-safe string, safer memory copy and pointer arithmetic to detect or prevent stack, buffer, or heap overflows.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.4.1",
+    "cre_ids": [
+      "831-570"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.4.1"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-1.4.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V1.4.2",
+    "section": "Verify that sign, range, and input validation techniques are used to prevent integer overflows.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.4.2",
+    "cre_ids": [
+      "482-771"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.4.3"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-1.4.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V1.5.1",
+    "section": "Verify that the application configures XML parsers to use a restrictive configuration and that unsafe features such as resolving external entities are disabled to prevent XML eXternal Entity (XXE) attacks.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.5.1",
+    "cre_ids": [
+      "764-507"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.5.2"
+      ],
+      "mapping_tags": [
+        "GRAMMAR, MOVED TO v5.0.0-1.5.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V1.5.2",
+    "section": "Verify that deserialization of untrusted data enforces safe input handling, such as using an allowlist of object types or restricting client-defined object types, to prevent deserialization attacks. Deserialization mechanisms that are explicitly defined as insecure must not be used with untrusted input.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.5.2",
+    "cre_ids": [
+      "736-554",
+      "831-563"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.5.2",
+        "V5.5.3"
+      ],
+      "mapping_tags": [
+        "DELETED, MERGED TO v5.0.0-1.5.2",
+        "MODIFIED, MOVED TO v5.0.0-1.5.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V1.5.3",
+    "section": "Verify that different parsers used in the application for the same data type (e.g., JSON parsers, XML parsers, URL parsers), perform parsing in a consistent way and use the same character encoding mechanism to avoid issues such as JSON Interoperability vulnerabilities or different URI or file parsing behavior being exploited in Remote File Inclusion (RFI) or Server-side Request Forgery (SSRF) attacks.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x10-V1-Encoding-and-Sanitization.md#v1.5.3",
+    "cre_ids": [
+      "061-186"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V13.1.1"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-1.5.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V2.1.1",
+    "section": "Verify that the application's documentation defines input validation rules for how to check the validity of data items against an expected structure. This could be common data formats such as credit card numbers, email addresses, telephone numbers, or it could be an internal data format.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x11-V2-Validation-and-Business-Logic.md#v2.1.1",
+    "cre_ids": [
+      "782-234"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.5.1"
+      ],
+      "mapping_tags": [
+        "SPLIT TO v5.0.0-2.1.1, v5.0.0-2.1.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V2.1.2",
+    "section": "Verify that the application's documentation defines how to validate the logical and contextual consistency of combined data items, such as checking that suburb and ZIP code match.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x11-V2-Validation-and-Business-Logic.md#v2.1.2",
+    "cre_ids": [
+      "782-234"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.5.1"
+      ],
+      "mapping_tags": [
+        "SPLIT TO v5.0.0-2.1.1, v5.0.0-2.1.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V2.2.1",
+    "section": "Verify that input is validated to enforce business or functional expectations for that input. This should either use positive validation against an allow list of values, patterns, and ranges, or be based on comparing the input to an expected structure and logical limits according to predefined rules. For L1, this can focus on input which is used to make specific business or security decisions. For L2 and up, this should apply to all input.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x11-V2-Validation-and-Business-Logic.md#v2.2.1",
+    "cre_ids": [
+      "031-447",
+      "653-242",
+      "660-867",
+      "146-706",
+      "611-051"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.1.3",
+        "V5.1.4",
+        "V11.1.5",
+        "V13.2.2",
+        "V13.3.1"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-2.2.1",
+        "SPLIT TO v5.0.0-2.2.1, v5.0.0-2.2.3",
+        "DELETED, MERGED TO v5.0.0-2.2.1",
+        "DELETED, COVERED BY v5.0.0-2.2.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V2.2.2",
+    "section": "Verify that the application is designed to enforce input validation at a trusted service layer. While client-side validation improves usability and should be encouraged, it must not be relied upon as a security control.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x11-V2-Validation-and-Business-Logic.md#v2.2.2",
+    "cre_ids": [
+      "848-711"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.5.3"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-2.2.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V2.2.3",
+    "section": "Verify that the application ensures that combinations of related data items are reasonable according to the pre-defined rules.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x11-V2-Validation-and-Business-Logic.md#v2.2.3",
+    "cre_ids": [
+      "653-242"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.1.4"
+      ],
+      "mapping_tags": [
+        "SPLIT TO v5.0.0-2.2.1, v5.0.0-2.2.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V2.3.1",
+    "section": "Verify that the application will only process business logic flows for the same user in the expected sequential step order and without skipping steps.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x11-V2-Validation-and-Business-Logic.md#v2.3.1",
+    "cre_ids": [
+      "534-605"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V11.1.1"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-2.3.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V2.3.2",
+    "section": "Verify that business logic limits are implemented per the application's documentation to avoid business logic flaws being exploited.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x11-V2-Validation-and-Business-Logic.md#v2.3.2",
+    "cre_ids": [
+      "746-705"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V11.1.3"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-2.3.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V2.3.4",
+    "section": "Verify that business logic level locking mechanisms are used to ensure that limited quantity resources (such as theater seats or delivery slots) cannot be double-booked by manipulating the application's logic.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x11-V2-Validation-and-Business-Logic.md#v2.3.4",
+    "cre_ids": [
+      "134-412"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V11.1.6"
+      ],
+      "mapping_tags": [
+        "SPLIT TO v5.0.0-15.4.2, v5.0.0-2.3.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V2.4.1",
+    "section": "Verify that anti-automation controls are in place to protect against excessive calls to application functions that could lead to data exfiltration, garbage-data creation, quota exhaustion, rate-limit breaches, denial-of-service, or overuse of costly resources.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x11-V2-Validation-and-Business-Logic.md#v2.4.1",
+    "cre_ids": [
+      "630-573"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V11.1.4"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-2.4.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V2.4.2",
+    "section": "Verify that business logic flows require realistic human timing, preventing excessively rapid transaction submissions.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x11-V2-Validation-and-Business-Logic.md#v2.4.2",
+    "cre_ids": [
+      "456-535"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V11.1.2"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-2.4.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V3.2.1",
+    "section": "Verify that security controls are in place to prevent browsers from rendering content or functionality in HTTP responses in an incorrect context (e.g., when an API, a user-uploaded file or other resource is requested directly). Possible controls could include: not serving the content unless HTTP request header fields (such as Sec-Fetch-\\*) indicate it is the correct context, using the sandbox directive of the Content-Security-Policy header field or using the attachment disposition type in the Content-Disposition header field.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x12-V3-Web-Frontend-Security.md#v3.2.1",
+    "cre_ids": [
+      "384-344",
+      "545-243",
+      "736-237"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.12.2",
+        "V12.5.2",
+        "V14.4.2"
+      ],
+      "mapping_tags": [
+        "DELETED, MERGED TO v5.0.0-3.2.1",
+        "MOVED TO v5.0.0-3.2.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V3.2.2",
+    "section": "Verify that content intended to be displayed as text, rather than rendered as HTML, is handled using safe rendering functions (such as createTextNode or textContent) to prevent unintended execution of content such as HTML or JavaScript.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x12-V3-Web-Frontend-Security.md#v3.2.2",
+    "cre_ids": [
+      "366-835"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.3.3"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-1.2.3, SPLIT TO v5.0.0-3.2.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V3.3.1",
+    "section": "Verify that cookies have the 'Secure' attribute set, and if the '\\__Host-' prefix is not used for the cookie name, the '__Secure-' prefix must be used for the cookie name.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x12-V3-Web-Frontend-Security.md#v3.3.1",
+    "cre_ids": [
+      "688-081"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V3.4.1"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-3.3.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V3.3.2",
+    "section": "Verify that each cookie's 'SameSite' attribute value is set according to the purpose of the cookie, to limit exposure to user interface redress attacks and browser-based request forgery attacks, commonly known as cross-site request forgery (CSRF).",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x12-V3-Web-Frontend-Security.md#v3.3.2",
+    "cre_ids": [
+      "342-055"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V3.4.3"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-3.3.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V3.3.3",
+    "section": "Verify that cookies have the '__Host-' prefix for the cookie name unless they are explicitly designed to be shared with other hosts.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x12-V3-Web-Frontend-Security.md#v3.3.3",
+    "cre_ids": [
+      "232-034"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V3.4.4"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-3.3.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V3.3.4",
+    "section": "Verify that if the value of a cookie is not meant to be accessible to client-side scripts (such as a session token), the cookie must have the 'HttpOnly' attribute set and the same value (e. g. session token) must only be transferred to the client via the 'Set-Cookie' header field.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x12-V3-Web-Frontend-Security.md#v3.3.4",
+    "cre_ids": [
+      "804-220"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V3.4.2"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-3.3.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V3.4.1",
+    "section": "Verify that a Strict-Transport-Security header field is included on all responses to enforce an HTTP Strict Transport Security (HSTS) policy. A maximum age of at least 1 year must be defined, and for L2 and up, the policy must apply to all subdomains as well.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x12-V3-Web-Frontend-Security.md#v3.4.1",
+    "cre_ids": [
+      "036-147"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V14.4.5"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-3.4.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V3.4.2",
+    "section": "Verify that the Cross-Origin Resource Sharing (CORS) Access-Control-Allow-Origin header field is a fixed value by the application, or if the Origin HTTP request header field value is used, it is validated against an allowlist of trusted origins. When 'Access-Control-Allow-Origin: *' needs to be used, verify that the response does not include any sensitive information.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x12-V3-Web-Frontend-Security.md#v3.4.2",
+    "cre_ids": [
+      "316-272"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V14.5.3"
+      ],
+      "mapping_tags": [
+        "SPLIT TO v5.0.0-3.4.2, v5.0.0-3.5.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V3.4.3",
+    "section": "Verify that HTTP responses include a Content-Security-Policy response header field which defines directives to ensure the browser only loads and executes trusted content or resources, in order to limit execution of malicious JavaScript. As a minimum, a global policy must be used which includes the directives object-src 'none' and base-uri 'none' and defines either an allowlist or uses nonces or hashes. For an L3 application, a per-response policy with nonces or hashes must be defined.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x12-V3-Web-Frontend-Security.md#v3.4.3",
+    "cre_ids": [
+      "257-668"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V14.4.3"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-3.4.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V3.4.4",
+    "section": "Verify that all HTTP responses contain an 'X-Content-Type-Options: nosniff' header field. This instructs browsers not to use content sniffing and MIME type guessing for the given response, and to require the response's Content-Type header field value to match the destination resource. For example, the response to a request for a style is only accepted if the response's Content-Type is 'text/css'. This also enables the use of the Cross-Origin Read Blocking (CORB) functionality by the browser.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x12-V3-Web-Frontend-Security.md#v3.4.4",
+    "cre_ids": [
+      "065-388"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V14.4.4"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-3.4.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V3.4.5",
+    "section": "Verify that the application sets a referrer policy to prevent leakage of technically sensitive data to third-party services via the 'Referer' HTTP request header field. This can be done using the Referrer-Policy HTTP response header field or via HTML element attributes. Sensitive data could include path and query data in the URL, and for internal non-public applications also the hostname.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x12-V3-Web-Frontend-Security.md#v3.4.5",
+    "cre_ids": [
+      "268-100"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V14.4.6"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-3.4.5"
+      ]
+    }
+  },
+  {
+    "section_id": "V3.4.6",
+    "section": "Verify that the web application uses the frame-ancestors directive of the Content-Security-Policy header field for every HTTP response to ensure that it cannot be embedded by default and that embedding of specific resources is allowed only when necessary. Note that the X-Frame-Options header field, although supported by browsers, is obsolete and may not be relied upon.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x12-V3-Web-Frontend-Security.md#v3.4.6",
+    "cre_ids": [
+      "480-071"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V14.4.7"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-3.4.6"
+      ]
+    }
+  },
+  {
+    "section_id": "V3.5.1",
+    "section": "Verify that, if the application does not rely on the CORS preflight mechanism to prevent disallowed cross-origin requests to use sensitive functionality, these requests are validated to ensure they originate from the application itself. This may be done by using and validating anti-forgery tokens or requiring extra HTTP header fields that are not CORS-safelisted request-header fields. This is to defend against browser-based request forgery attacks, commonly known as cross-site request forgery (CSRF).",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x12-V3-Web-Frontend-Security.md#v3.5.1",
+    "cre_ids": [
+      "060-472",
+      "464-084"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V4.2.2",
+        "V13.2.3"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-3.5.1",
+        "DELETED, COVERED BY v5.0.0-3.5.1, v5.0.0-3.5.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V3.5.2",
+    "section": "Verify that, if the application relies on the CORS preflight mechanism to prevent disallowed cross-origin use of sensitive functionality, it is not possible to call the functionality with a request which does not trigger a CORS-preflight request. This may require checking the values of the 'Origin' and 'Content-Type' request header fields or using an extra header field that is not a CORS-safelisted header-field.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x12-V3-Web-Frontend-Security.md#v3.5.2",
+    "cre_ids": [
+      "464-084",
+      "543-512",
+      "316-272"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V13.2.3",
+        "V13.2.5",
+        "V14.5.3"
+      ],
+      "mapping_tags": [
+        "DELETED, COVERED BY v5.0.0-3.5.1, v5.0.0-3.5.2",
+        "MOVED TO v5.0.0-3.5.2",
+        "SPLIT TO v5.0.0-3.4.2, v5.0.0-3.5.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V3.5.3",
+    "section": "Verify that HTTP requests to sensitive functionality use appropriate HTTP methods such as POST, PUT, PATCH, or DELETE, and not methods defined by the HTTP specification as \"safe\" such as HEAD, OPTIONS, or GET. Alternatively, strict validation of the Sec-Fetch-* request header fields can be used to ensure that the request did not originate from an inappropriate cross-origin call, a navigation request, or a resource load (such as an image source) where this is not expected.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x12-V3-Web-Frontend-Security.md#v3.5.3",
+    "cre_ids": [
+      "532-878"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V13.2.1"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-3.5.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V3.5.4",
+    "section": "Verify that separate applications are hosted on different hostnames to leverage the restrictions provided by same-origin policy, including how documents or scripts loaded by one origin can interact with resources from another origin and hostname-based restrictions on cookies.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x12-V3-Web-Frontend-Security.md#v3.5.4",
+    "cre_ids": [
+      "705-182"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V3.4.5"
+      ],
+      "mapping_tags": [
+        "DELETED, DEPRECATED BY v5.0.0-3.5.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V3.6.1",
+    "section": "Verify that client-side assets, such as JavaScript libraries, CSS, or web fonts, are only hosted externally (e.g., on a Content Delivery Network) if the resource is static and versioned and Subresource Integrity (SRI) is used to validate the integrity of the asset. If this is not possible, there should be a documented security decision to justify this for each resource.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x12-V3-Web-Frontend-Security.md#v3.6.1",
+    "cre_ids": [
+      "577-260"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V14.2.3"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-3.6.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V3.7.1",
+    "section": "Verify that the application only uses client-side technologies which are still supported and considered secure. Examples of technologies which do not meet this requirement include NSAPI plugins, Flash, Shockwave, ActiveX, Silverlight, NACL, or client-side Java applets.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x12-V3-Web-Frontend-Security.md#v3.7.1",
+    "cre_ids": [
+      "673-475"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.14.6"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-3.7.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V3.7.2",
+    "section": "Verify that the application will only automatically redirect the user to a different hostname or domain (which is not controlled by the application) where the destination appears on an allowlist.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x12-V3-Web-Frontend-Security.md#v3.7.2",
+    "cre_ids": [
+      "232-217"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.1.5"
+      ],
+      "mapping_tags": [
+        "SPLIT TO v5.0.0-3.7.3, v5.0.0-3.7.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V3.7.3",
+    "section": "Verify that the application shows a notification when the user is being redirected to a URL outside of the application's control, with an option to cancel the navigation.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x12-V3-Web-Frontend-Security.md#v3.7.3",
+    "cre_ids": [
+      "232-217"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.1.5"
+      ],
+      "mapping_tags": [
+        "SPLIT TO v5.0.0-3.7.3, v5.0.0-3.7.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V4.1.1",
+    "section": "Verify that every HTTP response with a message body contains a Content-Type header field that matches the actual content of the response, including the charset parameter to specify safe character encoding (e.g., UTF-8, ISO-8859-1) according to IANA Media Types, such as \"text/\", \"/+xml\" and \"/xml\".",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x13-V4-API-and-Web-Service.md#v4.1.1",
+    "cre_ids": [
+      "533-516",
+      "036-725"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.3.2",
+        "V14.4.1"
+      ],
+      "mapping_tags": [
+        "DELETED, COVERED BY v5.0.0-4.1.1",
+        "MOVED TO v5.0.0-4.1.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V4.1.4",
+    "section": "Verify that only HTTP methods that are explicitly supported by the application or its API (including OPTIONS during preflight requests) can be used and that unused methods are blocked.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x13-V4-API-and-Web-Service.md#v4.1.4",
+    "cre_ids": [
+      "483-715"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V14.5.1"
+      ],
+      "mapping_tags": [
+        "SPLIT TO v5.0.0-4.1.4, v5.0.0-13.4.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V4.1.5",
+    "section": "Verify that per-message digital signatures are used to provide additional assurance on top of transport protections for requests or transactions which are highly sensitive or which traverse a number of systems.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x13-V4-API-and-Web-Service.md#v4.1.5",
+    "cre_ids": [
+      "426-842",
+      "456-636"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V13.2.6",
+        "V13.3.2"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-4.1.5",
+        "DELETED, COVERED BY v5.0.0-4.1.5"
+      ]
+    }
+  },
+  {
+    "section_id": "V4.3.1",
+    "section": "Verify that a query allowlist, depth limiting, amount limiting, or query cost analysis is used to prevent GraphQL or data layer expression Denial of Service (DoS) as a result of expensive, nested queries.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x13-V4-API-and-Web-Service.md#v4.3.1",
+    "cre_ids": [
+      "268-088"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V13.4.1"
+      ],
+      "mapping_tags": [
+        "GRAMMAR, MOVED TO v5.0.0-4.3.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V5.2.1",
+    "section": "Verify that the application will only accept files of a size which it can process without causing a loss of performance or a denial of service attack.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x14-V5-File-Handling.md#v5.2.1",
+    "cre_ids": [
+      "660-052"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V12.1.1"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-5.2.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V5.2.2",
+    "section": "Verify that when the application accepts a file, either on its own or within an archive such as a zip file, it checks if the file extension matches an expected file extension and validates that the contents correspond to the type represented by the extension. This includes, but is not limited to, checking the initial 'magic bytes', performing image re-writing, and using specialized libraries for file content validation. For L1, this can focus just on files which are used to make specific business or security decisions. For L2 and up, this must apply to all files being accepted.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x14-V5-File-Handling.md#v5.2.2",
+    "cre_ids": [
+      "175-235"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V12.2.1"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-5.2.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V5.2.3",
+    "section": "Verify that the application checks compressed files (e.g., zip, gz, docx, odt) against maximum allowed uncompressed size and against maximum number of files before uncompressing the file.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x14-V5-File-Handling.md#v5.2.3",
+    "cre_ids": [
+      "163-518"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V12.1.2"
+      ],
+      "mapping_tags": [
+        "GRAMMAR, MOVED TO v5.0.0-5.2.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V5.2.4",
+    "section": "Verify that a file size quota and maximum number of files per user are enforced to ensure that a single user cannot fill up the storage with too many files, or excessively large files.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x14-V5-File-Handling.md#v5.2.4",
+    "cre_ids": [
+      "463-820"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V12.1.3"
+      ],
+      "mapping_tags": [
+        "GRAMMAR, MOVED TO v5.0.0-5.2.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V5.3.1",
+    "section": "Verify that files uploaded or generated by untrusted input and stored in a public folder, are not executed as server-side program code when accessed directly with an HTTP request.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x14-V5-File-Handling.md#v5.3.1",
+    "cre_ids": [
+      "307-111"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V12.4.1"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-5.3.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V5.3.2",
+    "section": "Verify that when the application creates file paths for file operations, instead of user-submitted filenames, it uses internally generated or trusted data, or if user-submitted filenames or file metadata must be used, strict validation and sanitization must be applied. This is to protect against path traversal, local or remote file inclusion (LFI, RFI), and server-side request forgery (SSRF) attacks.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x14-V5-File-Handling.md#v5.3.2",
+    "cre_ids": [
+      "547-283",
+      "675-168",
+      "737-086",
+      "742-056"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.3.9",
+        "V12.3.1",
+        "V12.3.2",
+        "V12.3.3"
+      ],
+      "mapping_tags": [
+        "DELETED, MERGED TO v5.0.0-5.3.2",
+        "MOVED TO v5.0.0-5.3.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V5.4.1",
+    "section": "Verify that the application validates or ignores user-submitted filenames, including in a JSON, JSONP, or URL parameter and specifies a filename in the Content-Disposition header field in the response.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x14-V5-File-Handling.md#v5.4.1",
+    "cre_ids": [
+      "421-513"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V12.3.4"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-5.4.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V5.4.3",
+    "section": "Verify that files obtained from untrusted sources are scanned by antivirus scanners to prevent serving of known malicious content.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x14-V5-File-Handling.md#v5.4.3",
+    "cre_ids": [
+      "112-273"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V12.4.2"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-5.4.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.1.1",
+    "section": "Verify that application documentation defines how controls such as rate limiting, anti-automation, and adaptive response, are used to defend against attacks such as credential stuffing and password brute force. The documentation must make clear how these controls are configured and prevent malicious account lockout.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.1.1",
+    "cre_ids": [
+      "802-056"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.2.1"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-6.3.1, SPLIT TO v5.0.0-6.1.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.1.3",
+    "section": "Verify that, if the application includes multiple authentication pathways, these are all documented together with the security controls and authentication strength which must be consistently enforced across them.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.1.3",
+    "cre_ids": [
+      "113-133",
+      "576-042"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.2.3",
+        "V1.2.4"
+      ],
+      "mapping_tags": [
+        "DELETED, COVERED BY v5.0.0-6.1.3",
+        "MODIFIED, MOVED TO v5.0.0-6.1.3, SPLIT TO v5.0.0-6.3.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.2.1",
+    "section": "Verify that user set passwords are at least 8 characters in length although a minimum of 15 characters is strongly recommended.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.2.1",
+    "cre_ids": [
+      "027-555"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.1.1"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-6.2.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.2.2",
+    "section": "Verify that users can change their password.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.2.2",
+    "cre_ids": [
+      "751-176"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.1.5"
+      ],
+      "mapping_tags": [
+        "GRAMMAR, MOVED TO v5.0.0-6.2.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.2.3",
+    "section": "Verify that password change functionality requires the user's current and new password.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.2.3",
+    "cre_ids": [
+      "327-505"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.1.6"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-6.2.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.2.4",
+    "section": "Verify that passwords submitted during account registration or password change are checked against an available set of, at least, the top 3000 passwords which match the application's password policy, e.g. minimum length.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.2.4",
+    "cre_ids": [
+      "576-651"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.1.7"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-6.2.4, SPLIT TO v5.0.0-6.2.10, v5.0.0-6.2.12"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.2.5",
+    "section": "Verify that passwords of any composition can be used, without rules limiting the type of characters permitted. There must be no requirement for a minimum number of upper or lower case characters, numbers, or special characters.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.2.5",
+    "cre_ids": [
+      "807-565"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.1.9"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-6.2.5"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.2.6",
+    "section": "Verify that password input fields use type=password to mask the entry. Applications may allow the user to temporarily view the entire masked password, or the last typed character of the password.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.2.6",
+    "cre_ids": [
+      "487-305"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.1.12"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-6.2.6"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.2.7",
+    "section": "Verify that \"paste\" functionality, browser password helpers, and external password managers are permitted.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.2.7",
+    "cre_ids": [
+      "630-577"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.1.11"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-6.2.7"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.2.8",
+    "section": "Verify that the application verifies the user's password exactly as received from the user, without any modifications such as truncation or case transformation.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.2.8",
+    "cre_ids": [
+      "715-681"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.1.3"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-6.2.8"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.2.9",
+    "section": "Verify that passwords of at least 64 characters are permitted.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.2.9",
+    "cre_ids": [
+      "158-874"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.1.2"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-6.2.9"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.2.10",
+    "section": "Verify that a user's password stays valid until it is discovered to be compromised or the user rotates it. The application must not require periodic credential rotation.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.2.10",
+    "cre_ids": [
+      "576-651",
+      "338-370"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.1.7",
+        "V2.1.10"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-6.2.4, SPLIT TO v5.0.0-6.2.10, v5.0.0-6.2.12",
+        "MODIFIED, MOVED TO v5.0.0-6.2.10"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.2.12",
+    "section": "Verify that passwords submitted during account registration or password changes are checked against a set of breached passwords.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.2.12",
+    "cre_ids": [
+      "576-651"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.1.7"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-6.2.4, SPLIT TO v5.0.0-6.2.10, v5.0.0-6.2.12"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.3.1",
+    "section": "Verify that controls to prevent attacks such as credential stuffing and password brute force are implemented according to the application's security documentation.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.3.1",
+    "cre_ids": [
+      "802-056"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.2.1"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-6.3.1, SPLIT TO v5.0.0-6.1.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.3.2",
+    "section": "Verify that default user accounts (e.g., \"root\", \"admin\", or \"sa\") are not present in the application or are disabled.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.3.2",
+    "cre_ids": [
+      "623-347"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.5.4"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-6.3.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.3.3",
+    "section": "Verify that either a multi-factor authentication mechanism or a combination of single-factor authentication mechanisms, must be used in order to access the application. For L3, one of the factors must be a hardware-based authentication mechanism which provides compromise and impersonation resistance against phishing attacks while verifying the intent to authenticate by requiring a user-initiated action (such as a button press on a FIDO hardware key or a mobile phone). Relaxing any of the considerations in this requirement requires a fully documented rationale and a comprehensive set of mitigating controls.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.3.3",
+    "cre_ids": [
+      "333-858",
+      "525-361",
+      "553-413"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.2.4",
+        "V2.2.7",
+        "V2.3.2"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-6.3.3",
+        "DELETED, MERGED TO v5.0.0-6.3.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.3.4",
+    "section": "Verify that, if the application includes multiple authentication pathways, there are no undocumented pathways and that security controls and authentication strength are enforced consistently.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.3.4",
+    "cre_ids": [
+      "576-042"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.2.4"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-6.1.3, SPLIT TO v5.0.0-6.3.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.3.5",
+    "section": "Verify that users are notified of suspicious authentication attempts (successful or unsuccessful). This may include authentication attempts from an unusual location or client, partially successful authentication (only one of multiple factors), an authentication attempt after a long period of inactivity or a successful authentication after several unsuccessful attempts.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.3.5",
+    "cre_ids": [
+      "808-425"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.2.3"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-6.3.7, SPLIT TO v5.0.0-6.3.5"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.3.6",
+    "section": "Verify that email is not used as either a single-factor or multi-factor authentication mechanism.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.3.6",
+    "cre_ids": [
+      "354-752"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.2.2"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-6.3.6"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.3.7",
+    "section": "Verify that users are notified after updates to authentication details, such as credential resets or modification of the username or email address.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.3.7",
+    "cre_ids": [
+      "808-425",
+      "235-658"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.2.3",
+        "V2.5.5"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-6.3.7, SPLIT TO v5.0.0-6.3.5",
+        "DELETED, COVERED BY v5.0.0-6.3.7"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.4.1",
+    "section": "Verify that system generated initial passwords or activation codes are securely randomly generated, follow the existing password policy, and expire after a short period of time or after they are initially used. These initial secrets must not be permitted to become the long term password.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.4.1",
+    "cre_ids": [
+      "622-835"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.3.1"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-6.4.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.4.2",
+    "section": "Verify that password hints or knowledge-based authentication (so-called \"secret questions\") are not present.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.4.2",
+    "cre_ids": [
+      "772-358"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.5.2"
+      ],
+      "mapping_tags": [
+        "GRAMMAR, MOVED TO v5.0.0-6.4.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.4.3",
+    "section": "Verify that a secure process for resetting a forgotten password is implemented, that does not bypass any enabled multi-factor authentication mechanisms.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.4.3",
+    "cre_ids": [
+      "581-525"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.5.6"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-6.4.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.4.4",
+    "section": "Verify that if a multi-factor authentication factor is lost, evidence of identity proofing is performed at the same level as during enrollment.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.4.4",
+    "cre_ids": [
+      "358-860"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.5.7"
+      ],
+      "mapping_tags": [
+        "GRAMMAR, MOVED TO v5.0.0-6.4.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.4.5",
+    "section": "Verify that renewal instructions for authentication mechanisms which expire are sent with enough time to be carried out before the old authentication mechanism expires, configuring automated reminders if necessary.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.4.5",
+    "cre_ids": [
+      "138-448"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.3.3"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-6.4.5"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.5.1",
+    "section": "Verify that lookup secrets, out-of-band authentication requests or codes, and time-based one-time passwords (TOTPs) are only successfully usable once.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.5.1",
+    "cre_ids": [
+      "524-446",
+      "101-217",
+      "168-186",
+      "404-126"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.2.6",
+        "V2.6.1",
+        "V2.7.3",
+        "V2.8.4"
+      ],
+      "mapping_tags": [
+        "DELETED, COVERED BY v5.0.0-6.5.1",
+        "MODIFIED, MOVED TO v5.0.0-6.5.1",
+        "MODIFIED, MOVED TO v5.0.0-6.6.2, SPLIT TO v5.0.0-6.5.1",
+        "DELETED, MERGED TO v5.0.0-6.5.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.5.2",
+    "section": "Verify that, when being stored in the application's backend, lookup secrets with less than 112 bits of entropy (19 random alphanumeric characters or 34 random digits) are hashed with an approved password storage hashing algorithm that incorporates a 32-bit random salt. A standard hash function can be used if the secret has 112 bits of entropy or more.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.5.2",
+    "cre_ids": [
+      "346-640"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.6.2"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-6.5.2, SPLIT TO v5.0.0-6.5.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.5.3",
+    "section": "Verify that lookup secrets, out-of-band authentication code, and time-based one-time password seeds, are generated using a Cryptographically Secure Pseudorandom Number Generator (CSPRNG) to avoid predictable values.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.5.3",
+    "cre_ids": [
+      "513-845",
+      "206-254",
+      "841-757"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.6.3",
+        "V2.7.6",
+        "V2.8.3"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-6.5.3",
+        "SPLIT TO v5.0.0-6.5.3, v5.0.0-6.5.4",
+        "DELETED, MERGED TO v5.0.0-6.5.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.5.4",
+    "section": "Verify that lookup secrets and out-of-band authentication codes have a minimum of 20 bits of entropy (typically 4 random alphanumeric characters or 6 random digits is sufficient).",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.5.4",
+    "cre_ids": [
+      "346-640",
+      "206-254"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.6.2",
+        "V2.7.6"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-6.5.2, SPLIT TO v5.0.0-6.5.4",
+        "SPLIT TO v5.0.0-6.5.3, v5.0.0-6.5.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.5.5",
+    "section": "Verify that out-of-band authentication requests, codes, or tokens, as well as time-based one-time passwords (TOTPs) have a defined lifetime. Out of band requests must have a maximum lifetime of 10 minutes and for TOTP a maximum lifetime of 30 seconds.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.5.5",
+    "cre_ids": [
+      "816-631",
+      "681-823"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.7.2",
+        "V2.8.1"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-6.5.5",
+        "DELETED, MERGED TO v5.0.0-6.5.5"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.5.6",
+    "section": "Verify that any authentication factor (including physical devices) can be revoked in case of theft or other loss.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.5.6",
+    "cre_ids": [
+      "440-361"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.8.6"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-6.5.6"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.5.7",
+    "section": "Verify that biometric authentication mechanisms are only used as secondary factors together with either something you have or something you know.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.5.7",
+    "cre_ids": [
+      "076-470"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.8.7"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-6.5.7"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.6.1",
+    "section": "Verify that authentication mechanisms using the Public Switched Telephone Network (PSTN) to deliver One-time Passwords (OTPs) via phone or SMS are offered only when the phone number has previously been validated, alternate stronger methods (such as Time based One-time Passwords) are also offered, and the service provides information on their security risks to users. For L3 applications, phone and SMS must not be available as options.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.6.1",
+    "cre_ids": [
+      "354-753"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.7.1"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-6.6.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.6.2",
+    "section": "Verify that out-of-band authentication requests, codes, or tokens are bound to the original authentication request for which they were generated and are not usable for a previous or subsequent one.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.6.2",
+    "cre_ids": [
+      "168-186"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.7.3"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-6.6.2, SPLIT TO v5.0.0-6.5.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.7.1",
+    "section": "Verify that the certificates used to verify cryptographic authentication assertions are stored in a way protects them from modification.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.7.1",
+    "cre_ids": [
+      "783-255"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.9.1"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-6.7.1, SPLIT TO v5.0.0-13.3.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V6.7.2",
+    "section": "Verify that the challenge nonce is at least 64 bits in length, and statistically unique or unique over the lifetime of the cryptographic device.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6.7.2",
+    "cre_ids": [
+      "287-251"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.9.2"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-6.7.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V7.2.2",
+    "section": "Verify that the application uses either self-contained or reference tokens that are dynamically generated for session management, i.e. not using static API secrets and keys.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x16-V7-Session-Management.md#v7.2.2",
+    "cre_ids": [
+      "551-054"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V3.5.2"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-7.2.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V7.2.3",
+    "section": "Verify that if reference tokens are used to represent user sessions, they are unique and generated using a cryptographically secure pseudo-random number generator (CSPRNG) and possess at least 128 bits of entropy.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x16-V7-Session-Management.md#v7.2.3",
+    "cre_ids": [
+      "704-530",
+      "727-043"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V3.2.2",
+        "V3.2.4"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-7.2.3",
+        "DELETED, MERGED TO v5.0.0-7.2.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V7.2.4",
+    "section": "Verify that the application generates a new session token on user authentication, including re-authentication, and terminates the current session token.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x16-V7-Session-Management.md#v7.2.4",
+    "cre_ids": [
+      "002-630"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V3.2.1"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-7.2.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V7.3.1",
+    "section": "Verify that there is an inactivity timeout such that re-authentication is enforced according to risk analysis and documented security decisions.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x16-V7-Session-Management.md#v7.3.1",
+    "cre_ids": [
+      "065-782"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V3.3.2"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-7.3.2, SPLIT TO v5.0.0-7.3.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V7.3.2",
+    "section": "Verify that there is an absolute maximum session lifetime such that re-authentication is enforced according to risk analysis and documented security decisions.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x16-V7-Session-Management.md#v7.3.2",
+    "cre_ids": [
+      "065-782"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V3.3.2"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-7.3.2, SPLIT TO v5.0.0-7.3.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V7.4.1",
+    "section": "Verify that when session termination is triggered (such as logout or expiration), the application disallows any further use of the session. For reference tokens or stateful sessions, this means invalidating the session data at the application backend. Applications using self-contained tokens will need a solution such as maintaining a list of terminated tokens, disallowing tokens produced before a per-user date and time or rotating a per-user signing key.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x16-V7-Session-Management.md#v7.4.1",
+    "cre_ids": [
+      "457-165"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V3.3.1"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-7.4.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V7.4.3",
+    "section": "Verify that the application gives the option to terminate all other active sessions after a successful change or removal of any authentication factor (including password change via reset or recovery and, if present, an MFA settings update).",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x16-V7-Session-Management.md#v7.4.3",
+    "cre_ids": [
+      "238-346"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V3.3.3"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-7.4.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V7.5.1",
+    "section": "Verify that the application requires full re-authentication before allowing modifications to sensitive account attributes which may affect authentication such as email address, phone number, MFA configuration, or other information used in account recovery.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x16-V7-Session-Management.md#v7.5.1",
+    "cre_ids": [
+      "582-541"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V3.7.1"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-7.5.1, SPLIT TO v5.0.0-7.5.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V7.5.2",
+    "section": "Verify that users are able to view and (having authenticated again with at least one factor) terminate any or all currently active sessions.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x16-V7-Session-Management.md#v7.5.2",
+    "cre_ids": [
+      "673-736"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V3.3.4"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-7.5.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V7.5.3",
+    "section": "Verify that the application requires further authentication with at least one factor or secondary verification before performing highly sensitive transactions or operations.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x16-V7-Session-Management.md#v7.5.3",
+    "cre_ids": [
+      "582-541"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V3.7.1"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-7.5.1, SPLIT TO v5.0.0-7.5.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V7.6.1",
+    "section": "Verify that session lifetime and termination between Relying Parties (RPs) and Identity Providers (IdPs) behave as documented, requiring re-authentication as necessary such as when the maximum time between IdP authentication events is reached.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x16-V7-Session-Management.md#v7.6.1",
+    "cre_ids": [
+      "618-403",
+      "052-821"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V3.6.1",
+        "V3.6.2"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-7.6.1",
+        "DELETED, MERGED TO v5.0.0-7.6.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V8.2.1",
+    "section": "Verify that the application ensures that function-level access is restricted to consumers with explicit permissions.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x17-V8-Authorization.md#v8.2.1",
+    "cre_ids": [
+      "524-603",
+      "368-633"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V4.1.2",
+        "V4.1.3"
+      ],
+      "mapping_tags": [
+        "DELETED, COVERED BY v5.0.0-8.2.1",
+        "MODIFIED, MOVED TO v5.0.0-8.2.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V8.2.2",
+    "section": "Verify that the application ensures that data-specific access is restricted to consumers with explicit permissions to specific data items to mitigate insecure direct object reference (IDOR) and broken object level authorization (BOLA).",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x17-V8-Authorization.md#v8.2.2",
+    "cre_ids": [
+      "304-667",
+      "664-080"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V4.2.1",
+        "V13.1.4"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-8.2.2",
+        "DELETED, COVERED BY v5.0.0-8.2.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V8.3.1",
+    "section": "Verify that the application enforces authorization rules at a trusted service layer and doesn't rely on controls that an untrusted consumer could manipulate, such as client-side JavaScript.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x17-V8-Authorization.md#v8.3.1",
+    "cre_ids": [
+      "640-364",
+      "650-560",
+      "405-411"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.4.1",
+        "V4.1.1",
+        "V14.5.2"
+      ],
+      "mapping_tags": [
+        "DELETED, COVERED BY v5.0.0-8.3.1",
+        "MOVED TO v5.0.0-8.3.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V8.4.2",
+    "section": "Verify that access to administrative interfaces incorporates multiple layers of security, including continuous consumer identity verification, device security posture assessment, and contextual risk analysis, ensuring that network location or trusted endpoints are not the sole factors for authorization even though they may reduce the likelihood of unauthorized access.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x17-V8-Authorization.md#v8.4.2",
+    "cre_ids": [
+      "201-246"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V4.3.1"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-8.4.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V9.1.1",
+    "section": "Verify that self-contained tokens are validated using their digital signature or MAC to protect against tampering before accepting the token's contents.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x18-V9-Self-contained-Tokens.md#v9.1.1",
+    "cre_ids": [
+      "483-883"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V3.5.3"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-9.1.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V10.4.9",
+    "section": "Verify that refresh tokens and reference access tokens can be revoked by an authorized user using the authorization server user interface, to mitigate the risk of malicious clients or stolen tokens.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x19-V10-OAuth-and-OIDC.md#v10.4.9",
+    "cre_ids": [
+      "551-400"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V3.5.1"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-10.4.9"
+      ]
+    }
+  },
+  {
+    "section_id": "V11.1.1",
+    "section": "Verify that there is a documented policy for management of cryptographic keys and a cryptographic key lifecycle that follows a key management standard such as NIST SP 800-57. This should include ensuring that keys are not overshared (for example, with more than two entities for shared secrets and more than one entity for private keys).",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x20-V11-Cryptography.md#v11.1.1",
+    "cre_ids": [
+      "287-305"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.6.1"
+      ],
+      "mapping_tags": [
+        "GRAMMAR, MOVED TO v5.0.0-11.1.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V11.1.2",
+    "section": "Verify that a cryptographic inventory is performed, maintained, regularly updated, and includes all cryptographic keys, algorithms, and certificates used by the application. It must also document where keys can and cannot be used in the system, and the types of data that can and cannot be protected using the keys.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x20-V11-Cryptography.md#v11.1.2",
+    "cre_ids": [
+      "232-325"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.6.4"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-11.1.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V11.2.1",
+    "section": "Verify that industry-validated implementations (including libraries and hardware-accelerated implementations) are used for cryptographic operations.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x20-V11-Cryptography.md#v11.2.1",
+    "cre_ids": [
+      "742-431"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V6.2.2"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-11.2.1, SPLIT TO v5.0.0-11.3.1, v5.0.0-11.3.2, v5.0.0-11.3.3, v5.0.0-11.4.1, v5.0.0-11.6.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V11.2.2",
+    "section": "Verify that the application is designed with crypto agility such that random number, authenticated encryption, MAC, or hashing algorithms, key lengths, rounds, ciphers and modes can be reconfigured, upgraded, or swapped at any time, to protect against cryptographic breaks. Similarly, it must also be possible to replace keys and passwords and re-encrypt data. This will allow for seamless upgrades to post-quantum cryptography (PQC), once high-assurance implementations of approved PQC schemes or standards are widely available.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x20-V11-Cryptography.md#v11.2.2",
+    "cre_ids": [
+      "821-832",
+      "122-287"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.6.3",
+        "V6.2.4"
+      ],
+      "mapping_tags": [
+        "DELETED, MERGED TO v5.0.0-11.2.2",
+        "MODIFIED, MOVED TO v5.0.0-11.2.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V11.2.4",
+    "section": "Verify that all cryptographic operations are constant-time, with no 'short-circuit' operations in comparisons, calculations, or returns, to avoid leaking information.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x20-V11-Cryptography.md#v11.2.4",
+    "cre_ids": [
+      "878-880"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V6.2.8"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-11.2.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V11.2.5",
+    "section": "Verify that all cryptographic modules fail securely, and errors are handled in a way that does not enable vulnerabilities, such as Padding Oracle attacks.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x20-V11-Cryptography.md#v11.2.5",
+    "cre_ids": [
+      "036-810"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V6.2.1"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-11.2.5"
+      ]
+    }
+  },
+  {
+    "section_id": "V11.3.1",
+    "section": "Verify that insecure block modes (e.g., ECB) and weak padding schemes (e.g., PKCS#1 v1.5) are not used.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x20-V11-Cryptography.md#v11.3.1",
+    "cre_ids": [
+      "742-431",
+      "674-425",
+      "441-132"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V6.2.2",
+        "V6.2.3",
+        "V6.2.5"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-11.2.1, SPLIT TO v5.0.0-11.3.1, v5.0.0-11.3.2, v5.0.0-11.3.3, v5.0.0-11.4.1, v5.0.0-11.6.1",
+        "DELETED, COVERED BY v5.0.0-11.3.1, v5.0.0-11.3.2, v5.0.0-11.4.1",
+        "SPLIT TO v5.0.0-11.3.1, v5.0.0-11.3.2, v5.0.0-11.4.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V11.3.2",
+    "section": "Verify that only approved ciphers and modes such as AES with GCM are used.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x20-V11-Cryptography.md#v11.3.2",
+    "cre_ids": [
+      "742-431",
+      "674-425",
+      "441-132"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V6.2.2",
+        "V6.2.3",
+        "V6.2.5"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-11.2.1, SPLIT TO v5.0.0-11.3.1, v5.0.0-11.3.2, v5.0.0-11.3.3, v5.0.0-11.4.1, v5.0.0-11.6.1",
+        "DELETED, COVERED BY v5.0.0-11.3.1, v5.0.0-11.3.2, v5.0.0-11.4.1",
+        "SPLIT TO v5.0.0-11.3.1, v5.0.0-11.3.2, v5.0.0-11.4.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V11.3.3",
+    "section": "Verify that encrypted data is protected against unauthorized modification preferably by using an approved authenticated encryption method or by combining an approved encryption method with an approved MAC algorithm.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x20-V11-Cryptography.md#v11.3.3",
+    "cre_ids": [
+      "742-431",
+      "786-224"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V6.2.2",
+        "V6.2.7"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-11.2.1, SPLIT TO v5.0.0-11.3.1, v5.0.0-11.3.2, v5.0.0-11.3.3, v5.0.0-11.4.1, v5.0.0-11.6.1",
+        "MOVED TO v5.0.0-11.3.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V11.3.4",
+    "section": "Verify that nonces, initialization vectors, and other single-use numbers are not used for more than one encryption key and data-element pair. The method of generation must be appropriate for the algorithm being used.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x20-V11-Cryptography.md#v11.3.4",
+    "cre_ids": [
+      "433-122"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V6.2.6"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-11.3.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V11.4.1",
+    "section": "Verify that only approved hash functions are used for general cryptographic use cases, including digital signatures, HMAC, KDF, and random bit generation. Disallowed hash functions, such as MD5, must not be used for any cryptographic purpose.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x20-V11-Cryptography.md#v11.4.1",
+    "cre_ids": [
+      "742-431",
+      "674-425",
+      "441-132"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V6.2.2",
+        "V6.2.3",
+        "V6.2.5"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-11.2.1, SPLIT TO v5.0.0-11.3.1, v5.0.0-11.3.2, v5.0.0-11.3.3, v5.0.0-11.4.1, v5.0.0-11.6.1",
+        "DELETED, COVERED BY v5.0.0-11.3.1, v5.0.0-11.3.2, v5.0.0-11.4.1",
+        "SPLIT TO v5.0.0-11.3.1, v5.0.0-11.3.2, v5.0.0-11.4.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V11.4.2",
+    "section": "Verify that passwords are stored using an approved, computationally intensive, key derivation function (also known as a \"password hashing function\"), with parameter settings configured based on current guidance. The settings should balance security and performance to make brute-force attacks sufficiently challenging for the required level of security.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x20-V11-Cryptography.md#v11.4.2",
+    "cre_ids": [
+      "622-203",
+      "767-435",
+      "078-427",
+      "543-621"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.4.1",
+        "V2.4.3",
+        "V2.4.4",
+        "V2.5.3"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-11.4.2",
+        "DELETED, MERGED TO v5.0.0-11.4.2",
+        "DELETED, COVERED BY v5.0.0-11.4.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V11.5.1",
+    "section": "Verify that all random numbers and strings which are intended to be non-guessable must be generated using a cryptographically secure pseudo-random number generator (CSPRNG) and have at least 128 bits of entropy. Note that UUIDs do not respect this condition.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x20-V11-Cryptography.md#v11.5.1",
+    "cre_ids": [
+      "542-488",
+      "027-210"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V6.3.1",
+        "V6.3.2"
+      ],
+      "mapping_tags": [
+        "GRAMMAR, MOVED TO v5.0.0-11.5.1",
+        "DELETED, COVERED BY v5.0.0-11.5.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V11.5.2",
+    "section": "Verify that the random number generation mechanism in use is designed to work securely, even under heavy demand.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x20-V11-Cryptography.md#v11.5.2",
+    "cre_ids": [
+      "664-571"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V6.3.3"
+      ],
+      "mapping_tags": [
+        "GRAMMAR, MOVED TO v5.0.0-11.5.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V11.6.1",
+    "section": "Verify that only approved cryptographic algorithms and modes of operation are used for key generation and seeding, and digital signature generation and verification. Key generation algorithms must not generate insecure keys vulnerable to known attacks, for example, RSA keys which are vulnerable to Fermat factorization.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x20-V11-Cryptography.md#v11.6.1",
+    "cre_ids": [
+      "002-801",
+      "742-431"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.9.3",
+        "V6.2.2"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-11.6.1",
+        "MODIFIED, MOVED TO v5.0.0-11.2.1, SPLIT TO v5.0.0-11.3.1, v5.0.0-11.3.2, v5.0.0-11.3.3, v5.0.0-11.4.1, v5.0.0-11.6.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V12.1.1",
+    "section": "Verify that only the latest recommended versions of the TLS protocol are enabled, such as TLS 1.2 and TLS 1.3. The latest version of the TLS protocol must be the preferred option.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x21-V12-Secure-Communication.md#v12.1.1",
+    "cre_ids": [
+      "248-646"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V9.1.3"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-12.1.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V12.1.2",
+    "section": "Verify that only recommended cipher suites are enabled, with the strongest cipher suites set as preferred. L3 applications must only support cipher suites which provide forward secrecy.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x21-V12-Secure-Communication.md#v12.1.2",
+    "cre_ids": [
+      "767-701"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V9.1.2"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-12.1.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V12.1.4",
+    "section": "Verify that proper certification revocation, such as Online Certificate Status Protocol (OCSP) Stapling, is enabled and configured.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x21-V12-Secure-Communication.md#v12.1.4",
+    "cre_ids": [
+      "537-367"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V9.2.4"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-12.1.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V12.2.1",
+    "section": "Verify that TLS is used for all connectivity between a client and external facing, HTTP-based services, and does not fall back to insecure or unencrypted communications.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x21-V12-Secure-Communication.md#v12.2.1",
+    "cre_ids": [
+      "527-034",
+      "745-045"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.9.1",
+        "V9.1.1"
+      ],
+      "mapping_tags": [
+        "DELETED, COVERED BY v5.0.0-12.2.1, v5.0.0-12.3.1, v5.0.0-12.3.3",
+        "MODIFIED, MOVED TO v5.0.0-12.2.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V12.3.1",
+    "section": "Verify that an encrypted protocol such as TLS is used for all inbound and outbound connections to and from the application, including monitoring systems, management tools, remote access and SSH, middleware, databases, mainframes, partner systems, or external APIs. The server must not fall back to insecure or unencrypted protocols.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x21-V12-Secure-Communication.md#v12.3.1",
+    "cre_ids": [
+      "527-034",
+      "636-854"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.9.1",
+        "V9.2.2"
+      ],
+      "mapping_tags": [
+        "DELETED, COVERED BY v5.0.0-12.2.1, v5.0.0-12.3.1, v5.0.0-12.3.3",
+        "MODIFIED, MOVED TO v5.0.0-12.3.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V12.3.3",
+    "section": "Verify that TLS or another appropriate transport encryption mechanism used for all connectivity between internal, HTTP-based services within the application, and does not fall back to insecure or unencrypted communications.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x21-V12-Secure-Communication.md#v12.3.3",
+    "cre_ids": [
+      "527-034"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.9.1"
+      ],
+      "mapping_tags": [
+        "DELETED, COVERED BY v5.0.0-12.2.1, v5.0.0-12.3.1, v5.0.0-12.3.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V12.3.4",
+    "section": "Verify that TLS connections between internal services use trusted certificates. Where internally generated or self-signed certificates are used, the consuming service must be configured to only trust specific internal CAs and specific self-signed certificates.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x21-V12-Secure-Communication.md#v12.3.4",
+    "cre_ids": [
+      "530-671",
+      "430-636"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.9.2",
+        "V9.2.1"
+      ],
+      "mapping_tags": [
+        "DELETED, COVERED BY v5.0.0-12.3.4",
+        "MOVED TO v5.0.0-12.3.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V12.3.5",
+    "section": "Verify that services communicating internally within a system (intra-service communications) use strong authentication to ensure that each endpoint is verified. Strong authentication methods, such as TLS client authentication, must be employed to ensure identity, using public-key infrastructure and mechanisms that are resistant to replay attacks. For microservice architectures, consider using a service mesh to simplify certificate management and enhance security.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x21-V12-Secure-Communication.md#v12.3.5",
+    "cre_ids": [
+      "558-807"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.2.5"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-12.3.5"
+      ]
+    }
+  },
+  {
+    "section_id": "V13.1.1",
+    "section": "Verify that all communication needs for the application are documented. This must include external services which the application relies upon and cases where an end user might be able to provide an external location to which the application will then connect.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md#v13.1.1",
+    "cre_ids": [
+      "068-102"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.1.5"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-13.1.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V13.2.1",
+    "section": "Verify that communications between backend application components that don't support the application's standard user session mechanism, including APIs, middleware, and data layers, are authenticated. Authentication must use individual service accounts, short-term tokens, or certificate-based authentication and not unchanging credentials such as passwords, API keys, or shared accounts with privileged access.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md#v13.2.1",
+    "cre_ids": [
+      "278-413",
+      "813-610"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.2.2",
+        "V2.10.1"
+      ],
+      "mapping_tags": [
+        "DELETED, MERGED TO v5.0.0-13.2.1",
+        "MOVED TO v5.0.0-13.2.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V13.2.2",
+    "section": "Verify that communications between backend application components, including local or operating system services, APIs, middleware, and data layers, are performed with accounts assigned the least necessary privileges.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md#v13.2.2",
+    "cre_ids": [
+      "330-281"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.2.1"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-13.2.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V13.2.3",
+    "section": "Verify that if a credential has to be used for service authentication, the credential being used by the consumer is not a default credential (e.g., root/root or admin/admin).",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md#v13.2.3",
+    "cre_ids": [
+      "065-183"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V2.10.2"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-13.2.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V13.2.4",
+    "section": "Verify that an allowlist is used to define the external resources or systems with which the application is permitted to communicate (e.g., for outbound requests, data loads, or file access). This allowlist can be implemented at the application layer, web server, firewall, or a combination of different layers.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md#v13.2.4",
+    "cre_ids": [
+      "284-521"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V4.3.3"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-13.2.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V13.2.5",
+    "section": "Verify that the web or application server is configured with an allowlist of resources or systems to which the server can send requests or load data or files from.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md#v13.2.5",
+    "cre_ids": [
+      "814-322"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V12.6.1"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-13.2.5"
+      ]
+    }
+  },
+  {
+    "section_id": "V13.3.1",
+    "section": "Verify that a secrets management solution, such as a key vault, is used to securely create, store, control access to, and destroy backend secrets. These could include passwords, key material, integrations with databases and third-party systems, keys and seeds for time-based tokens, other internal secrets, and API keys. Secrets must not be included in application source code or included in build artifacts. For an L3 application, this must involve a hardware-backed solution such as an HSM.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md#v13.3.1",
+    "cre_ids": [
+      "508-702",
+      "543-428",
+      "783-255",
+      "881-321",
+      "774-888",
+      "340-375"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.6.2",
+        "V2.8.2",
+        "V2.9.1",
+        "V2.10.3",
+        "V2.10.4",
+        "V6.4.1"
+      ],
+      "mapping_tags": [
+        "DELETED, MERGED TO v5.0.0-13.3.1",
+        "DELETED, COVERED BY v5.0.0-13.3.1",
+        "MODIFIED, MOVED TO v5.0.0-6.7.1, SPLIT TO v5.0.0-13.3.1",
+        "MOVED TO v5.0.0-13.3.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V13.3.3",
+    "section": "Verify that all cryptographic operations are performed using an isolated security module (such as a vault or hardware security module) to securely manage and protect key material from exposure outside of the security module.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md#v13.3.3",
+    "cre_ids": [
+      "032-213"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V6.4.2"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-13.3.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V13.4.1",
+    "section": "Verify that the application is deployed either without any source control metadata, including the .git or .svn folders, or in a way that these folders are inaccessible both externally and to the application itself.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md#v13.4.1",
+    "cre_ids": [
+      "615-744"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V4.3.2"
+      ],
+      "mapping_tags": [
+        "SPLIT TO v5.0.0-13.4.1, v5.0.0-13.4.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V13.4.2",
+    "section": "Verify that debug modes are disabled for all components in production environments to prevent exposure of debugging features and information leakage.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md#v13.4.2",
+    "cre_ids": [
+      "208-805"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V14.3.2"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-13.4.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V13.4.3",
+    "section": "Verify that web servers do not expose directory listings to clients unless explicitly intended.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md#v13.4.3",
+    "cre_ids": [
+      "615-744"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V4.3.2"
+      ],
+      "mapping_tags": [
+        "SPLIT TO v5.0.0-13.4.1, v5.0.0-13.4.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V13.4.4",
+    "section": "Verify that using the HTTP TRACE method is not supported in production environments, to avoid potential information leakage.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md#v13.4.4",
+    "cre_ids": [
+      "483-715"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V14.5.1"
+      ],
+      "mapping_tags": [
+        "SPLIT TO v5.0.0-4.1.4, v5.0.0-13.4.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V13.4.5",
+    "section": "Verify that documentation (such as for internal APIs) and monitoring endpoints are not exposed unless explicitly intended.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md#v13.4.5",
+    "cre_ids": [
+      "462-245"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V14.2.2"
+      ],
+      "mapping_tags": [
+        "SPLIT TO v5.0.0-13.4.5, v5.0.0-15.2.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V13.4.6",
+    "section": "Verify that the application does not expose detailed version information of backend components.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md#v13.4.6",
+    "cre_ids": [
+      "743-110"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V14.3.3"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-13.4.6"
+      ]
+    }
+  },
+  {
+    "section_id": "V13.4.7",
+    "section": "Verify that the web tier is configured to only serve files with specific file extensions to prevent unintentional information, configuration, and source code leakage.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x22-V13-Configuration.md#v13.4.7",
+    "cre_ids": [
+      "314-701"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V12.5.1"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-13.4.7"
+      ]
+    }
+  },
+  {
+    "section_id": "V14.1.1",
+    "section": "Verify that all sensitive data created and processed by the application has been identified and classified into protection levels. This includes data that is only encoded and therefore easily decoded, such as Base64 strings or the plaintext payload inside a JWT. Protection levels need to take into account any data protection and privacy regulations and standards which the application is required to comply with.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x23-V14-Data-Protection.md#v14.1.1",
+    "cre_ids": [
+      "765-788",
+      "482-866",
+      "224-321",
+      "267-468",
+      "227-045"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.8.1",
+        "V6.1.1",
+        "V6.1.2",
+        "V6.1.3",
+        "V8.3.4"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-14.1.1",
+        "DELETED, MERGED TO v5.0.0-14.1.1",
+        "DELETED, COVERED BY v5.0.0-14.1.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V14.1.2",
+    "section": "Verify that all sensitive data protection levels have a documented set of protection requirements. This must include (but not be limited to) requirements related to general encryption, integrity verification, retention, how the data is to be logged, access controls around sensitive data in logs, database-level encryption, privacy and privacy-enhancing technologies to be used, and other confidentiality requirements.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x23-V14-Data-Protection.md#v14.1.2",
+    "cre_ids": [
+      "731-120",
+      "504-340"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.8.2",
+        "V8.3.7"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-14.1.2, SPLIT TO v5.0.0-14.2.4",
+        "DELETED, COVERED BY v5.0.0-14.1.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V14.2.1",
+    "section": "Verify that sensitive data is only sent to the server in the HTTP message body or header fields, and that the URL and query string do not contain sensitive information, such as an API key or session token.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x23-V14-Data-Protection.md#v14.2.1",
+    "cre_ids": [
+      "402-133",
+      "186-540",
+      "333-888"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V3.1.1",
+        "V8.3.1",
+        "V13.1.3"
+      ],
+      "mapping_tags": [
+        "DELETED, MERGED TO v5.0.0-14.2.1",
+        "MOVED TO v5.0.0-14.2.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V14.2.2",
+    "section": "Verify that the application prevents sensitive data from being cached in server components, such as load balancers and application caches, or ensures that the data is securely purged after use.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x23-V14-Data-Protection.md#v14.2.2",
+    "cre_ids": [
+      "846-302",
+      "157-430"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V8.1.1",
+        "V8.1.2"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-14.2.2",
+        "DELETED, MERGED TO v5.0.0-14.2.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V14.2.4",
+    "section": "Verify that controls around sensitive data related to encryption, integrity verification, retention, how the data is to be logged, access controls around sensitive data in logs, privacy and privacy-enhancing technologies, are implemented as defined in the documentation for the specific data's protection level.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x23-V14-Data-Protection.md#v14.2.4",
+    "cre_ids": [
+      "731-120"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.8.2"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-14.1.2, SPLIT TO v5.0.0-14.2.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V14.2.7",
+    "section": "Verify that sensitive information is subject to data retention classification, ensuring that outdated or unnecessary data is deleted automatically, on a defined schedule, or as the situation requires.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x23-V14-Data-Protection.md#v14.2.7",
+    "cre_ids": [
+      "268-272"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V8.3.8"
+      ],
+      "mapping_tags": [
+        "GRAMMAR, MOVED TO v5.0.0-14.2.7"
+      ]
+    }
+  },
+  {
+    "section_id": "V14.3.1",
+    "section": "Verify that authenticated data is cleared from client storage, such as the browser DOM, after the client or session is terminated. The 'Clear-Site-Data' HTTP response header field may be able to help with this but the client-side should also be able to clear up if the server connection is not available when the session is terminated.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x23-V14-Data-Protection.md#v14.3.1",
+    "cre_ids": [
+      "046-257"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V8.2.3"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-14.3.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V14.3.2",
+    "section": "Verify that the application sets sufficient anti-caching HTTP response header fields (i.e., Cache-Control: no-store) so that sensitive data is not cached in browsers.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x23-V14-Data-Protection.md#v14.3.2",
+    "cre_ids": [
+      "473-758"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V8.2.1"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-14.3.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V14.3.3",
+    "section": "Verify that data stored in browser storage (such as localStorage, sessionStorage, IndexedDB, or cookies) does not contain sensitive data, with the exception of session tokens.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x23-V14-Data-Protection.md#v14.3.3",
+    "cre_ids": [
+      "455-358",
+      "617-524"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V3.2.3",
+        "V8.2.2"
+      ],
+      "mapping_tags": [
+        "DELETED, MERGED TO v5.0.0-14.3.3",
+        "MODIFIED, MOVED TO v5.0.0-14.3.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V15.1.1",
+    "section": "Verify that application documentation defines risk based remediation time frames for 3rd party component versions with vulnerabilities and for updating libraries in general, to minimize the risk from these components.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x24-V15-Secure-Coding-and-Architecture.md#v15.1.1",
+    "cre_ids": [
+      "053-751",
+      "715-334"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.14.3",
+        "V14.2.1"
+      ],
+      "mapping_tags": [
+        "DELETED, COVERED BY v5.0.0-15.1.1, v5.0.0-15.2.1",
+        "SPLIT TO v5.0.0-15.1.1, v5.0.0-15.2.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V15.1.2",
+    "section": "Verify that an inventory catalog, such as software bill of materials (SBOM), is maintained of all third-party libraries in use, including verifying that components come from pre-defined, trusted, and continually maintained repositories.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x24-V15-Secure-Coding-and-Architecture.md#v15.1.2",
+    "cre_ids": [
+      "777-470",
+      "715-223",
+      "863-521"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V12.3.6",
+        "V14.2.4",
+        "V14.2.5"
+      ],
+      "mapping_tags": [
+        "DELETED, COVERED BY v5.0.0-15.1.2",
+        "DELETED, MERGED TO v5.0.0-15.1.2",
+        "MOVED TO v5.0.0-15.1.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V15.1.4",
+    "section": "Verify that application documentation highlights third-party libraries which are considered to be \"risky components\".",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x24-V15-Secure-Coding-and-Architecture.md#v15.1.4",
+    "cre_ids": [
+      "860-084"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V14.2.6"
+      ],
+      "mapping_tags": [
+        "SPLIT TO v5.0.0-15.1.4, v5.0.0-15.2.5"
+      ]
+    }
+  },
+  {
+    "section_id": "V15.1.5",
+    "section": "Verify that application documentation highlights parts of the application where \"dangerous functionality\" is being used.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x24-V15-Secure-Coding-and-Architecture.md#v15.1.5",
+    "cre_ids": [
+      "515-021"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.14.5"
+      ],
+      "mapping_tags": [
+        "SPLIT TO v5.0.0-15.1.5, v5.0.0-15.2.5"
+      ]
+    }
+  },
+  {
+    "section_id": "V15.2.1",
+    "section": "Verify that the application only contains components which have not breached the documented update and remediation time frames.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x24-V15-Secure-Coding-and-Architecture.md#v15.2.1",
+    "cre_ids": [
+      "053-751",
+      "715-334"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.14.3",
+        "V14.2.1"
+      ],
+      "mapping_tags": [
+        "DELETED, COVERED BY v5.0.0-15.1.1, v5.0.0-15.2.1",
+        "SPLIT TO v5.0.0-15.1.1, v5.0.0-15.2.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V15.2.3",
+    "section": "Verify that the production environment only includes functionality that is required for the application to function, and does not expose extraneous functionality such as test code, sample snippets, and development functionality.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x24-V15-Secure-Coding-and-Architecture.md#v15.2.3",
+    "cre_ids": [
+      "462-245"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V14.2.2"
+      ],
+      "mapping_tags": [
+        "SPLIT TO v5.0.0-13.4.5, v5.0.0-15.2.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V15.2.4",
+    "section": "Verify that third-party components and all of their transitive dependencies are included from the expected repository, whether internally owned or an external source, and that there is no risk of a dependency confusion attack.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x24-V15-Secure-Coding-and-Architecture.md#v15.2.4",
+    "cre_ids": [
+      "307-507"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V10.3.2"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-15.2.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V15.2.5",
+    "section": "Verify that the application implements additional protections around parts of the application which are documented as containing \"dangerous functionality\" or using third-party libraries considered to be \"risky components\". This could include techniques such as sandboxing, encapsulation, containerization or network level isolation to delay and deter attackers who compromise one part of an application from pivoting elsewhere in the application.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x24-V15-Secure-Coding-and-Architecture.md#v15.2.5",
+    "cre_ids": [
+      "515-021",
+      "860-084"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.14.5",
+        "V14.2.6"
+      ],
+      "mapping_tags": [
+        "SPLIT TO v5.0.0-15.1.5, v5.0.0-15.2.5",
+        "SPLIT TO v5.0.0-15.1.4, v5.0.0-15.2.5"
+      ]
+    }
+  },
+  {
+    "section_id": "V15.3.3",
+    "section": "Verify that the application has countermeasures to protect against mass assignment attacks by limiting allowed fields per controller and action, e.g., it is not possible to insert or update a field value when it was not intended to be part of that action.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x24-V15-Secure-Coding-and-Architecture.md#v15.3.3",
+    "cre_ids": [
+      "042-550"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.1.2"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-15.3.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V15.3.7",
+    "section": "Verify that the application has defenses against HTTP parameter pollution attacks, particularly if the application framework makes no distinction about the source of request parameters (query string, body parameters, cookies, or header fields).",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x24-V15-Secure-Coding-and-Architecture.md#v15.3.7",
+    "cre_ids": [
+      "743-237"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V5.1.1"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-15.3.7"
+      ]
+    }
+  },
+  {
+    "section_id": "V15.4.1",
+    "section": "Verify that shared objects in multi-threaded code (such as caches, files, or in-memory objects accessed by multiple threads) are accessed safely by using thread-safe types and synchronization mechanisms like locks or semaphores to avoid race conditions and data corruption.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x24-V15-Secure-Coding-and-Architecture.md#v15.4.1",
+    "cre_ids": [
+      "670-660",
+      "380-540"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.11.2",
+        "V1.11.3"
+      ],
+      "mapping_tags": [
+        "DELETED, MERGED TO v5.0.0-15.4.1",
+        "MOVED TO v5.0.0-15.4.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V15.4.2",
+    "section": "Verify that checks on a resource's state, such as its existence or permissions, and the actions that depend on them are performed as a single atomic operation to prevent time-of-check to time-of-use (TOCTOU) race conditions. For example, checking if a file exists before opening it, or verifying a user’s access before granting it.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x24-V15-Secure-Coding-and-Architecture.md#v15.4.2",
+    "cre_ids": [
+      "134-412"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V11.1.6"
+      ],
+      "mapping_tags": [
+        "SPLIT TO v5.0.0-15.4.2, v5.0.0-2.3.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V16.2.1",
+    "section": "Verify that each log entry includes necessary metadata (such as when, where, who, what) that would allow for a detailed investigation of the timeline when an event happens.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md#v16.2.1",
+    "cre_ids": [
+      "555-048"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V7.1.4"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-16.2.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V16.2.2",
+    "section": "Verify that time sources for all logging components are synchronized, and that timestamps in security event metadata use UTC or include an explicit time zone offset. UTC is recommended to ensure consistency across distributed systems and to prevent confusion during daylight saving time transitions.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md#v16.2.2",
+    "cre_ids": [
+      "770-361"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V7.3.4"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-16.2.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V16.2.4",
+    "section": "Verify that logs can be read and correlated by the log processor that is in use, preferably by using a common logging format.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md#v16.2.4",
+    "cre_ids": [
+      "260-200"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.7.1"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-16.2.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V16.2.5",
+    "section": "Verify that when logging sensitive data, the application enforces logging based on the data's protection level. For example, it may not be allowed to log certain data, such as credentials or payment details. Other data, such as session tokens, may only be logged by being hashed or masked, either in full or partially.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md#v16.2.5",
+    "cre_ids": [
+      "067-050",
+      "240-274"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V7.1.1",
+        "V7.1.2"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-16.2.5",
+        "DELETED, MERGED TO v5.0.0-16.2.5"
+      ]
+    }
+  },
+  {
+    "section_id": "V16.3.1",
+    "section": "Verify that all authentication operations are logged, including successful and unsuccessful attempts. Additional metadata, such as the type of authentication or factors used, should also be collected.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md#v16.3.1",
+    "cre_ids": [
+      "841-710"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V7.2.1"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-16.3.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V16.3.2",
+    "section": "Verify that failed authorization attempts are logged. For L3, this must include logging all authorization decisions, including logging when sensitive data is accessed (without logging the sensitive data itself).",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md#v16.3.2",
+    "cre_ids": [
+      "443-447",
+      "015-063"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V7.2.2",
+        "V8.3.5"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-16.3.2",
+        "DELETED, MERGED TO v5.0.0-16.3.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V16.3.3",
+    "section": "Verify that the application logs the security events that are defined in the documentation and also logs attempts to bypass the security controls, such as input validation, business logic, and anti-automation.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md#v16.3.3",
+    "cre_ids": [
+      "184-284"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V7.1.3"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-16.3.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V16.3.4",
+    "section": "Verify that the application logs unexpected errors and security control failures such as backend TLS failures.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md#v16.3.4",
+    "cre_ids": [
+      "668-364"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V9.2.5"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-16.3.4"
+      ]
+    }
+  },
+  {
+    "section_id": "V16.4.1",
+    "section": "Verify that all logging components appropriately encode data to prevent log injection.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md#v16.4.1",
+    "cre_ids": [
+      "048-612"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V7.3.1"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-16.4.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V16.4.2",
+    "section": "Verify that logs are protected from unauthorized access and cannot be modified.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md#v16.4.2",
+    "cre_ids": [
+      "713-683"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V7.3.3"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-16.4.2"
+      ]
+    }
+  },
+  {
+    "section_id": "V16.4.3",
+    "section": "Verify that logs are securely transmitted to a logically separate system for analysis, detection, alerting, and escalation. The aim is to ensure that if the application is breached, the logs are not compromised.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md#v16.4.3",
+    "cre_ids": [
+      "026-280"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V1.7.2"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-16.4.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V16.5.1",
+    "section": "Verify that a generic message is returned to the consumer when an unexpected or security-sensitive error occurs, ensuring no exposure of sensitive internal system data such as stack traces, queries, secret keys, and tokens.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md#v16.5.1",
+    "cre_ids": [
+      "612-435"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V7.4.1"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-16.5.1"
+      ]
+    }
+  },
+  {
+    "section_id": "V16.5.3",
+    "section": "Verify that the application fails gracefully and securely, including when an exception occurs, preventing fail-open conditions such as processing a transaction despite errors resulting from validation logic.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md#v16.5.3",
+    "cre_ids": [
+      "166-151"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V4.1.5"
+      ],
+      "mapping_tags": [
+        "MOVED TO v5.0.0-16.5.3"
+      ]
+    }
+  },
+  {
+    "section_id": "V16.5.4",
+    "section": "Verify that a \"last resort\" error handler is defined which will catch all unhandled exceptions. This is both to avoid losing error details that must go to log files and to ensure that an error does not take down the entire application process, leading to a loss of availability.",
+    "hyperlink": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md#v16.5.4",
+    "cre_ids": [
+      "118-602"
+    ],
+    "gold_provenance": {
+      "kind": "provisional",
+      "method": "asvs4_opencre_links_via_official_v4_to_v5_yaml",
+      "mapping_yaml": "OWASP/ASVS mapping_v4.0.3_to_v5.0.0.yml",
+      "source_v4_section_ids": [
+        "V7.4.3"
+      ],
+      "mapping_tags": [
+        "MODIFIED, MOVED TO v5.0.0-16.5.4"
+      ]
+    }
+  }
+]
