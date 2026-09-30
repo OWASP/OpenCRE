@@ -7,7 +7,7 @@ End-to-end evaluation for the four agreed families:
 | ASVS | GitHub `OWASP/ASVS` (`5.0/en`) | `owasp_asvs_5_0_provisional` |
 | AISVS | GitHub `OWASP/AISVS` (`1.0/en`) | `owasp_aisvs_1_0` |
 | Cheat Sheets | GitHub `OWASP/CheatSheetSeries` | `owasp_cheatsheets_supplement` |
-| AI Exchange (AIX) | *Not* GitHub — hub / site CSV | `owasp_llm_top10_2025` (CRE proxy) |
+| AI Exchange (AIX) | *Not* GitHub — hub / site CSV | `owasp_llm_top10_2025` (hub AI CREs; #1124) |
 | NIST 800-53 v5 | OSCAL prose (`b2_sources/nist_800_53_v5`) | `nist_800_53_v5` (hub Links) |
 | Top 10 2025 | Cached hyperlink text | `owasp_top10_2025` |
 | API Top 10 2023 | Cached hyperlink text | `owasp_api_top10_2023` |

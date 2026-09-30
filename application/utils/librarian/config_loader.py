@@ -56,18 +56,6 @@ def _env_optional_margin_gamma(name: str) -> Optional[float]:
     return float(stripped)
 
 
-def _env_bool(name: str, default: bool = False) -> bool:
-    raw = os.getenv(name)
-    if raw is None:
-        return default
-    return raw.strip().lower() in ("1", "true", "yes", "on")
-
-
-def _env_csv(name: str) -> tuple[str, ...]:
-    raw = os.getenv(name, "")
-    return tuple(part.strip() for part in raw.split(",") if part.strip())
-
-
 @dataclass(frozen=True)
 class LibrarianConfig:
     crossencoder_model: str
@@ -92,6 +80,50 @@ class LibrarianConfig:
     prefer_audit_ids: bool = True
     hybrid_beta: float = 0.0
     hybrid_gamma: float = 0.70
+    #: After C.2, promote Contains children over hub umbrellas when they score better.
+    leaf_drilldown: bool = True
+    #: Optional name allowlist (empty = no name filter). Length gate is primary.
+    leaf_drilldown_resources: tuple[str, ...] = ()
+    #: Bypass ``min_sections`` for these resources (empty = none; set ``api`` to force).
+    leaf_drilldown_force_resources: tuple[str, ...] = ()
+    #: Skip Contains hubs with fewer than this many children.
+    leaf_drilldown_min_children: int = 3
+    #: Skip drill when resource family has fewer chunks than this (≤1 disables).
+    leaf_drilldown_min_sections: int = 20
+    #: E1: keep drilled hubs inside scored top-2.
+    leaf_drilldown_keep_hub: bool = False
+    #: E2: never put leaf ahead of hub (leaf always specificity #2).
+    leaf_drilldown_hub_first: bool = False
+    #: E5: max umbrella parents promoted into preferred shortlist.
+    umbrella_promote_cap: int = 8
+    #: Grounded judge: max CRE ids (3 aligns with score top_k=3).
+    shortlist_judge_max_picks: int = 3
+    #: Relative CE shortlist cutoff after C.2 (None = off).
+    margin_gamma: Optional[float] = None
+
+
+def _env_leaf_drilldown_resources() -> tuple[str, ...]:
+    """Unset / ``*`` / empty → no name filter. Otherwise comma list."""
+    raw = os.getenv("CRE_LIBRARIAN_LEAF_DRILLDOWN_RESOURCES")
+    if raw is None:
+        return ()
+    stripped = raw.strip()
+    if not stripped or stripped == "*":
+        return ()
+    return tuple(part.strip().lower() for part in stripped.split(",") if part.strip())
+
+
+def _env_leaf_drilldown_force_resources() -> tuple[str, ...]:
+    """Comma list; empty/unset → no length-gate bypass.
+
+    Cold-start (``FORCE=api``) raised GitHub d1 but dropped API exact 60%→50%;
+    keep off by default — set ``CRE_LIBRARIAN_LEAF_DRILLDOWN_FORCE_RESOURCES=api``
+    only for explicit experiments.
+    """
+    raw = os.getenv("CRE_LIBRARIAN_LEAF_DRILLDOWN_FORCE_RESOURCES")
+    if raw is None or not raw.strip():
+        return ()
+    return tuple(part.strip().lower() for part in raw.split(",") if part.strip())
 
 
 def load_config() -> LibrarianConfig:
@@ -126,6 +158,24 @@ def load_config() -> LibrarianConfig:
     prefer_audit_ids = _env_bool("CRE_LIBRARIAN_PREFER_AUDIT_IDS", True)
     hybrid_beta = float(os.getenv("CRE_LIBRARIAN_HYBRID_BETA", "0"))
     hybrid_gamma = float(os.getenv("CRE_LIBRARIAN_HYBRID_GAMMA", "0.70"))
+    leaf_drilldown = _env_bool("CRE_LIBRARIAN_LEAF_DRILLDOWN", True)
+    leaf_drilldown_resources = _env_leaf_drilldown_resources()
+    leaf_drilldown_force_resources = _env_leaf_drilldown_force_resources()
+    leaf_drilldown_min_children = int(
+        os.getenv("CRE_LIBRARIAN_LEAF_DRILLDOWN_MIN_CHILDREN", "3")
+    )
+    leaf_drilldown_min_sections = int(
+        os.getenv("CRE_LIBRARIAN_LEAF_DRILLDOWN_MIN_SECTIONS", "20")
+    )
+    leaf_drilldown_keep_hub = _env_bool("CRE_LIBRARIAN_LEAF_DRILLDOWN_KEEP_HUB", False)
+    leaf_drilldown_hub_first = _env_bool(
+        "CRE_LIBRARIAN_LEAF_DRILLDOWN_HUB_FIRST", False
+    )
+    umbrella_promote_cap = int(os.getenv("CRE_LIBRARIAN_UMBRELLA_PROMOTE_CAP", "8"))
+    shortlist_judge_max_picks = int(
+        os.getenv("CRE_LIBRARIAN_SHORTLIST_JUDGE_MAX_PICKS", "3")
+    )
+    margin_gamma = _env_optional_margin_gamma("CRE_LIBRARIAN_MARGIN_GAMMA")
 
     if retriever_backend not in _RETRIEVER_BACKENDS:
         raise ValueError(
@@ -180,6 +230,40 @@ def load_config() -> LibrarianConfig:
         raise ValueError(
             f"CRE_LIBRARIAN_HYBRID_GAMMA must be finite and >= 0, got {hybrid_gamma}"
         )
+    if leaf_drilldown_min_children < 1:
+        raise ValueError(
+            "CRE_LIBRARIAN_LEAF_DRILLDOWN_MIN_CHILDREN must be >= 1, "
+            f"got {leaf_drilldown_min_children}"
+        )
+    if leaf_drilldown_min_sections < 0:
+        raise ValueError(
+            "CRE_LIBRARIAN_LEAF_DRILLDOWN_MIN_SECTIONS must be >= 0, "
+            f"got {leaf_drilldown_min_sections}"
+        )
+    if umbrella_promote_cap < 1:
+        raise ValueError(
+            "CRE_LIBRARIAN_UMBRELLA_PROMOTE_CAP must be >= 1, "
+            f"got {umbrella_promote_cap}"
+        )
+    if shortlist_judge_max_picks < 1 or shortlist_judge_max_picks > 5:
+        raise ValueError(
+            "CRE_LIBRARIAN_SHORTLIST_JUDGE_MAX_PICKS must be in [1, 5], "
+            f"got {shortlist_judge_max_picks}"
+        )
+    if margin_gamma is not None and (
+        not math.isfinite(margin_gamma) or margin_gamma <= 0
+    ):
+        raise ValueError(
+            "CRE_LIBRARIAN_MARGIN_GAMMA must be finite and > 0 when set, "
+            f"got {margin_gamma}"
+        )
+
+    # Mirror promote cap into the process env so ParentIndex._promote_cap sees it
+    # without plumbing the index through every call site.
+    os.environ["CRE_LIBRARIAN_UMBRELLA_PROMOTE_CAP"] = str(umbrella_promote_cap)
+    os.environ["CRE_LIBRARIAN_SHORTLIST_JUDGE_MAX_PICKS"] = str(
+        shortlist_judge_max_picks
+    )
 
     return LibrarianConfig(
         crossencoder_model=crossencoder_model,
@@ -204,4 +288,14 @@ def load_config() -> LibrarianConfig:
         prefer_audit_ids=prefer_audit_ids,
         hybrid_beta=hybrid_beta,
         hybrid_gamma=hybrid_gamma,
+        leaf_drilldown=leaf_drilldown,
+        leaf_drilldown_resources=leaf_drilldown_resources,
+        leaf_drilldown_force_resources=leaf_drilldown_force_resources,
+        leaf_drilldown_min_children=leaf_drilldown_min_children,
+        leaf_drilldown_min_sections=leaf_drilldown_min_sections,
+        leaf_drilldown_keep_hub=leaf_drilldown_keep_hub,
+        leaf_drilldown_hub_first=leaf_drilldown_hub_first,
+        umbrella_promote_cap=umbrella_promote_cap,
+        shortlist_judge_max_picks=shortlist_judge_max_picks,
+        margin_gamma=margin_gamma,
     )

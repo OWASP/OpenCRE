@@ -460,6 +460,181 @@ class ShortlistJudgePipelineTest(unittest.TestCase):
         self.assertNotIn("shortlist-judge", result.envelopes[0].retrieval.retriever)
 
 
+class LeafDrilldownGatePipelineTest(unittest.TestCase):
+    """Resource deny must not rewrite audit.reranked (scored preds)."""
+
+    def test_denied_resource_keeps_pre_drill_reranked(self) -> None:
+        from application.utils.librarian.umbrella_promote import ParentIndex
+
+        hub = "hub-uuid"
+        leaf = "leaf-uuid"
+        parents = ParentIndex(
+            child_to_parents={leaf: (hub,)},
+            parent_to_children={hub: (leaf, "c2", "c3")},
+        )
+        reranked = [
+            CreCandidate(cre_id=hub, score_rerank=2.0),
+            CreCandidate(cre_id="noise", score_rerank=1.0),
+        ]
+
+        class _DrillReranker(_Reranker):
+            _cre_texts = {
+                hub: "hub authentication umbrella",
+                leaf: "leaf encode interpreter",
+                "c2": "other",
+                "c3": "other",
+            }
+
+            @staticmethod
+            def _score_fn(pairs):
+                return [0.1] + [9.0] + [0.0] * (len(pairs) - 2)
+
+        row = _row(
+            text="Standard: OWASP Top 10 2025\nSection: A01",
+            row_id="top10",
+        )
+        # Force Top10-shaped artifact (deny under asvs,aisvs allowlist).
+        row = row.model_copy(
+            update={
+                "artifact_id": "art:B2/owasp_top10_2025:A01",
+                "chunk_id": "chk:art:B2/owasp_top10_2025:A01:0",
+            }
+        )
+        result = LibrarianPipeline(
+            _Source([row]),
+            _Retriever(),
+            _DrillReranker(reranked),
+            _Scaler(0.5),
+            threshold=0.8,
+            pipeline_run_id=RUN,
+            parent_index=parents,
+            leaf_drilldown=True,
+            leaf_drilldown_resources=(),
+            leaf_drilldown_min_children=3,
+            leaf_drilldown_min_sections=20,
+        ).run(at=AT)
+        env = result.envelopes[0]
+        ids = [c.cre_id for c in env.retrieval.reranked]
+        self.assertEqual(ids[:2], [hub, "noise"])
+        self.assertNotIn(leaf, ids)
+
+    def test_force_resources_bypasses_min_sections_for_api(self) -> None:
+        """Coarse API (n≈10) can still leaf-drill when force list matches."""
+        from application.utils.librarian.umbrella_promote import ParentIndex
+
+        hub = "hub-uuid"
+        leaf = "leaf-uuid"
+        parents = ParentIndex(
+            child_to_parents={leaf: (hub,)},
+            parent_to_children={hub: (leaf, "c2", "c3")},
+        )
+        reranked = [
+            CreCandidate(cre_id=hub, score_rerank=2.0),
+            CreCandidate(cre_id="noise", score_rerank=1.0),
+        ]
+
+        class _DrillReranker(_Reranker):
+            _cre_texts = {
+                hub: "hub authentication umbrella",
+                leaf: "leaf encode interpreter",
+                "c2": "other",
+                "c3": "other",
+            }
+
+            @staticmethod
+            def _score_fn(pairs):
+                return [0.1, 9.0, 0.0, 0.0][: len(pairs)]
+
+        row = _row(
+            text="Standard: OWASP API Security Top 10\nSection: API4",
+            row_id="api4",
+        )
+        row = row.model_copy(
+            update={
+                "artifact_id": "art:B2/owasp_api_top10_2023:API4",
+                "chunk_id": "chk:art:B2/owasp_api_top10_2023:API4:0",
+            }
+        )
+        result = LibrarianPipeline(
+            _Source([row]),
+            _Retriever(),
+            _DrillReranker(reranked),
+            _Scaler(0.5),
+            threshold=0.8,
+            pipeline_run_id=RUN,
+            parent_index=parents,
+            leaf_drilldown=True,
+            leaf_drilldown_resources=(),
+            leaf_drilldown_force_resources=("api",),
+            leaf_drilldown_min_children=3,
+            leaf_drilldown_min_sections=20,
+        ).run(at=AT)
+        env = result.envelopes[0]
+        ids = [c.cre_id for c in env.retrieval.reranked]
+        self.assertEqual(ids[0], leaf)
+        self.assertIn(hub, ids)
+
+    def test_allowed_asvs_attaches_leaf_into_reranked(self) -> None:
+        from application.utils.librarian.umbrella_promote import ParentIndex
+
+        hub = "hub-uuid"
+        leaf = "leaf-uuid"
+        parents = ParentIndex(
+            child_to_parents={leaf: (hub,)},
+            parent_to_children={hub: (leaf, "c2", "c3")},
+        )
+        reranked = [
+            CreCandidate(cre_id=hub, score_rerank=2.0),
+            CreCandidate(cre_id="noise", score_rerank=1.0),
+        ]
+
+        class _DrillReranker(_Reranker):
+            _cre_texts = {
+                hub: "hub authentication umbrella",
+                leaf: "leaf encode interpreter",
+                "c2": "other",
+                "c3": "other",
+            }
+
+            @staticmethod
+            def _score_fn(pairs):
+                # Child beats hub.
+                return [0.1, 9.0, 0.0, 0.0][: len(pairs)]
+
+        # Enough ASVS siblings in-batch to pass min_sections=20.
+        rows = []
+        for i in range(20):
+            r = _row(
+                text="Standard: OWASP ASVS\nSection: V1.2.3 Encode output",
+                row_id=f"asvs{i}",
+            )
+            rows.append(
+                r.model_copy(
+                    update={
+                        "artifact_id": f"art:OWASP/ASVS:5.0/en/x{i}.md",
+                        "chunk_id": f"chk:art:OWASP/ASVS:5.0/en/x{i}.md:0",
+                    }
+                )
+            )
+        result = LibrarianPipeline(
+            _Source(rows),
+            _Retriever(),
+            _DrillReranker(reranked),
+            _Scaler(0.5),
+            threshold=0.8,
+            pipeline_run_id=RUN,
+            parent_index=parents,
+            leaf_drilldown=True,
+            leaf_drilldown_resources=(),
+            leaf_drilldown_min_children=3,
+            leaf_drilldown_min_sections=20,
+        ).run(at=AT)
+        env = result.envelopes[0]
+        ids = [c.cre_id for c in env.retrieval.reranked]
+        self.assertEqual(ids[0], leaf)
+        self.assertIn(hub, ids)
+
+
 def failing_component_stub(kind):
     """A stub whose single method always raises, for the given seam."""
 

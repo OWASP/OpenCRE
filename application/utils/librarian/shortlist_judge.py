@@ -1,8 +1,9 @@
-"""Grounded shortlist judge: LLM picks top-1..2 CRE ids from a provided list only.
+"""Grounded shortlist judge: LLM picks top-1..N CRE ids from a provided list only.
 
 Module C lever C — not a freeform linker. The model may only return ids that
 appear in the retrieval shortlist; invented ids are dropped. Failures (bad JSON,
 network, empty allowlist) return ``[]`` so the pipeline keeps its existing rank.
+Default N is 3 (score top_k); override via ``max_picks`` / env.
 """
 
 from __future__ import annotations
@@ -22,13 +23,19 @@ LlmFn = Callable[[str, str], str]  # (system, user) -> raw text
 DEFAULT_TOP_N = 15
 DEFAULT_CACHE_DIR = "tmp/oie_shortlist_judge_cache"
 
-_SYSTEM = (
-    "You are a grounded CRE shortlist judge for OpenCRE. "
-    "Given a standards section focus text and a fixed list of candidate CREs, "
-    "pick the 1 or 2 best matching CRE ids. "
-    "Return ONLY a JSON array of cre_id strings drawn from the provided list. "
-    "Do not invent ids. Do not return names, objects, or commentary."
-)
+
+def _system_prompt(max_picks: int) -> str:
+    n = max(1, int(max_picks))
+    return (
+        "You are a grounded CRE shortlist judge for OpenCRE. "
+        "Given a standards section focus text and a fixed list of candidate CREs, "
+        f"pick the 1–{n} best matching CRE ids. "
+        "Return ONLY a JSON array of cre_id strings drawn from the provided list. "
+        "Do not invent ids. Do not return names, objects, or commentary."
+    )
+
+
+_SYSTEM = _system_prompt(3)
 
 
 def _strip_fences(raw: str) -> str:
@@ -39,11 +46,14 @@ def _strip_fences(raw: str) -> str:
     return text.strip()
 
 
-def parse_judge_json(raw: str, allowlist: Sequence[str]) -> List[str]:
-    """Parse LLM output to 1–2 cre_ids present in ``allowlist`` (order preserved)."""
+def parse_judge_json(
+    raw: str, allowlist: Sequence[str], *, max_picks: int = 3
+) -> List[str]:
+    """Parse LLM output to 1–N cre_ids present in ``allowlist`` (order preserved)."""
     allowed = {str(a) for a in allowlist if a}
     if not allowed:
         return []
+    cap = max(1, int(max_picks))
     try:
         data = json.loads(_strip_fences(raw))
     except (TypeError, ValueError, json.JSONDecodeError):
@@ -69,13 +79,16 @@ def parse_judge_json(raw: str, allowlist: Sequence[str]) -> List[str]:
             continue
         seen.add(cid)
         out.append(cid)
-        if len(out) >= 2:
+        if len(out) >= cap:
             break
     return out
 
 
 def build_judge_prompt(
-    query_text: str, candidates: Sequence[Mapping[str, Any]]
+    query_text: str,
+    candidates: Sequence[Mapping[str, Any]],
+    *,
+    max_picks: int = 3,
 ) -> tuple:
     """Return ``(system, user)`` for the grounded judge call."""
     rows = []
@@ -85,19 +98,26 @@ def build_judge_prompt(
             continue
         name = str(c.get("name") or c.get("cre_name") or "").strip()
         rows.append({"cre_id": cid, "name": name})
+    n = max(1, int(max_picks))
     user = (
         "Section focus:\n"
         f"{(query_text or '').strip()}\n\n"
-        "Candidates (choose 1–2 cre_id values from this list only):\n"
+        f"Candidates (choose 1–{n} cre_id values from this list only):\n"
         f"{json.dumps(rows, ensure_ascii=False)}\n\n"
-        "Respond with a JSON array, e.g. [\"123-456\", \"789-012\"]."
+        'Respond with a JSON array, e.g. ["123-456", "789-012"].'
     )
-    return _SYSTEM, user
+    return _system_prompt(n), user
 
 
-def cache_key(query_text: str, candidate_ids: Sequence[str]) -> str:
+def cache_key(
+    query_text: str, candidate_ids: Sequence[str], *, max_picks: int = 3
+) -> str:
     blob = json.dumps(
-        {"q": (query_text or "").strip(), "ids": list(candidate_ids)},
+        {
+            "q": (query_text or "").strip(),
+            "ids": list(candidate_ids),
+            "max_picks": int(max_picks),
+        },
         sort_keys=True,
         ensure_ascii=False,
     )
@@ -133,9 +153,7 @@ class ShortlistJudgeCache:
         if self.disk_dir is not None:
             try:
                 self.disk_dir.mkdir(parents=True, exist_ok=True)
-                (self.disk_dir / f"{key}.json").write_text(
-                    json.dumps(stored, indent=2)
-                )
+                (self.disk_dir / f"{key}.json").write_text(json.dumps(stored, indent=2))
             except OSError:
                 logger.debug("shortlist judge cache write failed", exc_info=True)
 
@@ -169,11 +187,23 @@ def candidates_from_audit(
         )
         if not cid:
             continue
-        name = getattr(c, "cre_name", None) if not isinstance(c, Mapping) else c.get(
-            "cre_name"
-        ) or c.get("name")
+        name = (
+            getattr(c, "cre_name", None)
+            if not isinstance(c, Mapping)
+            else c.get("cre_name") or c.get("name")
+        )
         out.append({"cre_id": str(cid), "name": str(name or "")})
     return out
+
+
+def judge_max_picks() -> int:
+    """``CRE_LIBRARIAN_SHORTLIST_JUDGE_MAX_PICKS`` (default 3; capped to [1, 5])."""
+    raw = os.environ.get("CRE_LIBRARIAN_SHORTLIST_JUDGE_MAX_PICKS", "3")
+    try:
+        n = int(raw)
+    except (TypeError, ValueError):
+        return 3
+    return max(1, min(5, n))
 
 
 def judge_shortlist(
@@ -183,15 +213,18 @@ def judge_shortlist(
     *,
     cache: Optional[ShortlistJudgeCache] = None,
     top_n: int = DEFAULT_TOP_N,
+    max_picks: Optional[int] = None,
 ) -> List[str]:
-    """Ask the LLM for 1–2 cre_ids from ``candidates``; validate against allowlist.
+    """Ask the LLM for 1–N cre_ids from ``candidates``; validate against allowlist.
 
     Returns ``[]`` on missing input, LLM errors, or invalid JSON (fail-open).
     """
+    cap = judge_max_picks() if max_picks is None else max(1, min(5, int(max_picks)))
     rows = [
-        {"cre_id": str(c.get("cre_id") or "").strip(), "name": str(
-            c.get("name") or c.get("cre_name") or ""
-        )}
+        {
+            "cre_id": str(c.get("cre_id") or "").strip(),
+            "name": str(c.get("name") or c.get("cre_name") or ""),
+        }
         for c in candidates[:top_n]
         if str(c.get("cre_id") or "").strip()
     ]
@@ -199,12 +232,12 @@ def judge_shortlist(
         return []
 
     allowlist = [r["cre_id"] for r in rows]
-    key = cache_key(query_text, allowlist)
+    key = cache_key(query_text, allowlist, max_picks=cap)
     if cache is not None:
         hit = cache.get(key)
         if hit is not None:
             # Re-validate against current allowlist (cache may be stale).
-            return [cid for cid in hit if cid in set(allowlist)][:2]
+            return [cid for cid in hit if cid in set(allowlist)][:cap]
 
     fn = llm_fn
     if fn is None:
@@ -214,12 +247,14 @@ def judge_shortlist(
             logger.warning("shortlist judge: cannot build default LLM", exc_info=True)
             return []
 
-    system, user = build_judge_prompt(query_text, rows)
+    system, user = build_judge_prompt(query_text, rows, max_picks=cap)
     try:
         raw = fn(system, user)
-        chosen = parse_judge_json(raw, allowlist)
+        chosen = parse_judge_json(raw, allowlist, max_picks=cap)
     except Exception:  # noqa: BLE001
-        logger.warning("shortlist judge LLM failed; keeping existing rank", exc_info=True)
+        logger.warning(
+            "shortlist judge LLM failed; keeping existing rank", exc_info=True
+        )
         return []
 
     if cache is not None and chosen:
@@ -248,6 +283,7 @@ __all__ = [
     "default_cache_dir",
     "default_litellm_fn",
     "judge_enabled",
+    "judge_max_picks",
     "judge_shortlist",
     "parse_judge_json",
 ]

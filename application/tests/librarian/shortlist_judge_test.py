@@ -9,6 +9,7 @@ from pathlib import Path
 from application.utils.librarian.schemas import CreCandidate, RetrievalAudit
 from application.utils.librarian.shortlist_judge import (
     ShortlistJudgeCache,
+    cache_key,
     candidates_from_audit,
     judge_shortlist,
     parse_judge_json,
@@ -41,9 +42,16 @@ class ParseJudgeJsonTest(unittest.TestCase):
             ["111-111", "222-222"],
         )
 
-    def test_caps_at_two(self) -> None:
-        allow = ["a", "b", "c"]
-        self.assertEqual(parse_judge_json('["a","b","c"]', allow), ["a", "b"])
+    def test_caps_at_default_three(self) -> None:
+        allow = ["a", "b", "c", "d"]
+        self.assertEqual(parse_judge_json('["a","b","c","d"]', allow), ["a", "b", "c"])
+
+    def test_caps_at_max_picks(self) -> None:
+        allow = ["a", "b", "c", "d"]
+        self.assertEqual(
+            parse_judge_json('["a","b","c","d"]', allow, max_picks=2),
+            ["a", "b"],
+        )
 
 
 class JudgeShortlistTest(unittest.TestCase):
@@ -61,6 +69,23 @@ class JudgeShortlistTest(unittest.TestCase):
             llm_fn=llm,
         )
         self.assertEqual(out, ["cre-a"])
+
+    def test_max_picks_three(self) -> None:
+        def llm(system: str, user: str) -> str:
+            self.assertIn("1–3", user)
+            return '["cre-a", "cre-b", "cre-c"]'
+
+        out = judge_shortlist(
+            "Section: X",
+            [
+                {"cre_id": "cre-a", "name": "A"},
+                {"cre_id": "cre-b", "name": "B"},
+                {"cre_id": "cre-c", "name": "C"},
+            ],
+            llm_fn=llm,
+            max_picks=3,
+        )
+        self.assertEqual(out, ["cre-a", "cre-b", "cre-c"])
 
     def test_llm_error_fail_open(self) -> None:
         def llm(system: str, user: str) -> str:
@@ -96,6 +121,35 @@ class JudgeShortlistTest(unittest.TestCase):
             self.assertEqual(second, ["cre-a"])
             self.assertEqual(calls["n"], 1)
 
+    def test_cache_key_includes_max_picks(self) -> None:
+        ids = ["a", "b"]
+        self.assertNotEqual(
+            cache_key("q", ids, max_picks=2),
+            cache_key("q", ids, max_picks=3),
+        )
+
+    def test_max_picks_change_bypasses_stale_cache(self) -> None:
+        calls = {"n": 0}
+
+        def llm(system: str, user: str) -> str:
+            calls["n"] += 1
+            return '["cre-a", "cre-b", "cre-c"]'
+
+        with tempfile.TemporaryDirectory() as tmp:
+            cache = ShortlistJudgeCache(disk_dir=Path(tmp))
+            cands = [
+                {"cre_id": "cre-a", "name": "A"},
+                {"cre_id": "cre-b", "name": "B"},
+                {"cre_id": "cre-c", "name": "C"},
+            ]
+            two = judge_shortlist("focus", cands, llm_fn=llm, cache=cache, max_picks=2)
+            three = judge_shortlist(
+                "focus", cands, llm_fn=llm, cache=cache, max_picks=3
+            )
+            self.assertEqual(two, ["cre-a", "cre-b"])
+            self.assertEqual(three, ["cre-a", "cre-b", "cre-c"])
+            self.assertEqual(calls["n"], 2)
+
 
 class CandidatesFromAuditTest(unittest.TestCase):
     def test_top_n_with_names(self) -> None:
@@ -110,7 +164,9 @@ class CandidatesFromAuditTest(unittest.TestCase):
             threshold=0.5,
         )
         rows = candidates_from_audit(audit, top_n=2)
-        self.assertEqual(rows, [{"cre_id": "a", "name": "Alpha"}, {"cre_id": "b", "name": "Beta"}])
+        self.assertEqual(
+            rows, [{"cre_id": "a", "name": "Alpha"}, {"cre_id": "b", "name": "Beta"}]
+        )
 
 
 if __name__ == "__main__":
