@@ -186,9 +186,62 @@ def _apply_promoted_flags() -> None:
     os.environ.setdefault("CRE_LIBRARIAN_CRE_SUMMARY", "1")
     os.environ.setdefault("CRE_LIBRARIAN_MARGIN_GAMMA", "0.85")
     os.environ.setdefault("CRE_LIBRARIAN_RETRIEVER_BACKEND", "pgvector")
-    os.environ.setdefault("CRE_LIBRARIAN_SHORTLIST_JUDGE", "0")
+    # d1 winner combo: E4 shortlist judge + E5 umbrella cap=8; E1/E2 off.
+    os.environ.setdefault("CRE_LIBRARIAN_SHORTLIST_JUDGE", "1")
+    # Post-60: judge fills score top_k=3 window (FORCE_RESOURCES left off below).
+    os.environ.setdefault("CRE_LIBRARIAN_SHORTLIST_JUDGE_MAX_PICKS", "3")
     os.environ.setdefault("CRE_LIBRARIAN_DEVICE", "cpu")
+    os.environ.setdefault("CRE_LIBRARIAN_LEAF_DRILLDOWN", "1")
+    # Grain gate: drill only when resource family has ≥20 chunks (ASVS/AISVS).
+    os.environ.setdefault("CRE_LIBRARIAN_LEAF_DRILLDOWN_MIN_SECTIONS", "20")
+    os.environ.setdefault("CRE_LIBRARIAN_LEAF_DRILLDOWN_MIN_CHILDREN", "3")
+    os.environ.setdefault("CRE_LIBRARIAN_LEAF_DRILLDOWN_KEEP_HUB", "0")
+    os.environ.setdefault("CRE_LIBRARIAN_LEAF_DRILLDOWN_HUB_FIRST", "0")
+    # FORCE_RESOURCES=api dropped API exact 60→50 on cold-start; leave unset/off.
+    os.environ.setdefault("CRE_LIBRARIAN_UMBRELLA_PROMOTE_CAP", "8")
     os.environ.setdefault("NO_LOAD_GRAPH_DB", "1")
+    # Shared CRE summary cache (GitHub). B2 may fork via ensure_b2_summary_cache.
+    os.environ.setdefault(
+        "CRE_LIBRARIAN_CRE_SUMMARY_CACHE",
+        str(ROOT / "tmp" / "oie_cre_summaries"),
+    )
+
+
+def ensure_b2_summary_cache(
+    *,
+    github_cache: Optional[Path] = None,
+    b2_cache: Optional[Path] = None,
+    force: bool = False,
+) -> Path:
+    """E3: copy-on-write GitHub summary cache → B2-only cache directory.
+
+    Returns the B2 cache path and sets ``CRE_LIBRARIAN_CRE_SUMMARY_CACHE`` to it.
+    """
+    import shutil
+
+    src = Path(github_cache or (ROOT / "tmp" / "oie_cre_summaries"))
+    dst = Path(b2_cache or (ROOT / "tmp" / "oie_cre_summaries_b2"))
+    if force and dst.exists():
+        shutil.rmtree(dst)
+    if not dst.exists():
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if src.is_dir():
+            shutil.copytree(src, dst)
+        else:
+            dst.mkdir(parents=True, exist_ok=True)
+    os.environ["CRE_LIBRARIAN_CRE_SUMMARY_CACHE"] = str(dst)
+    return dst
+
+
+def restore_github_summary_cache(
+    *,
+    github_cache: Optional[Path] = None,
+) -> Path:
+    """Point env back at the shared GitHub summary cache."""
+    path = Path(github_cache or (ROOT / "tmp" / "oie_cre_summaries"))
+    path.mkdir(parents=True, exist_ok=True)
+    os.environ["CRE_LIBRARIAN_CRE_SUMMARY_CACHE"] = str(path)
+    return path
 
 
 def _make_tarball_harvester(
@@ -327,12 +380,19 @@ def _cheatsheet_section_id(row: Dict[str, Any]) -> str:
     return name.replace(" ", "_")
 
 
-def _top2_cre_ids(envelope: Dict[str, Any], uuid_to_ext: Dict[str, str]) -> List[str]:
-    """Union of rerank top-2 and vector top-2 (up to 4 ids).
+def _top_k_cre_ids(
+    envelope: Dict[str, Any],
+    uuid_to_ext: Dict[str, str],
+    *,
+    top_k: int = 3,
+) -> List[str]:
+    """Union of rerank top-k and vector top-k.
 
-    Keep in sync with ``run_b2_pr_mappings.top2_cre_external_ids`` — full-pipeline
-    GitHub scoring must use the same gate as the B2 fixture arm.
+    Keep in sync with ``run_b2_pr_mappings.top_k_cre_external_ids`` — full-pipeline
+    GitHub scoring must use the same gate as the B2 fixture arm. Default ``top_k=3``
+    is the d1-winner (E6) production gate.
     """
+    k = max(1, int(top_k))
     ordered: List[str] = []
 
     def add(cre_id: Any) -> None:
@@ -349,7 +409,7 @@ def _top2_cre_ids(envelope: Dict[str, Any], uuid_to_ext: Dict[str, str]) -> List
     reranked = list(retrieval.get("reranked") or [])
     candidates = list(retrieval.get("candidates") or [])
 
-    for cand in reranked[:2]:
+    for cand in reranked[:k]:
         if isinstance(cand, dict):
             add(cand.get("cre_id"))
 
@@ -358,7 +418,7 @@ def _top2_cre_ids(envelope: Dict[str, Any], uuid_to_ext: Dict[str, str]) -> List
         key=lambda c: float(c.get("score_vector") or 0.0),
         reverse=True,
     )
-    for cand in by_vec[:2]:
+    for cand in by_vec[:k]:
         add(cand.get("cre_id"))
 
     if ordered:
@@ -368,9 +428,14 @@ def _top2_cre_ids(envelope: Dict[str, Any], uuid_to_ext: Dict[str, str]) -> List
         for link in envelope.get(field) or []:
             if isinstance(link, dict):
                 add(link.get("cre_id"))
-            if len(ordered) >= 2:
-                return ordered[:2]
+            if len(ordered) >= k:
+                return ordered[:k]
     return ordered
+
+
+def _top2_cre_ids(envelope: Dict[str, Any], uuid_to_ext: Dict[str, str]) -> List[str]:
+    """Backward-compatible alias for ``_top_k_cre_ids(..., top_k=2)``."""
+    return _top_k_cre_ids(envelope, uuid_to_ext, top_k=2)
 
 
 def _guess_keys_for_decision(
@@ -434,6 +499,8 @@ def score_github_decisions(
     run_id: str,
     cache: str,
     github_targets: Dict[str, Tuple[str, str, List[str], Optional[str]]],
+    *,
+    top_k: int = 3,
 ) -> Dict[str, Any]:
     from application import sqla
     from application.cmd.cre_main import db_connect
@@ -478,7 +545,7 @@ def score_github_decisions(
         repo = str(src.get("repository") or src.get("repo") or src.get("name") or "")
         if not repo:
             repo = str(env.get("artifact_id") or path)
-        suggested = set(_top2_cre_ids(env, uuid_to_ext))
+        suggested = set(_top_k_cre_ids(env, uuid_to_ext, top_k=top_k))
         if not suggested and not path:
             continue
         keys = _guess_keys_for_decision(path=path, text=text, repo=repo)
@@ -550,6 +617,7 @@ def score_github_decisions(
     return {
         "run_id": run_id,
         "mode": "github_aligned",
+        "top_k": int(top_k),
         "decisions_total": len(decisions),
         "scorable": scorable,
         "unaligned": unaligned,
@@ -731,13 +799,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if github:
         print(f"=== Module A (tarball) + B + C  run_id={run_id} ===", flush=True)
         db_connect(cache)
+        # knowledge_queue.content_hash is globally UNIQUE. Clearing only this
+        # run_id leaves prior-run rows in place, Module B then inserts=0
+        # (all ON CONFLICT deduped), and Module C reads nothing → 0% accuracy.
         for model in (HarvestInput, KnowledgeQueueItem, DecisionQueueItem):
-            deleted = (
-                sqla.session.query(model)
-                .filter_by(pipeline_run_id=run_id)
-                .delete(synchronize_session=False)
-            )
-            print(f"cleared {model.__tablename__} for {run_id}: {deleted}", flush=True)
+            deleted = sqla.session.query(model).delete(synchronize_session=False)
+            print(f"cleared ALL {model.__tablename__}: {deleted}", flush=True)
         sqla.session.commit()
 
         harvester = _make_tarball_harvester(github)
@@ -779,14 +846,26 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             stems = B2_ARMS[arm]
             print(f"=== B2 arm {arm} ({', '.join(stems)}) ===", flush=True)
             out_name = f"full_pipeline_{arm}.b2_report.json"
-            report = _run_b2_arm(
-                run_id=run_id,
-                cache=cache,
-                keep_all=args.keep_all_knowledge,
-                fixtures=stems,
-                arm_name=arm,
-                out_name=out_name,
-            )
+            try:
+                report = _run_b2_arm(
+                    run_id=run_id,
+                    cache=cache,
+                    keep_all=args.keep_all_knowledge,
+                    fixtures=stems,
+                    arm_name=arm,
+                    out_name=out_name,
+                )
+            except Exception as exc:
+                # NIST (and similar) may lack a registered B2 harness — skip,
+                # do not abort Top10/API after a successful GitHub E2E.
+                print(f"B2 arm {arm} failed (continuing): {exc}", flush=True)
+                b2_reports[arm] = {
+                    "arm": arm,
+                    "fixtures": stems,
+                    "error": str(exc),
+                    "accuracy": None,
+                }
+                continue
             b2_reports[arm] = report
             _write_b2_shaped_report(report, out_dir / out_name)
             print(

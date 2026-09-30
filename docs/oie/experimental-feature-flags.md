@@ -1,34 +1,40 @@
 # Experimental feature flags
 
-These librarian levers and experiment YAMLs were evaluated on the OIE B2 harness
-and **not** promoted for the exact Links bar. They remain in-tree as **dead code**
-(env default off) so a later merge can keep the implementations without enabling
-them. The promoted stack is only:
+These librarian levers were evaluated on the OIE B2 / full-pipeline harness and
+are **not** part of the shipped d1-winner defaults (or are default-off knobs for
+follow-up). Implementations may remain in-tree behind env gates.
 
-> **Merge note:** These experimental flags and dead-code paths will be **removed on merge** if they are not useful to keep (no production callers, no planned follow-up). Prefer deleting unused levers over shipping permanent dead code.
+> **Merge note:** Unused experiment YAMLs / dead levers may be **removed on merge**
+> if they have no production callers and no planned follow-up.
+
+## Promoted (see feature-flags.md)
+
+Current ship path is documented in [feature-flags.md](feature-flags.md):
 
 - `CRE_LIBRARIAN_CRE_SUMMARY=1`
-- `CRE_LIBRARIAN_MARGIN_GAMMA=0.85`
+- `CRE_LIBRARIAN_MARGIN_GAMMA=0.85` (wired in Module C)
+- `CRE_LIBRARIAN_DUAL_INDEX=1` (code default on)
+- `CRE_LIBRARIAN_SHORTLIST_JUDGE=1` + `MAX_PICKS=3` (full-pipeline)
+- `CRE_LIBRARIAN_UMBRELLA_PROMOTE_CAP=8`
+- `CRE_LIBRARIAN_LEAF_DRILLDOWN=1` (E1/E2/FORCE off)
 
-See `docs/oie/` on the evaluation branch for the human-facing guide.
-
-## What was tried and did not win (exact Links)
+## What was tried and did not win (or is opt-in only)
 
 Evidence layers: (A) 512-combo grid on prior canonical gold,
-(B) one-factor Step 2/3 matrices, (C) hop soft scores. Prefer citing which layer.
+(B) one-factor Step 2/3 matrices, (C) hop soft scores / cold-start.
 
 | Flag / stack | Exact evidence | Soft / notes | Verdict |
 |--------------|----------------|--------------|---------|
-| `CRE_SUMMARY=0` | Grid mean 0.354 vs 0.389 with summary; max 0.377 vs 0.436 | — | Clear loser |
-| `DUAL_INDEX=1` | Step2 32/62 vs summary 36/62; with summary, grid mean lower | Can raise neighborhood d1 while hurting exact | Not for Links bar |
-| `USE_RRF=1` (needs dual) | Step2 34/62 < summary alone; RRF mean lower with dual | [Cormack et al. RRF](https://dl.acm.org/doi/10.1145/1571941.1572114) | Does not beat summary |
-| `HUB_LEAF_CAGE=1` | Step3 28/62 (45.2%); grid hub=1 mean 0.359 vs 0.383 | High-risk allowlist | Hurts |
-| `CONTEXT_ENRICH=1` alone | 22/62 (35.5%); grid ~flat | Prefix Standard/Section labels | No help as one-factor |
-| `FOCUS_QUERY=1` | Grid mean 0.368 vs 0.375 off | First CE on stripped focus text | Neutral / slight drag |
-| `CRE_TEXT_ENRICH=1` | Tied at top 0/1; mean slightly lower when on | Append linked standard prose to C.2 | Neutral |
-| Hybrid nameheavy (β=3 / γ=0.15) | Tied max with Lawrence; mean lower | Title-heavy mix | Prefer Lawrence defaults |
-| `MARGIN_GAMMA=0.85` vs off | Identical max/mean when SUMMARY=1 on grid | Still promoted for multi-link precision | Neutral on exact alone |
-| `SHORTLIST_JUDGE=1` | Not in grid | Gemini hangs | Untested |
+| `CRE_SUMMARY=0` | Grid mean 0.354 vs 0.389 with summary | — | Clear loser |
+| `DUAL_INDEX=0` | Older Links-bar matrices preferred off | Product/d1 path ships dual **on** | Historical exact note only |
+| `USE_RRF=1` (needs dual) | Step2 34/62 < summary alone | [Cormack et al. RRF](https://dl.acm.org/doi/10.1145/1571941.1572114) | Off |
+| `HUB_LEAF_CAGE=1` | Step3 28/62 (45.2%) | High-risk allowlist | Off |
+| `CONTEXT_ENRICH=1` alone | 22/62 (35.5%) | Prefix labels | Off |
+| `FOCUS_QUERY=1` | Grid mean 0.368 vs 0.375 off | First CE on stripped focus | Off |
+| `CRE_TEXT_ENRICH=1` | Tied at top; mean slightly lower | Append linked standard prose | Off |
+| Hybrid nameheavy (β=3 / γ=0.15) | Tied max; mean lower | Prefer Lawrence defaults | Off |
+| `LEAF_DRILLDOWN_FORCE_RESOURCES=api` | GitHub d1↑; API exact 60→50 | Cold-start post-60 | **Do not ship** |
+| `LEAF_DRILLDOWN_KEEP_HUB` / `HUB_FIRST` | E1/E2 | Not in d1 winner | Off |
 | Trained CE | Deferred | — | Untested |
 
 Worst grid cells (~30.6% exact): SUMMARY=0 + hub_leaf=1 + nameheavy + cre_text_enrich.
@@ -37,20 +43,27 @@ Worst grid cells (~30.6% exact): SUMMARY=0 + hub_leaf=1 + nameheavy + cre_text_e
 
 | File | Flag under test |
 |------|-----------------|
-| `scripts/oie_owasp_eval/experiments/dual_index.yaml` | `CRE_LIBRARIAN_DUAL_INDEX` |
+| `scripts/oie_owasp_eval/experiments/dual_index.yaml` | Historical dual-off matrix |
 | `scripts/oie_owasp_eval/experiments/rrf.yaml` | `CRE_LIBRARIAN_USE_RRF` (+ dual) |
 | `scripts/oie_owasp_eval/experiments/hub_leaf_cage.yaml` | `CRE_LIBRARIAN_HUB_LEAF_CAGE` |
 | `scripts/oie_owasp_eval/experiments/context_enrich.yaml` | `CRE_LIBRARIAN_CONTEXT_ENRICH` |
 
-Implementation modules live in `application/utils/librarian/` (flag-gated, default
-off). Experiment YAMLs under `scripts/oie_owasp_eval/experiments/` re-run the
-non-winning stacks for research only — do not write live Links from them.
+Implementation modules live in `application/utils/librarian/` (flag-gated).
+Experiment YAMLs under `scripts/oie_owasp_eval/experiments/` re-run research
+stacks only — do not write live Links from them.
+
+## Gold / overlay note
+
+Canonical LLM Top 10 mapping gold lives at
+`application/tests/fixtures/owasp_mappings/owasp_llm_top10_2025.json` (hub AI
+CREs, #1124). The copy under `scripts/oie_owasp_eval/fixtures/b2_gold/` is a
+**non-scoring overlay** for rebuild helpers — do not treat it as the answer key.
 
 ## Theory pointers (why these existed)
 
-- Dual index (header→names, body→summaries): multi-representation retrieval; length-based routing failed on several Top10 sections.
+- Dual index (header→names, body→summaries): multi-representation retrieval.
 - RRF: fuse uncalibrated pools by rank ([SIGIR 2009](https://dl.acm.org/doi/10.1145/1571941.1572114)).
-- Hub→leaf cage: restrict to Contains children of top hub hits — precise when hubs are right, brittle when hubs are wrong.
-- Context enrich: weakly supervised query rewriting via labels; insufficient alone on this corpus.
+- Hub→leaf cage: restrict to Contains children of top hub hits — brittle when hubs are wrong.
+- Context enrich: weakly supervised query rewriting via labels; insufficient alone.
 
 ## Do not write live Links from these matrices

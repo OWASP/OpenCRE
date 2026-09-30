@@ -317,13 +317,17 @@ def load_gold(harness: Dict[str, Any]) -> List[Dict[str, Any]]:
     return load_owasp_mapping_fixture(str(harness["fixture_name"]))
 
 
-def top2_cre_external_ids(
-    envelope: Dict[str, Any], uuid_to_ext: Dict[str, str]
+def top_k_cre_external_ids(
+    envelope: Dict[str, Any],
+    uuid_to_ext: Dict[str, str],
+    *,
+    top_k: int = 3,
 ) -> List[str]:
-    """Union of rerank top-2 and vector top-2 (up to 4 ids).
+    """Union of rerank top-k and vector top-k (default 3 = d1-winner E6 gate).
 
     Hit if ≥1 of this union is in gold — CE cannot erase a strong cosine hit.
     """
+    k = max(1, int(top_k))
     ordered: List[str] = []
 
     def add(cre_id: Optional[str]) -> None:
@@ -337,7 +341,7 @@ def top2_cre_external_ids(
     reranked = list(retrieval.get("reranked") or [])
     candidates = list(retrieval.get("candidates") or [])
 
-    for cand in reranked[:2]:
+    for cand in reranked[:k]:
         if isinstance(cand, dict):
             add(cand.get("cre_id"))
 
@@ -346,7 +350,7 @@ def top2_cre_external_ids(
         key=lambda c: float(c.get("score_vector") or 0.0),
         reverse=True,
     )
-    for cand in by_vec[:2]:
+    for cand in by_vec[:k]:
         add(cand.get("cre_id"))
 
     if ordered:
@@ -356,9 +360,16 @@ def top2_cre_external_ids(
         for link in envelope.get(field) or []:
             if isinstance(link, dict):
                 add(link.get("cre_id"))
-            if len(ordered) >= 2:
-                return ordered[:2]
+            if len(ordered) >= k:
+                return ordered[:k]
     return ordered
+
+
+def top2_cre_external_ids(
+    envelope: Dict[str, Any], uuid_to_ext: Dict[str, str]
+) -> List[str]:
+    """Backward-compatible alias for ``top_k_cre_external_ids(..., top_k=2)``."""
+    return top_k_cre_external_ids(envelope, uuid_to_ext, top_k=2)
 
 
 def refresh_source_headers(
@@ -609,8 +620,8 @@ def score_run(run_id: str, cache: str) -> Dict[str, Any]:
             resource = parts[1]
             sid = Path(parts[-1]).stem
         key = f"{resource}::{sid}"
-        top2 = top2_cre_external_ids(env, uuid_to_ext)
-        pred.setdefault(key, set()).update(t for t in top2 if t)
+        topk = top_k_cre_external_ids(env, uuid_to_ext)
+        pred.setdefault(key, set()).update(t for t in topk if t)
         meta[key] = {"resource": resource, "section_id": sid, "path": path}
 
     details: List[Dict[str, Any]] = []
