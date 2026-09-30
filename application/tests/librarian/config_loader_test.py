@@ -42,6 +42,16 @@ class TestConfigLoaderDefaults(unittest.TestCase):
         self.assertAlmostEqual(cfg.hybrid_gamma, 0.70)
         self.assertAlmostEqual(cfg.hybrid_beta, HYBRID_BETA)
         self.assertAlmostEqual(cfg.hybrid_gamma, HYBRID_GAMMA)
+        self.assertTrue(cfg.leaf_drilldown)
+        self.assertEqual(cfg.leaf_drilldown_resources, ())
+        self.assertEqual(cfg.leaf_drilldown_force_resources, ())
+        self.assertEqual(cfg.leaf_drilldown_min_children, 3)
+        self.assertEqual(cfg.leaf_drilldown_min_sections, 20)
+        self.assertFalse(cfg.leaf_drilldown_keep_hub)
+        self.assertFalse(cfg.leaf_drilldown_hub_first)
+        self.assertEqual(cfg.umbrella_promote_cap, 8)
+        self.assertEqual(cfg.shortlist_judge_max_picks, 3)
+        self.assertIsNone(cfg.margin_gamma)
 
     def test_config_is_frozen(self):
         with mock.patch.dict(os.environ, {}, clear=True):
@@ -113,6 +123,51 @@ class TestConfigLoaderOverrides(unittest.TestCase):
         ):
             with self.assertRaises(ValueError):
                 load_config()
+
+    def test_empty_env_string_means_all_resources(self):
+        with mock.patch.dict(
+            os.environ,
+            {"CRE_LIBRARIAN_LEAF_DRILLDOWN_RESOURCES": ""},
+            clear=True,
+        ):
+            cfg = load_config()
+        self.assertEqual(cfg.leaf_drilldown_resources, ())
+
+    def test_leaf_drilldown_gate_env_overrides(self):
+        with mock.patch.dict(
+            os.environ,
+            {
+                "CRE_LIBRARIAN_LEAF_DRILLDOWN_RESOURCES": "asvs",
+                "CRE_LIBRARIAN_LEAF_DRILLDOWN_FORCE_RESOURCES": "api",
+                "CRE_LIBRARIAN_LEAF_DRILLDOWN_MIN_CHILDREN": "5",
+                "CRE_LIBRARIAN_LEAF_DRILLDOWN_MIN_SECTIONS": "50",
+                "CRE_LIBRARIAN_LEAF_DRILLDOWN_KEEP_HUB": "1",
+                "CRE_LIBRARIAN_LEAF_DRILLDOWN_HUB_FIRST": "true",
+                "CRE_LIBRARIAN_UMBRELLA_PROMOTE_CAP": "8",
+                "CRE_LIBRARIAN_SHORTLIST_JUDGE_MAX_PICKS": "3",
+                "CRE_LIBRARIAN_MARGIN_GAMMA": "0.85",
+            },
+            clear=True,
+        ):
+            cfg = load_config()
+        self.assertEqual(cfg.leaf_drilldown_resources, ("asvs",))
+        self.assertEqual(cfg.leaf_drilldown_force_resources, ("api",))
+        self.assertEqual(cfg.leaf_drilldown_min_children, 5)
+        self.assertEqual(cfg.leaf_drilldown_min_sections, 50)
+        self.assertTrue(cfg.leaf_drilldown_keep_hub)
+        self.assertTrue(cfg.leaf_drilldown_hub_first)
+        self.assertEqual(cfg.umbrella_promote_cap, 8)
+        self.assertEqual(cfg.shortlist_judge_max_picks, 3)
+        self.assertAlmostEqual(cfg.margin_gamma or 0.0, 0.85)
+
+    def test_leaf_drilldown_resources_star_means_all(self):
+        with mock.patch.dict(
+            os.environ,
+            {"CRE_LIBRARIAN_LEAF_DRILLDOWN_RESOURCES": "*"},
+            clear=True,
+        ):
+            cfg = load_config()
+        self.assertEqual(cfg.leaf_drilldown_resources, ())
 
     def test_non_positive_temperature_raises(self):
         """T divides the logits, so zero or negative is undefined, not merely a
