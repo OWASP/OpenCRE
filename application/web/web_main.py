@@ -48,7 +48,9 @@ from flask import (
 )
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
+from markupsafe import escape
 from sqlalchemy.exc import SQLAlchemyError
+from werkzeug.exceptions import NotFound
 from application.utils.spreadsheet import write_csv
 import oauthlib
 import google.auth.transport.requests
@@ -722,9 +724,19 @@ def find_root_cres() -> Any:
     abort(404, "No root CREs")
 
 
+DEFAULT_NOT_FOUND_MESSAGE = "Resource Not found"
+
+
 @app.errorhandler(404)
 def page_not_found(e) -> Any:
-    return "Resource Not found", 404
+    # Keep the description passed to abort(404, "..."); a bare abort(404)
+    # only carries werkzeug's generic text, so fall back to our default.
+    description = getattr(e, "description", None)
+    if not description or description == NotFound.description:
+        description = DEFAULT_NOT_FOUND_MESSAGE
+    if request.path.startswith("/rest/"):
+        return jsonify({"message": description}), 404
+    return escape(description), 404
 
 
 _REPO_ROOT = os.path.abspath(

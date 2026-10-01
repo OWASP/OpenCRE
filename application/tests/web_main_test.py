@@ -16,6 +16,7 @@ from unittest.mock import patch, Mock
 import rq
 import os
 import networkx as nx
+from werkzeug.exceptions import NotFound
 
 from application import create_app, sqla  # type: ignore
 from application.tests.utils import data_gen
@@ -908,6 +909,7 @@ class TestMain(unittest.TestCase):
                 headers={"Content-Type": "application/json"},
             )
             self.assertEqual(404, response.status_code)
+            self.assertEqual({"message": "No such Cache"}, response.get_json())
             redis_conn_mock.assert_not_called()
 
     @patch.dict(os.environ, {"DYNO": "web.1"}, clear=False)
@@ -924,6 +926,7 @@ class TestMain(unittest.TestCase):
                 headers={"Content-Type": "application/json"},
             )
             self.assertEqual(404, response.status_code)
+            self.assertEqual({"message": "No such Cache"}, response.get_json())
             redis_conn_mock.assert_not_called()
 
     @patch.dict(os.environ, {"HEROKU": "True"}, clear=False)
@@ -939,8 +942,47 @@ class TestMain(unittest.TestCase):
                 headers={"Content-Type": "application/json"},
             )
         self.assertEqual(404, response.status_code)
+        self.assertEqual({"message": "No such Cache"}, response.get_json())
         db_mock.return_value.get_nodes.assert_not_called()
         redis_conn_mock.assert_not_called()
+
+    def test_rest_404_returns_abort_description_as_json(self) -> None:
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/id/999-999")
+            self.assertEqual(404, response.status_code)
+            self.assertEqual({"message": "CRE does not exist"}, response.get_json())
+
+            response = client.get("/rest/v1/text_search?text='CRE:2'")
+            self.assertEqual(404, response.status_code)
+            self.assertEqual(
+                {"message": "No object matches the given search terms"},
+                response.get_json(),
+            )
+
+    @patch.dict(os.environ, {"CRE_ENABLE_HEALTH": ""}, clear=False)
+    def test_rest_bare_abort_404_returns_default_message(self) -> None:
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/health")
+            self.assertEqual(404, response.status_code)
+            self.assertEqual(
+                {"message": web_main.DEFAULT_NOT_FOUND_MESSAGE}, response.get_json()
+            )
+
+    @patch.dict(os.environ, {"CRE_ALLOW_IMPORT": "", "NO_LOGIN": "1"}, clear=False)
+    def test_non_rest_404_returns_abort_description_as_text(self) -> None:
+        with self.app.test_client() as client:
+            response = client.get("/admin/imports/runs")
+            self.assertEqual(404, response.status_code)
+            self.assertIsNone(response.get_json(silent=True))
+            self.assertEqual("Admin imports API is disabled", response.get_data(True))
+
+    def test_404_handler_escapes_description_for_non_rest_paths(self) -> None:
+        with self.app.test_request_context("/smartlink/foo/bar"):
+            body, status = web_main.page_not_found(
+                NotFound(description="<script>alert(1)</script>")
+            )
+        self.assertEqual(404, status)
+        self.assertEqual("&lt;script&gt;alert(1)&lt;/script&gt;", str(body))
 
     @patch.object(app_redis, "connect")
     @patch.object(db, "Node_collection")
