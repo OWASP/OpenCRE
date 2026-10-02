@@ -375,7 +375,16 @@ class TestOwaspAgentScenarios(unittest.TestCase):
             )
         )
         self.assertTrue(payload["response"].startswith("Answer:"))
-        self.assertEqual(payload["table"][0]["link"], "http://x")
+        self.assertEqual(payload["table"], [])
+        self.assertEqual(payload["owasp_agent"]["citations"], ["http://x"])
+        self.assertEqual(payload["owasp_agent"]["channel"], "chat_and_mcp_only")
+
+    def test_meta_not_in_cre_table_citations(self) -> None:
+        resp = self.router.handle("How many OWASP chapters are there?")
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        self.assertEqual(resp["table"], [])
+        self.assertIn("citations", resp["owasp_agent"])
 
     def test_sync_github_board_only(self) -> None:
         class FakeGH:

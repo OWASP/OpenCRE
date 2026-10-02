@@ -264,24 +264,27 @@ def extract_slots(text: str) -> Slots:
 
 
 def format_chat_response(result: QueryResult) -> Dict[str, Any]:
+    """Format for chat only — never put meta hits in CRE ``table`` references."""
+    from application.utils.owasp_agent import PRESENTATION_CHANNEL
+
     text = result.message
     if result.clarify and not result.ok:
         text = f"{result.message}"
-    table: List[Any] = []
-    if result.citations:
-        for url in result.citations:
-            table.append({"name": "OWASP source", "link": url, "ntype": "OWASPMeta"})
     safe_data = _sanitize_result_data(result.data)
     return {
         "response": f"Answer: {text}",
-        "table": table,
+        # Keep CRE citation table empty so the UI never shows "View in OpenCRE"
+        # for Nest/GitHub metadata.
+        "table": [],
         "accurate": bool(result.ok),
         "model_name": "owasp-agent-router",
         "owasp_agent": {
+            "channel": PRESENTATION_CHANNEL,
             "kind": result.kind,
             "ok": result.ok,
             "clarify": result.clarify,
             "data": safe_data,
+            "citations": list(result.citations or []),
         },
     }
 
