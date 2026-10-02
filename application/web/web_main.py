@@ -320,7 +320,6 @@ def find_node_by_name(
         abort(404, "Node does not exist")
 
 
-# TODO: (spyros) paginate
 @openapi_documented("find_document_by_tag")
 @app.route("/rest/v1/tags", methods=["GET"])
 def find_document_by_tag() -> Any:
@@ -331,6 +330,52 @@ def find_document_by_tag() -> Any:
     database = db.Node_collection()
     # opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
+    raw_page = request.args.get("page")
+    raw_items_per_page = request.args.get("items_per_page")
+
+    # Export formats keep using the unpaginated get_by_tags(), matching how
+    # /rest/v1/id/... already treats exports as an unpaginated special case.
+    # Likewise, omitting page/items_per_page entirely keeps the original
+    # unpaginated response shape, so existing callers are unaffected.
+    paginate = not opt_format and (
+        raw_page is not None or raw_items_per_page is not None
+    )
+
+    if paginate:
+        try:
+            page = int(raw_page) if raw_page is not None else 1
+            items_per_page = (
+                int(raw_items_per_page)
+                if raw_items_per_page is not None
+                else ITEMS_PER_PAGE
+            )
+        except ValueError:
+            abort(400, "page and items_per_page must be integers")
+        if page < 1 or items_per_page < 1:
+            abort(400, "page and items_per_page must be positive integers")
+        items_per_page = min(items_per_page, MAX_ITEMS_PER_PAGE)
+
+        nodes, nodes_total_pages, cres, cres_total_pages = (
+            database.get_by_tags_with_pagination(
+                tags, page=page, items_per_page=items_per_page
+            )
+        )
+        if not nodes and not cres:
+            abort(404, "Tag does not exist")
+        return jsonify(
+            {
+                "page": page,
+                "nodes": {
+                    "data": [doc.todict() for doc in nodes],
+                    "total_pages": nodes_total_pages,
+                },
+                "cres": {
+                    "data": [doc.todict() for doc in cres],
+                    "total_pages": cres_total_pages,
+                },
+            }
+        )
+
     documents = database.get_by_tags(tags)
     if documents:
         res = [doc.todict() for doc in documents]

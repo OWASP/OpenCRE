@@ -57,6 +57,44 @@ class TagQuerySchema(FormatQuerySchema):
         required=True,
         metadata={"description": "Tag name(s)"},
     )
+    page = fields.Int(
+        required=False,
+        metadata={
+            "description": "Page number (1-based). Providing page or "
+            "items_per_page switches the response to the paginated shape."
+        },
+    )
+    items_per_page = fields.Int(
+        required=False,
+        metadata={
+            "description": "Items per page per result type (default 20, max 100)"
+        },
+    )
+
+
+class TagResponseSchema(Schema):
+    data = fields.List(
+        fields.Dict(keys=fields.Str(), values=fields.Raw()),
+        required=False,
+        metadata={"description": "Unpaginated response (no page/items_per_page given)"},
+    )
+    page = fields.Int(required=False)
+    nodes = fields.Dict(
+        keys=fields.Str(),
+        values=fields.Raw(),
+        required=False,
+        metadata={
+            "description": "{data: [...], total_pages: int} (paginated response)"
+        },
+    )
+    cres = fields.Dict(
+        keys=fields.Str(),
+        values=fields.Raw(),
+        required=False,
+        metadata={
+            "description": "{data: [...], total_pages: int} (paginated response)"
+        },
+    )
 
 
 class TextSearchQuerySchema(FormatQuerySchema):
