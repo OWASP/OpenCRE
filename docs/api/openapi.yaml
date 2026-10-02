@@ -1012,6 +1012,19 @@ components:
             type: object
             additionalProperties: {}
       additionalProperties: false
+    TagPagedCollection:
+      type: object
+      properties:
+        data:
+          type: array
+          description: Documents on this page
+          items:
+            type: object
+            additionalProperties: {}
+        total_pages:
+          type: integer
+          description: Total number of pages
+      additionalProperties: false
     TagResponseSchema:
       type: object
       properties:
@@ -1024,13 +1037,13 @@ components:
         page:
           type: integer
         nodes:
-          type: object
-          description: '{data: [...], total_pages: int} (paginated response)'
-          additionalProperties: {}
+          description: Paginated Standards/Tools/Code matching the tag(s)
+          allOf:
+          - $ref: '#/components/schemas/TagPagedCollection'
         cres:
-          type: object
-          description: '{data: [...], total_pages: int} (paginated response)'
-          additionalProperties: {}
+          description: Paginated CREs matching the tag(s)
+          allOf:
+          - $ref: '#/components/schemas/TagPagedCollection'
       additionalProperties: false
     MapAnalysisResponseSchema:
       type: object
