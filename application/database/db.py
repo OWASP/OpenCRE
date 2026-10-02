@@ -1656,6 +1656,72 @@ class Node_collection:
                 )
         return documents
 
+    def get_by_tags_with_pagination(
+        self,
+        tags: List[str],
+        page: int = 1,
+        items_per_page: int = 20,
+    ) -> Tuple[List[cre_defs.Document], int, List[cre_defs.Document], int]:
+        """Paginated counterpart to get_by_tags().
+
+        get_by_tags() merges two independent queries (Node, CRE) into a
+        single Python list, so a single .paginate() call (as used by
+        get_nodes_with_pagination()) doesn't map onto it directly. Instead,
+        the Node and CRE queries are each paginated independently with the
+        same page/items_per_page, and returned as two separate lists with
+        their own total_pages, rather than being merged into one list with
+        a single, potentially misleading, total_pages count.
+
+        Returns (node_documents, nodes_total_pages, cre_documents, cres_total_pages)
+        """
+        if not tags:
+            return [], 0, [], 0
+
+        nodes_where_clause = []
+        cre_where_clause = []
+        for tag in tags:
+            nodes_where_clause.append(sqla.and_(Node.tags.like("%{}%".format(tag))))
+            cre_where_clause.append(sqla.and_(CRE.tags.like("%{}%".format(tag))))
+
+        node_documents: List[cre_defs.Document] = []
+        paged_nodes = Node.query.filter(*nodes_where_clause).paginate(
+            page=int(page), per_page=items_per_page, error_out=False
+        )
+        for db_node in paged_nodes.items:
+            resolved = self.get_nodes(
+                name=db_node.name,
+                section=db_node.section,
+                subsection=db_node.subsection,
+                version=db_node.version,
+                link=db_node.link,
+                ntype=db_node.ntype,
+                sectionID=db_node.section_id,
+            )
+            if resolved:
+                node_documents.extend(resolved)
+            else:
+                logger.fatal(
+                    "get_nodes() returned no documents for "
+                    "Node %s:%s:%s that exists, BUG!"
+                    % (db_node.name, db_node.section, db_node.section_id)
+                )
+
+        cre_documents: List[cre_defs.Document] = []
+        paged_cres = CRE.query.filter(*cre_where_clause).paginate(
+            page=int(page), per_page=items_per_page, error_out=False
+        )
+        for c in paged_cres.items:
+            cre = self.get_CREs(external_id=c.external_id, name=c.name)[0]
+            if cre:
+                cre_documents.append(cre)
+            else:
+                logger.fatal(
+                    "db.get_CRE returned None for CRE %s:%s that exists, BUG!"
+                    % (c.id, c.name)
+                )
+
+        return node_documents, paged_nodes.pages, cre_documents, paged_cres.pages
+
     def get_nodes_with_pagination(
         self,
         name: str,
