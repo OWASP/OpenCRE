@@ -28,7 +28,7 @@ from application.feature_flags import (
     is_login_enabled,
     is_myopencre_enabled,
 )
-
+from application.web import identity
 from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors, gap_analysis
 from application.web.openapi_registry import openapi_documented
@@ -912,8 +912,11 @@ def _is_logged_in() -> bool:
     Keyed on ``session['user_id']`` (recorded by the login flow since #980) — not
     ``google_id``/``name``. Both ``login_required`` and its content-negotiation
     branch route through here, so the predicate lives in exactly one place.
+
+    Since #1003 v2 a Google ID token issued to a registered client also counts,
+    so the MCP client authenticates the same way the browser does.
     """
-    return "user_id" in session
+    return identity.current_identity() is not None
 
 
 def _auth_challenge():
@@ -1449,10 +1452,11 @@ def logout():
     lambda: jsonify({"selected": []}),
 )
 @login_required
+@identity.require_scopes(identity.SCOPE_MYOPENCRE_READ)
 def get_user_resources() -> Any:
     """Return the standard names the current user has selected."""
     database = db.Node_collection()
-    user = _resolve_current_user(database)
+    user = identity.current_user() or _resolve_current_user(database)
     if user is None:
         abort(401, description="Not authenticated")
     return jsonify({"selected": database.get_user_resource_selection(user.id)})
@@ -1465,6 +1469,7 @@ def get_user_resources() -> Any:
     lambda: jsonify({"selected": []}),
 )
 @login_required
+@identity.require_scopes(identity.SCOPE_MYOPENCRE_WRITE)
 def put_user_resources() -> Any:
     """Replace the current user's selected standards."""
     body = request.get_json(silent=True)
@@ -1482,7 +1487,7 @@ def put_user_resources() -> Any:
     if selected and OPENCRE_STANDARD_NAME not in selected:
         selected.append(OPENCRE_STANDARD_NAME)
     database = db.Node_collection()
-    user = _resolve_current_user(database)
+    user = identity.current_user() or _resolve_current_user(database)
     if user is None:
         abort(401, description="Not authenticated")
     stored = database.set_user_resource_selection(user.id, selected)
@@ -1689,6 +1694,60 @@ def import_from_cre_csv() -> Any:
             "new_standards": len(standards_only),
         }
     )
+
+
+def _requested_scope() -> str:
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or "scope" not in body:
+        abort(400, description="Body must be a JSON object with a 'scope' field")
+    scope = body["scope"]
+    if not isinstance(scope, str) or scope.strip() not in identity.ALL_SCOPES:
+        abort(
+            400,
+            description=f"'scope' must be one of: {', '.join(identity.ALL_SCOPES)}",
+        )
+    return scope.strip()
+
+
+@openapi_documented("get_user_mcp_grants")
+@app.route("/rest/v1/user/mcp_grants", methods=["GET"])
+@login_required
+@identity.session_only
+def get_user_mcp_grants() -> Any:
+    """Return the scopes granted to the current user's MCP client."""
+    database = db.Node_collection()
+    user = identity.current_user()
+    if user is None:
+        abort(401, description="Not authenticated")
+    return jsonify({"granted": database.get_mcp_grants(user.id)})
+
+
+@openapi_documented("put_user_mcp_grant")
+@app.route("/rest/v1/user/mcp_grants", methods=["PUT"])
+@login_required
+@identity.session_only
+def put_user_mcp_grant() -> Any:
+    """Grant one scope to the current user's MCP client."""
+    scope = _requested_scope()
+    database = db.Node_collection()
+    user = identity.current_user()
+    if user is None:
+        abort(401, description="Not authenticated")
+    return jsonify({"granted": database.add_mcp_grant(user.id, scope)})
+
+
+@openapi_documented("delete_user_mcp_grant")
+@app.route("/rest/v1/user/mcp_grants", methods=["DELETE"])
+@login_required
+@identity.session_only
+def delete_user_mcp_grant() -> Any:
+    """Revoke one scope from the current user's MCP client."""
+    scope = _requested_scope()
+    database = db.Node_collection()
+    user = identity.current_user()
+    if user is None:
+        abort(401, description="Not authenticated")
+    return jsonify({"granted": database.revoke_mcp_grant(user.id, scope)})
 
 
 # /End Importing Handlers
