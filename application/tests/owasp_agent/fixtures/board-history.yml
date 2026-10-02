@@ -1,0 +1,34 @@
+- year: 2020
+  members:
+    - name: Alice Example
+      role: chair
+      notes: ""
+    - name: Bob Example
+      role: member
+      notes: ""
+  candidates:
+    - name: Carol Candidate
+      notes: ""
+    - name: Dave Candidate
+      notes: ""
+- year: 2021
+  members:
+    - name: Alice Example
+      role: member
+      notes: ""
+    - name: Carol Candidate
+      role: member
+      notes: ""
+  candidates:
+    - name: Eve Candidate
+      notes: ""
+    - name: Dave Candidate
+      notes: ""
+- year: 2022
+  members:
+    - name: Bob Example
+      role: member
+      notes: ""
+  candidates:
+    - name: Dave Candidate
+      notes: ""
