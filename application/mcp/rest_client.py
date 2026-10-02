@@ -14,7 +14,16 @@ import json
 import os
 import re
 from dataclasses import dataclass
-from typing import Any, Dict, Mapping, MutableMapping, Optional, Sequence, Set
+from typing import (
+    Any,
+    Dict,
+    Mapping,
+    MutableMapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+)
 from urllib.parse import quote, urljoin
 
 import requests
@@ -23,11 +32,14 @@ from jsonschema.exceptions import ValidationError
 
 from application.defs import cre_defs as defs
 from application.mcp.catalog import ToolSpec, get_tool
-from application.mcp.openapi_loader import operation_input_schema
+from application.mcp.openapi_loader import BODY_ARG, operation_input_schema
 
 
 DEFAULT_BASE_URL = "http://127.0.0.1:5000"
 DEFAULT_TIMEOUT_SECONDS = 30.0
+
+# Writes are allowed only for tools whose ToolSpec declares them.
+_ALLOWED_METHODS = frozenset({"GET", "PUT", "POST"})
 
 # Path params must be single URL segments — no separators that alter routing.
 _UNSAFE_PATH_PARAM = re.compile(r"[/?#]")
@@ -101,7 +113,7 @@ def _new_session() -> requests.Session:
 
 
 class RestClient:
-    """Execute allowlisted GET templates against OPENCRE_BASE_URL."""
+    """Execute allowlisted GET , POST and PUT templates against OPENCRE_BASE_URL."""
 
     def __init__(
         self,
@@ -129,8 +141,9 @@ class RestClient:
         return self.call_spec(tool, arguments or {})
 
     def call_spec(self, tool: ToolSpec, arguments: Mapping[str, Any]) -> RestResult:
-        if tool.method.upper() != "GET":
-            raise RestRequestError(f"Only GET is supported (got {tool.method})")
+        method = tool.method.upper()
+        if method not in _ALLOWED_METHODS:
+            raise RestRequestError(f"Method not allowed for {tool.name}: {tool.method}")
 
         schema = operation_input_schema(tool)
         path_param_names = _path_param_names(tool.path_template)
@@ -151,6 +164,8 @@ class RestClient:
         # Enforce the exact OpenAPI-derived JSON Schema (types, enums, etc.).
         _validate_against_input_schema(tool.name, schema, args)
 
+        body = args.pop(BODY_ARG, None)
+
         path_params: Dict[str, str] = {}
         query_params: Dict[str, Any] = {}
         for key, value in args.items():
@@ -168,12 +183,10 @@ class RestClient:
         _validate_node_type_param(path_params)
         path = _render_path(tool.path_template, path_params)
         url = urljoin(self._base_url + "/", path.lstrip("/"))
-        response = self._session.get(
-            url,
-            params=_encode_query(query_params),
-            timeout=self._timeout,
-            allow_redirects=False,
-        )
+
+        # Credentials come from the environment only, never from arguments.
+        headers, token = self._auth_headers(tool)
+        response = self._send(method, url, query_params, body, headers)
         # Never retain cookies across tool calls (no credential forwarding).
         if hasattr(self._session, "cookies"):
             try:
@@ -185,11 +198,65 @@ class RestClient:
                     "Failed to clear REST session cookies after tool call",
                     exc_info=True,
                 )
-        return _parse_response(response)
+        try:
+            return _parse_response(response)
+        except RestResponseError as exc:
+            raise RestResponseError(
+                exc.status_code, _scrub(str(exc), token), body=exc.body
+            ) from None
+
+    def _send(
+        self,
+        method: str,
+        url: str,
+        query_params: Mapping[str, Any],
+        body: Any,
+        headers: Mapping[str, str],
+    ) -> Any:
+        """Dispatch the request, tolerating sessions that only implement get()."""
+        request = getattr(self._session, "request", None)
+        if request is None:
+            if method != "GET":
+                raise RestClientError(
+                    f"Injected session cannot perform {method} requests"
+                )
+            return self._session.get(
+                url,
+                params=_encode_query(query_params),
+                timeout=self._timeout,
+                allow_redirects=False,
+            )
+        return request(
+            method,
+            url,
+            params=_encode_query(query_params),
+            json=body,
+            headers=dict(headers),
+            timeout=self._timeout,
+            allow_redirects=False,
+        )
+
+    def _auth_headers(self, tool: ToolSpec) -> Tuple[Dict[str, str], Optional[str]]:
+        """Bearer header for authenticated tools, plus the token to redact."""
+        if not getattr(tool, "auth", False):
+            return {}, None
+
+        from application.mcp import auth
+
+        try:
+            token = auth.current_id_token()
+        except auth.AuthError as exc:
+            raise RestRequestError(f"{tool.name}: {exc}") from None
+        return {"Authorization": f"Bearer {token}"}, token
+
+
+def _scrub(text: str, token: Optional[str]) -> str:
+    """Keep credentials out of anything that can reach an MCP client."""
+    return text.replace(token, "<redacted>") if token else text
 
 
 def flask_test_session(flask_client: Any) -> "_FlaskTestSession":
-    """Adapt Flask's test_client to the requests Session.get interface."""
+    """Adapt Flask's test_client to the requests Session interface."""
     return _FlaskTestSession(flask_client)
 
 
@@ -217,6 +284,19 @@ class _FlaskTestSession:
         params: Optional[Any] = None,
         timeout: Optional[float] = None,
         allow_redirects: bool = False,
+        **kwargs: Any,
+    ) -> _FlaskTestResponse:
+        return self.request("GET", url, params=params, **kwargs)
+
+    def request(
+        self,
+        method: str,
+        url: str,
+        params: Optional[Any] = None,
+        json: Optional[Any] = None,
+        headers: Optional[Mapping[str, str]] = None,
+        timeout: Optional[float] = None,
+        allow_redirects: bool = False,
         **_kwargs: Any,
     ) -> _FlaskTestResponse:
         del timeout, allow_redirects  # parity with requests; unused by test client
@@ -224,7 +304,14 @@ class _FlaskTestSession:
 
         parsed = urlparse(url)
         path = parsed.path or "/"
-        response = self._client.get(path, query_string=params)
+        kwargs: Dict[str, Any] = {
+            "method": method.upper(),
+            "query_string": params,
+            "headers": dict(headers or {}),
+        }
+        if json is not None:
+            kwargs["json"] = json
+        response = self._client.open(path, **kwargs)
         return _FlaskTestResponse(response)
 
 
