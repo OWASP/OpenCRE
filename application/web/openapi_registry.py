@@ -178,7 +178,7 @@ OPENAPI_PATHS: List[PathSpec] = [
         tags=["Tags"],
         summary="Get documents by tag",
         query_schema=schemas.TagQuerySchema,
-        response_schema=schemas.DataListResponseSchema,
+        response_schema=schemas.TagResponseSchema,
     ),
     PathSpec(
         "/rest/v1/map_analysis",

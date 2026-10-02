@@ -1656,6 +1656,53 @@ class Node_collection:
                 )
         return documents
 
+    def get_by_tags_with_pagination(
+        self,
+        tags: List[str],
+        page: int = 1,
+        items_per_page: int = 20,
+    ) -> Tuple[List[cre_defs.Document], int, List[cre_defs.Document], int]:
+        """Paginated counterpart to get_by_tags().
+
+        get_by_tags() merges two independent queries (Node, CRE) into a
+        single Python list, so a single .paginate() call (as used by
+        get_nodes_with_pagination()) doesn't map onto it directly. Instead,
+        the Node and CRE queries are each paginated independently with the
+        same page/items_per_page, and returned as two separate lists with
+        their own total_pages, rather than being merged into one list with
+        a single, potentially misleading, total_pages count.
+
+        Returns (node_documents, nodes_total_pages, cre_documents, cres_total_pages)
+        """
+        if not tags:
+            return [], 0, [], 0
+
+        nodes_where_clause = []
+        cre_where_clause = []
+        for tag in tags:
+            nodes_where_clause.append(sqla.and_(Node.tags.like("%{}%".format(tag))))
+            cre_where_clause.append(sqla.and_(CRE.tags.like("%{}%".format(tag))))
+
+        paged_nodes = (
+            Node.query.filter(*nodes_where_clause)
+            .order_by(Node.id)
+            .paginate(page=int(page), per_page=items_per_page, error_out=False)
+        )
+        node_documents: List[cre_defs.Document] = self._hydrate_nodes_batch(
+            list(paged_nodes.items)
+        )
+
+        paged_cres = (
+            CRE.query.filter(*cre_where_clause)
+            .order_by(CRE.id)
+            .paginate(page=int(page), per_page=items_per_page, error_out=False)
+        )
+        cre_documents: List[cre_defs.Document] = self._hydrate_cres_batch(
+            list(paged_cres.items)
+        )
+
+        return node_documents, paged_nodes.pages, cre_documents, paged_cres.pages
+
     def get_nodes_with_pagination(
         self,
         name: str,

@@ -444,6 +444,134 @@ class TestMain(unittest.TestCase):
             self.assertEqual(200, response.status_code)
             self.assertCountEqual(json.loads(response.data.decode()), expected)
 
+    def _seed_paginated_tag_cres(self, collection: db.Node_collection, count: int):
+        cres = []
+        for i in range(count):
+            cre = defs.CRE(
+                id=f"{i:03d}-{i:03d}",
+                description=f"pg{i}",
+                name=f"pg{i}",
+                tags=["pgtag"],
+            )
+            collection.add_cre(cre)
+            cres.append(cre)
+        return cres
+
+    def test_find_document_by_tag_pagination_first_page(self) -> None:
+        collection = db.Node_collection()
+        self._seed_paginated_tag_cres(collection, 5)
+
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/tags?tag=pgtag&page=1&items_per_page=2")
+            self.assertEqual(200, response.status_code)
+            body = json.loads(response.data.decode())
+            self.assertEqual(1, body["page"])
+            self.assertEqual(2, len(body["cres"]["data"]))
+            self.assertEqual(3, body["cres"]["total_pages"])
+            self.assertEqual(0, len(body["nodes"]["data"]))
+
+    def test_find_document_by_tag_pagination_middle_page(self) -> None:
+        collection = db.Node_collection()
+        self._seed_paginated_tag_cres(collection, 5)
+
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/tags?tag=pgtag&page=2&items_per_page=2")
+            self.assertEqual(200, response.status_code)
+            body = json.loads(response.data.decode())
+            self.assertEqual(2, body["page"])
+            self.assertEqual(2, len(body["cres"]["data"]))
+            self.assertEqual(3, body["cres"]["total_pages"])
+
+    def test_find_document_by_tag_pagination_last_page(self) -> None:
+        collection = db.Node_collection()
+        self._seed_paginated_tag_cres(collection, 5)
+
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/tags?tag=pgtag&page=3&items_per_page=2")
+            self.assertEqual(200, response.status_code)
+            body = json.loads(response.data.decode())
+            self.assertEqual(3, body["page"])
+            self.assertEqual(1, len(body["cres"]["data"]))
+            self.assertEqual(3, body["cres"]["total_pages"])
+
+    def test_find_document_by_tag_pagination_out_of_range_page(self) -> None:
+        collection = db.Node_collection()
+        self._seed_paginated_tag_cres(collection, 5)
+
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/tags?tag=pgtag&page=99&items_per_page=2")
+            self.assertEqual(404, response.status_code)
+
+    def test_find_document_by_tag_pagination_invalid_page_value(self) -> None:
+        collection = db.Node_collection()
+        self._seed_paginated_tag_cres(collection, 5)
+
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/tags?tag=pgtag&page=not-a-number")
+            self.assertEqual(400, response.status_code)
+
+    def test_find_document_by_tag_pagination_no_results(self) -> None:
+        collection = db.Node_collection()
+        self._seed_paginated_tag_cres(collection, 5)
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/tags?tag=not-a-real-tag&page=1&items_per_page=2"
+            )
+            self.assertEqual(404, response.status_code)
+
+    def test_find_document_by_tag_pagination_caps_items_per_page(self) -> None:
+        collection = db.Node_collection()
+        self._seed_paginated_tag_cres(collection, 101)
+
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/tags?tag=pgtag&page=1&items_per_page=1000")
+            self.assertEqual(200, response.status_code)
+            body = json.loads(response.data.decode())
+            self.assertEqual(100, len(body["cres"]["data"]))
+            self.assertGreaterEqual(body["cres"]["total_pages"], 2)
+
+    def test_find_document_by_tag_pagination_allows_format_json(self) -> None:
+        """format=json is not an export format, so page/items_per_page must
+        still switch to the paginated response shape."""
+        collection = db.Node_collection()
+        self._seed_paginated_tag_cres(collection, 5)
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/tags?tag=pgtag&format=json&page=1&items_per_page=2"
+            )
+            self.assertEqual(200, response.status_code)
+            body = json.loads(response.data.decode())
+            self.assertEqual(1, body["page"])
+            self.assertEqual(2, len(body["cres"]["data"]))
+
+    def test_find_document_by_tag_pagination_disabled_for_csv_export(self) -> None:
+        """CSV (and other true export formats) must keep returning the
+        unpaginated export, even if page/items_per_page are also given."""
+        collection = db.Node_collection()
+        self._seed_paginated_tag_cres(collection, 5)
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/tags?tag=pgtag&format=csv&page=1&items_per_page=2"
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertNotIn(b'"page"', response.data)
+
+    def test_find_document_by_tag_without_page_param_is_unaffected(self) -> None:
+        """Omitting page/items_per_page must keep returning the original,
+        unpaginated {"data": [...]} shape (backward compatibility)."""
+        collection = db.Node_collection()
+        cres = self._seed_paginated_tag_cres(collection, 5)
+
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/tags?tag=pgtag")
+            self.assertEqual(200, response.status_code)
+            body = json.loads(response.data.decode())
+            self.assertCountEqual(["data"], body.keys())
+            self.assertEqual(5, len(body["data"]))
+
     def test_test_search(self) -> None:
         collection = db.Node_collection()
         docs = {
