@@ -29,7 +29,11 @@ class Chapter:
     longitude: Optional[float] = None
     url: str = ""
     tags: List[str] = field(default_factory=list)
-    source: str = ""  # nest | github
+    leaders: List[str] = field(default_factory=list)
+    active: Optional[bool] = None
+    level: str = ""
+    meetings: int = 0
+    source: str = ""  # nest | github | site
     raw: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -90,6 +94,8 @@ class BoardCandidate:
     year: int
     name: str
     notes: str = ""
+    statement: str = ""
+    url: str = ""
     source: str = "github"
     raw: Dict[str, Any] = field(default_factory=dict)
 
