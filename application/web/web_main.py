@@ -1293,7 +1293,38 @@ def chat_cre() -> Any:
             jsonify({"error": f"AI Service Error: {str(e)}"}),
             status_code,
         )
+    response = _maybe_append_cre_followups(user_prompt or "", response)
     return jsonify(response)
+
+
+def _maybe_append_cre_followups(prompt: str, response):
+    """Offer one more follow-up level for standards/ASVS-style CRE answers."""
+    if not isinstance(response, dict):
+        return response
+    text = str(response.get("response") or "")
+    if "Follow-up:" in text or "follow up" in text.lower():
+        return response
+    p = (prompt or "").lower()
+    follow = None
+    if "asvs" in p and ("l2" in p or "l3" in p or "level" in p):
+        follow = (
+            "Follow-up: Want me to map the specific ASVS authentication requirements "
+            "to related CREs, or compare session-management controls next?"
+        )
+    elif "cre" in p and ("xss" in p or "encoding" in p or "injection" in p):
+        follow = (
+            "Follow-up: I can list the exact CRE IDs and linked standards "
+            "(ASVS/WSTG/Cheat Sheets) for this control if you want a citation table."
+        )
+    elif "samm" in p or "wstg" in p or "cheat sheet" in p:
+        follow = (
+            "Follow-up: Want a CRE mapping for this practice, or a comparison "
+            "to a related OWASP standard?"
+        )
+    if follow:
+        response = dict(response)
+        response["response"] = text.rstrip() + "\n\n" + follow
+    return response
 
 
 class CREFlow:

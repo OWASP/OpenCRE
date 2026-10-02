@@ -164,9 +164,9 @@ class IndexStore:
         return out
 
     def prefer_source_entities(
-        self, kind: str, preferred: Sequence[str] = ("nest", "github")
+        self, kind: str, preferred: Sequence[str] = ("nest", "site", "github")
     ) -> List[Dict[str, Any]]:
-        """Deduplicate by key preferring Nest then GitHub; flag conflicts."""
+        """Deduplicate by key preferring Nest then site then GitHub; flag conflicts."""
         by_key: Dict[str, Dict[str, Dict[str, Any]]] = {}
         for item in self.list_entities(kind):
             key = str(item.get("key") or "")
