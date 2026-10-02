@@ -1235,8 +1235,46 @@ def chat_cre() -> Any:
             "Chat is unavailable on this deployment (ML/LLM dependencies not installed).",
         )
 
+    user_prompt = message.get("prompt")
+    # Experimental OIE OWASP metadata agent (feature-flagged). Logistics/meta
+    # questions must not be forced through CRE RAG — see owasp_agent router.
     try:
-        response = prompt.generate_text(message.get("prompt"))
+        from application.utils.owasp_agent import (
+            OwaspAgentRouter,
+            is_owasp_agent_enabled,
+        )
+
+        if is_owasp_agent_enabled():
+            agent_response = OwaspAgentRouter().handle(user_prompt or "")
+            if agent_response is not None:
+                return jsonify(agent_response)
+    except Exception:
+        logger.exception("owasp agent router failed")
+        # If this looks like a meta question, do not fall through to CRE RAG.
+        try:
+            from application.utils.owasp_agent.router import classify_intent
+
+            if classify_intent(user_prompt or "") != "cre_normative":
+                return (
+                    jsonify(
+                        {
+                            "error": (
+                                "OWASP metadata agent failed. "
+                                "Not falling back to CRE RAG for community/meta questions."
+                            )
+                        }
+                    ),
+                    503,
+                )
+        except Exception:
+            logger.exception("owasp agent classify_intent also failed")
+            return (
+                jsonify({"error": "OWASP metadata agent unavailable"}),
+                503,
+            )
+
+    try:
+        response = prompt.generate_text(user_prompt)
     except Exception as e:
         if llm_error_utils.is_rate_limit_error(e):
             return (
