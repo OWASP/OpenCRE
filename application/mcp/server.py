@@ -13,8 +13,8 @@ import mcp.types as types
 from mcp.server.lowlevel import Server
 from mcp.server.stdio import stdio_server
 
-from application.mcp.catalog import PUBLIC_TOOLS
-from application.mcp.openapi_loader import all_tool_input_schemas
+from application.mcp.catalog import active_tools
+from application.mcp.openapi_loader import input_schemas_for
 from application.mcp.rest_client import (
     RestClient,
     RestClientError,
@@ -34,8 +34,9 @@ SERVER_INSTRUCTIONS = (
 def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
     """Create an MCP Server with OpenAPI-derived tool schemas and REST dispatch."""
     client = rest_client or RestClient()
+    served = active_tools()
     # Resolve schemas once at startup so OpenAPI drift fails before serving.
-    schemas = all_tool_input_schemas()
+    schemas = input_schemas_for(served)
 
     async def on_list_tools(
         ctx: Any, params: types.PaginatedRequestParams | None
@@ -47,13 +48,13 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
                 description=tool.summary,
                 input_schema=schemas[tool.name],
                 annotations=types.ToolAnnotations(
-                    read_only_hint=True,
-                    destructive_hint=False,
+                    read_only_hint=tool.read_only,
+                    destructive_hint=not tool.read_only,
                     idempotent_hint=True,
                     open_world_hint=True,
                 ),
             )
-            for tool in PUBLIC_TOOLS
+            for tool in served
         ]
         return types.ListToolsResult(tools=tools)
 

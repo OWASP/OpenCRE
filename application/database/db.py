@@ -306,6 +306,27 @@ class UserResourceSelection(BaseModel):  # type: ignore
     )
 
 
+class McpGrants(BaseModel):  # type: ignore
+    """One OpenCRE scope granted to a user's MCP client.
+
+    Google's device flow only carries ``openid email profile``, so OpenCRE
+    permissions cannot live in the token and are recorded here instead.
+    """
+
+    __tablename__ = "mcp_grants"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    user_id = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("users.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+    scope = sqla.Column(sqla.String, nullable=False)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+    revoked_at = sqla.Column(sqla.DateTime, nullable=True)
+
+    __table_args__ = (sqla.UniqueConstraint(user_id, scope, name="uq_mcp_grants"),)
+
+
 class ArtifactIngestEvent(BaseModel):  # type: ignore
     """Tracks one harvested artifact persisted per import run."""
 
@@ -1392,6 +1413,72 @@ class Node_collection:
 
     def get_user_by_sub(self, google_sub: str) -> Optional[User]:
         return self.session.query(User).filter(User.google_sub == google_sub).first()
+
+    def get_mcp_grants(self, user_id: str) -> List[str]:
+        """Return the scopes granted to this user's MCP client, newest last."""
+        rows = (
+            self.session.query(McpGrants)
+            .filter(McpGrants.user_id == user_id)
+            .filter(McpGrants.revoked_at.is_(None))
+            .order_by(McpGrants.scope)
+            .all()
+        )
+        return [row.scope for row in rows]
+
+    def add_mcp_grant(self, user_id: str, scope: str) -> List[str]:
+        """Grant ``scope`` to this user's MCP client, reviving a revoked row."""
+        from datetime import datetime, timezone
+
+        now = datetime.now(timezone.utc)
+        existing = (
+            self.session.query(McpGrants)
+            .filter(McpGrants.user_id == user_id)
+            .filter(McpGrants.scope == scope)
+            .first()
+        )
+        if existing is None:
+            self.session.add(McpGrants(user_id=user_id, scope=scope, created_at=now))
+        else:
+            existing.revoked_at = None
+        self.session.commit()
+        return self.get_mcp_grants(user_id)
+
+    def bootstrap_mcp_grants(self, user_id: str, scopes: List[str]) -> List[str]:
+        """Grant ``scopes`` the first time an MCP client is seen for a user.
+
+        Applies only when the user has no rows at all. Someone who revoked a
+        scope must never have it silently restored, so a revoked row counts as
+        history and suppresses the bootstrap.
+        """
+        from datetime import datetime, timezone
+
+        seen = (
+            self.session.query(McpGrants).filter(McpGrants.user_id == user_id).count()
+        )
+        if seen:
+            return self.get_mcp_grants(user_id)
+
+        now = datetime.now(timezone.utc)
+        for scope in scopes:
+            self.session.add(McpGrants(user_id=user_id, scope=scope, created_at=now))
+        try:
+            self.session.commit()
+        except IntegrityError:
+            # A concurrent first call inserted the same rows; theirs stand.
+            self.session.rollback()
+        return self.get_mcp_grants(user_id)
+
+    def revoke_mcp_grant(self, user_id: str, scope: str) -> List[str]:
+        """Revoke ``scope`` without deleting the row, so the change is auditable."""
+        from datetime import datetime, timezone
+
+        self.session.query(McpGrants).filter(McpGrants.user_id == user_id).filter(
+            McpGrants.scope == scope
+        ).filter(McpGrants.revoked_at.is_(None)).update(
+            {"revoked_at": datetime.now(timezone.utc)}
+        )
+        self.session.commit()
+        return self.get_mcp_grants(user_id)
 
     def get_user_resource_selection(self, user_id: str) -> List[str]:
         """Return the standard names a user has selected, ordered by name."""

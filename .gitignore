@@ -97,3 +97,9 @@ cres/*
 project management scripts/
 
 .harvester_cache/
+
+### Local MCP client config (machine-specific paths)
+.mcp.json
+
+### MCP v2 local dev credentials (never commit)
+.mcp_tokens.json
