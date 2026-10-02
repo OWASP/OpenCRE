@@ -9,6 +9,7 @@ from typing import List, Optional
 from application.utils.owasp_agent.github_crawler import (
     GitHubCrawler,
     GitHubCrawlerError,
+    chapters_from_site_data,
 )
 from application.utils.owasp_agent.index_store import IndexStore
 from application.utils.owasp_agent.nest_client import (
@@ -93,6 +94,56 @@ def sync_all(
             report.board_members = len(members)
             report.board_candidates = len(candidates)
 
+            # Site metadata: chapters + inactive + leaders + membership countries
+            try:
+                site_chapters = gh.fetch_site_json("chapters")
+                site_inactive = gh.fetch_site_json("inactive_chapters")
+                site_leaders = gh.fetch_site_json("leaders")
+                site_countries = gh.fetch_site_json("countries")
+                merged = chapters_from_site_data(
+                    site_chapters if isinstance(site_chapters, list) else [],
+                    site_inactive if isinstance(site_inactive, list) else [],
+                    site_leaders if isinstance(site_leaders, list) else [],
+                )
+                for ch in merged:
+                    store.upsert_chapter(ch)
+                report.chapters += len(merged)
+                if isinstance(site_countries, list):
+                    for row in site_countries:
+                        if not isinstance(row, dict):
+                            continue
+                        cname = str(row.get("name") or "").strip()
+                        if not cname:
+                            continue
+                        store.upsert_entity(
+                            "membership_country",
+                            cname.lower(),
+                            cname,
+                            "site",
+                            {
+                                "name": cname,
+                                "discount": bool(row.get("discount")),
+                                "source": "site",
+                            },
+                        )
+                store.log_sync(
+                    "site_data",
+                    "ok",
+                    f"chapters={len(merged)} countries={len(site_countries) if isinstance(site_countries, list) else 0}",
+                )
+            except (GitHubCrawlerError, AttributeError, TypeError, ValueError) as exc:
+                report.errors.append(f"site_data: {exc}")
+                store.log_sync("site_data", "error", str(exc))
+
+            # Board candidate statements (www-board-candidates)
+            try:
+                election_cands = gh.fetch_election_candidate_pages()
+                for c in election_cands:
+                    store.upsert_board_candidate(c)
+                report.board_candidates += len(election_cands)
+            except (GitHubCrawlerError, AttributeError, TypeError, ValueError) as exc:
+                report.errors.append(f"board_candidates: {exc}")
+
             chapter_repos = github_chapter_repos
             project_repos = github_project_repos
             if (
@@ -113,7 +164,10 @@ def sync_all(
             for full_name in chapter_repos or []:
                 try:
                     text = gh.fetch_repo_index_md(full_name)
-                    store.upsert_chapter(gh.parse_chapter_markdown(full_name, text))
+                    ch = gh.parse_chapter_markdown(full_name, text)
+                    if not ch.leaders:
+                        ch.leaders = gh.fetch_chapter_leaders_md(full_name)
+                    store.upsert_chapter(ch)
                     report.chapters += 1
                 except GitHubCrawlerError as exc:
                     report.errors.append(f"chapter {full_name}: {exc}")

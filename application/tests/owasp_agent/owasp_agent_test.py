@@ -430,5 +430,164 @@ class TestNestClientParsing(unittest.TestCase):
         self.assertEqual(p.source, "nest")
 
 
+class TestProbeGapFixes(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.db_path = os.path.join(self.tmp.name, "agent.sqlite")
+        self.store = _seed_store(self.db_path)
+        from application.utils.owasp_agent.models import BoardCandidate, Chapter
+
+        self.store.upsert_chapter(
+            Chapter(
+                key="athens",
+                name="OWASP Athens",
+                country="Greece",
+                url="https://owasp.org/www-chapter-athens/",
+                leaders=["Salih Demir", "Nabil Saied"],
+                active=False,
+                source="site",
+            )
+        )
+        self.store.upsert_chapter(
+            Chapter(
+                key="los-angeles",
+                name="OWASP Los Angeles",
+                country="USA",
+                url="https://owasp.org/www-chapter-los-angeles/",
+                leaders=["Maryam Tehrani", "Yev Avidon", "Edmond Momartin"],
+                active=True,
+                source="site",
+            )
+        )
+        self.store.upsert_board_candidate(
+            BoardCandidate(
+                year=2023,
+                name="Sam Stepanyan",
+                statement="I am running for the OWASP Global Board.",
+                url="https://owasp.org/www-board-candidates/2023/sam_stepanyan",
+            )
+        )
+        for name, discount in (
+            ("Morocco", True),
+            ("Uganda", True),
+            ("Greece", False),
+            ("Germany", False),
+            ("United States", False),
+            ("Canada", False),
+        ):
+            self.store.upsert_entity(
+                "membership_country",
+                name.lower(),
+                name,
+                "site",
+                {"name": name, "discount": discount, "source": "site"},
+            )
+        self.queries = MetaQueries(
+            self.store, geocode_fn=lambda place: (34.1478, -118.1445)
+        )
+        self.router = OwaspAgentRouter(store=self.store, queries=self.queries)
+        os.environ["OWASP_AGENT_ENABLED"] = "1"
+
+    def tearDown(self) -> None:
+        os.environ.pop("OWASP_AGENT_ENABLED", None)
+        self.tmp.cleanup()
+
+    def test_athens_inactive_leaders(self) -> None:
+        resp = self.router.handle("Who is the OWASP leader for Athens?")
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        body = resp["response"].lower()
+        self.assertIn("no active", body)
+        self.assertIn("salih demir", body)
+
+    def test_thessaloniki_vs_athens(self) -> None:
+        resp = self.router.handle(
+            "What is the OWASP chapter status in Thessaloniki versus Athens?"
+        )
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        body = resp["response"].lower()
+        self.assertIn("thessaloniki", body)
+        self.assertIn("no active", body)
+
+    def test_la_leaders(self) -> None:
+        resp = self.router.handle("Who is the OWASP chapter leader in Los Angeles?")
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        self.assertIn("Maryam Tehrani", resp["response"])
+
+    def test_membership_regional(self) -> None:
+        resp = self.router.handle(
+            "How much is an OWASP membership if I am based in Morocco?"
+        )
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        self.assertIn("$20", resp["response"])
+        self.assertIn("owasp.org/membership", resp["response"].lower())
+
+    def test_membership_standard_germany(self) -> None:
+        resp = self.router.handle(
+            "How much is an OWASP membership if I am based in Germany?"
+        )
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        self.assertIn("$50", resp["response"])
+
+    def test_membership_renew_link(self) -> None:
+        resp = self.router.handle("How do I renew my OWASP membership?")
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        self.assertIn("https://owasp.org/membership/", resp["response"])
+
+    def test_student_morocco_vs_germany(self) -> None:
+        resp = self.router.handle(
+            "Can I get a student discount for OWASP membership in Morocco versus Germany?"
+        )
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        body = resp["response"]
+        self.assertIn("$8", body)
+        self.assertIn("$20", body)
+
+    def test_sam_board_statement(self) -> None:
+        resp = self.router.handle(
+            "What did Sam Stepanyan say for his first board interview ever?"
+        )
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        self.assertIn("2023", resp["response"])
+        self.assertIn("running for the OWASP", resp["response"])
+
+    def test_jeff_williams_talk_fail_closed(self) -> None:
+        resp = self.router.handle(
+            "Chitchat: did Jeff Williams ever give a keynote on excesses defenses in Pasadena?"
+        )
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        self.assertIn("no indexed", resp["response"].lower())
+
+    def test_pasadena_place_not_swallow_topic(self) -> None:
+        slots = extract_slots(
+            "When is the next OWASP meetup near Pasadena about AI security?"
+        )
+        self.assertEqual(slots.place, "Pasadena")
+        self.assertEqual(slots.topic, "ai_security")
+
+    def test_list_ai_projects_table(self) -> None:
+        resp = self.router.handle("List AI security related OWASP projects.")
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        self.assertIn("| Project |", resp["response"])
+
+    def test_sam_candidate_statement_did_run(self) -> None:
+        resp = self.router.handle(
+            "Did Sam Stepanyan run for the OWASP board and what was his candidate statement?"
+        )
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        self.assertIn("2023", resp["response"])
+        self.assertIn("owasp.org/www-board-candidates", resp["response"])
+
+
 if __name__ == "__main__":
     unittest.main()
