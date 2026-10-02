@@ -448,7 +448,7 @@ class TestMain(unittest.TestCase):
         cres = []
         for i in range(count):
             cre = defs.CRE(
-                id=f"7{i}7-7{i}7",
+                id=f"{i:03d}-{i:03d}",
                 description=f"pg{i}",
                 name=f"pg{i}",
                 tags=["pgtag"],
@@ -522,14 +522,42 @@ class TestMain(unittest.TestCase):
 
     def test_find_document_by_tag_pagination_caps_items_per_page(self) -> None:
         collection = db.Node_collection()
-        self._seed_paginated_tag_cres(collection, 5)
+        self._seed_paginated_tag_cres(collection, 101)
 
         with self.app.test_client() as client:
             response = client.get("/rest/v1/tags?tag=pgtag&page=1&items_per_page=1000")
             self.assertEqual(200, response.status_code)
             body = json.loads(response.data.decode())
-            self.assertEqual(5, len(body["cres"]["data"]))
-            self.assertEqual(1, body["cres"]["total_pages"])
+            self.assertEqual(100, len(body["cres"]["data"]))
+            self.assertGreaterEqual(body["cres"]["total_pages"], 2)
+
+    def test_find_document_by_tag_pagination_allows_format_json(self) -> None:
+        """format=json is not an export format, so page/items_per_page must
+        still switch to the paginated response shape."""
+        collection = db.Node_collection()
+        self._seed_paginated_tag_cres(collection, 5)
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/tags?tag=pgtag&format=json&page=1&items_per_page=2"
+            )
+            self.assertEqual(200, response.status_code)
+            body = json.loads(response.data.decode())
+            self.assertEqual(1, body["page"])
+            self.assertEqual(2, len(body["cres"]["data"]))
+
+    def test_find_document_by_tag_pagination_disabled_for_csv_export(self) -> None:
+        """CSV (and other true export formats) must keep returning the
+        unpaginated export, even if page/items_per_page are also given."""
+        collection = db.Node_collection()
+        self._seed_paginated_tag_cres(collection, 5)
+
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/tags?tag=pgtag&format=csv&page=1&items_per_page=2"
+            )
+            self.assertEqual(200, response.status_code)
+            self.assertNotIn(b'"page"', response.data)
 
     def test_find_document_by_tag_without_page_param_is_unaffected(self) -> None:
         """Omitting page/items_per_page must keep returning the original,

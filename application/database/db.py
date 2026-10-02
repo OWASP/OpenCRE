@@ -1683,42 +1683,23 @@ class Node_collection:
             nodes_where_clause.append(sqla.and_(Node.tags.like("%{}%".format(tag))))
             cre_where_clause.append(sqla.and_(CRE.tags.like("%{}%".format(tag))))
 
-        node_documents: List[cre_defs.Document] = []
-        paged_nodes = Node.query.filter(*nodes_where_clause).paginate(
-            page=int(page), per_page=items_per_page, error_out=False
+        paged_nodes = (
+            Node.query.filter(*nodes_where_clause)
+            .order_by(Node.id)
+            .paginate(page=int(page), per_page=items_per_page, error_out=False)
         )
-        for db_node in paged_nodes.items:
-            resolved = self.get_nodes(
-                name=db_node.name,
-                section=db_node.section,
-                subsection=db_node.subsection,
-                version=db_node.version,
-                link=db_node.link,
-                ntype=db_node.ntype,
-                sectionID=db_node.section_id,
-            )
-            if resolved:
-                node_documents.extend(resolved)
-            else:
-                logger.fatal(
-                    "get_nodes() returned no documents for "
-                    "Node %s:%s:%s that exists, BUG!"
-                    % (db_node.name, db_node.section, db_node.section_id)
-                )
+        node_documents: List[cre_defs.Document] = self._hydrate_nodes_batch(
+            list(paged_nodes.items)
+        )
 
-        cre_documents: List[cre_defs.Document] = []
-        paged_cres = CRE.query.filter(*cre_where_clause).paginate(
-            page=int(page), per_page=items_per_page, error_out=False
+        paged_cres = (
+            CRE.query.filter(*cre_where_clause)
+            .order_by(CRE.id)
+            .paginate(page=int(page), per_page=items_per_page, error_out=False)
         )
-        for c in paged_cres.items:
-            cre = self.get_CREs(external_id=c.external_id, name=c.name)[0]
-            if cre:
-                cre_documents.append(cre)
-            else:
-                logger.fatal(
-                    "db.get_CRE returned None for CRE %s:%s that exists, BUG!"
-                    % (c.id, c.name)
-                )
+        cre_documents: List[cre_defs.Document] = self._hydrate_cres_batch(
+            list(paged_cres.items)
+        )
 
         return node_documents, paged_nodes.pages, cre_documents, paged_cres.pages
 

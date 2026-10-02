@@ -333,11 +333,17 @@ def find_document_by_tag() -> Any:
     raw_page = request.args.get("page")
     raw_items_per_page = request.args.get("items_per_page")
 
-    # Export formats keep using the unpaginated get_by_tags(), matching how
-    # /rest/v1/id/... already treats exports as an unpaginated special case.
-    # Likewise, omitting page/items_per_page entirely keeps the original
-    # unpaginated response shape, so existing callers are unaffected.
-    paginate = not opt_format and (
+    # Non-JSON export formats (Markdown/CSV/OSCAL) keep using the unpaginated
+    # get_by_tags(), matching how /rest/v1/id/... already treats exports as
+    # an unpaginated special case. format=json (or no format) can still be
+    # paginated. Likewise, omitting page/items_per_page entirely keeps the
+    # original unpaginated response shape, so existing callers are unaffected.
+    unpaginated_export_formats = {
+        SupportedFormats.Markdown.value,
+        SupportedFormats.CSV.value,
+        SupportedFormats.OSCAL.value,
+    }
+    paginate = opt_format not in unpaginated_export_formats and (
         raw_page is not None or raw_items_per_page is not None
     )
 
