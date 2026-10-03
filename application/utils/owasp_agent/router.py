@@ -107,17 +107,59 @@ class OwaspAgentRouter:
     def _dispatch(self, intent: str, slots: Slots, text: str) -> QueryResult:
         if intent == "count_chapters":
             return self.queries.count_chapters()
+        if intent == "count_projects_and_chapters":
+            chapters = self.queries.count_chapters()
+            projects = self.queries.count_projects()
+            ch_n = (chapters.data or {}).get("count")
+            pr_n = (projects.data or {}).get("count")
+            if ch_n is None or pr_n is None:
+                return QueryResult(
+                    ok=False,
+                    kind="count_projects_and_chapters",
+                    message=(
+                        "I could not read both chapter and project counts from the index."
+                    ),
+                )
+            return QueryResult(
+                ok=True,
+                kind="count_projects_and_chapters",
+                data={"chapters": ch_n, "projects": pr_n},
+                message=(
+                    f"The local index has {pr_n} OWASP projects versus "
+                    f"{ch_n} OWASP chapters."
+                ),
+                citations=list(
+                    dict.fromkeys(
+                        list(projects.citations or []) + list(chapters.citations or [])
+                    )
+                ),
+            )
         if intent == "count_projects":
             topic = slots.topic
             if topic is None and _mentions_ai(text):
                 topic = "ai_security"
             if topic is None and _mentions_appsec(text):
                 topic = "appsec"
+            if topic is None:
+                m_touch = re.search(
+                    r"\b(?:touch|about|on|regarding|related to)\s+"
+                    r"([a-z][a-z0-9 Cont/-]{2,40})",
+                    text.lower(),
+                )
+                if m_touch:
+                    topic = m_touch.group(1).strip()
             list_mode = slots.list_mode or bool(
-                re.search(r"\b(list|table|which projects|name the)\b", text.lower())
+                re.search(
+                    r"\b(list|table|which projects|name the|flagged)\b",
+                    text.lower(),
+                )
             )
+            level = slots.level
+            # Colloquial "flagged" is not a Nest level — list without level filter.
+            if level and level.lower() == "flagged":
+                level = None
             return self.queries.count_projects(
-                topic=topic, level=slots.level, list_mode=list_mode
+                topic=topic, level=level, list_mode=list_mode
             )
         if intent == "board_members":
             years = slots.years or ([slots.year] if slots.year is not None else [])
@@ -207,7 +249,7 @@ class OwaspAgentRouter:
 
 
 def classify_intent(text: str) -> str:
-    t = text.lower()
+    t = text.lower().strip()
     # Security normative signals → defer to CRE (unless clearly meta)
     normative_hints = (
         "how should i",
@@ -244,12 +286,15 @@ def classify_intent(text: str) -> str:
         "statement",
         "nest",
         "owasp project",
+        "owasp projects",
         "projects on",
+        "flagged",
         "nearest",
         "pasadena",
         "staff",
         "membership",
         "member dues",
+        "dues",
         "renew",
         "leader",
         "leaders",
@@ -258,17 +303,44 @@ def classify_intent(text: str) -> str:
         "spoke",
         "presented",
         "appsec talk",
+        "roster",
+        "commuting",
+        "suburb",
     )
     has_meta = any(h in t for h in meta_hints)
     has_norm = any(h in t for h in normative_hints)
 
-    # Malicious / unauthorized help — refuse in-agent (do not CRE-RAG payloads)
+    # Malicious / unauthorized help — refuse before any meta routing so
+    # compound prompts ("dump keys + chapter leader") cannot skip the gate.
     if re.search(
-        r"\b(how do i hack|teach me to (hack|phish)|sql injection payload|"
-        r"ddos\b|break into|steal (their|passwords|dms)|phishing email template)\b",
+        r"("
+        r"\bhow do i hack\b|\bteach me to (hack|phish)\b|\bsql injection payload\b|"
+        r"\bddos\b|\bbreak into\b|\bsteal (their|passwords|dms)\b|"
+        r"\bphishing (email )?template\b|\bvishing\b|\bmetasploit\b|"
+        r"\bsocial-?engineer\b|"
+        r"\bignore (all )?(previous|prior|earlier)( instructions)?\b|"
+        r"\bdump (the )?(api|nest|heroku)?.{0,20}keys?\b|"
+        r"\boutput the .{0,40}api keys?\b|"
+        r"\bcsrf\s*\+\s*xss\b|\bchained against\b|"
+        r"\breset an owasp board member\b|"
+        r"\bharvest credit cards\b|\breverse shell\b"
+        r")",
         t,
     ):
         return "refuse_malicious"
+
+    # Bare / underspecified prompts → clarify in-agent (do not CRE-defer)
+    if re.fullmatch(
+        r"(projects?|board|membership( price)?|student discount|next meetup|"
+        r"events?|chapters?|help with owasp|tell me about owasp|"
+        r"who is the leader|regional or standard|ai stuff|near me|"
+        r"status in greece|compare the two chapters|output encoding|"
+        r"appsec keynote summary please|first interview|who ran|"
+        r"cre for that thing we discussed|what did they say at the talk|"
+        r"is the chapter active)\??",
+        t,
+    ):
+        return "clarify"
 
     # Curated CRE factoids (deterministic) before generic CRE RAG
     if re.search(r"\b(which cre|what cre|cre covers)\b", t) or (
@@ -279,29 +351,61 @@ def classify_intent(text: str) -> str:
         if lookup_cre_factoid(text):
             return "cre_fact"
 
-    # "What did NAME say about … at OWASP/AppSec" → fail-closed talk lookup
-    # (even when topic words like xss appear)
-    if re.search(
-        r"\bwhat did\b.+\b(say|present|speak)\b.+\b(owasp|appsec|chapter meetup|keynote|talk)\b",
-        t,
-    ) or re.search(
-        r"\bwhat did\b.+\bat (owasp|appsec)\b",
-        t,
-    ):
-        return "talk_lookup"
+    # Named-person talk claims (incl. fake speakers / suburb meetups) → fail-closed
+    if (
+        re.search(
+            r"\bwhat did\b.+\b(say|present|speak|argue)\b",
+            t,
+        )
+        or re.search(
+            r"\b(transcript please|chitchat:|did .+ (ever )?(give|present|speak))\b",
+            t,
+        )
+        or re.search(
+            r"\b(say|said|present|presented|speak|spoke)\b.+\b("
+            r"meetup|keynote|talk|appsec|owasp|defenses)\b",
+            t,
+        )
+    ) and not re.search(r"\b(board interview|candidate statement|candidacy)\b", t):
+        if _extract_quoted_or_capitalized_name(text) or re.search(
+            r"\b(unknown speaker|random person|transcript)\b", t
+        ):
+            return "talk_lookup"
 
     # Membership (admin) — always meta, never CRE fallthrough
     if re.search(
-        r"\b(membership|member dues|renew my|how much is an owasp membership|"
-        r"student discount.*membership|membership.*student)\b",
+        r"\b(membership|member dues|dues|renew my|"
+        r"how much is an owasp membership|owasp individual dues|"
+        r"student discount.*membership|membership.*student|"
+        r"reside in|billing country|regional or standard|"
+        r"annual owasp membership|membership (price|fee|cost|portal))\b",
         t,
     ):
         return "membership"
 
-    # Chapter leader / status / active
+    # Project listing / counts (including free-topic "touch X" tables)
     if re.search(
-        r"\b(chapter leader|leader for|leaders? (for|in|of)|"
-        r"active owasp chapter|chapter status|owasp leader)\b",
+        r"\b(which flagged owasp projects|flagged owasp projects|"
+        r"projects touch|list .+ projects|projects? in a table|"
+        r"ai-related projects|related owasp projects)\b",
+        t,
+    ) or (
+        "project" in t
+        and any(w in t for w in ("table", "list", "flagged", "which", "touch"))
+    ):
+        return "count_projects"
+
+    if re.search(
+        r"\b(count of owasp projects versus chapters|projects versus chapters|"
+        r"projects vs\.? chapters|chapters versus projects)\b",
+        t,
+    ):
+        return "count_projects_and_chapters"
+
+    # Chapter leader / status / active (incl. suburb → chapter + who leads)
+    if re.search(
+        r"\b(chapter leader|leader for|leaders? (for|in|of)|who leads|"
+        r"which chapter|active owasp chapter|chapter status|owasp leader)\b",
         t,
     ) or (
         "chapter" in t
@@ -312,7 +416,7 @@ def classify_intent(text: str) -> str:
     # Talk / keynote claims — fail-closed talk_lookup (not CRE, not invent)
     if re.search(
         r"\b(keynote|appsec talk|presented at|give a (talk|keynote)|"
-        r"said about .{0,40}defenses|talk on |summarize .+ talk|"
+        r"sa(id|y) about .{0,40}defenses|talk on |summarize .+ talk|"
         r"find .{0,40}talks? by|talks? by (a )?random person|talks? by)\b",
         t,
     ) and not re.search(r"\b(board interview|candidate statement)\b", t):
@@ -329,28 +433,47 @@ def classify_intent(text: str) -> str:
         return "board_person"
 
     if has_meta and not has_norm:
+        if re.search(r"\b(projects? versus chapters|chapters versus projects)\b", t):
+            return "count_projects_and_chapters"
+        if "how many" in t and "chapter" in t and "project" in t:
+            return "count_projects_and_chapters"
         if "how many" in t and "chapter" in t:
             return "count_chapters"
         if ("how many" in t and "project" in t) or (
-            "project" in t and ("list" in t or "ai" in t or "appsec" in t)
+            "project" in t and ("list" in t or "ai" in t or "appsec" in t or "table" in t)
         ):
             return "count_projects"
         if "candidate" in t and ("how many" in t or "times" in t):
             return "board_candidate_stats"
-        if "board" in t and ("member" in t or "position" in t or "who" in t):
+        if "board" in t and (
+            "member" in t
+            or "position" in t
+            or "who" in t
+            or "roster" in t
+            or re.search(r"\b20\d{2}\b", t)
+        ):
             if _extract_quoted_or_capitalized_name(text) and not re.search(
                 r"\bwho (is|are) on the\b", t
             ):
                 return "board_person"
             if re.search(r"\b20\d{2}\b", t) and (
-                "who" in t or "member" in t or "board" in t
+                "who" in t or "member" in t or "board" in t or "roster" in t
             ):
                 return "board_members"
             if "position" in t or "board member" in t:
                 return "board_person"
             return "board_members"
         if any(
-            w in t for w in ("nearest", "meetup", "meeting", "event", "chapter near")
+            w in t
+            for w in (
+                "nearest",
+                "meetup",
+                "meeting",
+                "event",
+                "chapter near",
+                "commuting",
+                "suburb",
+            )
         ):
             return "events_near"
         if "project" in t and ("ai" in t or "appsec" in t):
@@ -360,14 +483,26 @@ def classify_intent(text: str) -> str:
         return "cre_normative"
     if has_norm and has_meta:
         # Prefer meta when clearly community; else CRE
-        if "membership" in t:
+        if any(
+            w in t
+            for w in ("membership", "dues", "reside in", "billing country")
+        ):
             return "membership"
+        if "project" in t and any(
+            w in t for w in ("table", "list", "flagged", "which", "touch")
+        ):
+            return "count_projects"
         if any(w in t for w in ("meetup", "chapter", "board", "how many", "leader")):
+            if "how many" in t and "chapter" in t and "project" in t:
+                return "count_projects_and_chapters"
             if "how many" in t and "chapter" in t:
                 return "count_chapters"
-            if "leader" in t or "chapter status" in t:
+            if "leader" in t or "who leads" in t or "chapter status" in t:
                 return "chapter_lookup"
-            if "meetup" in t or "nearest" in t:
+            if "meetup" in t or "nearest" in t or "commuting" in t or "suburb" in t:
+                # Person+say already handled; suburb meetup + who leads → chapter
+                if "who leads" in t or "which chapter" in t:
+                    return "chapter_lookup"
                 return "events_near"
             if "board" in t:
                 if "interview" in t or "statement" in t or "candidate" in t:
@@ -376,12 +511,12 @@ def classify_intent(text: str) -> str:
         # e.g. "board interview about XSS" — meta person lookup, not CRE XSS advice
         if "board interview" in t or "candidate" in t:
             return "board_person"
-        if "keynote" in t or "talk" in t:
+        if "keynote" in t or "talk" in t or "what did" in t:
             return "talk_lookup"
         return "cre_normative"
     # Chitchat about named person + defenses/talk without clear CRE ask
-    if re.search(r"\b(keynote|talk|presented)\b", t) and _extract_quoted_or_capitalized_name(
-        text
+    if re.search(r"\b(keynote|talk|presented|say about|said about)\b", t) and (
+        _extract_quoted_or_capitalized_name(text)
     ):
         return "talk_lookup"
     return "cre_normative"
@@ -403,6 +538,8 @@ def extract_slots(text: str) -> Slots:
         slots.level = "flagship"
     elif "incubator" in t:
         slots.level = "incubator"
+    elif re.search(r"\bflagged\b", t):
+        slots.level = "flagged"
 
     if _mentions_ai(t):
         slots.topic = "ai_security"
@@ -410,11 +547,11 @@ def extract_slots(text: str) -> Slots:
         slots.topic = "appsec"
     else:
         m_topic = re.search(
-            r"\b(?:about|on|regarding)\s+([a-z][a-z0-9 Cont-]{2,40})",
+            r"\b(?:about|on|regarding|touch)\s+([a-z][a-z0-9 Cont/-]{2,40})",
             t,
         )
         if m_topic:
-            raw = m_topic.group(1).strip()
+            raw = m_topic.group(1).strip().rstrip("?.!")
             if raw not in ("the", "a", "an", "owasp", "his", "her", "their"):
                 slots.topic = raw
 
@@ -440,20 +577,51 @@ def extract_slots(text: str) -> Slots:
     if m_place2:
         slots.place = m_place2.group(1).strip().rstrip(".?!")
 
-    # Chapter city mentions without in/near
+    m_live = re.search(
+        r"\b(?:i live|living|based)\s+in\s+"
+        r"([A-Za-z][A-Za-z .'-]*?)(?=\s*[;,.?!]|$)",
+        text,
+        re.IGNORECASE,
+    )
+    if m_live:
+        slots.place = m_live.group(1).strip().rstrip(".?!;")
+
+    m_dist = re.search(
+        r"\b(?:commuting distance of|distance of|suburb)\s+"
+        r"([A-Z][A-Za-z .'-]*?)(?=\s+(?:meetup|about|for|on|→|,)|\s*[;?.!]|$)",
+        text,
+    )
+    if m_dist:
+        slots.place = m_dist.group(1).strip().rstrip(".?!;→")
+    # Chapter / suburb mentions without in/near
     for city in (
         "Athens",
         "Thessaloniki",
         "Los Angeles",
         "Pasadena",
+        "Santa Monica",
+        "Glendale",
+        "Burbank",
+        "Long Beach",
+        "Croydon",
+        "Peckham",
+        "Potsdam",
+        "Yokohama",
         "London",
         "Berlin",
+        "Tokyo",
+        "New York",
+        "San Francisco",
+        "Seattle",
+        "Chicago",
+        "Toronto",
+        "Sydney",
     ):
         if re.search(rf"\b{re.escape(city)}\b", text, re.IGNORECASE):
-            slots.places.append(city)
+            if city not in slots.places:
+                slots.places.append(city)
             if not slots.place:
                 slots.place = city
-
     # versus / vs comparisons — city-sized tokens only
     m_vs = re.search(
         r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:versus|vs\.?)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)",
@@ -479,6 +647,9 @@ def extract_slots(text: str) -> Slots:
         "South Africa", "Mexico", "Argentina", "Poland", "Netherlands",
         "Sweden", "Norway", "Denmark", "Finland", "Ireland", "Portugal",
         "Switzerland", "Austria", "Belgium", "Romania", "Ukraine", "Turkey",
+        "Ghana", "Tanzania", "Nepal", "Sri Lanka", "Cambodia", "Ethiopia",
+        "Senegal", "Rwanda", "Zambia", "Bolivia", "Singapore", "South Korea",
+        "New Zealand",
     )
     for c in known_countries:
         if re.search(rf"\b{re.escape(c)}\b", text, re.IGNORECASE):
@@ -498,14 +669,25 @@ def extract_slots(text: str) -> Slots:
     if slots.countries:
         slots.country = slots.countries[0]
     m_based = re.search(
-        r"\bbased in\s+([A-Za-z][A-Za-z .'-]+)",
+        r"\b(?:based|reside|living)\s+in\s+([A-Za-z][A-Za-z .'-]+)",
         text,
         re.IGNORECASE,
     )
     if m_based:
-        slots.country = m_based.group(1).strip().rstrip(".?!")
-        if slots.country not in slots.countries:
+        slots.country = m_based.group(1).strip().rstrip(".?!—-")
+        # Trim trailing "— regional" style clauses
+        slots.country = re.split(
+            r"\s+[—\-]\s+|\s+regional|\s+standard|\s+versus|\s+vs",
+            slots.country,
+            maxsplit=1,
+        )[0].strip()
+        if slots.country and slots.country not in slots.countries:
             slots.countries.insert(0, slots.country)
+    # Membership country takes precedence over place for dues questions
+    if slots.countries and re.search(
+        r"\b(membership|dues|reside|billing country|regional or standard)\b", t
+    ):
+        slots.country = slots.countries[0]
 
     # "X, Y, and Z" candidacy lists
     m_list = re.search(
@@ -547,10 +729,16 @@ def format_chat_response(result: QueryResult) -> Dict[str, Any]:
         "owasp_agent": {
             "channel": PRESENTATION_CHANNEL,
             "kind": result.kind,
-            "ok": result.ok,
+            "ok": bool(result.ok),
             "clarify": result.clarify,
             "data": safe_data,
-            "citations": list(result.citations or []),
+            # Only http(s) citations — drop javascript:/data: from poisoned index rows.
+            "citations": [
+                c
+                for c in (result.citations or [])
+                if isinstance(c, str)
+                and (c.startswith("https://") or c.startswith("http://"))
+            ],
         },
     }
 
