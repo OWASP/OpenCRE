@@ -137,12 +137,8 @@ def _harvest_repository(
     if base:
         modified = detector.get_modified_files_since(base, head)
     else:
-        # First run: treat all tracked files under include paths as candidates
-        # via an empty-tree diff against HEAD.
-        modified = detector.get_modified_files_since(
-            "4b825dc642cb6eb9a060e54bf8d6927bf442cfb4",  # git empty tree
-            head,
-        )
+        # First run: enumerate the committed snapshot before applying path rules.
+        modified = detector.get_tracked_files(head)
 
     file_filter = FileFilter(exclude_patterns=list(repo_cfg.paths.exclude))
     # Path include globs: keep files matching any include pattern.
