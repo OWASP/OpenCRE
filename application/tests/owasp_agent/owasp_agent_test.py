@@ -674,7 +674,9 @@ class TestProbeGapFixes(unittest.TestCase):
         )
 
     def test_board_roster_year(self) -> None:
-        resp = self.router.handle("Board roster for 2020 only — names, no talk summaries.")
+        resp = self.router.handle(
+            "Board roster for 2020 only — names, no talk summaries."
+        )
         self.assertIsNotNone(resp)
         assert resp is not None
         self.assertIn("2020", resp["response"])

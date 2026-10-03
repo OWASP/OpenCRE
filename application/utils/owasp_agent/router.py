@@ -185,21 +185,20 @@ class OwaspAgentRouter:
             return self.queries.board_candidate_stats(names)
         if intent == "chapter_lookup":
             places = slots.places or ([slots.place] if slots.place else [])
-            return self.queries.chapter_lookup(
-                place=slots.place, places=places or None
-            )
+            return self.queries.chapter_lookup(place=slots.place, places=places or None)
         if intent == "membership":
             renew = bool(
                 re.search(r"\b(renew|renewal|how do i (join|become))\b", text.lower())
             ) and not bool(
-                re.search(r"\b(how much|cost|price|fee|discount|student)\b", text.lower())
+                re.search(
+                    r"\b(how much|cost|price|fee|discount|student)\b", text.lower()
+                )
             )
             countries = slots.countries or ([slots.country] if slots.country else [])
             return self.queries.membership_info(
                 country=slots.country,
                 countries=countries or None,
-                student=slots.student
-                or bool(re.search(r"\bstudent\b", text.lower())),
+                student=slots.student or bool(re.search(r"\bstudent\b", text.lower())),
                 renew_only=renew and not countries,
             )
         if intent == "talk_lookup":
@@ -409,7 +408,9 @@ def classify_intent(text: str) -> str:
         t,
     ) or (
         "chapter" in t
-        and any(w in t for w in ("athens", "thessalon", "los angeles", "active", "status"))
+        and any(
+            w in t for w in ("athens", "thessalon", "los angeles", "active", "status")
+        )
     ):
         return "chapter_lookup"
 
@@ -440,7 +441,8 @@ def classify_intent(text: str) -> str:
         if "how many" in t and "chapter" in t:
             return "count_chapters"
         if ("how many" in t and "project" in t) or (
-            "project" in t and ("list" in t or "ai" in t or "appsec" in t or "table" in t)
+            "project" in t
+            and ("list" in t or "ai" in t or "appsec" in t or "table" in t)
         ):
             return "count_projects"
         if "candidate" in t and ("how many" in t or "times" in t):
@@ -483,10 +485,7 @@ def classify_intent(text: str) -> str:
         return "cre_normative"
     if has_norm and has_meta:
         # Prefer meta when clearly community; else CRE
-        if any(
-            w in t
-            for w in ("membership", "dues", "reside in", "billing country")
-        ):
+        if any(w in t for w in ("membership", "dues", "reside in", "billing country")):
             return "membership"
         if "project" in t and any(
             w in t for w in ("table", "list", "flagged", "which", "touch")
@@ -640,15 +639,58 @@ def extract_slots(text: str) -> Slots:
 
     # Membership countries — any Title Case token looked up later; seed common ones
     known_countries = (
-        "Morocco", "Uganda", "Greece", "Germany", "United States", "Canada",
-        "United Kingdom", "India", "Brazil", "Kenya", "Nigeria", "Egypt",
-        "France", "Italy", "Spain", "Australia", "Japan", "China",
-        "Philippines", "Indonesia", "Pakistan", "Bangladesh", "Vietnam",
-        "South Africa", "Mexico", "Argentina", "Poland", "Netherlands",
-        "Sweden", "Norway", "Denmark", "Finland", "Ireland", "Portugal",
-        "Switzerland", "Austria", "Belgium", "Romania", "Ukraine", "Turkey",
-        "Ghana", "Tanzania", "Nepal", "Sri Lanka", "Cambodia", "Ethiopia",
-        "Senegal", "Rwanda", "Zambia", "Bolivia", "Singapore", "South Korea",
+        "Morocco",
+        "Uganda",
+        "Greece",
+        "Germany",
+        "United States",
+        "Canada",
+        "United Kingdom",
+        "India",
+        "Brazil",
+        "Kenya",
+        "Nigeria",
+        "Egypt",
+        "France",
+        "Italy",
+        "Spain",
+        "Australia",
+        "Japan",
+        "China",
+        "Philippines",
+        "Indonesia",
+        "Pakistan",
+        "Bangladesh",
+        "Vietnam",
+        "South Africa",
+        "Mexico",
+        "Argentina",
+        "Poland",
+        "Netherlands",
+        "Sweden",
+        "Norway",
+        "Denmark",
+        "Finland",
+        "Ireland",
+        "Portugal",
+        "Switzerland",
+        "Austria",
+        "Belgium",
+        "Romania",
+        "Ukraine",
+        "Turkey",
+        "Ghana",
+        "Tanzania",
+        "Nepal",
+        "Sri Lanka",
+        "Cambodia",
+        "Ethiopia",
+        "Senegal",
+        "Rwanda",
+        "Zambia",
+        "Bolivia",
+        "Singapore",
+        "South Korea",
         "New Zealand",
     )
     for c in known_countries:
