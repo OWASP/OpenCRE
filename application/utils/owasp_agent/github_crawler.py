@@ -191,7 +191,9 @@ class GitHubCrawler:
             raw=meta,
         )
 
-    def fetch_chapter_leaders_md(self, full_name: str, ref: str = "master") -> List[str]:
+    def fetch_chapter_leaders_md(
+        self, full_name: str, ref: str = "master"
+    ) -> List[str]:
         for branch in (ref, "main", "master"):
             url = f"{RAW_BASE}/{full_name}/{branch}/leaders.md"
             try:
@@ -379,7 +381,10 @@ def chapters_from_site_data(
     for item in inactive or []:
         if not isinstance(item, dict):
             continue
-        if item.get("region") == "Needs Website Update" or item.get("build") == "no pages":
+        if (
+            item.get("region") == "Needs Website Update"
+            or item.get("build") == "no pages"
+        ):
             inactive_keys.add(_chapter_key_from_site(item))
 
     leaders_by_group: Dict[str, List[str]] = {}
@@ -429,7 +434,10 @@ def chapters_from_site_data(
     for item in inactive or []:
         if not isinstance(item, dict):
             continue
-        if item.get("region") != "Needs Website Update" and item.get("build") != "no pages":
+        if (
+            item.get("region") != "Needs Website Update"
+            and item.get("build") != "no pages"
+        ):
             continue
         key = _chapter_key_from_site(item)
         if not key:

@@ -36,7 +36,7 @@ def lookup_cre_factoid(question: str) -> Optional[Tuple[str, str, str]]:
 
 def format_cre_factoid(cre_id: str, title: str, note: str) -> str:
     return (
-        f"The CRE `{cre_id}` which is titled \"{title}\" covers this control. {note} "
+        f'The CRE `{cre_id}` which is titled "{title}" covers this control. {note} '
         "Follow-up: I can list linked standards (ASVS/WSTG/Cheat Sheets) for this CRE "
         "if you want a citation table."
     )
