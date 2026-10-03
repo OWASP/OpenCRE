@@ -138,7 +138,9 @@ def format_membership_answer(
         elif regional is False:
             label = "standard"
         else:
-            label = "standard (country not in discount table — confirm on membership page)"
+            label = (
+                "standard (country not in discount table — confirm on membership page)"
+            )
         if student:
             fee = prices["student_one_year"]
             lines.append(f"{c}: student ${fee} USD/year ({label}).")
