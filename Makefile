@@ -1,6 +1,6 @@
 .ONESHELL:
 
-.PHONY: run test covers install-deps dev docker lint frontend clean all e2e e2e-db owasp-agent-sync owasp-agent-merge-concepts
+.PHONY: run test covers install-deps dev docker lint frontend clean all e2e e2e-db owasp-agent-sync owasp-agent-merge-concepts owasp-agent-synth-eval
 
 prod-run:
 	gunicorn cre:app --log-file=-
@@ -216,6 +216,11 @@ owasp-agent-sync:
 owasp-agent-merge-concepts:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	PYTHONPATH=. python scripts/owasp_agent_merge_concepts.py $(OWASP_AGENT_MERGE_ARGS)
+
+# Score fixtures/owasp_agent_synth_v2.jsonl against OWASP_AGENT_DB (see application/utils/owasp_agent/README.md).
+owasp-agent-synth-eval:
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
+	OWASP_AGENT_ENABLED=1 PYTHONPATH=. python scripts/owasp_agent_synth_eval.py
 
 openapi-generate:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
