@@ -6371,67 +6371,4133 @@
     }
   },
   {
-  "id": "gold:cheatsheet:authorization:positive",
-  "schema_version": "0.1.0",
-  "slice": "positive",
-  "input": {
-    "text": "Authorization may be defined as \"the process of verifying that a requested action or service is approved for a specific entity\" ([NIST](https://csrc.nist.gov/glossary/term/authorization)). Authorization is distinct from authentication which is the process of verifying an entity's identity. When designing and developing a software solution, it is important to keep these distinctions in mind. A user who has been authenticated (perhaps by providing a username and password) is often not authorized t\nIntroduction\nRecommendations\nReferences",
-    "title_hint": "Authorization Cheat Sheet",
-    "source_standard": "OWASP_CHEATSHEET"
+    "id": "gold:cheatsheet:authorization:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Authorization may be defined as \"the process of verifying that a requested action or service is approved for a specific entity\" ([NIST](https://csrc.nist.gov/glossary/term/authorization)). Authorization is distinct from authentication which is the process of verifying an entity's identity. When designing and developing a software solution, it is important to keep these distinctions in mind. A user who has been authenticated (perhaps by providing a username and password) is often not authorized t\nIntroduction\nRecommendations\nReferences",
+      "title_hint": "Authorization Cheat Sheet",
+      "source_standard": "OWASP_CHEATSHEET"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "128-128",
+        "117-371"
+      ]
+    },
+    "provenance": {
+      "section_path": "Authorization_Cheat_Sheet",
+      "ground_truth_source": "owasp_cheatsheets_supplement.json"
+    }
   },
-  "expected": {
-    "decision": "linked",
-    "cre_ids": [
-      "128-128",
-      "117-371"
-    ]
+  {
+    "id": "gold:cheatsheet:rest-security:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "[REST](https://en.wikipedia.org/wiki/REST) (or **RE**presentational **S**tate **T**ransfer) is an architectural style first described in [Roy Fielding](https://en.wikipedia.org/wiki/Roy_Fielding)'s Ph.D. dissertation on [Architectural Styles and the Design of Network-based Software Architectures](https://www.ics.uci.edu/~fielding/pubs/dissertation/top.htm).\n\nIt evolved as Fielding wrote the HTTP/1.1 and URI specs and has been proven to be well-suited for developing distributed hypermedia applica\nIntroduction\nHTTPS\nAccess Control\nJWT\nAPI Keys\nRestrict HTTP methods\nPreventing Out-of-Order API Execution\nInput validation\nValidate content types\nManagement endpoints\nError handling\nAudit logs\nSecurity Headers\nCORS\nSensitive information in HTTP requests\nHTTP Return Code",
+      "title_hint": "REST Security Cheat Sheet",
+      "source_standard": "OWASP_CHEATSHEET"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "118-110",
+        "724-770",
+        "623-550"
+      ]
+    },
+    "provenance": {
+      "section_path": "REST_Security_Cheat_Sheet",
+      "ground_truth_source": "owasp_cheatsheets_supplement.json"
+    }
   },
-  "provenance": {
-    "section_path": "Authorization_Cheat_Sheet",
-    "ground_truth_source": "owasp_cheatsheets_supplement.json"
+  {
+    "id": "gold:cheatsheet:ssrf-prevention:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "The objective of the cheat sheet is to provide advice regarding the protection against [Server Side Request Forgery](https://www.acunetix.com/blog/articles/server-side-request-forgery-vulnerability/) (SSRF) attack.\n\nThis cheat sheet will focus on the defensive point of view and will not explain how to perform this attack. This [talk](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_Orange_Tsai_Talk.pdf) from the security researcher [Orange Tsai](https://twitter.com/orange_8361) as we\nIntroduction\nContext\nOverview of a SSRF common flow\nCases\nIMDSv2 in AWS\nDeny-list (Last Resort)\nSemgrep Rules\nReferences\nTools and code used for schemas",
+      "title_hint": "Server-Side Request Forgery Prevention Cheat Sheet",
+      "source_standard": "OWASP_CHEATSHEET"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "028-728",
+        "657-084"
+      ]
+    },
+    "provenance": {
+      "section_path": "Server_Side_Request_Forgery_Prevention_Cheat_Sheet",
+      "ground_truth_source": "owasp_cheatsheets_supplement.json"
+    }
+  },
+  {
+    "id": "gold:asvs5:V1.1.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application performs output encoding and escaping either as a final step before being used by the interpreter for which it is intended or by the interpreter itself.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "806-367"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.1.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.5.4"
+  },
+  {
+    "id": "gold:asvs5:V1.2.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that output encoding for an HTTP response, HTML document, or XML document is relevant for the context required, such as encoding the relevant characters for HTML elements, HTML attributes, HTML comments, CSS, or HTTP header fields, to avoid changing the message or document structure.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "620-101"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.2.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.3.1"
+  },
+  {
+    "id": "gold:asvs5:V1.2.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that when dynamically building URLs, untrusted data is encoded according to its context (e.g., URL encoding or base64url encoding for query or path parameters). Ensure that only safe URL protocols are permitted (e.g., disallow javascript: or data:).",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "620-101"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.2.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.3.1"
+  },
+  {
+    "id": "gold:asvs5:V1.2.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that output encoding or escaping is used when dynamically building JavaScript content (including JSON), to avoid changing the message or document structure (to avoid JavaScript and JSON injection).",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "366-835",
+        "607-671"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.2.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.3.3,V5.3.6"
+  },
+  {
+    "id": "gold:asvs5:V1.2.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that data selection or database queries (e.g., SQL, HQL, NoSQL, Cypher) use parameterized queries, ORMs, entity frameworks, or are otherwise protected from SQL Injection and other database injection attacks. This is also relevant when writing stored procedures.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "732-873",
+        "064-808"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.2.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.3.4,V5.3.5"
+  },
+  {
+    "id": "gold:asvs5:V1.2.5:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application protects against OS command injection and that operating system calls use parameterized OS queries or use contextual command line output encoding.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "857-718",
+        "683-722"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.2.5",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.3.8,V12.3.5"
+  },
+  {
+    "id": "gold:asvs5:V1.2.6:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application protects against LDAP injection vulnerabilities, or that specific security controls to prevent LDAP injection have been implemented.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "531-558"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.2.6",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.3.7"
+  },
+  {
+    "id": "gold:asvs5:V1.2.7:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application is protected against XPath injection attacks by using query parameterization or precompiled queries.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "134-207"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.2.7",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.3.10"
+  },
+  {
+    "id": "gold:asvs5:V1.3.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that all untrusted HTML input from WYSIWYG editors or similar is sanitized using a well-known and secure HTML sanitization library or framework feature.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "542-445"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.3.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.2.1"
+  },
+  {
+    "id": "gold:asvs5:V1.3.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application avoids the use of eval() or other dynamic code execution features such as Spring Expression Language (SpEL). Where there is no alternative, any user input being included must be sanitized before being executed.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "317-743",
+        "387-848"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.3.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.2.4,V5.5.4"
+  },
+  {
+    "id": "gold:asvs5:V1.3.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that data being passed to a potentially dangerous context is sanitized beforehand to enforce safety measures, such as only allowing characters which are safe for this context and trimming input which is too long.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "538-446"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.3.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.2.2"
+  },
+  {
+    "id": "gold:asvs5:V1.3.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that user-supplied Scalable Vector Graphics (SVG) scriptable content is validated or sanitized to contain only tags and attributes (such as draw graphics) that are safe for the application, e.g., do not contain scripts and foreignObject.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "145-310"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.3.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.2.7"
+  },
+  {
+    "id": "gold:asvs5:V1.3.5:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application sanitizes or disables user-supplied scriptable or expression template language content, such as Markdown, CSS or XSL stylesheets, BBCode, or similar.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "646-462"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.3.5",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.2.8"
+  },
+  {
+    "id": "gold:asvs5:V1.3.6:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application protects against Server-side Request Forgery (SSRF) attacks, by validating untrusted data against an allowlist of protocols, domains, paths and ports and sanitizing potentially dangerous characters before using the data to call another service.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "657-084"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.3.6",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.2.6"
+  },
+  {
+    "id": "gold:asvs5:V1.3.7:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application protects against template injection attacks by not allowing templates to be built based on untrusted input. Where there is no alternative, any untrusted input being included dynamically during template creation must be sanitized or strictly validated.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "422-005"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.3.7",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.2.5"
+  },
+  {
+    "id": "gold:asvs5:V1.3.10:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that format strings which might resolve in an unexpected or malicious way when used are sanitized before being processed.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "824-732"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.3.10",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.4.2"
+  },
+  {
+    "id": "gold:asvs5:V1.3.11:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application sanitizes user input before passing to mail systems to protect against SMTP or IMAP injection.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "881-434"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.3.11",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.2.3"
+  },
+  {
+    "id": "gold:asvs5:V1.4.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application uses memory-safe string, safer memory copy and pointer arithmetic to detect or prevent stack, buffer, or heap overflows.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "831-570"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.4.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.4.1"
+  },
+  {
+    "id": "gold:asvs5:V1.4.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that sign, range, and input validation techniques are used to prevent integer overflows.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "482-771"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.4.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.4.3"
+  },
+  {
+    "id": "gold:asvs5:V1.5.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application configures XML parsers to use a restrictive configuration and that unsafe features such as resolving external entities are disabled to prevent XML eXternal Entity (XXE) attacks.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "764-507"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.5.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.5.2"
+  },
+  {
+    "id": "gold:asvs5:V1.5.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that deserialization of untrusted data enforces safe input handling, such as using an allowlist of object types or restricting client-defined object types, to prevent deserialization attacks. Deserialization mechanisms that are explicitly defined as insecure must not be used with untrusted input.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "736-554",
+        "831-563"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.5.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.5.2,V5.5.3"
+  },
+  {
+    "id": "gold:asvs5:V1.5.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that different parsers used in the application for the same data type (e.g., JSON parsers, XML parsers, URL parsers), perform parsing in a consistent way and use the same character encoding mechanism to avoid issues such as JSON Interoperability vulnerabilities or different URI or file parsing behavior being exploited in Remote File Inclusion (RFI) or Server-side Request Forgery (SSRF) attacks.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "061-186"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V1.5.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V13.1.1"
+  },
+  {
+    "id": "gold:asvs5:V2.1.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application's documentation defines input validation rules for how to check the validity of data items against an expected structure. This could be common data formats such as credit card numbers, email addresses, telephone numbers, or it could be an internal data format.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "782-234"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V2.1.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.5.1"
+  },
+  {
+    "id": "gold:asvs5:V2.1.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application's documentation defines how to validate the logical and contextual consistency of combined data items, such as checking that suburb and ZIP code match.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "782-234"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V2.1.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.5.1"
+  },
+  {
+    "id": "gold:asvs5:V2.2.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that input is validated to enforce business or functional expectations for that input. This should either use positive validation against an allow list of values, patterns, and ranges, or be based on comparing the input to an expected structure and logical limits according to predefined rules. For L1, this can focus on input which is used to make specific business or security decisions. For L2 and up, this should apply to all input.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "031-447",
+        "653-242",
+        "660-867",
+        "146-706",
+        "611-051"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V2.2.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.1.3,V5.1.4,V11.1.5,V13.2.2,V13.3.1"
+  },
+  {
+    "id": "gold:asvs5:V2.2.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application is designed to enforce input validation at a trusted service layer. While client-side validation improves usability and should be encouraged, it must not be relied upon as a security control.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "848-711"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V2.2.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.5.3"
+  },
+  {
+    "id": "gold:asvs5:V2.2.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application ensures that combinations of related data items are reasonable according to the pre-defined rules.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "653-242"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V2.2.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.1.4"
+  },
+  {
+    "id": "gold:asvs5:V2.3.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application will only process business logic flows for the same user in the expected sequential step order and without skipping steps.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "534-605"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V2.3.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V11.1.1"
+  },
+  {
+    "id": "gold:asvs5:V2.3.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that business logic limits are implemented per the application's documentation to avoid business logic flaws being exploited.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "746-705"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V2.3.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V11.1.3"
+  },
+  {
+    "id": "gold:asvs5:V2.3.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that business logic level locking mechanisms are used to ensure that limited quantity resources (such as theater seats or delivery slots) cannot be double-booked by manipulating the application's logic.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "134-412"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V2.3.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V11.1.6"
+  },
+  {
+    "id": "gold:asvs5:V2.4.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that anti-automation controls are in place to protect against excessive calls to application functions that could lead to data exfiltration, garbage-data creation, quota exhaustion, rate-limit breaches, denial-of-service, or overuse of costly resources.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "630-573"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V2.4.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V11.1.4"
+  },
+  {
+    "id": "gold:asvs5:V2.4.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that business logic flows require realistic human timing, preventing excessively rapid transaction submissions.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "456-535"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V2.4.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V11.1.2"
+  },
+  {
+    "id": "gold:asvs5:V3.2.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that security controls are in place to prevent browsers from rendering content or functionality in HTTP responses in an incorrect context (e.g., when an API, a user-uploaded file or other resource is requested directly). Possible controls could include: not serving the content unless HTTP request header fields (such as Sec-Fetch-\\*) indicate it is the correct context, using the sandbox directive of the Content-Security-Policy header field or using the attachment disposition type in the Content-Disposition header field.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "384-344",
+        "545-243",
+        "736-237"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V3.2.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.12.2,V12.5.2,V14.4.2"
+  },
+  {
+    "id": "gold:asvs5:V3.2.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that content intended to be displayed as text, rather than rendered as HTML, is handled using safe rendering functions (such as createTextNode or textContent) to prevent unintended execution of content such as HTML or JavaScript.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "366-835"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V3.2.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.3.3"
+  },
+  {
+    "id": "gold:asvs5:V3.3.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that cookies have the 'Secure' attribute set, and if the '\\__Host-' prefix is not used for the cookie name, the '__Secure-' prefix must be used for the cookie name.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "688-081"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V3.3.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V3.4.1"
+  },
+  {
+    "id": "gold:asvs5:V3.3.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that each cookie's 'SameSite' attribute value is set according to the purpose of the cookie, to limit exposure to user interface redress attacks and browser-based request forgery attacks, commonly known as cross-site request forgery (CSRF).",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "342-055"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V3.3.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V3.4.3"
+  },
+  {
+    "id": "gold:asvs5:V3.3.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that cookies have the '__Host-' prefix for the cookie name unless they are explicitly designed to be shared with other hosts.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "232-034"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V3.3.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V3.4.4"
+  },
+  {
+    "id": "gold:asvs5:V3.3.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that if the value of a cookie is not meant to be accessible to client-side scripts (such as a session token), the cookie must have the 'HttpOnly' attribute set and the same value (e. g. session token) must only be transferred to the client via the 'Set-Cookie' header field.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "804-220"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V3.3.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V3.4.2"
+  },
+  {
+    "id": "gold:asvs5:V3.4.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that a Strict-Transport-Security header field is included on all responses to enforce an HTTP Strict Transport Security (HSTS) policy. A maximum age of at least 1 year must be defined, and for L2 and up, the policy must apply to all subdomains as well.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "036-147"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V3.4.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V14.4.5"
+  },
+  {
+    "id": "gold:asvs5:V3.4.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the Cross-Origin Resource Sharing (CORS) Access-Control-Allow-Origin header field is a fixed value by the application, or if the Origin HTTP request header field value is used, it is validated against an allowlist of trusted origins. When 'Access-Control-Allow-Origin: *' needs to be used, verify that the response does not include any sensitive information.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "316-272"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V3.4.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V14.5.3"
+  },
+  {
+    "id": "gold:asvs5:V3.4.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that HTTP responses include a Content-Security-Policy response header field which defines directives to ensure the browser only loads and executes trusted content or resources, in order to limit execution of malicious JavaScript. As a minimum, a global policy must be used which includes the directives object-src 'none' and base-uri 'none' and defines either an allowlist or uses nonces or hashes. For an L3 application, a per-response policy with nonces or hashes must be defined.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "257-668"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V3.4.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V14.4.3"
+  },
+  {
+    "id": "gold:asvs5:V3.4.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that all HTTP responses contain an 'X-Content-Type-Options: nosniff' header field. This instructs browsers not to use content sniffing and MIME type guessing for the given response, and to require the response's Content-Type header field value to match the destination resource. For example, the response to a request for a style is only accepted if the response's Content-Type is 'text/css'. This also enables the use of the Cross-Origin Read Blocking (CORB) functionality by the browser.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "065-388"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V3.4.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V14.4.4"
+  },
+  {
+    "id": "gold:asvs5:V3.4.5:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application sets a referrer policy to prevent leakage of technically sensitive data to third-party services via the 'Referer' HTTP request header field. This can be done using the Referrer-Policy HTTP response header field or via HTML element attributes. Sensitive data could include path and query data in the URL, and for internal non-public applications also the hostname.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "268-100"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V3.4.5",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V14.4.6"
+  },
+  {
+    "id": "gold:asvs5:V3.4.6:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the web application uses the frame-ancestors directive of the Content-Security-Policy header field for every HTTP response to ensure that it cannot be embedded by default and that embedding of specific resources is allowed only when necessary. Note that the X-Frame-Options header field, although supported by browsers, is obsolete and may not be relied upon.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "480-071"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V3.4.6",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V14.4.7"
+  },
+  {
+    "id": "gold:asvs5:V3.5.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that, if the application does not rely on the CORS preflight mechanism to prevent disallowed cross-origin requests to use sensitive functionality, these requests are validated to ensure they originate from the application itself. This may be done by using and validating anti-forgery tokens or requiring extra HTTP header fields that are not CORS-safelisted request-header fields. This is to defend against browser-based request forgery attacks, commonly known as cross-site request forgery (CSRF).",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "060-472",
+        "464-084"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V3.5.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V4.2.2,V13.2.3"
+  },
+  {
+    "id": "gold:asvs5:V3.5.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that, if the application relies on the CORS preflight mechanism to prevent disallowed cross-origin use of sensitive functionality, it is not possible to call the functionality with a request which does not trigger a CORS-preflight request. This may require checking the values of the 'Origin' and 'Content-Type' request header fields or using an extra header field that is not a CORS-safelisted header-field.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "464-084",
+        "543-512",
+        "316-272"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V3.5.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V13.2.3,V13.2.5,V14.5.3"
+  },
+  {
+    "id": "gold:asvs5:V3.5.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that HTTP requests to sensitive functionality use appropriate HTTP methods such as POST, PUT, PATCH, or DELETE, and not methods defined by the HTTP specification as \"safe\" such as HEAD, OPTIONS, or GET. Alternatively, strict validation of the Sec-Fetch-* request header fields can be used to ensure that the request did not originate from an inappropriate cross-origin call, a navigation request, or a resource load (such as an image source) where this is not expected.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "532-878"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V3.5.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V13.2.1"
+  },
+  {
+    "id": "gold:asvs5:V3.5.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that separate applications are hosted on different hostnames to leverage the restrictions provided by same-origin policy, including how documents or scripts loaded by one origin can interact with resources from another origin and hostname-based restrictions on cookies.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "705-182"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V3.5.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V3.4.5"
+  },
+  {
+    "id": "gold:asvs5:V3.6.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that client-side assets, such as JavaScript libraries, CSS, or web fonts, are only hosted externally (e.g., on a Content Delivery Network) if the resource is static and versioned and Subresource Integrity (SRI) is used to validate the integrity of the asset. If this is not possible, there should be a documented security decision to justify this for each resource.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "577-260"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V3.6.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V14.2.3"
+  },
+  {
+    "id": "gold:asvs5:V3.7.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application only uses client-side technologies which are still supported and considered secure. Examples of technologies which do not meet this requirement include NSAPI plugins, Flash, Shockwave, ActiveX, Silverlight, NACL, or client-side Java applets.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "673-475"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V3.7.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.14.6"
+  },
+  {
+    "id": "gold:asvs5:V3.7.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application will only automatically redirect the user to a different hostname or domain (which is not controlled by the application) where the destination appears on an allowlist.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "232-217"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V3.7.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.1.5"
+  },
+  {
+    "id": "gold:asvs5:V3.7.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application shows a notification when the user is being redirected to a URL outside of the application's control, with an option to cancel the navigation.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "232-217"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V3.7.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.1.5"
+  },
+  {
+    "id": "gold:asvs5:V4.1.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that every HTTP response with a message body contains a Content-Type header field that matches the actual content of the response, including the charset parameter to specify safe character encoding (e.g., UTF-8, ISO-8859-1) according to IANA Media Types, such as \"text/\", \"/+xml\" and \"/xml\".",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "533-516",
+        "036-725"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V4.1.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.3.2,V14.4.1"
+  },
+  {
+    "id": "gold:asvs5:V4.1.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that only HTTP methods that are explicitly supported by the application or its API (including OPTIONS during preflight requests) can be used and that unused methods are blocked.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "483-715"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V4.1.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V14.5.1"
+  },
+  {
+    "id": "gold:asvs5:V4.1.5:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that per-message digital signatures are used to provide additional assurance on top of transport protections for requests or transactions which are highly sensitive or which traverse a number of systems.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "426-842",
+        "456-636"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V4.1.5",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V13.2.6,V13.3.2"
+  },
+  {
+    "id": "gold:asvs5:V4.3.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that a query allowlist, depth limiting, amount limiting, or query cost analysis is used to prevent GraphQL or data layer expression Denial of Service (DoS) as a result of expensive, nested queries.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "268-088"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V4.3.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V13.4.1"
+  },
+  {
+    "id": "gold:asvs5:V5.2.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application will only accept files of a size which it can process without causing a loss of performance or a denial of service attack.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "660-052"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V5.2.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V12.1.1"
+  },
+  {
+    "id": "gold:asvs5:V5.2.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that when the application accepts a file, either on its own or within an archive such as a zip file, it checks if the file extension matches an expected file extension and validates that the contents correspond to the type represented by the extension. This includes, but is not limited to, checking the initial 'magic bytes', performing image re-writing, and using specialized libraries for file content validation. For L1, this can focus just on files which are used to make specific business or security decisions. For L2 and up, this must apply to all files being accepted.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "175-235"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V5.2.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V12.2.1"
+  },
+  {
+    "id": "gold:asvs5:V5.2.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application checks compressed files (e.g., zip, gz, docx, odt) against maximum allowed uncompressed size and against maximum number of files before uncompressing the file.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "163-518"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V5.2.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V12.1.2"
+  },
+  {
+    "id": "gold:asvs5:V5.2.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that a file size quota and maximum number of files per user are enforced to ensure that a single user cannot fill up the storage with too many files, or excessively large files.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "463-820"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V5.2.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V12.1.3"
+  },
+  {
+    "id": "gold:asvs5:V5.3.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that files uploaded or generated by untrusted input and stored in a public folder, are not executed as server-side program code when accessed directly with an HTTP request.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "307-111"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V5.3.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V12.4.1"
+  },
+  {
+    "id": "gold:asvs5:V5.3.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that when the application creates file paths for file operations, instead of user-submitted filenames, it uses internally generated or trusted data, or if user-submitted filenames or file metadata must be used, strict validation and sanitization must be applied. This is to protect against path traversal, local or remote file inclusion (LFI, RFI), and server-side request forgery (SSRF) attacks.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "547-283",
+        "675-168",
+        "737-086",
+        "742-056"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V5.3.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.3.9,V12.3.1,V12.3.2,V12.3.3"
+  },
+  {
+    "id": "gold:asvs5:V5.4.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application validates or ignores user-submitted filenames, including in a JSON, JSONP, or URL parameter and specifies a filename in the Content-Disposition header field in the response.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "421-513"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V5.4.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V12.3.4"
+  },
+  {
+    "id": "gold:asvs5:V5.4.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that files obtained from untrusted sources are scanned by antivirus scanners to prevent serving of known malicious content.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "112-273"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V5.4.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V12.4.2"
+  },
+  {
+    "id": "gold:asvs5:V6.1.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that application documentation defines how controls such as rate limiting, anti-automation, and adaptive response, are used to defend against attacks such as credential stuffing and password brute force. The documentation must make clear how these controls are configured and prevent malicious account lockout.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "802-056"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.1.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.2.1"
+  },
+  {
+    "id": "gold:asvs5:V6.1.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that, if the application includes multiple authentication pathways, these are all documented together with the security controls and authentication strength which must be consistently enforced across them.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "113-133",
+        "576-042"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.1.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.2.3,V1.2.4"
+  },
+  {
+    "id": "gold:asvs5:V6.2.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that user set passwords are at least 8 characters in length although a minimum of 15 characters is strongly recommended.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "027-555"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.2.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.1.1"
+  },
+  {
+    "id": "gold:asvs5:V6.2.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that users can change their password.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "751-176"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.2.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.1.5"
+  },
+  {
+    "id": "gold:asvs5:V6.2.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that password change functionality requires the user's current and new password.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "327-505"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.2.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.1.6"
+  },
+  {
+    "id": "gold:asvs5:V6.2.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that passwords submitted during account registration or password change are checked against an available set of, at least, the top 3000 passwords which match the application's password policy, e.g. minimum length.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "576-651"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.2.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.1.7"
+  },
+  {
+    "id": "gold:asvs5:V6.2.5:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that passwords of any composition can be used, without rules limiting the type of characters permitted. There must be no requirement for a minimum number of upper or lower case characters, numbers, or special characters.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "807-565"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.2.5",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.1.9"
+  },
+  {
+    "id": "gold:asvs5:V6.2.6:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that password input fields use type=password to mask the entry. Applications may allow the user to temporarily view the entire masked password, or the last typed character of the password.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "487-305"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.2.6",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.1.12"
+  },
+  {
+    "id": "gold:asvs5:V6.2.7:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that \"paste\" functionality, browser password helpers, and external password managers are permitted.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "630-577"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.2.7",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.1.11"
+  },
+  {
+    "id": "gold:asvs5:V6.2.8:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application verifies the user's password exactly as received from the user, without any modifications such as truncation or case transformation.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "715-681"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.2.8",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.1.3"
+  },
+  {
+    "id": "gold:asvs5:V6.2.9:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that passwords of at least 64 characters are permitted.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "158-874"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.2.9",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.1.2"
+  },
+  {
+    "id": "gold:asvs5:V6.2.10:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that a user's password stays valid until it is discovered to be compromised or the user rotates it. The application must not require periodic credential rotation.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "576-651",
+        "338-370"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.2.10",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.1.7,V2.1.10"
+  },
+  {
+    "id": "gold:asvs5:V6.2.12:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that passwords submitted during account registration or password changes are checked against a set of breached passwords.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "576-651"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.2.12",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.1.7"
+  },
+  {
+    "id": "gold:asvs5:V6.3.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that controls to prevent attacks such as credential stuffing and password brute force are implemented according to the application's security documentation.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "802-056"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.3.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.2.1"
+  },
+  {
+    "id": "gold:asvs5:V6.3.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that default user accounts (e.g., \"root\", \"admin\", or \"sa\") are not present in the application or are disabled.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "623-347"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.3.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.5.4"
+  },
+  {
+    "id": "gold:asvs5:V6.3.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that either a multi-factor authentication mechanism or a combination of single-factor authentication mechanisms, must be used in order to access the application. For L3, one of the factors must be a hardware-based authentication mechanism which provides compromise and impersonation resistance against phishing attacks while verifying the intent to authenticate by requiring a user-initiated action (such as a button press on a FIDO hardware key or a mobile phone). Relaxing any of the considerations in this requirement requires a fully documented rationale and a comprehensive set of mitigating controls.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "333-858",
+        "525-361",
+        "553-413"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.3.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.2.4,V2.2.7,V2.3.2"
+  },
+  {
+    "id": "gold:asvs5:V6.3.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that, if the application includes multiple authentication pathways, there are no undocumented pathways and that security controls and authentication strength are enforced consistently.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "576-042"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.3.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.2.4"
+  },
+  {
+    "id": "gold:asvs5:V6.3.5:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that users are notified of suspicious authentication attempts (successful or unsuccessful). This may include authentication attempts from an unusual location or client, partially successful authentication (only one of multiple factors), an authentication attempt after a long period of inactivity or a successful authentication after several unsuccessful attempts.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "808-425"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.3.5",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.2.3"
+  },
+  {
+    "id": "gold:asvs5:V6.3.6:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that email is not used as either a single-factor or multi-factor authentication mechanism.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "354-752"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.3.6",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.2.2"
+  },
+  {
+    "id": "gold:asvs5:V6.3.7:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that users are notified after updates to authentication details, such as credential resets or modification of the username or email address.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "808-425",
+        "235-658"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.3.7",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.2.3,V2.5.5"
+  },
+  {
+    "id": "gold:asvs5:V6.4.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that system generated initial passwords or activation codes are securely randomly generated, follow the existing password policy, and expire after a short period of time or after they are initially used. These initial secrets must not be permitted to become the long term password.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "622-835"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.4.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.3.1"
+  },
+  {
+    "id": "gold:asvs5:V6.4.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that password hints or knowledge-based authentication (so-called \"secret questions\") are not present.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "772-358"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.4.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.5.2"
+  },
+  {
+    "id": "gold:asvs5:V6.4.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that a secure process for resetting a forgotten password is implemented, that does not bypass any enabled multi-factor authentication mechanisms.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "581-525"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.4.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.5.6"
+  },
+  {
+    "id": "gold:asvs5:V6.4.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that if a multi-factor authentication factor is lost, evidence of identity proofing is performed at the same level as during enrollment.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "358-860"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.4.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.5.7"
+  },
+  {
+    "id": "gold:asvs5:V6.4.5:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that renewal instructions for authentication mechanisms which expire are sent with enough time to be carried out before the old authentication mechanism expires, configuring automated reminders if necessary.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "138-448"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.4.5",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.3.3"
+  },
+  {
+    "id": "gold:asvs5:V6.5.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that lookup secrets, out-of-band authentication requests or codes, and time-based one-time passwords (TOTPs) are only successfully usable once.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "524-446",
+        "101-217",
+        "168-186",
+        "404-126"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.5.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.2.6,V2.6.1,V2.7.3,V2.8.4"
+  },
+  {
+    "id": "gold:asvs5:V6.5.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that, when being stored in the application's backend, lookup secrets with less than 112 bits of entropy (19 random alphanumeric characters or 34 random digits) are hashed with an approved password storage hashing algorithm that incorporates a 32-bit random salt. A standard hash function can be used if the secret has 112 bits of entropy or more.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "346-640"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.5.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.6.2"
+  },
+  {
+    "id": "gold:asvs5:V6.5.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that lookup secrets, out-of-band authentication code, and time-based one-time password seeds, are generated using a Cryptographically Secure Pseudorandom Number Generator (CSPRNG) to avoid predictable values.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "513-845",
+        "206-254",
+        "841-757"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.5.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.6.3,V2.7.6,V2.8.3"
+  },
+  {
+    "id": "gold:asvs5:V6.5.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that lookup secrets and out-of-band authentication codes have a minimum of 20 bits of entropy (typically 4 random alphanumeric characters or 6 random digits is sufficient).",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "346-640",
+        "206-254"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.5.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.6.2,V2.7.6"
+  },
+  {
+    "id": "gold:asvs5:V6.5.5:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that out-of-band authentication requests, codes, or tokens, as well as time-based one-time passwords (TOTPs) have a defined lifetime. Out of band requests must have a maximum lifetime of 10 minutes and for TOTP a maximum lifetime of 30 seconds.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "816-631",
+        "681-823"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.5.5",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.7.2,V2.8.1"
+  },
+  {
+    "id": "gold:asvs5:V6.5.6:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that any authentication factor (including physical devices) can be revoked in case of theft or other loss.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "440-361"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.5.6",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.8.6"
+  },
+  {
+    "id": "gold:asvs5:V6.5.7:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that biometric authentication mechanisms are only used as secondary factors together with either something you have or something you know.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "076-470"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.5.7",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.8.7"
+  },
+  {
+    "id": "gold:asvs5:V6.6.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that authentication mechanisms using the Public Switched Telephone Network (PSTN) to deliver One-time Passwords (OTPs) via phone or SMS are offered only when the phone number has previously been validated, alternate stronger methods (such as Time based One-time Passwords) are also offered, and the service provides information on their security risks to users. For L3 applications, phone and SMS must not be available as options.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "354-753"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.6.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.7.1"
+  },
+  {
+    "id": "gold:asvs5:V6.6.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that out-of-band authentication requests, codes, or tokens are bound to the original authentication request for which they were generated and are not usable for a previous or subsequent one.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "168-186"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.6.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.7.3"
+  },
+  {
+    "id": "gold:asvs5:V6.7.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the certificates used to verify cryptographic authentication assertions are stored in a way protects them from modification.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "783-255"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.7.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.9.1"
+  },
+  {
+    "id": "gold:asvs5:V6.7.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the challenge nonce is at least 64 bits in length, and statistically unique or unique over the lifetime of the cryptographic device.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "287-251"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V6.7.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.9.2"
+  },
+  {
+    "id": "gold:asvs5:V7.2.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application uses either self-contained or reference tokens that are dynamically generated for session management, i.e. not using static API secrets and keys.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "551-054"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V7.2.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V3.5.2"
+  },
+  {
+    "id": "gold:asvs5:V7.2.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that if reference tokens are used to represent user sessions, they are unique and generated using a cryptographically secure pseudo-random number generator (CSPRNG) and possess at least 128 bits of entropy.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "704-530",
+        "727-043"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V7.2.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V3.2.2,V3.2.4"
+  },
+  {
+    "id": "gold:asvs5:V7.2.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application generates a new session token on user authentication, including re-authentication, and terminates the current session token.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "002-630"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V7.2.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V3.2.1"
+  },
+  {
+    "id": "gold:asvs5:V7.3.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that there is an inactivity timeout such that re-authentication is enforced according to risk analysis and documented security decisions.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "065-782"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V7.3.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V3.3.2"
+  },
+  {
+    "id": "gold:asvs5:V7.3.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that there is an absolute maximum session lifetime such that re-authentication is enforced according to risk analysis and documented security decisions.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "065-782"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V7.3.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V3.3.2"
+  },
+  {
+    "id": "gold:asvs5:V7.4.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that when session termination is triggered (such as logout or expiration), the application disallows any further use of the session. For reference tokens or stateful sessions, this means invalidating the session data at the application backend. Applications using self-contained tokens will need a solution such as maintaining a list of terminated tokens, disallowing tokens produced before a per-user date and time or rotating a per-user signing key.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "457-165"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V7.4.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V3.3.1"
+  },
+  {
+    "id": "gold:asvs5:V7.4.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application gives the option to terminate all other active sessions after a successful change or removal of any authentication factor (including password change via reset or recovery and, if present, an MFA settings update).",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "238-346"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V7.4.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V3.3.3"
+  },
+  {
+    "id": "gold:asvs5:V7.5.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application requires full re-authentication before allowing modifications to sensitive account attributes which may affect authentication such as email address, phone number, MFA configuration, or other information used in account recovery.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "582-541"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V7.5.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V3.7.1"
+  },
+  {
+    "id": "gold:asvs5:V7.5.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that users are able to view and (having authenticated again with at least one factor) terminate any or all currently active sessions.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "673-736"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V7.5.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V3.3.4"
+  },
+  {
+    "id": "gold:asvs5:V7.5.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application requires further authentication with at least one factor or secondary verification before performing highly sensitive transactions or operations.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "582-541"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V7.5.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V3.7.1"
+  },
+  {
+    "id": "gold:asvs5:V7.6.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that session lifetime and termination between Relying Parties (RPs) and Identity Providers (IdPs) behave as documented, requiring re-authentication as necessary such as when the maximum time between IdP authentication events is reached.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "618-403",
+        "052-821"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V7.6.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V3.6.1,V3.6.2"
+  },
+  {
+    "id": "gold:asvs5:V8.2.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application ensures that function-level access is restricted to consumers with explicit permissions.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "524-603",
+        "368-633"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V8.2.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V4.1.2,V4.1.3"
+  },
+  {
+    "id": "gold:asvs5:V8.2.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application ensures that data-specific access is restricted to consumers with explicit permissions to specific data items to mitigate insecure direct object reference (IDOR) and broken object level authorization (BOLA).",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "304-667",
+        "664-080"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V8.2.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V4.2.1,V13.1.4"
+  },
+  {
+    "id": "gold:asvs5:V8.3.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application enforces authorization rules at a trusted service layer and doesn't rely on controls that an untrusted consumer could manipulate, such as client-side JavaScript.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "640-364",
+        "650-560",
+        "405-411"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V8.3.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.4.1,V4.1.1,V14.5.2"
+  },
+  {
+    "id": "gold:asvs5:V8.4.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that access to administrative interfaces incorporates multiple layers of security, including continuous consumer identity verification, device security posture assessment, and contextual risk analysis, ensuring that network location or trusted endpoints are not the sole factors for authorization even though they may reduce the likelihood of unauthorized access.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "201-246"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V8.4.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V4.3.1"
+  },
+  {
+    "id": "gold:asvs5:V9.1.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that self-contained tokens are validated using their digital signature or MAC to protect against tampering before accepting the token's contents.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "483-883"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V9.1.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V3.5.3"
+  },
+  {
+    "id": "gold:asvs5:V10.4.9:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that refresh tokens and reference access tokens can be revoked by an authorized user using the authorization server user interface, to mitigate the risk of malicious clients or stolen tokens.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "551-400"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V10.4.9",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V3.5.1"
+  },
+  {
+    "id": "gold:asvs5:V11.1.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that there is a documented policy for management of cryptographic keys and a cryptographic key lifecycle that follows a key management standard such as NIST SP 800-57. This should include ensuring that keys are not overshared (for example, with more than two entities for shared secrets and more than one entity for private keys).",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "287-305"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V11.1.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.6.1"
+  },
+  {
+    "id": "gold:asvs5:V11.1.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that a cryptographic inventory is performed, maintained, regularly updated, and includes all cryptographic keys, algorithms, and certificates used by the application. It must also document where keys can and cannot be used in the system, and the types of data that can and cannot be protected using the keys.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "232-325"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V11.1.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.6.4"
+  },
+  {
+    "id": "gold:asvs5:V11.2.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that industry-validated implementations (including libraries and hardware-accelerated implementations) are used for cryptographic operations.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "742-431"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V11.2.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V6.2.2"
+  },
+  {
+    "id": "gold:asvs5:V11.2.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application is designed with crypto agility such that random number, authenticated encryption, MAC, or hashing algorithms, key lengths, rounds, ciphers and modes can be reconfigured, upgraded, or swapped at any time, to protect against cryptographic breaks. Similarly, it must also be possible to replace keys and passwords and re-encrypt data. This will allow for seamless upgrades to post-quantum cryptography (PQC), once high-assurance implementations of approved PQC schemes or standards are widely available.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "821-832",
+        "122-287"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V11.2.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.6.3,V6.2.4"
+  },
+  {
+    "id": "gold:asvs5:V11.2.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that all cryptographic operations are constant-time, with no 'short-circuit' operations in comparisons, calculations, or returns, to avoid leaking information.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "878-880"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V11.2.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V6.2.8"
+  },
+  {
+    "id": "gold:asvs5:V11.2.5:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that all cryptographic modules fail securely, and errors are handled in a way that does not enable vulnerabilities, such as Padding Oracle attacks.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "036-810"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V11.2.5",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V6.2.1"
+  },
+  {
+    "id": "gold:asvs5:V11.3.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that insecure block modes (e.g., ECB) and weak padding schemes (e.g., PKCS#1 v1.5) are not used.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "742-431",
+        "674-425",
+        "441-132"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V11.3.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V6.2.2,V6.2.3,V6.2.5"
+  },
+  {
+    "id": "gold:asvs5:V11.3.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that only approved ciphers and modes such as AES with GCM are used.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "742-431",
+        "674-425",
+        "441-132"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V11.3.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V6.2.2,V6.2.3,V6.2.5"
+  },
+  {
+    "id": "gold:asvs5:V11.3.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that encrypted data is protected against unauthorized modification preferably by using an approved authenticated encryption method or by combining an approved encryption method with an approved MAC algorithm.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "742-431",
+        "786-224"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V11.3.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V6.2.2,V6.2.7"
+  },
+  {
+    "id": "gold:asvs5:V11.3.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that nonces, initialization vectors, and other single-use numbers are not used for more than one encryption key and data-element pair. The method of generation must be appropriate for the algorithm being used.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "433-122"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V11.3.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V6.2.6"
+  },
+  {
+    "id": "gold:asvs5:V11.4.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that only approved hash functions are used for general cryptographic use cases, including digital signatures, HMAC, KDF, and random bit generation. Disallowed hash functions, such as MD5, must not be used for any cryptographic purpose.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "742-431",
+        "674-425",
+        "441-132"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V11.4.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V6.2.2,V6.2.3,V6.2.5"
+  },
+  {
+    "id": "gold:asvs5:V11.4.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that passwords are stored using an approved, computationally intensive, key derivation function (also known as a \"password hashing function\"), with parameter settings configured based on current guidance. The settings should balance security and performance to make brute-force attacks sufficiently challenging for the required level of security.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "622-203",
+        "767-435",
+        "078-427",
+        "543-621"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V11.4.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.4.1,V2.4.3,V2.4.4,V2.5.3"
+  },
+  {
+    "id": "gold:asvs5:V11.5.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that all random numbers and strings which are intended to be non-guessable must be generated using a cryptographically secure pseudo-random number generator (CSPRNG) and have at least 128 bits of entropy. Note that UUIDs do not respect this condition.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "542-488",
+        "027-210"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V11.5.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V6.3.1,V6.3.2"
+  },
+  {
+    "id": "gold:asvs5:V11.5.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the random number generation mechanism in use is designed to work securely, even under heavy demand.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "664-571"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V11.5.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V6.3.3"
+  },
+  {
+    "id": "gold:asvs5:V11.6.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that only approved cryptographic algorithms and modes of operation are used for key generation and seeding, and digital signature generation and verification. Key generation algorithms must not generate insecure keys vulnerable to known attacks, for example, RSA keys which are vulnerable to Fermat factorization.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "002-801",
+        "742-431"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V11.6.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.9.3,V6.2.2"
+  },
+  {
+    "id": "gold:asvs5:V12.1.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that only the latest recommended versions of the TLS protocol are enabled, such as TLS 1.2 and TLS 1.3. The latest version of the TLS protocol must be the preferred option.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "248-646"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V12.1.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V9.1.3"
+  },
+  {
+    "id": "gold:asvs5:V12.1.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that only recommended cipher suites are enabled, with the strongest cipher suites set as preferred. L3 applications must only support cipher suites which provide forward secrecy.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "767-701"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V12.1.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V9.1.2"
+  },
+  {
+    "id": "gold:asvs5:V12.1.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that proper certification revocation, such as Online Certificate Status Protocol (OCSP) Stapling, is enabled and configured.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "537-367"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V12.1.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V9.2.4"
+  },
+  {
+    "id": "gold:asvs5:V12.2.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that TLS is used for all connectivity between a client and external facing, HTTP-based services, and does not fall back to insecure or unencrypted communications.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "527-034",
+        "745-045"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V12.2.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.9.1,V9.1.1"
+  },
+  {
+    "id": "gold:asvs5:V12.3.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that an encrypted protocol such as TLS is used for all inbound and outbound connections to and from the application, including monitoring systems, management tools, remote access and SSH, middleware, databases, mainframes, partner systems, or external APIs. The server must not fall back to insecure or unencrypted protocols.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "527-034",
+        "636-854"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V12.3.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.9.1,V9.2.2"
+  },
+  {
+    "id": "gold:asvs5:V12.3.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that TLS or another appropriate transport encryption mechanism used for all connectivity between internal, HTTP-based services within the application, and does not fall back to insecure or unencrypted communications.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "527-034"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V12.3.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.9.1"
+  },
+  {
+    "id": "gold:asvs5:V12.3.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that TLS connections between internal services use trusted certificates. Where internally generated or self-signed certificates are used, the consuming service must be configured to only trust specific internal CAs and specific self-signed certificates.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "530-671",
+        "430-636"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V12.3.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.9.2,V9.2.1"
+  },
+  {
+    "id": "gold:asvs5:V12.3.5:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that services communicating internally within a system (intra-service communications) use strong authentication to ensure that each endpoint is verified. Strong authentication methods, such as TLS client authentication, must be employed to ensure identity, using public-key infrastructure and mechanisms that are resistant to replay attacks. For microservice architectures, consider using a service mesh to simplify certificate management and enhance security.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "558-807"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V12.3.5",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.2.5"
+  },
+  {
+    "id": "gold:asvs5:V13.1.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that all communication needs for the application are documented. This must include external services which the application relies upon and cases where an end user might be able to provide an external location to which the application will then connect.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "068-102"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V13.1.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.1.5"
+  },
+  {
+    "id": "gold:asvs5:V13.2.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that communications between backend application components that don't support the application's standard user session mechanism, including APIs, middleware, and data layers, are authenticated. Authentication must use individual service accounts, short-term tokens, or certificate-based authentication and not unchanging credentials such as passwords, API keys, or shared accounts with privileged access.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "278-413",
+        "813-610"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V13.2.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.2.2,V2.10.1"
+  },
+  {
+    "id": "gold:asvs5:V13.2.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that communications between backend application components, including local or operating system services, APIs, middleware, and data layers, are performed with accounts assigned the least necessary privileges.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "330-281"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V13.2.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.2.1"
+  },
+  {
+    "id": "gold:asvs5:V13.2.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that if a credential has to be used for service authentication, the credential being used by the consumer is not a default credential (e.g., root/root or admin/admin).",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "065-183"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V13.2.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V2.10.2"
+  },
+  {
+    "id": "gold:asvs5:V13.2.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that an allowlist is used to define the external resources or systems with which the application is permitted to communicate (e.g., for outbound requests, data loads, or file access). This allowlist can be implemented at the application layer, web server, firewall, or a combination of different layers.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "284-521"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V13.2.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V4.3.3"
+  },
+  {
+    "id": "gold:asvs5:V13.2.5:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the web or application server is configured with an allowlist of resources or systems to which the server can send requests or load data or files from.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "814-322"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V13.2.5",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V12.6.1"
+  },
+  {
+    "id": "gold:asvs5:V13.3.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that a secrets management solution, such as a key vault, is used to securely create, store, control access to, and destroy backend secrets. These could include passwords, key material, integrations with databases and third-party systems, keys and seeds for time-based tokens, other internal secrets, and API keys. Secrets must not be included in application source code or included in build artifacts. For an L3 application, this must involve a hardware-backed solution such as an HSM.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "508-702",
+        "543-428",
+        "783-255",
+        "881-321",
+        "774-888",
+        "340-375"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V13.3.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.6.2,V2.8.2,V2.9.1,V2.10.3,V2.10.4,V6.4.1"
+  },
+  {
+    "id": "gold:asvs5:V13.3.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that all cryptographic operations are performed using an isolated security module (such as a vault or hardware security module) to securely manage and protect key material from exposure outside of the security module.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "032-213"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V13.3.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V6.4.2"
+  },
+  {
+    "id": "gold:asvs5:V13.4.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application is deployed either without any source control metadata, including the .git or .svn folders, or in a way that these folders are inaccessible both externally and to the application itself.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "615-744"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V13.4.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V4.3.2"
+  },
+  {
+    "id": "gold:asvs5:V13.4.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that debug modes are disabled for all components in production environments to prevent exposure of debugging features and information leakage.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "208-805"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V13.4.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V14.3.2"
+  },
+  {
+    "id": "gold:asvs5:V13.4.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that web servers do not expose directory listings to clients unless explicitly intended.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "615-744"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V13.4.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V4.3.2"
+  },
+  {
+    "id": "gold:asvs5:V13.4.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that using the HTTP TRACE method is not supported in production environments, to avoid potential information leakage.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "483-715"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V13.4.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V14.5.1"
+  },
+  {
+    "id": "gold:asvs5:V13.4.5:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that documentation (such as for internal APIs) and monitoring endpoints are not exposed unless explicitly intended.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "462-245"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V13.4.5",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V14.2.2"
+  },
+  {
+    "id": "gold:asvs5:V13.4.6:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application does not expose detailed version information of backend components.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "743-110"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V13.4.6",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V14.3.3"
+  },
+  {
+    "id": "gold:asvs5:V13.4.7:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the web tier is configured to only serve files with specific file extensions to prevent unintentional information, configuration, and source code leakage.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "314-701"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V13.4.7",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V12.5.1"
+  },
+  {
+    "id": "gold:asvs5:V14.1.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that all sensitive data created and processed by the application has been identified and classified into protection levels. This includes data that is only encoded and therefore easily decoded, such as Base64 strings or the plaintext payload inside a JWT. Protection levels need to take into account any data protection and privacy regulations and standards which the application is required to comply with.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "765-788",
+        "482-866",
+        "224-321",
+        "267-468",
+        "227-045"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V14.1.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.8.1,V6.1.1,V6.1.2,V6.1.3,V8.3.4"
+  },
+  {
+    "id": "gold:asvs5:V14.1.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that all sensitive data protection levels have a documented set of protection requirements. This must include (but not be limited to) requirements related to general encryption, integrity verification, retention, how the data is to be logged, access controls around sensitive data in logs, database-level encryption, privacy and privacy-enhancing technologies to be used, and other confidentiality requirements.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "731-120",
+        "504-340"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V14.1.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.8.2,V8.3.7"
+  },
+  {
+    "id": "gold:asvs5:V14.2.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that sensitive data is only sent to the server in the HTTP message body or header fields, and that the URL and query string do not contain sensitive information, such as an API key or session token.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "402-133",
+        "186-540",
+        "333-888"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V14.2.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V3.1.1,V8.3.1,V13.1.3"
+  },
+  {
+    "id": "gold:asvs5:V14.2.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application prevents sensitive data from being cached in server components, such as load balancers and application caches, or ensures that the data is securely purged after use.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "846-302",
+        "157-430"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V14.2.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V8.1.1,V8.1.2"
+  },
+  {
+    "id": "gold:asvs5:V14.2.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that controls around sensitive data related to encryption, integrity verification, retention, how the data is to be logged, access controls around sensitive data in logs, privacy and privacy-enhancing technologies, are implemented as defined in the documentation for the specific data's protection level.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "731-120"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V14.2.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.8.2"
+  },
+  {
+    "id": "gold:asvs5:V14.2.7:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that sensitive information is subject to data retention classification, ensuring that outdated or unnecessary data is deleted automatically, on a defined schedule, or as the situation requires.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "268-272"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V14.2.7",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V8.3.8"
+  },
+  {
+    "id": "gold:asvs5:V14.3.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that authenticated data is cleared from client storage, such as the browser DOM, after the client or session is terminated. The 'Clear-Site-Data' HTTP response header field may be able to help with this but the client-side should also be able to clear up if the server connection is not available when the session is terminated.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "046-257"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V14.3.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V8.2.3"
+  },
+  {
+    "id": "gold:asvs5:V14.3.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application sets sufficient anti-caching HTTP response header fields (i.e., Cache-Control: no-store) so that sensitive data is not cached in browsers.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "473-758"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V14.3.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V8.2.1"
+  },
+  {
+    "id": "gold:asvs5:V14.3.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that data stored in browser storage (such as localStorage, sessionStorage, IndexedDB, or cookies) does not contain sensitive data, with the exception of session tokens.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "455-358",
+        "617-524"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V14.3.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V3.2.3,V8.2.2"
+  },
+  {
+    "id": "gold:asvs5:V15.1.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that application documentation defines risk based remediation time frames for 3rd party component versions with vulnerabilities and for updating libraries in general, to minimize the risk from these components.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "053-751",
+        "715-334"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V15.1.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.14.3,V14.2.1"
+  },
+  {
+    "id": "gold:asvs5:V15.1.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that an inventory catalog, such as software bill of materials (SBOM), is maintained of all third-party libraries in use, including verifying that components come from pre-defined, trusted, and continually maintained repositories.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "777-470",
+        "715-223",
+        "863-521"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V15.1.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V12.3.6,V14.2.4,V14.2.5"
+  },
+  {
+    "id": "gold:asvs5:V15.1.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that application documentation highlights third-party libraries which are considered to be \"risky components\".",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "860-084"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V15.1.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V14.2.6"
+  },
+  {
+    "id": "gold:asvs5:V15.1.5:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that application documentation highlights parts of the application where \"dangerous functionality\" is being used.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "515-021"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V15.1.5",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.14.5"
+  },
+  {
+    "id": "gold:asvs5:V15.2.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application only contains components which have not breached the documented update and remediation time frames.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "053-751",
+        "715-334"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V15.2.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.14.3,V14.2.1"
+  },
+  {
+    "id": "gold:asvs5:V15.2.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the production environment only includes functionality that is required for the application to function, and does not expose extraneous functionality such as test code, sample snippets, and development functionality.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "462-245"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V15.2.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V14.2.2"
+  },
+  {
+    "id": "gold:asvs5:V15.2.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that third-party components and all of their transitive dependencies are included from the expected repository, whether internally owned or an external source, and that there is no risk of a dependency confusion attack.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "307-507"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V15.2.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V10.3.2"
+  },
+  {
+    "id": "gold:asvs5:V15.2.5:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application implements additional protections around parts of the application which are documented as containing \"dangerous functionality\" or using third-party libraries considered to be \"risky components\". This could include techniques such as sandboxing, encapsulation, containerization or network level isolation to delay and deter attackers who compromise one part of an application from pivoting elsewhere in the application.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "515-021",
+        "860-084"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V15.2.5",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.14.5,V14.2.6"
+  },
+  {
+    "id": "gold:asvs5:V15.3.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application has countermeasures to protect against mass assignment attacks by limiting allowed fields per controller and action, e.g., it is not possible to insert or update a field value when it was not intended to be part of that action.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "042-550"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V15.3.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.1.2"
+  },
+  {
+    "id": "gold:asvs5:V15.3.7:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application has defenses against HTTP parameter pollution attacks, particularly if the application framework makes no distinction about the source of request parameters (query string, body parameters, cookies, or header fields).",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "743-237"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V15.3.7",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V5.1.1"
+  },
+  {
+    "id": "gold:asvs5:V15.4.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that shared objects in multi-threaded code (such as caches, files, or in-memory objects accessed by multiple threads) are accessed safely by using thread-safe types and synchronization mechanisms like locks or semaphores to avoid race conditions and data corruption.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "670-660",
+        "380-540"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V15.4.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.11.2,V1.11.3"
+  },
+  {
+    "id": "gold:asvs5:V15.4.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that checks on a resource's state, such as its existence or permissions, and the actions that depend on them are performed as a single atomic operation to prevent time-of-check to time-of-use (TOCTOU) race conditions. For example, checking if a file exists before opening it, or verifying a user’s access before granting it.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "134-412"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V15.4.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V11.1.6"
+  },
+  {
+    "id": "gold:asvs5:V16.2.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that each log entry includes necessary metadata (such as when, where, who, what) that would allow for a detailed investigation of the timeline when an event happens.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "555-048"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V16.2.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V7.1.4"
+  },
+  {
+    "id": "gold:asvs5:V16.2.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that time sources for all logging components are synchronized, and that timestamps in security event metadata use UTC or include an explicit time zone offset. UTC is recommended to ensure consistency across distributed systems and to prevent confusion during daylight saving time transitions.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "770-361"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V16.2.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V7.3.4"
+  },
+  {
+    "id": "gold:asvs5:V16.2.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that logs can be read and correlated by the log processor that is in use, preferably by using a common logging format.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "260-200"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V16.2.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.7.1"
+  },
+  {
+    "id": "gold:asvs5:V16.2.5:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that when logging sensitive data, the application enforces logging based on the data's protection level. For example, it may not be allowed to log certain data, such as credentials or payment details. Other data, such as session tokens, may only be logged by being hashed or masked, either in full or partially.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "067-050",
+        "240-274"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V16.2.5",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V7.1.1,V7.1.2"
+  },
+  {
+    "id": "gold:asvs5:V16.3.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that all authentication operations are logged, including successful and unsuccessful attempts. Additional metadata, such as the type of authentication or factors used, should also be collected.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "841-710"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V16.3.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V7.2.1"
+  },
+  {
+    "id": "gold:asvs5:V16.3.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that failed authorization attempts are logged. For L3, this must include logging all authorization decisions, including logging when sensitive data is accessed (without logging the sensitive data itself).",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "443-447",
+        "015-063"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V16.3.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V7.2.2,V8.3.5"
+  },
+  {
+    "id": "gold:asvs5:V16.3.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application logs the security events that are defined in the documentation and also logs attempts to bypass the security controls, such as input validation, business logic, and anti-automation.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "184-284"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V16.3.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V7.1.3"
+  },
+  {
+    "id": "gold:asvs5:V16.3.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application logs unexpected errors and security control failures such as backend TLS failures.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "668-364"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V16.3.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V9.2.5"
+  },
+  {
+    "id": "gold:asvs5:V16.4.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that all logging components appropriately encode data to prevent log injection.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "048-612"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V16.4.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V7.3.1"
+  },
+  {
+    "id": "gold:asvs5:V16.4.2:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that logs are protected from unauthorized access and cannot be modified.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "713-683"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V16.4.2",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V7.3.3"
+  },
+  {
+    "id": "gold:asvs5:V16.4.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that logs are securely transmitted to a logically separate system for analysis, detection, alerting, and escalation. The aim is to ensure that if the application is breached, the logs are not compromised.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "026-280"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V16.4.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V1.7.2"
+  },
+  {
+    "id": "gold:asvs5:V16.5.1:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that a generic message is returned to the consumer when an unexpected or security-sensitive error occurs, ensuring no exposure of sensitive internal system data such as stack traces, queries, secret keys, and tokens.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "612-435"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V16.5.1",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V7.4.1"
+  },
+  {
+    "id": "gold:asvs5:V16.5.3:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that the application fails gracefully and securely, including when an exception occurs, preventing fail-open conditions such as processing a transaction despite errors resulting from validation logic.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "166-151"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V16.5.3",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V4.1.5"
+  },
+  {
+    "id": "gold:asvs5:V16.5.4:positive",
+    "schema_version": "0.1.0",
+    "slice": "positive",
+    "input": {
+      "text": "Verify that a \"last resort\" error handler is defined which will catch all unhandled exceptions. This is both to avoid losing error details that must go to log files and to ensure that an error does not take down the entire application process, leading to a loss of availability.",
+      "source_standard": "ASVS"
+    },
+    "expected": {
+      "decision": "linked",
+      "cre_ids": [
+        "118-602"
+      ]
+    },
+    "provenance": {
+      "standard_version": "5.0-provisional",
+      "section_path": "V16.5.4",
+      "ground_truth_source": "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+    },
+    "notes": "provisional gold; source_v4=V7.4.3"
   }
-},
-{
-  "id": "gold:cheatsheet:rest-security:positive",
-  "schema_version": "0.1.0",
-  "slice": "positive",
-  "input": {
-    "text": "[REST](https://en.wikipedia.org/wiki/REST) (or **RE**presentational **S**tate **T**ransfer) is an architectural style first described in [Roy Fielding](https://en.wikipedia.org/wiki/Roy_Fielding)'s Ph.D. dissertation on [Architectural Styles and the Design of Network-based Software Architectures](https://www.ics.uci.edu/~fielding/pubs/dissertation/top.htm).\n\nIt evolved as Fielding wrote the HTTP/1.1 and URI specs and has been proven to be well-suited for developing distributed hypermedia applica\nIntroduction\nHTTPS\nAccess Control\nJWT\nAPI Keys\nRestrict HTTP methods\nPreventing Out-of-Order API Execution\nInput validation\nValidate content types\nManagement endpoints\nError handling\nAudit logs\nSecurity Headers\nCORS\nSensitive information in HTTP requests\nHTTP Return Code",
-    "title_hint": "REST Security Cheat Sheet",
-    "source_standard": "OWASP_CHEATSHEET"
-  },
-  "expected": {
-    "decision": "linked",
-    "cre_ids": [
-      "118-110",
-      "724-770",
-      "623-550"
-    ]
-  },
-  "provenance": {
-    "section_path": "REST_Security_Cheat_Sheet",
-    "ground_truth_source": "owasp_cheatsheets_supplement.json"
-  }
-},
-{
-  "id": "gold:cheatsheet:ssrf-prevention:positive",
-  "schema_version": "0.1.0",
-  "slice": "positive",
-  "input": {
-    "text": "The objective of the cheat sheet is to provide advice regarding the protection against [Server Side Request Forgery](https://www.acunetix.com/blog/articles/server-side-request-forgery-vulnerability/) (SSRF) attack.\n\nThis cheat sheet will focus on the defensive point of view and will not explain how to perform this attack. This [talk](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_Orange_Tsai_Talk.pdf) from the security researcher [Orange Tsai](https://twitter.com/orange_8361) as we\nIntroduction\nContext\nOverview of a SSRF common flow\nCases\nIMDSv2 in AWS\nDeny-list (Last Resort)\nSemgrep Rules\nReferences\nTools and code used for schemas",
-    "title_hint": "Server-Side Request Forgery Prevention Cheat Sheet",
-    "source_standard": "OWASP_CHEATSHEET"
-  },
-  "expected": {
-    "decision": "linked",
-    "cre_ids": [
-      "028-728",
-      "657-084"
-    ]
-  },
-  "provenance": {
-    "section_path": "Server_Side_Request_Forgery_Prevention_Cheat_Sheet",
-    "ground_truth_source": "owasp_cheatsheets_supplement.json"
-  }
-}
 ]
