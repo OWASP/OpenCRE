@@ -1,6 +1,6 @@
 .ONESHELL:
 
-.PHONY: run test covers install-deps dev docker lint frontend clean all e2e e2e-db
+.PHONY: run test covers install-deps dev docker lint frontend clean all e2e e2e-db owasp-agent-sync owasp-agent-merge-concepts
 
 prod-run:
 	gunicorn cre:app --log-file=-
@@ -188,6 +188,14 @@ oie-pipeline:
 oie-e2e-smoke:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
 	PYTHONPATH=. python scripts/run_oie_e2e_smoke.py
+
+owasp-agent-sync:
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
+	PYTHONPATH=. python scripts/owasp_agent_sync.py $(OWASP_AGENT_SYNC_ARGS)
+
+owasp-agent-merge-concepts:
+	[ -d "./venv" ] && . ./venv/bin/activate &&\
+	PYTHONPATH=. python scripts/owasp_agent_merge_concepts.py $(OWASP_AGENT_MERGE_ARGS)
 
 openapi-generate:
 	[ -d "./venv" ] && . ./venv/bin/activate &&\
