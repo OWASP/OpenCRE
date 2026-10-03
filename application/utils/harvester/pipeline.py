@@ -74,7 +74,7 @@ def run_harvester(
 
     repos_path = Path(repos_yaml) if repos_yaml else DEFAULT_REPOS_YAML
     repos_file = load_repo_config(repos_path)
-    validate_repositories(repos_file.repositories)
+    validate_repositories(repos_file)
 
     checkpoint_store = CheckpointStore(session=session)
     builder = DocumentBuilder()
