@@ -128,10 +128,9 @@ class MetaQueries:
                 if len(rows) > 40
                 else ""
             )
-            table = (
-                "| Project | Level | URL |\n|---|---|---|\n" + "\n".join(lines)
-                if lines
-                else "(none)"
+            # Always include the markdown header so callers can detect table form.
+            table = "| Project | Level | URL |\n|---|---|---|\n" + (
+                "\n".join(lines) if lines else "| (none) | n/a | n/a |"
             )
             return QueryResult(
                 ok=True,
@@ -307,6 +306,11 @@ class MetaQueries:
         found_any = False
         for target in targets:
             hit = _match_chapter(chapters, target)
+            alias = _metro_chapter_alias(target) if not hit else None
+            via_alias = False
+            if not hit and alias:
+                hit = _match_chapter(chapters, alias)
+                via_alias = bool(hit)
             if not hit:
                 messages.append(
                     f"No OWASP chapter is indexed for {target!r} "
@@ -319,6 +323,11 @@ class MetaQueries:
             active = hit.get("active")
             name = hit.get("name") or hit.get("key")
             url = hit.get("url") or ""
+            suburb_bit = (
+                f" For {target}, the nearest indexed chapter is {name}."
+                if via_alias
+                else ""
+            )
             if active is False:
                 leader_bit = (
                     f" Last known leaders: {', '.join(leaders)}."
@@ -329,6 +338,7 @@ class MetaQueries:
                     f"There is no active OWASP chapter for {name}. "
                     f"A chapter page is indexed but marked inactive "
                     f"(site data: Needs Website Update / no pages).{leader_bit}"
+                    + suburb_bit
                     + (f" Page: {url}." if url else "")
                 )
             else:
@@ -340,6 +350,7 @@ class MetaQueries:
                 status = "active" if active is True else "indexed"
                 messages.append(
                     f"OWASP chapter {name} is {status}.{leader_bit}"
+                    + suburb_bit
                     + (f" Page: {url}." if url else "")
                 )
             if url:
@@ -351,6 +362,7 @@ class MetaQueries:
                     "chapter": _public_entity(hit),
                     "leaders": leaders,
                     "active": active,
+                    "via_suburb_alias": via_alias,
                 }
             )
         return QueryResult(
@@ -709,9 +721,16 @@ class MetaQueries:
         self, items: List[Dict[str, Any]], topic: str
     ) -> Tuple[List[Dict[str, Any]], bool]:
         keys = TOPIC_KEYWORDS.get(_topic_key(topic))
+        free_text = False
         if not keys:
-            # Unknown topic taxonomy → fail closed / ambiguous
-            return [], True
+            # Free-text topic: substring/token match on name/desc/tags (not invent).
+            raw = (topic or "").strip().lower()
+            if not raw or len(raw) < 2:
+                return [], True
+            free_text = True
+            keys = tuple(
+                part for part in re.split(r"[\s/_-]+", raw) if len(part) >= 2
+            ) or (raw,)
         matched: List[Dict[str, Any]] = []
         for item in items:
             tags = [str(t).lower() for t in (item.get("tags") or [])]
@@ -721,8 +740,10 @@ class MetaQueries:
             blob = f"{name} {desc}"
             if _topic_matches(keys, blob=blob, tokens=tags + topics):
                 matched.append(item)
+        # Unknown free-text with zero evidence → ambiguous (fail closed).
+        if free_text and not matched:
+            return [], True
         return matched, False
-
 
 def _topic_matches(keys: Sequence[str], blob: str, tokens: Sequence[str]) -> bool:
     token_set = {t.strip() for t in tokens if t and t.strip()}
@@ -863,9 +884,15 @@ def _metro_chapter_alias(place: str) -> Optional[str]:
     aliases = {
         "pasadena": "los angeles",
         "santa monica": "los angeles",
-        "hollywood": "los angeles",
+        "glendale": "los angeles",
+        "burbank": "los angeles",
+        "oakland": "los angeles",
         "beverly hills": "los angeles",
         "long beach": "los angeles",
+        "croydon": "london",
+        "peckham": "london",
+        "potsdam": "berlin",
+        "yokohama": "tokyo",
         "brooklyn": "new york",
         "manhattan": "new york",
         "cambridge": "boston",
