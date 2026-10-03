@@ -81,7 +81,10 @@ class MetaQueries:
         )
 
     def count_projects(
-        self, topic: Optional[str] = None, level: Optional[str] = None, list_mode: bool = False
+        self,
+        topic: Optional[str] = None,
+        level: Optional[str] = None,
+        list_mode: bool = False,
     ) -> QueryResult:
         items = self._safe_entities("project")
         if not isinstance(items, list):
@@ -123,11 +126,7 @@ class MetaQueries:
                 f"| {p.get('name') or p.get('key')} | {p.get('level') or 'n/a'} | {p.get('url') or 'n/a'} |"
                 for p in rows[:40]
             ]
-            more = (
-                f" ({len(rows) - 40} more not shown.)"
-                if len(rows) > 40
-                else ""
-            )
+            more = f" ({len(rows) - 40} more not shown.)" if len(rows) > 40 else ""
             # Always include the markdown header so callers can detect table form.
             table = "| Project | Level | URL |\n|---|---|---|\n" + (
                 "\n".join(lines) if lines else "| (none) | n/a | n/a |"
@@ -418,9 +417,13 @@ class MetaQueries:
             if ev.get("_conflict"):
                 continue
             talks = [str(t) for t in (ev.get("talks") or [])]
-            blob = " ".join(talks + [str(ev.get("name") or ""), str(ev.get("description") or "")]).lower()
-            if person_n and person_n not in blob and person_n not in _norm(
-                str(ev.get("name") or "")
+            blob = " ".join(
+                talks + [str(ev.get("name") or ""), str(ev.get("description") or "")]
+            ).lower()
+            if (
+                person_n
+                and person_n not in blob
+                and person_n not in _norm(str(ev.get("name") or ""))
             ):
                 # Speakers are rarely indexed separately; require talk/event text match.
                 continue
@@ -744,6 +747,7 @@ class MetaQueries:
         if free_text and not matched:
             return [], True
         return matched, False
+
 
 def _topic_matches(keys: Sequence[str], blob: str, tokens: Sequence[str]) -> bool:
     token_set = {t.strip() for t in tokens if t and t.strip()}
