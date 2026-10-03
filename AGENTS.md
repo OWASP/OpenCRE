@@ -128,6 +128,16 @@ Before deploy or `flask db upgrade`: `make alembic-guardrail` (or `python script
 | `production-db-ops-safety.mdc` | Destructive prod DB confirmation |
 | `alembic-deploy-guardrail.mdc` | Pre-deploy migration guardrail |
 
+## Cursor Cloud specific instructions
+
+Cloud Agent setup lives in `.cursor/environment.json`. `.cursor/install.sh` installs Python 3.11.9 (pinned in `.python-version`; the base image is 3.12), Yarn dependencies, the `./venv` from `requirements-dev.txt`, Playwright Chromium, and the SQLite schema (`flask db upgrade`). `.cursor/start.sh` starts Docker with the `fuse-overlayfs` driver, then Postgres (`pgvector`), Redis, and Neo4j via the Makefile targets, then Flask on port 5000.
+
+- `make test` does not need those containers. Gap analysis, workers, and Librarian features do.
+- `application/tests/librarian/dataset_test.py` uses `standards_cache.sqlite` when that file exists and expects a full upstream graph. `make e2e-db` writes a small fixture graph instead, so that one test fails until the file is removed or replaced with an upstream sync. With no sqlite file, the test skips.
+- Contributor data is `standards_cache.sqlite`. `make e2e-db` resets it and seeds CRE `558-807` ("Mutually authenticate"). `make upstream-sync` downloads the public graph and needs network.
+- Chat and embedding regeneration need a provider API key. Core browse, search, and import flows do not.
+- Frontend packages are Yarn Classic at the repo root (`yarn.lock`). `yarn build` writes `application/frontend/www`, which Flask serves.
+
 ## OpenCRE commands
 
 ```bash
