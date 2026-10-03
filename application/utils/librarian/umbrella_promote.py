@@ -21,7 +21,20 @@ _META = re.compile(
     re.I,
 )
 
-_PROMOTE_CAP = 4
+_PROMOTE_CAP = 8
+
+
+def _promote_cap() -> int:
+    """``CRE_LIBRARIAN_UMBRELLA_PROMOTE_CAP`` (default 8; d1-winner E5)."""
+    import os
+
+    raw = os.getenv("CRE_LIBRARIAN_UMBRELLA_PROMOTE_CAP")
+    if raw is None or not str(raw).strip():
+        return _PROMOTE_CAP
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return _PROMOTE_CAP
 
 
 def _norm_name(text: str) -> str:
@@ -103,6 +116,8 @@ class ParentIndex:
 
     child_to_parents: Mapping[str, Tuple[str, ...]]
     parent_names: Mapping[str, str] = field(default_factory=dict)
+    #: Inverse of ``child_to_parents`` — hub UUID → child UUIDs (leaf drill-down).
+    parent_to_children: Mapping[str, Tuple[str, ...]] = field(default_factory=dict)
 
     def promote_for_shortlist(
         self,
@@ -127,7 +142,7 @@ class ParentIndex:
                 pname = self.parent_names.get(parent, "")
                 if _tokens_overlap(_significant_tokens(pname), title_toks):
                     out.append(parent)
-            if len(out) >= _PROMOTE_CAP:
+            if len(out) >= _promote_cap():
                 break
         return out
 
@@ -152,6 +167,7 @@ def build_parent_index(session: Any) -> ParentIndex:
     from application.database.db import CRE, InternalLinks
 
     child_to_parents: Dict[str, Set[str]] = {}
+    parent_to_children: Dict[str, Set[str]] = {}
     parent_ids: Set[str] = set()
     rows = session.query(
         InternalLinks.group, InternalLinks.cre, InternalLinks.type
@@ -164,6 +180,7 @@ def build_parent_index(session: Any) -> ParentIndex:
         if lt and lt != "contains":
             continue
         child_to_parents.setdefault(cre, set()).add(group)
+        parent_to_children.setdefault(group, set()).add(cre)
         parent_ids.add(group)
 
     parent_names: Dict[str, str] = {}
@@ -177,6 +194,7 @@ def build_parent_index(session: Any) -> ParentIndex:
     return ParentIndex(
         child_to_parents={k: tuple(sorted(v)) for k, v in child_to_parents.items()},
         parent_names=parent_names,
+        parent_to_children={k: tuple(sorted(v)) for k, v in parent_to_children.items()},
     )
 
 
