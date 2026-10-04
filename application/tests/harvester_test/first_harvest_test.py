@@ -5,9 +5,10 @@ import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session
 
 from application.database.db import HarvesterCheckpoint, HarvestInput
@@ -92,7 +93,9 @@ class FirstHarvestTests(unittest.TestCase):
         self.git("commit", "--allow-empty", "-m", "Fixture snapshot")
         return self.git("rev-parse", "HEAD")
 
-    def harvest(self, run_id: str = "first-run") -> tuple[int, RunSummary]:
+    def harvest(
+        self, run_id: str = "first-run", *, dry_run: bool = False
+    ) -> tuple[int, RunSummary]:
         summary = RunSummary(run_id=run_id)
         # Only redirect repository construction to the disposable local clone.
         # Git commands, filters, builders, chunk validation and DB writes are real.
@@ -106,7 +109,7 @@ class FirstHarvestTests(unittest.TestCase):
                 pipeline_run_id=run_id,
                 checkpoint_store=self.store,
                 builder=DocumentBuilder(),
-                dry_run=False,
+                dry_run=dry_run,
                 sync_repos=False,
                 summary=summary,
             )
@@ -235,6 +238,108 @@ class FirstHarvestTests(unittest.TestCase):
         checkpoint = self.store.load(self.config.id)
         assert checkpoint is not None
         self.assertEqual(checkpoint.last_processed_commit, head)
+
+    def test_dry_run_does_not_consume_the_initial_snapshot(self) -> None:
+        self.write_file("docs/auth.md")
+        self.commit()
+
+        written, _ = self.harvest("preview", dry_run=True)
+
+        self.assertEqual(written, 1)
+        self.assertIsNone(self.store.load(self.config.id))
+        self.assertEqual(self.session.query(HarvestInput).count(), 0)
+        written, _ = self.harvest("real-run")
+        self.assertEqual(written, 1)
+
+    def test_chunk_failure_keeps_the_initial_snapshot_retryable(self) -> None:
+        self.write_file("docs/auth.md")
+        self.commit()
+        with patch(
+            "application.utils.harvester.pipeline.DocumentChunkPipeline.chunk",
+            side_effect=ValueError("chunk failure"),
+        ):
+            with self.assertRaisesRegex(ValueError, "chunk failure"):
+                self.harvest("failed-run")
+
+        self.assertIsNone(self.store.load(self.config.id))
+        self.assertEqual(self.session.query(HarvestInput).count(), 0)
+        written, _ = self.harvest("retry")
+        self.assertEqual(written, 1)
+
+    def test_queue_insert_failure_rolls_back_checkpoint_and_all_rows(self) -> None:
+        self.write_file("docs/auth.md")
+        self.write_file("docs/new.md")
+        head = self.commit()
+        insert_attempts = 0
+
+        def reject_queue_insert(
+            connection: Any,
+            cursor: Any,
+            statement: str,
+            parameters: Any,
+            context: Any,
+            many: bool,
+        ) -> None:
+            nonlocal insert_attempts
+            if statement.lstrip().upper().startswith("INSERT INTO HARVEST_INPUT"):
+                insert_attempts += 1
+                raise RuntimeError("queue insert failure")
+
+        # Fail after SQL has written rows; this also works with batched inserts.
+        event.listen(self.engine, "after_cursor_execute", reject_queue_insert)  # type: ignore[no-untyped-call]
+        try:
+            with self.assertRaisesRegex(RuntimeError, "queue insert failure"):
+                self.harvest("failed-run")
+        finally:
+            event.remove(self.engine, "after_cursor_execute", reject_queue_insert)  # type: ignore[no-untyped-call]
+
+        self.assertEqual(insert_attempts, 1)
+        self.assertIsNone(self.store.load(self.config.id))
+        self.assertEqual(self.session.query(HarvestInput).count(), 0)
+        written, _ = self.harvest("retry")
+        self.assertEqual(written, 2)
+        checkpoint = self.store.load(self.config.id)
+        assert checkpoint is not None
+        self.assertEqual(checkpoint.last_processed_commit, head)
+
+    def test_dry_run_preserves_an_existing_checkpoint(self) -> None:
+        self.write_file("docs/auth.md")
+        base = self.commit()
+        self.harvest("bootstrap")
+        self.write_file("docs/new.md")
+        self.commit()
+
+        written, _ = self.harvest("preview", dry_run=True)
+
+        self.assertEqual(written, 1)
+        checkpoint = self.store.load(self.config.id)
+        assert checkpoint is not None
+        self.assertEqual(checkpoint.last_processed_commit, base)
+        self.assertEqual(self.session.query(HarvestInput).count(), 1)
+        written, _ = self.harvest("real-run")
+        self.assertEqual(written, 1)
+        self.assertEqual(self.session.query(HarvestInput).count(), 2)
+
+    def test_checkpoint_failure_rolls_back_incremental_queue_rows(self) -> None:
+        self.write_file("docs/auth.md")
+        base = self.commit()
+        self.harvest("bootstrap")
+        self.write_file("docs/new.md")
+        self.commit()
+
+        with patch.object(
+            self.store, "save", side_effect=RuntimeError("checkpoint failure")
+        ):
+            with self.assertRaisesRegex(RuntimeError, "checkpoint failure"):
+                self.harvest("failed-run")
+
+        checkpoint = self.store.load(self.config.id)
+        assert checkpoint is not None
+        self.assertEqual(checkpoint.last_processed_commit, base)
+        self.assertEqual(self.session.query(HarvestInput).count(), 1)
+        written, _ = self.harvest("retry")
+        self.assertEqual(written, 1)
+        self.assertEqual(self.session.query(HarvestInput).count(), 2)
 
     def test_rejects_invalid_or_non_commit_revisions(self) -> None:
         self.write_file("docs/auth.md")

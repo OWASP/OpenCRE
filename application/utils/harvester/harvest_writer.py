@@ -19,12 +19,14 @@ def write_harvest_input(
     records: Iterable[IngestChunkRecord],
     *,
     dry_run: bool = False,
+    commit: bool = True,
 ) -> int:
     """
     Insert pending ``harvest_input`` rows for one pipeline run.
 
     Top-level ``pipeline_run_id`` matches the payload field (Module A contract).
     Returns the number of rows that would be / were written.
+    Set ``commit=False`` to couple rows to other writes in one transaction.
     """
     if not pipeline_run_id or not pipeline_run_id.strip():
         raise ValueError("pipeline_run_id must be non-empty")
@@ -49,6 +51,6 @@ def write_harvest_input(
         )
         written += 1
 
-    if not dry_run and written:
+    if not dry_run and written and commit:
         session.commit()
     return written

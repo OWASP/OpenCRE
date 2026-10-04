@@ -25,7 +25,7 @@ from application.utils.harvester.file_filter import FileFilter
 from application.utils.harvester.git_repository_client import GitRepositoryClient
 from application.utils.harvester.harvest_writer import write_harvest_input
 from application.utils.harvester.incremental_pipeline import IncrementalPipeline
-from application.utils.harvester.models import DiffBlock, Document
+from application.utils.harvester.models import DiffBlock, Document, RepositoryCheckpoint
 from application.utils.harvester.repos_validator import validate_repositories
 from application.utils.harvester.schemas import RepositoryConfig
 
@@ -179,6 +179,7 @@ def _harvest_repository(
         pipeline_run_id=pipeline_run_id,
         documents=documents,
         last_processed_commit=head,
+        persist_checkpoint=False,
     )
     summary.documents_emitted += len(emitted)
 
@@ -187,7 +188,30 @@ def _harvest_repository(
     for document in emitted:
         records.extend(chunk_pipeline.chunk(document))
 
-    return write_harvest_input(session, pipeline_run_id, records, dry_run=dry_run)
+    # Queue rows and progress must become durable together. Preview runs leave
+    # both untouched so the same snapshot remains available for a real run.
+    try:
+        written = write_harvest_input(
+            session, pipeline_run_id, records, dry_run=dry_run, commit=False
+        )
+        if not dry_run:
+            checkpoint_store.save(
+                RepositoryCheckpoint(
+                    repository_id=repo_cfg.id,
+                    last_processed_commit=head,
+                    updated_at=datetime.now(timezone.utc),
+                    provider="github",
+                    owner=repo_cfg.owner,
+                    repository=repo_cfg.repo,
+                    branch=repo_cfg.branch,
+                ),
+                commit=False,
+            )
+            session.commit()
+        return written
+    except Exception:
+        session.rollback()
+        raise
 
 
 def _commit_timestamp(client: GitRepositoryClient, commit_sha: str) -> datetime:
