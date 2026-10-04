@@ -1,5 +1,6 @@
 """Real Git and SQLite regressions for first-run repository harvesting."""
 
+import os
 import subprocess
 import tempfile
 import unittest
@@ -23,6 +24,18 @@ from application.utils.harvester.schemas import RepositoryConfig
 
 class FirstHarvestTests(unittest.TestCase):
     def setUp(self) -> None:
+        # Repository variables override -C; isolate fixture and detector calls.
+        environment = patch.dict(
+            os.environ,
+            {
+                key: value
+                for key, value in os.environ.items()
+                if not key.startswith("GIT_")
+            },
+            clear=True,
+        )
+        environment.start()
+        self.addCleanup(environment.stop)
         fixture_root = Path(__file__).resolve().parents[3] / "tmp" / "harvester-it"
         fixture_root.mkdir(parents=True, exist_ok=True)
         self.tempdir = tempfile.TemporaryDirectory(dir=fixture_root)
