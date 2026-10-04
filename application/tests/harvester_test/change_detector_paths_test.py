@@ -1,9 +1,11 @@
 """Exercise incremental path discovery against real Git repositories."""
 
+import os
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from application.utils.harvester.change_detector import ChangeDetector
 from application.utils.harvester.git_repository_client import GitRepositoryClient
@@ -11,6 +13,18 @@ from application.utils.harvester.git_repository_client import GitRepositoryClien
 
 class ChangeDetectorPathTests(unittest.TestCase):
     def setUp(self) -> None:
+        # Repository variables override -C; keep every Git call in this fixture.
+        environment = patch.dict(
+            os.environ,
+            {
+                key: value
+                for key, value in os.environ.items()
+                if not key.startswith("GIT_")
+            },
+            clear=True,
+        )
+        environment.start()
+        self.addCleanup(environment.stop)
         fixture_root = Path(__file__).resolve().parents[3] / "tmp" / "harvester-it"
         fixture_root.mkdir(parents=True, exist_ok=True)
         self.tempdir = tempfile.TemporaryDirectory(dir=fixture_root)
