@@ -60,12 +60,14 @@ KNOWLEDGE_QUEUE_PATH = os.path.join(
     "sample_cheatsheets_knowledge_queue.jsonl",
 )
 
+
 class StubScaler:
     """Deterministic C.3 confidence for the dry-run."""
 
     def confidence(self, logits):
         # Above the C.4 threshold, so the LinkProposal path can be exercised.
         return 0.95
+
 
 def build_knowledge_queue():
     """Extract every fixture into a CheatsheetRecord and write the queue JSONL."""
@@ -85,11 +87,9 @@ def build_knowledge_queue():
             )
 
             # Local fixture files may not have a committed_at value.
-            # Keep the same fallback used by cheatsheet_dry_run.py 
+            # Keep the same fallback used by cheatsheet_dry_run.py
             if not record.metadata.get("committed_at"):
-                record.metadata["committed_at"] = (
-                    "2026-01-01T00:00:00+00:00"
-                )
+                record.metadata["committed_at"] = "2026-01-01T00:00:00+00:00"
 
             records.append(record)
 
@@ -101,9 +101,7 @@ def build_knowledge_queue():
             raise
 
     if not records:
-        raise RuntimeError(
-            f"No Cheat Sheet fixtures found in {FIXTURES_DIR}"
-        )
+        raise RuntimeError(f"No Cheat Sheet fixtures found in {FIXTURES_DIR}")
 
     print("\n" + "=" * 72)
     print("WRITING KNOWLEDGE QUEUE")
@@ -167,11 +165,7 @@ def main():
     print("Stats:", result.stats)
 
     for envelope in result.envelopes:
-        kind = (
-            "LinkProposal"
-            if isinstance(envelope, LinkProposal)
-            else "ReviewItem"
-        )
+        kind = "LinkProposal" if isinstance(envelope, LinkProposal) else "ReviewItem"
 
         print(f"\n{kind}")
         print("  chunk_id    :", envelope.chunk_id)
