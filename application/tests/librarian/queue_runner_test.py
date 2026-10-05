@@ -13,14 +13,17 @@ from cre_logging import get_logger
 
 logger = get_logger(__name__)
 
+import dataclasses
 import unittest
 from datetime import datetime, timezone
+from unittest.mock import patch
 
 from application import create_app, sqla
 from application.database.db import KnowledgeQueueItem as KnowledgeQueueRow
 from application.utils.librarian.config_loader import LibrarianConfig
 from application.utils.librarian.envelope_sink import NullEnvelopeSink
 from application.utils.librarian.factory import LibrarianComponents
+from application.utils.librarian import queue_runner
 from application.utils.librarian.queue_runner import RunSummary, run_librarian_queue
 from application.utils.librarian.schemas import CreCandidate, RetrievalAudit
 
@@ -170,6 +173,19 @@ class RunLibrarianQueueTest(unittest.TestCase):
             at=AT,
             **kwargs,
         )
+
+    def test_zero_min_sections_is_forwarded_not_replaced_by_default(self) -> None:
+        captured = {}
+        real_pipeline = queue_runner.LibrarianPipeline
+
+        def _spy(*args, **kwargs):
+            captured.update(kwargs)
+            return real_pipeline(*args, **kwargs)
+
+        components = dataclasses.replace(_components(), leaf_drilldown_min_sections=0)
+        with patch.object(queue_runner, "LibrarianPipeline", side_effect=_spy):
+            self._run(components=components, dry_run=True, sink=None)
+        self.assertEqual(captured["leaf_drilldown_min_sections"], 0)
 
     def test_queue_row_becomes_a_link_and_is_consumed(self) -> None:
         sqla.session.add(_row("a"))

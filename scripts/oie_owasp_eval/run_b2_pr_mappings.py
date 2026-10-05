@@ -682,7 +682,7 @@ def score_run(run_id: str, cache: str) -> Dict[str, Any]:
 
     return {
         "run_id": run_id,
-        "gate": "B2 PR JSON gold (section grain, ≥1 of union(rerank top-2 ∪ vector top-2) ∈ gold cre_ids)",
+        "gate": "B2 PR JSON gold (section grain, ≥1 of union(rerank top-3 ∪ vector top-3) ∈ gold cre_ids)",
         "harnesses": [
             {
                 "pr": h["pr"],

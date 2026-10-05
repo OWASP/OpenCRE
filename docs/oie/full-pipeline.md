@@ -36,10 +36,15 @@ export DEV_DATABASE_URL=postgresql://cre:password@127.0.0.1:5432/cre
 PYTHONPATH=. python scripts/oie_owasp_eval/run_full_pipeline.py \
   --repos asvs,aisvs,cheatsheets,aix \
   --keep-all-knowledge \
-  --neighborhood
+  --neighborhood \
+  --wipe-queues
 ```
 
-Or: `make oie-full-pipeline`.
+`--wipe-queues` deletes **every** row in `harvest_input`, `knowledge_queue` and
+`decision_queue` of the target database before the GitHub arms run
+(`knowledge_queue.content_hash` is globally unique, so stale rows would hide new
+output). The script refuses to run those arms without it; point `--cache_file` at
+a disposable database.
 
 Harvest uses GitHub **tarballs** (no `.git`). Promoted librarian flags default on.
 Reports land under `tmp/oie_owasp_eval/experiments/full_pipeline_*.b2_report.json`

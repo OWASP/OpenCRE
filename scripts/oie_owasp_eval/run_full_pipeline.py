@@ -47,6 +47,12 @@ EXP = ROOT / "tmp" / "oie_owasp_eval" / "experiments"
 TARBALL_DIR = ART / "tarballs"
 FIXTURES = ROOT / "application" / "tests" / "fixtures" / "owasp_mappings"
 
+
+def _venv_python() -> str:
+    venv_python = ROOT / "venv" / "bin" / "python"
+    return str(venv_python) if venv_python.is_file() else sys.executable
+
+
 # Logical name → (github repo, branch, include globs, gold fixture stem or None)
 GITHUB_TARGETS: Dict[str, Tuple[str, str, List[str], Optional[str]]] = {
     "asvs": (
@@ -686,7 +692,7 @@ def _run_b2_arm(
     out = EXP / out_name
     EXP.mkdir(parents=True, exist_ok=True)
     cmd = [
-        str(ROOT / "venv" / "bin" / "python"),
+        _venv_python(),
         str(ROOT / "scripts" / "oie_owasp_eval" / "run_b2_pr_mappings.py"),
         "--run-id",
         arm_run,
@@ -760,6 +766,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default=ART,
         help="Report directory (default tmp/oie_owasp_eval/full_pipeline)",
     )
+    parser.add_argument(
+        "--wipe-queues",
+        action="store_true",
+        help=(
+            "DESTRUCTIVE: delete ALL harvest_input/knowledge_queue/decision_queue "
+            "rows in --cache_file before the GitHub arms (use a disposable DB)"
+        ),
+    )
     args = parser.parse_args(list(argv) if argv is not None else None)
 
     _load_dotenv()
@@ -795,6 +809,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     orch_result = None
     github_report: Optional[Dict[str, Any]] = None
     b2_reports: Dict[str, Dict[str, Any]] = {}
+
+    if github and not args.wipe_queues:
+        print(
+            "refusing to run the GitHub arms: they delete every row in "
+            "harvest_input, knowledge_queue and decision_queue of the target "
+            "database. Re-run with --wipe-queues against a disposable database.",
+            file=sys.stderr,
+        )
+        return 2
 
     if github:
         print(f"=== Module A (tarball) + B + C  run_id={run_id} ===", flush=True)

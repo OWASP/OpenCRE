@@ -127,5 +127,17 @@ class FullPipelineTop2ParityTest(unittest.TestCase):
         self.assertNotIn("666-666", fp)
 
 
+class WipeQueuesGuardTest(unittest.TestCase):
+    def test_github_arms_refuse_without_wipe_queues(self) -> None:
+        import os
+        from unittest.mock import patch
+
+        with patch.dict(os.environ, {}, clear=False):
+            code = _fp.main(
+                ["--repos", "asvs", "--cache_file", "sqlite:///unused.sqlite"]
+            )
+        self.assertEqual(code, 2)
+
+
 if __name__ == "__main__":
     unittest.main()
