@@ -6,6 +6,8 @@ Not an eval scorer. Operational path for ``cre.py --ingest_github`` /
 
 from __future__ import annotations
 
+import dataclasses
+import re
 import sys
 import tarfile
 import urllib.request
@@ -13,7 +15,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any, List, Optional, Sequence, Tuple
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 ROOT = Path(__file__).resolve().parents[3]
 TARBALL_DIR = ROOT / "tmp" / "oie_ingest" / "tarballs"
@@ -28,6 +30,22 @@ EXCLUDE = [
 ]
 
 _GITHUB_HOSTS = {"github.com", "www.github.com"}
+
+_OWNER_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$")
+_REPO_RE = re.compile(r"^[A-Za-z0-9._-]{1,100}$")
+_BRANCH_RE = re.compile(r"^[A-Za-z0-9._/-]{1,200}$")
+
+DOWNLOAD_TIMEOUT_SECONDS = 30
+MAX_TARBALL_BYTES = 200 * 1024 * 1024
+MAX_MD_MEMBER_BYTES = 2 * 1024 * 1024
+MAX_MD_TOTAL_BYTES = 100 * 1024 * 1024
+MAX_TAR_MEMBERS = 20000
+
+
+def validate_branch(branch: str) -> str:
+    if not _BRANCH_RE.match(branch) or ".." in branch or branch.startswith("-"):
+        raise ValueError(f"invalid branch name {branch!r}")
+    return branch
 
 
 @dataclass(frozen=True)
@@ -66,10 +84,12 @@ def parse_github_url(url: str) -> ParsedGitHubUrl:
     owner, repo = parts[0], parts[1]
     if repo.endswith(".git"):
         repo = repo[: -len(".git")]
+    if not _OWNER_RE.match(owner) or not _REPO_RE.match(repo) or repo in (".", ".."):
+        raise ValueError(f"invalid GitHub owner/repo {owner!r}/{repo!r}")
     branch: Optional[str] = None
     path_prefix: Optional[str] = None
     if len(parts) >= 4 and parts[2] in ("tree", "blob"):
-        branch = parts[3]
+        branch = validate_branch(parts[3])
         if len(parts) > 4:
             path_prefix = "/".join(parts[4:])
     return ParsedGitHubUrl(
@@ -99,24 +119,49 @@ def _match(path: str, patterns: Sequence[str]) -> bool:
     return False
 
 
-def _download_tarball(owner: str, repo: str, branch: str, dest: Path) -> str:
+def _download_to_file(url: str, dest: Path) -> None:
+    request = urllib.request.Request(url, headers={"User-Agent": "OpenCRE-ingest"})
+    total = 0
+    with urllib.request.urlopen(
+        request, timeout=DOWNLOAD_TIMEOUT_SECONDS
+    ) as resp, open(dest, "wb") as fh:
+        while True:
+            buf = resp.read(1 << 20)
+            if not buf:
+                break
+            total += len(buf)
+            if total > MAX_TARBALL_BYTES:
+                raise RuntimeError(f"tarball exceeds {MAX_TARBALL_BYTES} byte limit")
+            fh.write(buf)
+
+
+def _download_tarball(
+    owner: str,
+    repo: str,
+    branch: str,
+    dest: Path,
+    *,
+    allow_fallback: bool = True,
+) -> str:
     dest.parent.mkdir(parents=True, exist_ok=True)
     tried: List[str] = []
     candidates = [branch]
-    for alt in ("main", "master"):
-        if alt not in candidates:
-            candidates.append(alt)
+    if allow_fallback:
+        for alt in ("main", "master"):
+            if alt not in candidates:
+                candidates.append(alt)
     last_err: Optional[BaseException] = None
     for try_branch in candidates:
         url = (
-            f"https://codeload.github.com/{owner}/{repo}/tar.gz/refs/heads/{try_branch}"
+            f"https://codeload.github.com/{quote(owner, safe='')}/"
+            f"{quote(repo, safe='')}/tar.gz/refs/heads/{quote(try_branch, safe='/')}"
         )
         tried.append(try_branch)
         print(f"GET {url}", file=sys.stderr, flush=True)
         try:
-            urllib.request.urlretrieve(url, dest)
+            _download_to_file(url, dest)
             with tarfile.open(dest, "r:gz") as tf:
-                tf.getmembers()[:1]
+                tf.next()
             return try_branch
         except Exception as exc:  # noqa: BLE001
             last_err = exc
@@ -134,9 +179,12 @@ def _iter_md(tgz: Path, *, path_prefix: Optional[str]) -> List[Tuple[str, str]]:
         pref = path_prefix.strip("/")
         includes = [f"{pref}/**/*.md", f"{pref}/*.md"]
     out: List[Tuple[str, str]] = []
+    total_bytes = 0
     with tarfile.open(tgz, "r:gz") as tf:
-        for member in tf.getmembers():
-            if not member.isfile():
+        for seen, member in enumerate(tf):
+            if seen >= MAX_TAR_MEMBERS:
+                break
+            if not member.isfile() or member.size > MAX_MD_MEMBER_BYTES:
                 continue
             parts = Path(member.name).parts
             if len(parts) < 2:
@@ -151,7 +199,12 @@ def _iter_md(tgz: Path, *, path_prefix: Optional[str]) -> List[Tuple[str, str]]:
             extracted = tf.extractfile(member)
             if extracted is None:
                 continue
-            raw = extracted.read()
+            raw = extracted.read(MAX_MD_MEMBER_BYTES + 1)
+            if len(raw) > MAX_MD_MEMBER_BYTES:
+                continue
+            total_bytes += len(raw)
+            if total_bytes > MAX_MD_TOTAL_BYTES:
+                break
             try:
                 text = raw.decode("utf-8")
             except UnicodeDecodeError:
@@ -246,33 +299,22 @@ def ingest_github_url(
 
     parsed = parse_github_url(url)
     _ = cache_file  # reserved; session is already bound via db_connect
-    branch_hint = branch_override or parsed.branch or "main"
+    explicit_branch = branch_override or parsed.branch
+    branch_hint = validate_branch(explicit_branch) if explicit_branch else "main"
     rid = run_id or ("ingest-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"))
     counts = IngestCounts()
 
-    # Clear prior rows for this repo so content_hash dedupe does not hide output.
-    # Exact source_repo only — LIKE on artifact_id would treat %/_ as wildcards
-    # and can delete unrelated queue rows on a shared Postgres OIE DB.
     repo_key = f"{parsed.owner}/{parsed.repo}"
-    deleted_kq = (
-        session.query(KnowledgeQueueItem)
-        .filter(KnowledgeQueueItem.source_repo == repo_key)
-        .delete(synchronize_session=False)
-    )
-    session.query(HarvestInput).filter_by(pipeline_run_id=rid).delete(
-        synchronize_session=False
-    )
-    session.commit()
-    if deleted_kq:
-        print(
-            f"cleared {deleted_kq} prior knowledge_queue rows for {repo_key}",
-            file=sys.stderr,
-            flush=True,
-        )
 
     tgz = TARBALL_DIR / f"{parsed.owner}_{parsed.repo}.tgz"
     try:
-        used_branch = _download_tarball(parsed.owner, parsed.repo, branch_hint, tgz)
+        used_branch = _download_tarball(
+            parsed.owner,
+            parsed.repo,
+            branch_hint,
+            tgz,
+            allow_fallback=not explicit_branch,
+        )
     except Exception as exc:  # noqa: BLE001
         counts.errors += 1
         print(f"ERROR: {exc}", file=sys.stderr, flush=True)
@@ -318,8 +360,29 @@ def ingest_github_url(
             locator=Locator(kind="repo_path", id=rel, path=rel),
         )
         records.extend(pipeline.chunk(doc))
+
+    # Earlier ingest rows for this repo would hide fresh output through the
+    # global content_hash dedupe. Only ingest-run rows are cleared (never rows
+    # from --run_harvester), and only once download and chunking succeeded.
+    deleted_kq = (
+        session.query(KnowledgeQueueItem)
+        .filter(
+            KnowledgeQueueItem.source_repo == repo_key,
+            KnowledgeQueueItem.pipeline_run_id.like("ingest-%"),
+        )
+        .delete(synchronize_session=False)
+    )
+    session.query(HarvestInput).filter_by(pipeline_run_id=rid).delete(
+        synchronize_session=False
+    )
     written = write_harvest_input(session, rid, records)
     session.commit()
+    if deleted_kq:
+        print(
+            f"cleared {deleted_kq} prior ingest knowledge_queue rows for {repo_key}",
+            file=sys.stderr,
+            flush=True,
+        )
     counts.chunks = written
     print(
         f"harvested {repo_key}@{used_branch}: files={len(files)} chunks={written} "
@@ -336,17 +399,15 @@ def ingest_github_url(
         )
         b_summary = _keep_all_noise_filter(session, rid)
     else:
-        import os
-
         from application.prompt_client.litellm_router import (
             has_credentials_for_model,
             missing_credentials_hint,
         )
         from application.utils.noise_filter.config_loader import load_config
 
-        if model_override:
-            os.environ["CRE_NOISE_FILTER_LLM_MODEL"] = model_override.strip()
         cfg = load_config()
+        if model_override and model_override.strip():
+            cfg = dataclasses.replace(cfg, llm_model=model_override.strip())
         if not has_credentials_for_model(cfg.llm_model):
             print(
                 "ERROR: " + missing_credentials_hint(cfg.llm_model),
@@ -360,7 +421,7 @@ def ingest_github_url(
             file=sys.stderr,
             flush=True,
         )
-        b_summary = run_noise_filter(session, rid)
+        b_summary = run_noise_filter(session, rid, config=cfg)
 
     counts.knowledge = getattr(b_summary, "kept_knowledge", 0) or 0
     counts.uncertain = getattr(b_summary, "kept_uncertain", 0) or 0
