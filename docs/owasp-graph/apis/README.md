@@ -1,6 +1,6 @@
 # OIE module handover APIs
 
-Draft contracts for data passed between the four OIE modules. These are **internal pipeline APIs**, not the public OpenCRE REST API. Shapes follow the [RFC](../designs/owasp-pane-of-glass.md) module boundaries.
+Draft contracts for data passed between the four OIE modules. These are **internal pipeline APIs**, not the public OpenCRE REST API. Shapes follow the [RFC](../../designs/owasp-pane-of-glass.md) module boundaries.
 
 ## Conventions
 
