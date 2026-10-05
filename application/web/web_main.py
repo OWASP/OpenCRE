@@ -1032,6 +1032,70 @@ def admin_imports_enabled_required(f):
     return enabled_r
 
 
+def _bounded_int_arg(name: str, default: int, *, low: int, high: int) -> int:
+    try:
+        value = int(request.args.get(name) or default)
+    except ValueError:
+        abort(400, description=f"{name} must be an integer")
+    return max(low, min(high, value))
+
+
+@app.route("/admin/oie/runs", methods=["GET"])
+@login_required
+@admin_imports_enabled_required
+def admin_oie_runs() -> Any:
+    from application.utils.oie_scheduler import run_log
+
+    session = db.Node_collection().session
+    rows = run_log.list_runs(
+        session,
+        job=request.args.get("job") or None,
+        status=request.args.get("status") or None,
+        limit=_bounded_int_arg("limit", 50, low=1, high=500),
+        offset=_bounded_int_arg("offset", 0, low=0, high=1_000_000),
+    )
+    return jsonify({"runs": [run_log.run_to_dict(r) for r in rows]})
+
+
+@app.route("/admin/oie/runs/<run_id>", methods=["GET"])
+@login_required
+@admin_imports_enabled_required
+def admin_oie_run(run_id: str) -> Any:
+    from application.utils.oie_scheduler import run_log
+
+    row = run_log.get_run(db.Node_collection().session, run_id)
+    if row is None:
+        abort(404, description="OIE run not found")
+    return jsonify(run_log.run_to_dict(row))
+
+
+@app.route("/admin/oie/health", methods=["GET"])
+@login_required
+@admin_imports_enabled_required
+def admin_oie_health() -> Any:
+    from application.utils.oie_scheduler import health
+
+    report = health.evaluate_health(db.Node_collection().session)
+    strict = str(request.args.get("strict") or "").lower() in ("1", "true", "yes")
+    response = jsonify(report)
+    if strict and not report["healthy"]:
+        response.status_code = 503
+    return response
+
+
+@app.route("/admin/oie", methods=["GET"])
+@login_required
+@admin_imports_enabled_required
+def admin_oie_page() -> Any:
+    from application.utils.oie_scheduler import health, run_log
+    from application.web.oie_admin_page import render_oie_page
+
+    session = db.Node_collection().session
+    runs = [run_log.run_to_dict(r) for r in run_log.list_runs(session, limit=50)]
+    page = render_oie_page(health.evaluate_health(session), runs)
+    return make_response(page, 200, {"Content-Type": "text/html; charset=utf-8"})
+
+
 @app.route("/admin/imports/runs", methods=["GET"])
 @login_required
 @admin_imports_enabled_required

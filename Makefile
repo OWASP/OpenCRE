@@ -273,6 +273,21 @@ monitor-chatbot-health-prod:
 		--base-url "https://opencre.org" \
 		--output-json "$(CURDIR)/tmp/prod-chatbot-health.json"
 
+# Scheduled OIE jobs (Postgres only). Cron `make oie-tick` every 10 minutes: each
+# job runs once per slot (owasp every 10 min, cre_expansion daily) and is a no-op
+# otherwise. Overrides: OIE_JOB=owasp|cre_expansion|all, OIE_FORCE=1, OIE_DRY_RUN=1.
+oie-tick:
+	@[ -d "./.venv" ] && . ./.venv/bin/activate || ([ -d "./venv" ] && . ./venv/bin/activate); \
+	export CRE_CACHE_FILE="$${CRE_CACHE_FILE:-postgresql://cre:password@127.0.0.1:5432/cre}"; \
+	python cre.py --cache_file "$$CRE_CACHE_FILE" --run_scheduled "$${OIE_JOB:-all}" \
+		$${OIE_FORCE:+--scheduled_force} $${OIE_DRY_RUN:+--scheduled_dry_run}
+
+monitor-oie-health:
+	@[ -d "./.venv" ] && . ./.venv/bin/activate || ([ -d "./venv" ] && . ./venv/bin/activate); \
+	export CRE_CACHE_FILE="$${CRE_CACHE_FILE:-postgresql://cre:password@127.0.0.1:5432/cre}"; \
+	export PYTHONPATH="$(CURDIR)"; \
+	python scripts/monitor_oie_health.py --output-json "$(CURDIR)/tmp/oie-health.json"
+
 verify-ga-parity-local:
 	@[ -d "./.venv" ] && . ./.venv/bin/activate || ([ -d "./venv" ] && . ./venv/bin/activate); \
 	export CRE_CACHE_FILE="$${CRE_CACHE_FILE:-postgresql://cre:password@127.0.0.1:5432/cre}"; \

@@ -17,7 +17,7 @@ from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
-from cre_logging import JSONFormatter, configure_logging, get_logger
+from cre_logging import JSONFormatter, configure_logging, get_logger, log_context
 
 logger = get_logger(__name__)
 
@@ -134,6 +134,44 @@ class TestConfigureLogging(unittest.TestCase):
         self.assertEqual(parsed["level"], "WARNING")
         self.assertEqual(parsed["logger"], "cre_logging.test.emit")
         logger.debug("example from test method")
+
+
+class TestLogContext(unittest.TestCase):
+    def _probe(self, name: str):
+        stream = StringIO()
+        probe = logging.getLogger(name)
+        probe.handlers.clear()
+        probe.setLevel(logging.DEBUG)
+        probe.propagate = False
+        handler = logging.StreamHandler(stream)
+        handler.setFormatter(JSONFormatter())
+        probe.addHandler(handler)
+        return probe, stream
+
+    def test_context_fields_are_attached_then_restored(self) -> None:
+        probe, stream = self._probe("cre_logging.test.context")
+        with log_context(run_id="owasp-20261005T1000", job="owasp"):
+            probe.info("inside")
+            with log_context(stage="harvest"):
+                probe.info("nested")
+        probe.info("outside")
+        inside, nested, outside = [
+            json.loads(line) for line in stream.getvalue().strip().splitlines()
+        ]
+        self.assertEqual(inside["run_id"], "owasp-20261005T1000")
+        self.assertEqual(inside["job"], "owasp")
+        self.assertNotIn("stage", inside)
+        self.assertEqual(nested["run_id"], "owasp-20261005T1000")
+        self.assertEqual(nested["stage"], "harvest")
+        self.assertNotIn("run_id", outside)
+        probe.handlers.clear()
+
+    def test_explicit_extra_wins_over_context(self) -> None:
+        probe, stream = self._probe("cre_logging.test.context_extra")
+        with log_context(job="owasp"):
+            probe.info("x", extra={"job": "override"})
+        self.assertEqual(json.loads(stream.getvalue())["job"], "override")
+        probe.handlers.clear()
 
 
 class TestStandaloneImport(unittest.TestCase):
