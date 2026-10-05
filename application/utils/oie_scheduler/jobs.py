@@ -36,6 +36,7 @@ from typing import Any, Callable, Dict, List, Optional
 from sqlalchemy import func
 
 from application.database import db
+from application.utils.db_url import redact_db_url
 from application.utils.oie_scheduler import graph_filer
 
 
@@ -148,7 +149,13 @@ def stage_agent_sync(ctx: JobContext) -> StageResult:
     )
     full_names = [f"{r.owner}/{r.repo}" for r in chapters.selected]
 
-    store = IndexStore(_agent_index_target(ctx))
+    target = _agent_index_target(ctx)
+    if not ctx.config.agent_db:
+        logger.warning(
+            "OWASP_AGENT_DB is unset: the agent index is written to the app "
+            "database; chat/MCP processes must set OWASP_AGENT_DB to the same URL"
+        )
+    store = IndexStore(target)
     report = sync_all(
         store=store,
         github_chapter_repos=full_names,
@@ -172,6 +179,7 @@ def stage_agent_sync(ctx: JobContext) -> StageResult:
         )
 
     summary = report.to_dict()
+    summary["index_target"] = redact_db_url(target)
     summary["chapter_repos_synced"] = len(full_names) - len(failed)
     summary["chapter_repos_deferred"] = chapters.deferred
     summary["event_repos_configured"] = sum(
