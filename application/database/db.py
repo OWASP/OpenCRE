@@ -540,6 +540,32 @@ class DecisionQueueItem(BaseModel):  # type: ignore
     )
 
 
+class OieRun(BaseModel):  # type: ignore
+    """One scheduled OIE job run: the audit row behind ``/admin/oie``.
+
+    ``id`` is the run id (``<job>-<slot>``), derived from the schedule slot so a
+    replayed tick lands on the same row instead of starting a second run.
+    ``summary`` carries the per-stage counts of the run as JSON.
+    """
+
+    __tablename__ = "oie_run"
+    id = sqla.Column(sqla.String, primary_key=True)
+    job = sqla.Column(sqla.String, nullable=False)
+    slot = sqla.Column(sqla.String, nullable=False)
+    status = sqla.Column(sqla.String, nullable=False)  # running | ok | degraded | error
+    trigger = sqla.Column(sqla.String, nullable=False)  # scheduled | manual
+    dry_run = sqla.Column(sqla.Boolean, nullable=False, default=False)
+    attempts = sqla.Column(sqla.Integer, nullable=False, default=1)
+    started_at = sqla.Column(sqla.DateTime, nullable=False)
+    finished_at = sqla.Column(sqla.DateTime, nullable=True)
+    summary = sqla.Column(sqla.JSON().with_variant(JSONB, "postgresql"), nullable=True)
+    error = sqla.Column(sqla.Text, nullable=True)
+    __table_args__ = (
+        sqla.UniqueConstraint("job", "slot", name="uq_oie_run_job_slot"),
+        sqla.Index("ix_oie_run_job_started", "job", "started_at"),
+    )
+
+
 def create_import_run(source: str, version: Optional[str] = None) -> ImportRun:
     """Create and persist an import run record. Returns the new ImportRun."""
     from datetime import datetime, timezone

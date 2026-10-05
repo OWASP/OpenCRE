@@ -2,7 +2,8 @@
 
 Isolation contract
 ------------------
-* Data lives only in the separate ``OWASP_AGENT_DB`` SQLite index.
+* Data lives only in the agent's own index tables (``OWASP_AGENT_DB``: a Postgres
+  URL, or a SQLite file for local poking; scheduled runs default to the app DB).
 * Never write Credoctypes / Node / CRE / standard embeddings from this package.
 * Never expose entities via CRE REST (tags, text_search, standards, graph UI).
 * Reachable only from:

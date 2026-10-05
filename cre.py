@@ -376,6 +376,35 @@ def main() -> None:
         help="optional path to repos.yaml for --run_harvester",
     )
     parser.add_argument(
+        "--harvester_kinds",
+        default="",
+        help=(
+            "comma-separated repo kinds for --run_harvester "
+            "(standard,project,chapter,event,other); default: standard"
+        ),
+    )
+    parser.add_argument(
+        "--run_scheduled",
+        default="",
+        choices=["", "owasp", "cre_expansion", "all"],
+        help=(
+            "run a scheduled OIE job for its current slot (Postgres only): "
+            "owasp = agent sync + incremental harvest, cre_expansion = "
+            "filter + Librarian + graph filing + gap analysis, all = both. "
+            "A slot that already ran is skipped; cron this every 10 minutes."
+        ),
+    )
+    parser.add_argument(
+        "--scheduled_force",
+        action="store_true",
+        help="with --run_scheduled: re-run a slot that already finished",
+    )
+    parser.add_argument(
+        "--scheduled_dry_run",
+        action="store_true",
+        help="with --run_scheduled: run stages without writing results",
+    )
+    parser.add_argument(
         "--ingest_github",
         default="",
         help=(
@@ -413,6 +442,8 @@ def main() -> None:
         parser.error("--run_noise_filter requires --run_id <pipeline_run_id>")
     if args.run_harvester and not args.run_id.strip():
         parser.error("--run_harvester requires --run_id <pipeline_run_id>")
+    if (args.scheduled_force or args.scheduled_dry_run) and not args.run_scheduled:
+        parser.error("--scheduled_force / --scheduled_dry_run require --run_scheduled")
     if (args.ingest_branch or args.ingest_keep_all or args.ingest_model) and not str(
         getattr(args, "ingest_github", "") or ""
     ).strip():
