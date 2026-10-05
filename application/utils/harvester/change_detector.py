@@ -72,6 +72,33 @@ class ChangeDetector:
 
         return sorted(set(files))
 
+    def get_files_at_commit(self, commit_sha: str) -> list[str]:
+        """Every tracked file at ``commit_sha`` (a first run has no base to diff)."""
+        target = self._resolve_commit(commit_sha)
+
+        try:
+            result = subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(self.repository_client.get_local_path()),
+                    "ls-tree",
+                    "-r",
+                    "--name-only",
+                    "-z",
+                    target,
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=60,
+            )
+        except subprocess.CalledProcessError as exc:
+            logger.error("Git command failed: %s", exc.stderr)
+            raise
+
+        return sorted({path for path in result.stdout.split("\0") if path.strip()})
+
     def get_commits_since(self, base_commit: str, target_commit: str) -> list[str]:
         base = self._resolve_commit(base_commit)
         target = self._resolve_commit(target_commit)

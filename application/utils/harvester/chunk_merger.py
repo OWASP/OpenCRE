@@ -159,8 +159,12 @@ def merge_chunks(
 
 def _join(parts: Sequence[ChunkInfo]) -> ChunkInfo:
     text = "\n\n".join(p.text.strip() for p in parts if p.text.strip())
+    # Docling offsets are located by text search and can run backwards, so the
+    # joined span must be derived from the extremes, not the first/last part.
+    start = min(p.start_char_idx for p in parts)
+    end = max(p.end_char_idx for p in parts)
     return ChunkInfo(
         text=text,
-        start_char_idx=parts[0].start_char_idx,
-        end_char_idx=parts[-1].end_char_idx,
+        start_char_idx=start,
+        end_char_idx=max(end, start + 1),
     )

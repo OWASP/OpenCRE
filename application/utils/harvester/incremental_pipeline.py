@@ -54,6 +54,7 @@ class IncrementalPipeline:
         documents: list[Document],
         *,
         last_processed_commit: str | None = None,
+        persist_checkpoint: bool = True,
     ) -> list[Document]:
         emitted: list[Document] = []
         metrics = DeduplicationMetrics()
@@ -77,16 +78,17 @@ class IncrementalPipeline:
             if status != DeduplicationStatus.UNCHANGED:
                 emitted.append(document)
 
-        commit_sha = last_processed_commit
-        if commit_sha is None and documents:
-            commit_sha = documents[-1].source.commit_sha
-        if commit_sha:
-            self._persist_checkpoint(pipeline_run_id, commit_sha)
+        if persist_checkpoint:
+            commit_sha = last_processed_commit
+            if commit_sha is None and documents:
+                commit_sha = documents[-1].source.commit_sha
+            if commit_sha:
+                self.save_checkpoint(pipeline_run_id, commit_sha)
 
         self.metrics = metrics
         return emitted
 
-    def _persist_checkpoint(self, pipeline_run_id: str, commit_sha: str) -> None:
+    def save_checkpoint(self, pipeline_run_id: str, commit_sha: str) -> None:
         if not commit_sha.strip():
             raise ValueError("refusing to persist empty last_processed_commit")
         repository_id = self._repository_id or f"{self._owner}/{self._repository_name}"
