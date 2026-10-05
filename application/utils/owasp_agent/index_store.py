@@ -1,13 +1,22 @@
-"""SQLite-backed local OWASP metadata index (separate from CRE graph)."""
+"""Local OWASP metadata index (separate from the CRE graph).
+
+Backed by SQLAlchemy Core so the same code runs on Postgres (the real target,
+``OWASP_AGENT_DB`` set to a ``postgresql://`` URL) and on a throwaway SQLite
+file (tests and quick local poking, ``OWASP_AGENT_DB`` set to a path).
+"""
 
 from __future__ import annotations
 
 import json
 import os
-import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import Any, Dict, Iterator, List, Optional, Sequence
+
+import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql, sqlite
+from sqlalchemy.engine import Connection, Engine
+from sqlalchemy.pool import NullPool
 
 from application.utils.owasp_agent.models import (
     BoardCandidate,
@@ -18,45 +27,53 @@ from application.utils.owasp_agent.models import (
     Project,
 )
 
-SCHEMA = """
-CREATE TABLE IF NOT EXISTS meta_entity (
-    kind TEXT NOT NULL,
-    key TEXT NOT NULL,
-    name TEXT NOT NULL,
-    source TEXT NOT NULL,
-    payload TEXT NOT NULL,
-    fetched_at TEXT NOT NULL,
-    PRIMARY KEY (kind, key, source)
-);
+_METADATA = sa.MetaData()
 
-CREATE TABLE IF NOT EXISTS owasp_concept (
-    key TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    category TEXT NOT NULL,
-    description TEXT NOT NULL DEFAULT '',
-    evidence_urls TEXT NOT NULL DEFAULT '[]',
-    entity_keys TEXT NOT NULL DEFAULT '[]',
-    merged_into TEXT NOT NULL DEFAULT '',
-    source TEXT NOT NULL DEFAULT 'auto',
-    updated_at TEXT NOT NULL
-);
+_meta_entity = sa.Table(
+    "meta_entity",
+    _METADATA,
+    sa.Column("kind", sa.String, nullable=False),
+    sa.Column("key", sa.String, nullable=False),
+    sa.Column("name", sa.String, nullable=False),
+    sa.Column("source", sa.String, nullable=False),
+    sa.Column("payload", sa.Text, nullable=False),
+    sa.Column("fetched_at", sa.String, nullable=False),
+    sa.PrimaryKeyConstraint("kind", "key", "source"),
+)
 
-CREATE TABLE IF NOT EXISTS sync_log (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    source TEXT NOT NULL,
-    status TEXT NOT NULL,
-    detail TEXT NOT NULL,
-    created_at TEXT NOT NULL
-);
+_owasp_concept = sa.Table(
+    "owasp_concept",
+    _METADATA,
+    sa.Column("key", sa.String, primary_key=True),
+    sa.Column("name", sa.String, nullable=False),
+    sa.Column("category", sa.String, nullable=False),
+    sa.Column("description", sa.Text, nullable=False, server_default=""),
+    sa.Column("evidence_urls", sa.Text, nullable=False, server_default="[]"),
+    sa.Column("entity_keys", sa.Text, nullable=False, server_default="[]"),
+    sa.Column("merged_into", sa.String, nullable=False, server_default=""),
+    sa.Column("source", sa.String, nullable=False, server_default="auto"),
+    sa.Column("updated_at", sa.String, nullable=False),
+)
 
-CREATE TABLE IF NOT EXISTS concept_merge_audit (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    from_key TEXT NOT NULL,
-    into_key TEXT NOT NULL,
-    reason TEXT NOT NULL,
-    created_at TEXT NOT NULL
-);
-"""
+_sync_log = sa.Table(
+    "sync_log",
+    _METADATA,
+    sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
+    sa.Column("source", sa.String, nullable=False),
+    sa.Column("status", sa.String, nullable=False),
+    sa.Column("detail", sa.Text, nullable=False),
+    sa.Column("created_at", sa.String, nullable=False),
+)
+
+_concept_merge_audit = sa.Table(
+    "concept_merge_audit",
+    _METADATA,
+    sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
+    sa.Column("from_key", sa.String, nullable=False),
+    sa.Column("into_key", sa.String, nullable=False),
+    sa.Column("reason", sa.Text, nullable=False),
+    sa.Column("created_at", sa.String, nullable=False),
+)
 
 
 def default_db_path() -> str:
@@ -66,50 +83,78 @@ def default_db_path() -> str:
     )
 
 
+def _engine_url(target: str) -> str:
+    if "://" in target:
+        return target
+    return f"sqlite:///{os.path.abspath(target)}"
+
+
+def _insert_for(engine: Engine, table: sa.Table) -> Any:
+    if engine.dialect.name == "postgresql":
+        return postgresql.insert(table)
+    return sqlite.insert(table)
+
+
 class IndexStore:
-    def __init__(self, db_path: Optional[str] = None) -> None:
-        self.db_path = db_path or default_db_path()
-        parent = os.path.dirname(os.path.abspath(self.db_path))
-        if parent and parent != os.path.abspath(self.db_path):
-            os.makedirs(parent, exist_ok=True)
+    def __init__(
+        self,
+        db_path: Optional[str] = None,
+        *,
+        engine: Optional[Engine] = None,
+    ) -> None:
+        """``db_path`` is a SQLAlchemy URL or a SQLite file path; ``engine`` wins."""
+        self._owns_engine = engine is None
+        if engine is not None:
+            self.engine = engine
+            self.db_path = str(engine.url)
+        else:
+            self.db_path = db_path or default_db_path()
+            url = _engine_url(self.db_path)
+            if url.startswith("sqlite"):
+                parent = os.path.dirname(os.path.abspath(self.db_path))
+                os.makedirs(parent, exist_ok=True)
+                self.engine = sa.create_engine(url, poolclass=NullPool)
+            else:
+                self.engine = sa.create_engine(url, pool_pre_ping=True)
         self._init_schema()
 
     def _init_schema(self) -> None:
-        with self._conn() as conn:
-            conn.executescript(SCHEMA)
+        _METADATA.create_all(self.engine, checkfirst=True)
 
     @contextmanager
-    def _conn(self) -> Iterator[sqlite3.Connection]:
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        try:
+    def _conn(self) -> Iterator[Connection]:
+        with self.engine.begin() as conn:
             yield conn
-            conn.commit()
-        finally:
-            conn.close()
 
     def log_sync(self, source: str, status: str, detail: str) -> None:
         with self._conn() as conn:
             conn.execute(
-                "INSERT INTO sync_log(source, status, detail, created_at) VALUES (?,?,?,?)",
-                (source, status, detail, _now()),
+                sa.insert(_sync_log).values(
+                    source=source, status=status, detail=detail, created_at=_now()
+                )
             )
 
     def upsert_entity(
         self, kind: str, key: str, name: str, source: str, payload: Dict[str, Any]
     ) -> None:
+        stmt = _insert_for(self.engine, _meta_entity).values(
+            kind=kind,
+            key=key,
+            name=name,
+            source=source,
+            payload=json.dumps(payload),
+            fetched_at=_now(),
+        )
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["kind", "key", "source"],
+            set_={
+                "name": stmt.excluded.name,
+                "payload": stmt.excluded.payload,
+                "fetched_at": stmt.excluded.fetched_at,
+            },
+        )
         with self._conn() as conn:
-            conn.execute(
-                """
-                INSERT INTO meta_entity(kind, key, name, source, payload, fetched_at)
-                VALUES (?,?,?,?,?,?)
-                ON CONFLICT(kind, key, source) DO UPDATE SET
-                    name=excluded.name,
-                    payload=excluded.payload,
-                    fetched_at=excluded.fetched_at
-                """,
-                (kind, key, name, source, json.dumps(payload), _now()),
-            )
+            conn.execute(stmt)
 
     def upsert_chapter(self, chapter: Chapter) -> None:
         self.upsert_entity(
@@ -145,21 +190,17 @@ class IndexStore:
     def list_entities(
         self, kind: str, source: Optional[str] = None
     ) -> List[Dict[str, Any]]:
+        query = sa.select(
+            _meta_entity.c.payload, _meta_entity.c.source  # type: ignore[arg-type]
+        ).where(_meta_entity.c.kind == kind)
+        if source:
+            query = query.where(_meta_entity.c.source == source)
         with self._conn() as conn:
-            if source:
-                rows = conn.execute(
-                    "SELECT payload, source FROM meta_entity WHERE kind=? AND source=?",
-                    (kind, source),
-                ).fetchall()
-            else:
-                rows = conn.execute(
-                    "SELECT payload, source FROM meta_entity WHERE kind=?",
-                    (kind,),
-                ).fetchall()
+            rows = conn.execute(query).all()
         out: List[Dict[str, Any]] = []
         for row in rows:
-            payload = json.loads(row["payload"])
-            payload["_index_source"] = row["source"]
+            payload = json.loads(row.payload)
+            payload["_index_source"] = row.source
             out.append(payload)
         return out
 
@@ -189,53 +230,53 @@ class IndexStore:
         return out
 
     def upsert_concept(self, concept: Concept) -> None:
+        stmt = _insert_for(self.engine, _owasp_concept).values(
+            key=concept.key,
+            name=concept.name,
+            category=concept.category,
+            description=concept.description,
+            evidence_urls=json.dumps(concept.evidence_urls),
+            entity_keys=json.dumps(concept.entity_keys),
+            merged_into=concept.merged_into,
+            source=concept.source,
+            updated_at=_now(),
+        )
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["key"],
+            set_={
+                col: getattr(stmt.excluded, col)
+                for col in (
+                    "name",
+                    "category",
+                    "description",
+                    "evidence_urls",
+                    "entity_keys",
+                    "merged_into",
+                    "source",
+                    "updated_at",
+                )
+            },
+        )
         with self._conn() as conn:
-            conn.execute(
-                """
-                INSERT INTO owasp_concept(
-                    key, name, category, description, evidence_urls, entity_keys,
-                    merged_into, source, updated_at
-                ) VALUES (?,?,?,?,?,?,?,?,?)
-                ON CONFLICT(key) DO UPDATE SET
-                    name=excluded.name,
-                    category=excluded.category,
-                    description=excluded.description,
-                    evidence_urls=excluded.evidence_urls,
-                    entity_keys=excluded.entity_keys,
-                    merged_into=excluded.merged_into,
-                    source=excluded.source,
-                    updated_at=excluded.updated_at
-                """,
-                (
-                    concept.key,
-                    concept.name,
-                    concept.category,
-                    concept.description,
-                    json.dumps(concept.evidence_urls),
-                    json.dumps(concept.entity_keys),
-                    concept.merged_into,
-                    concept.source,
-                    _now(),
-                ),
-            )
+            conn.execute(stmt)
 
     def list_concepts(self, include_merged: bool = False) -> List[Concept]:
         with self._conn() as conn:
-            rows = conn.execute("SELECT * FROM owasp_concept").fetchall()
+            rows = conn.execute(sa.select(_owasp_concept)).all()  # type: ignore[arg-type]
         out: List[Concept] = []
         for row in rows:
-            if not include_merged and row["merged_into"]:
+            if not include_merged and row.merged_into:
                 continue
             out.append(
                 Concept(
-                    key=row["key"],
-                    name=row["name"],
-                    category=row["category"],
-                    description=row["description"] or "",
-                    evidence_urls=json.loads(row["evidence_urls"] or "[]"),
-                    entity_keys=json.loads(row["entity_keys"] or "[]"),
-                    merged_into=row["merged_into"] or "",
-                    source=row["source"] or "auto",
+                    key=row.key,
+                    name=row.name,
+                    category=row.category,
+                    description=row.description or "",
+                    evidence_urls=json.loads(row.evidence_urls or "[]"),
+                    entity_keys=json.loads(row.entity_keys or "[]"),
+                    merged_into=row.merged_into or "",
+                    source=row.source or "auto",
                 )
             )
         return out
@@ -243,12 +284,17 @@ class IndexStore:
     def mark_concept_merged(self, from_key: str, into_key: str, reason: str) -> None:
         with self._conn() as conn:
             conn.execute(
-                "UPDATE owasp_concept SET merged_into=?, updated_at=? WHERE key=?",
-                (into_key, _now(), from_key),
+                sa.update(_owasp_concept)
+                .where(_owasp_concept.c.key == from_key)
+                .values(merged_into=into_key, updated_at=_now())
             )
             conn.execute(
-                "INSERT INTO concept_merge_audit(from_key, into_key, reason, created_at) VALUES (?,?,?,?)",
-                (from_key, into_key, reason, _now()),
+                sa.insert(_concept_merge_audit).values(
+                    from_key=from_key,
+                    into_key=into_key,
+                    reason=reason,
+                    created_at=_now(),
+                )
             )
 
 

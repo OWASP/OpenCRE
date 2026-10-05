@@ -18,9 +18,11 @@ import json
 import logging
 import os
 import sys
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Iterator, Optional
 
 DEBUG = logging.DEBUG
 INFO = logging.INFO
@@ -29,11 +31,26 @@ ERROR = logging.ERROR
 CRITICAL = logging.CRITICAL
 
 _HANDLER_NAME = "cre-json"
+_LOG_CONTEXT: ContextVar[Dict[str, Any]] = ContextVar("cre_log_context", default={})
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _RESERVED_RECORD_KEYS = set(logging.makeLogRecord({}).__dict__.keys()) | {
     "asctime",
     "message",
 }
+
+
+@contextmanager
+def log_context(**fields: Any) -> Iterator[None]:
+    """Attach ``fields`` (e.g. ``run_id``, ``job``) to every log line in the block.
+
+    Nested blocks merge, and the previous context is restored on exit. Explicit
+    ``extra=`` keys on a record win over the ambient context.
+    """
+    token = _LOG_CONTEXT.set({**_LOG_CONTEXT.get(), **fields})
+    try:
+        yield
+    finally:
+        _LOG_CONTEXT.reset(token)
 
 
 class _CurrentStderr:
@@ -67,6 +84,8 @@ class JSONFormatter(logging.Formatter):
             payload["exception"] = self.formatException(record.exc_info)
         if record.stack_info:
             payload["stack_info"] = self.formatStack(record.stack_info)
+        for key, value in _LOG_CONTEXT.get().items():
+            payload[key] = value
         for key, value in record.__dict__.items():
             if key in _RESERVED_RECORD_KEYS or key.startswith("_"):
                 continue
