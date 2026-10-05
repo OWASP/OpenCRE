@@ -92,7 +92,7 @@ def read_spreadsheet(
     except (gspread.exceptions.GSpreadException, ValueError) as gse:
         if wsh is not None:
             logger.error(
-                "If this exception says you have a duplicate cell name, the duplicate is",
+                "If this exception says you have a duplicate cell name, the duplicate is: %s",
                 findDups(wsh.row_values(1)),
             )
         else:
