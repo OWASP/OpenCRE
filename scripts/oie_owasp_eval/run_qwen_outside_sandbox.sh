@@ -14,10 +14,11 @@ DB=$(python -c "import json; print(json.load(open('tmp/oie_owasp_eval/state.json
 python - <<PY
 from application.cmd.cre_main import db_connect
 from application import sqla
-from application.database.db import HarvestInput
+from application.database.db import HarvestInput, KnowledgeQueueItem
 import json
 st=json.load(open('tmp/oie_owasp_eval/state.json'))
 db_connect(st['db_url'])
+sqla.session.query(KnowledgeQueueItem).filter_by(pipeline_run_id=st['sample_run_id']).delete(synchronize_session=False)
 sqla.session.query(HarvestInput).filter_by(pipeline_run_id=st['sample_run_id']).update({'status':'pending'}, synchronize_session=False)
 sqla.session.commit()
 print('reset', st['sample_run_id'])
