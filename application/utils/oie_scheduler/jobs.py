@@ -36,7 +36,6 @@ from typing import Any, Callable, Dict, List, Optional
 from sqlalchemy import func
 
 from application.database import db
-from application.utils.db_url import redact_db_url
 from application.utils.oie_scheduler import graph_filer
 
 
@@ -45,8 +44,7 @@ class SchedulerConfig:
     harvest_max_repos: int = 25
     metadata_max_repos: int = 50
     file_floor: float = 0.9
-    # Default off: Module C decisions stay for review until an operator enables filing.
-    filing_enabled: bool = False
+    filing_enabled: bool = True
     repos_yaml: Optional[str] = None
     agent_db: Optional[str] = None
 
@@ -57,12 +55,12 @@ class SchedulerConfig:
         # Filing below the Librarian's own link threshold would file links the
         # Librarian itself would not have called links.
         floor = max(floor, link_threshold)
-        raw_filing = os.getenv("OIE_GRAPH_FILING_ENABLED", "0").strip().lower()
         return cls(
             harvest_max_repos=int(os.getenv("OIE_HARVEST_MAX_REPOS", "25")),
             metadata_max_repos=int(os.getenv("OIE_METADATA_MAX_REPOS", "50")),
             file_floor=floor,
-            filing_enabled=raw_filing in ("1", "true", "yes", "on"),
+            filing_enabled=os.getenv("OIE_GRAPH_FILING_ENABLED", "1").strip().lower()
+            not in ("0", "false", "no", "off"),
             repos_yaml=os.getenv("OIE_REPOS_YAML") or None,
             agent_db=os.getenv("OWASP_AGENT_DB") or None,
         )
@@ -150,10 +148,7 @@ def stage_agent_sync(ctx: JobContext) -> StageResult:
     )
     full_names = [f"{r.owner}/{r.repo}" for r in chapters.selected]
 
-    target = _agent_index_target(ctx)
-    if not ctx.config.agent_db:
-        logger.info("Writing agent index to the main app database")
-    store = IndexStore(target)
+    store = IndexStore(_agent_index_target(ctx))
     report = sync_all(
         store=store,
         github_chapter_repos=full_names,
@@ -177,7 +172,6 @@ def stage_agent_sync(ctx: JobContext) -> StageResult:
         )
 
     summary = report.to_dict()
-    summary["index_target"] = redact_db_url(target)
     summary["chapter_repos_synced"] = len(full_names) - len(failed)
     summary["chapter_repos_deferred"] = chapters.deferred
     summary["event_repos_configured"] = sum(
