@@ -7,7 +7,7 @@ from application.defs import cre_defs
 from datetime import datetime
 from multiprocessing import Pool
 from io import BytesIO
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 from application.prompt_client import embed_alignment, litellm_router
 
@@ -170,6 +170,9 @@ def _embedding_fetch_url(hyperlink: str) -> str:
     return github_raw_content_url(hyperlink) or hyperlink
 
 
+_MAX_PLAIN_TEXT_REDIRECTS = 5
+
+
 def _fetch_plain_http_text(url: str) -> Optional[str]:
     """Fetch UTF-8 text (GitHub raw markdown) without Playwright."""
     headers = {
@@ -179,13 +182,28 @@ def _fetch_plain_http_text(url: str) -> Optional[str]:
         ),
         "Accept": "text/plain, text/markdown, */*",
     }
+    from application.utils.librarian.embedding_quality import is_plain_text_embed_url
+
     try:
-        resp = requests.get(
-            url, timeout=(30, 60), headers=headers, allow_redirects=True
-        )
-        resp.raise_for_status()
-        text = resp.text or ""
-        return text if text.strip() else None
+        current = url
+        for _ in range(_MAX_PLAIN_TEXT_REDIRECTS + 1):
+            resp = requests.get(
+                current, timeout=(30, 60), headers=headers, allow_redirects=False
+            )
+            if resp.is_redirect:
+                target = urljoin(current, resp.headers.get("Location", ""))
+                if not is_plain_text_embed_url(target):
+                    logger.warning(
+                        "Plain-text fetch for %s refused redirect to %s", url, target
+                    )
+                    return None
+                current = target
+                continue
+            resp.raise_for_status()
+            text = resp.text or ""
+            return text if text.strip() else None
+        logger.warning("Plain-text fetch for %s exceeded redirect limit", url)
+        return None
     except requests.RequestException as e:
         logger.warning("Plain-text fetch failed for %s: %s", url, e)
         return None
@@ -896,7 +914,14 @@ class PromptHandler:
                 try:
                     cached = json.loads(cache_path.read_text())
                     vec = cached.get("embedding")
-                    if isinstance(vec, list) and vec:
+                    if (
+                        isinstance(vec, list)
+                        and vec
+                        and (
+                            self._expected_embed_dim is None
+                            or len(vec) == self._expected_embed_dim
+                        )
+                    ):
                         return [float(x) for x in vec]
                 except Exception:  # noqa: BLE001
                     logger.debug("embed query cache read failed", exc_info=True)

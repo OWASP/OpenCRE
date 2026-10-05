@@ -301,9 +301,9 @@ class MetadataEnrichmentService:
                 changed = self.enrich_node(node)
                 if changed:
                     stats.enriched += 1
+                    if not self.dry_run:
+                        self.session.commit()
                     if stats.enriched % 10 == 0:
-                        if not self.dry_run:
-                            self.session.commit()
                         logger.info("metadata enrich progress: %s", stats.enriched)
             except Exception as exc:  # noqa: BLE001
                 stats.errors += 1

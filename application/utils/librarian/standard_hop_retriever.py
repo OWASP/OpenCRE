@@ -87,6 +87,10 @@ class StandardHopRetriever:
         self._max_cres_per_hit = max(1, int(max_cres_per_hit))
         self._cre_names = dict(cre_names or {})
 
+    @property
+    def last_preferred_cre_ids(self) -> list[str]:
+        return list(getattr(self._inner, "last_preferred_cre_ids", None) or [])
+
     def retrieve(
         self, text: str, *, allowlist: Optional[AbstractSet[str]] = None
     ) -> RetrievalAudit:
@@ -113,6 +117,8 @@ class StandardHopRetriever:
                 : self._max_cres_per_hit
             ]:
                 if not cre_id or cre_id in seen:
+                    continue
+                if allowlist and cre_id not in allowlist:
                     continue
                 seen.add(cre_id)
                 hopped.append(

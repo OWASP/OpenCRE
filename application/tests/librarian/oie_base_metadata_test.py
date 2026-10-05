@@ -33,6 +33,28 @@ class ApplyOieFillIfMissingTest(unittest.TestCase):
         self.assertIsNone(new_meta)
         self.assertEqual(action, "skipped_existing")
 
+    def test_phrase_only_block_is_filled_and_keeps_phrases(self) -> None:
+        existing = {"oie": {"phrases": ["authn"], "section_title": "Login"}}
+        new_meta, action = apply_oie_fill_if_missing(
+            existing,
+            {"class_id": "auth", "family": "identity", "phrases": ["login"]},
+            force=False,
+        )
+        self.assertEqual(action, "updated")
+        assert new_meta is not None
+        block = new_meta["oie"]
+        self.assertEqual(block["class_id"], "auth")
+        self.assertEqual(block["section_title"], "Login")
+        self.assertEqual(block["phrases"], ["authn", "login"])
+
+    def test_seeded_cre_block_with_families_is_skipped(self) -> None:
+        existing = {"oie": {"families": ["ai"]}}
+        new_meta, action = apply_oie_fill_if_missing(
+            existing, {"families": ["cloud"]}, force=False, legacy_mirrors=True
+        )
+        self.assertIsNone(new_meta)
+        self.assertEqual(action, "skipped_existing")
+
     def test_force_overwrites(self) -> None:
         existing = {"oie": {"class_id": "old"}, "other": 1}
         new_meta, action = apply_oie_fill_if_missing(

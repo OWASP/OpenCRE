@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Sequence, Tuple
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 
 # (Node.name regex, list of (section-title regex, phrases to add))
 _ENRICHMENTS: List[Tuple[re.Pattern[str], List[Tuple[re.Pattern[str], List[str]]]]] = [

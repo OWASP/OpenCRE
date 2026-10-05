@@ -153,3 +153,37 @@ class StandardHopRetrieverTest(unittest.TestCase):
         audit = hop.retrieve("nist-ac2")
         hopped = [c.cre_id for c in audit.candidates if c.cre_id != "cre-from-hub"]
         self.assertEqual(hopped, ["c1", "c2"])
+
+    def test_exposes_inner_preferred_cre_ids(self) -> None:
+        self.inner.last_preferred_cre_ids = ["cre-seed"]
+        hop = StandardHopRetriever(
+            inner=self.inner,
+            standard_retriever=self.std_retriever,
+            node_to_cres={},
+            node_contents={},
+            node_names={},
+        )
+        self.assertEqual(hop.last_preferred_cre_ids, ["cre-seed"])
+
+    def test_missing_inner_attribute_yields_empty_list(self) -> None:
+        hop = StandardHopRetriever(
+            inner=self.inner,
+            standard_retriever=self.std_retriever,
+            node_to_cres={},
+            node_contents={},
+            node_names={},
+        )
+        self.assertEqual(hop.last_preferred_cre_ids, [])
+
+    def test_hopped_cres_outside_allowlist_are_dropped(self) -> None:
+        hop = StandardHopRetriever(
+            inner=self.inner,
+            standard_retriever=self.std_retriever,
+            node_to_cres={"n-ac2": ("cre-in-cage", "cre-outside")},
+            node_contents={"n-ac2": "Account Management AC-2 organizations."},
+            node_names={"n-ac2": "NIST 800-53 v5"},
+        )
+        audit = hop.retrieve("nist-ac2", allowlist=frozenset({"cre-in-cage"}))
+        ids = [c.cre_id for c in audit.candidates]
+        self.assertIn("cre-in-cage", ids)
+        self.assertNotIn("cre-outside", ids)
