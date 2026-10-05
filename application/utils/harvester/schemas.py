@@ -2,8 +2,18 @@ from cre_logging import get_logger
 
 logger = get_logger(__name__)
 
-from typing import Literal
+from typing import Any, Literal
 from pydantic import BaseModel, Field, ConfigDict, model_validator
+
+# What an OWASP org repo is for. ``standard``/``project``/``other`` feed the
+# knowledge-graph expansion path (harvest -> filter -> Librarian); ``chapter``
+# and ``event`` repos only feed the OWASP agent's metadata index.
+RepoKind = Literal["standard", "project", "chapter", "event", "other"]
+HARVESTABLE_KINDS: tuple[str, ...] = ("standard", "project", "other")
+# What a harvest run visits when the caller names no kinds: the curated standards
+# only, as before repos.yaml covered the whole org. Scheduled runs ask for
+# HARVESTABLE_KINDS explicitly.
+DEFAULT_HARVEST_KINDS: tuple[str, ...] = ("standard",)
 
 
 # this will control which repo paths are included and excluded during ingestions
@@ -147,6 +157,10 @@ class RepositoryConfig(BaseModel):
         ...,
         description="repository source type.",
     )
+    kind: RepoKind = Field(
+        default="standard",
+        description="what the repository is; routes it to the harvest or metadata path.",
+    )
     enabled: bool = Field(
         default=True,
         description="whether ingestion is enabled for this repository.",
@@ -176,8 +190,32 @@ class RepositoryConfig(BaseModel):
 class ReposFile(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    defaults: dict[str, dict[str, Any]] = Field(
+        default_factory=dict,
+        description=(
+            "Per-kind field defaults merged under each repository entry "
+            "(an explicit entry value wins), so org-wide files stay compact."
+        ),
+    )
     repositories: list[RepositoryConfig] = Field(
         ...,
         min_length=1,
         description="List of repositories configured for ingestion.",
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def apply_kind_defaults(cls, data: object) -> object:
+        if not isinstance(data, dict):
+            return data
+        defaults = data.get("defaults") or {}
+        repositories = data.get("repositories")
+        if not defaults or not isinstance(repositories, list):
+            return data
+        merged = []
+        for entry in repositories:
+            if isinstance(entry, dict):
+                kind = entry.get("kind") or "standard"
+                entry = {**(defaults.get(kind) or {}), **entry}
+            merged.append(entry)
+        return {**data, "repositories": merged}

@@ -11,10 +11,10 @@ from cre_logging import get_logger
 logger = get_logger(__name__)
 
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Collection, Optional
 
 from application.utils.harvester.change_detector import ChangeDetector
 from application.utils.harvester.checkpoint_store import CheckpointStore
@@ -28,6 +28,7 @@ from application.utils.harvester.incremental_pipeline import IncrementalPipeline
 from application.utils.harvester.models import DiffBlock, Document
 from application.utils.harvester.repos_validator import validate_repositories
 from application.utils.harvester.schemas import RepositoryConfig
+from application.utils.harvester.selection import select_repositories
 
 
 DEFAULT_REPOS_YAML = Path(__file__).with_name("repos.yaml")
@@ -46,6 +47,9 @@ class RunSummary:
     errors: int = 0
     dry_run: bool = False
     status: str = "ok"
+    skipped_not_due: int = 0
+    deferred: int = 0
+    repository_ids: list[str] = field(default_factory=list)
 
     def to_json(self) -> str:
         return json.dumps(asdict(self))
@@ -58,9 +62,16 @@ def run_harvester(
     repos_yaml: str | Path | None = None,
     dry_run: bool = False,
     sync_repos: bool = True,
+    kinds: Optional[Collection[str]] = None,
+    only_due: bool = False,
+    max_repos: Optional[int] = None,
+    now: Optional[datetime] = None,
 ) -> RunSummary:
     """
     Harvest configured repositories and stage chunks in ``harvest_input``.
+
+    ``kinds`` / ``only_due`` / ``max_repos`` narrow the batch (see
+    ``harvester.selection``); the defaults visit every enabled ``standard`` repo.
 
     For each enabled repo: optionally sync, detect files changed since the
     durable checkpoint, build documents, dedupe, chunk, validate as
@@ -79,10 +90,20 @@ def run_harvester(
     checkpoint_store = CheckpointStore(session=session)
     builder = DocumentBuilder()
 
-    for repo_cfg in repos_file.repositories:
-        if not repo_cfg.enabled:
-            continue
+    selection = select_repositories(
+        repos_file.repositories,
+        checkpoint_store,
+        kinds=kinds,
+        only_due=only_due,
+        max_repos=max_repos,
+        now=now,
+    )
+    summary.skipped_not_due = selection.skipped_not_due
+    summary.deferred = selection.deferred
+
+    for repo_cfg in selection.selected:
         summary.repositories += 1
+        summary.repository_ids.append(repo_cfg.id)
         try:
             written = _harvest_repository(
                 session=session,
@@ -137,12 +158,10 @@ def _harvest_repository(
     if base:
         modified = detector.get_modified_files_since(base, head)
     else:
-        # First run: treat all tracked files under include paths as candidates
-        # via an empty-tree diff against HEAD.
-        modified = detector.get_modified_files_since(
-            "4b825dc642cb6eb9a060e54bf8d6927bf442cfb4",  # git empty tree
-            head,
-        )
+        # First run: every tracked file is a candidate. (Diffing against the git
+        # empty tree does not work -- it is a tree, not a commit, so it cannot be
+        # resolved as a base revision.)
+        modified = detector.get_files_at_commit(head)
 
     file_filter = FileFilter(exclude_patterns=list(repo_cfg.paths.exclude))
     # Path include globs: keep files matching any include pattern.
@@ -183,15 +202,29 @@ def _harvest_repository(
         pipeline_run_id=pipeline_run_id,
         documents=documents,
         last_processed_commit=head,
+        persist_checkpoint=False,
     )
     summary.documents_emitted += len(emitted)
 
     chunk_pipeline = DocumentChunkPipeline(chunking=repo_cfg.chunking)
     records = []
     for document in emitted:
-        records.extend(chunk_pipeline.chunk(document))
+        try:
+            records.extend(chunk_pipeline.chunk(document))
+        except Exception:
+            # One malformed document must not discard the rest of the repo, and
+            # retrying a deterministic failure every tick would only starve
+            # other repos; it is counted and surfaces as a degraded run.
+            summary.errors += 1
+            logger.exception(
+                "harvester could not chunk %s",
+                document.locator.path or document.artifact_id,
+            )
 
-    return write_harvest_input(session, pipeline_run_id, records, dry_run=dry_run)
+    written = write_harvest_input(session, pipeline_run_id, records, dry_run=dry_run)
+    if not dry_run:
+        incremental.save_checkpoint(pipeline_run_id, head)
+    return written
 
 
 def _commit_timestamp(client: GitRepositoryClient, commit_sha: str) -> datetime:

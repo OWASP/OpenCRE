@@ -880,6 +880,39 @@ def backfill_gap_analysis_only(
     logger.info("GA backfill complete: final_missing_pairs=%s", final_missing)
 
 
+def run_scheduled_cli(args: argparse.Namespace, collection: db.Node_collection) -> int:
+    """``--run_scheduled``: run the selected OIE job(s); return a process exit code.
+
+    Postgres only -- the advisory-lock lease and the run table assume it, and the
+    default ``standards_cache.sqlite`` must not silently become the scheduler's
+    database. Exit 1 when a job errored, 2 for a non-Postgres database.
+    """
+    import json
+
+    from application.utils.oie_scheduler.runner import run_due_jobs
+
+    dialect = collection.session.get_bind().dialect.name
+    if dialect != "postgresql":
+        logger.error(
+            "--run_scheduled is Postgres-only (got %s); point --cache_file at "
+            "a postgresql:// URL (make docker-postgres for a local one)",
+            dialect,
+        )
+        return 2
+    selected = args.run_scheduled
+    force = bool(getattr(args, "scheduled_force", False))
+    outcomes = run_due_jobs(
+        collection,
+        cache_file=args.cache_file,
+        jobs=None if selected == "all" else [selected],
+        force=force,
+        dry_run=bool(getattr(args, "scheduled_dry_run", False)),
+        trigger="manual" if force else "scheduled",
+    )
+    print(json.dumps([o.to_dict() for o in outcomes], indent=2))
+    return 1 if any(o.failed for o in outcomes) else 0
+
+
 def run(args: argparse.Namespace) -> None:  # pragma: no cover
     script_path = os.path.dirname(os.path.realpath(__file__))
     os.path.join(script_path, "../cres")
@@ -890,6 +923,14 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
             raise ValueError("--export requires --csv <path>")
         rows = cres_csv_export.export_cres_and_standards_csv(output_path=csv_out)
         logger.info("Exported %s rows to %s", rows, csv_out)
+        return
+
+    if getattr(args, "run_scheduled", ""):
+        import sys
+
+        code = run_scheduled_cli(args, db_connect(args.cache_file))
+        if code:
+            sys.exit(code)
         return
 
     if getattr(args, "run_harvester", False):
@@ -905,6 +946,12 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
             args.run_id.strip(),
             repos_yaml=repos_yaml,
             dry_run=getattr(args, "harvester_dry_run", False),
+            kinds=[
+                k.strip()
+                for k in (getattr(args, "harvester_kinds", "") or "").split(",")
+                if k.strip()
+            ]
+            or None,
         )
         print(summary.to_json())
         if summary.status == "degraded":
