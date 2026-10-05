@@ -98,7 +98,20 @@ def apply_oie_fill_if_missing(
     base: Dict[str, Any] = dict(meta) if isinstance(meta, Mapping) else {}
     prev = base.get("oie")
     if prev and not force:
-        return None, "skipped_existing"
+        if isinstance(prev, Mapping) and not any(
+            prev.get(k) for k in ("class_id", "family", "families", "classes")
+        ):
+            # Phrase-only enrichment blocks carry no taxonomy; fill them in
+            # without discarding the enriched phrases.
+            merged = {**prev, **oie}
+            merged["phrases"] = list(
+                dict.fromkeys(
+                    [*(prev.get("phrases") or []), *(oie.get("phrases") or [])]
+                )
+            )
+            oie = merged
+        else:
+            return None, "skipped_existing"
     if prev == oie and (
         not legacy_mirrors
         or (

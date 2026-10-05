@@ -62,7 +62,7 @@ def with_rate_limit_retry(
                 raise
             kind = "rate/quota" if is_rate_limit_error(err) else "transient"
             logger.info(
-                "%s limited during %s; sleeping %ss (attempt %s/%s): %s",
+                "%s error during %s; sleeping %ss (attempt %s/%s): %s",
                 kind,
                 context,
                 sleep_s,

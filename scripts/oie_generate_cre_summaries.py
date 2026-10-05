@@ -32,7 +32,8 @@ def _assert_local_clone_url(url: str) -> None:
     host = (parsed.hostname or "").lower()
     if "heroku" in url.lower() or "opencreorg" in url.lower():
         raise SystemExit(
-            f"refusing production/Heroku URL {url!r}; use cre_prodclone locally"
+            f"refusing production/Heroku URL (host {host!r}); "
+            "use cre_prodclone locally"
         )
     if db_name == "cre":
         raise SystemExit(

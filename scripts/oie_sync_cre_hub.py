@@ -25,6 +25,9 @@ from typing import Any, Iterable, List, Optional, Sequence, Tuple
 import psycopg2
 from psycopg2 import extras
 
+_SQLITE_IN_BATCH = 500
+_LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "::1", "0.0.0.0", "")
+
 
 def _normalize_pg_url(url: str) -> str:
     if url.startswith("postgres://"):
@@ -99,7 +102,6 @@ def _fetch_sqlite(
         conn.close()
         return [], []
 
-    placeholders = ",".join("?" for _ in cre_ids)
     # Unique ids while preserving order for stable upserts.
     seen = set()
     ordered_ids: List[str] = []
@@ -107,21 +109,24 @@ def _fetch_sqlite(
         if i not in seen:
             seen.add(i)
             ordered_ids.append(i)
-    placeholders = ",".join("?" for _ in ordered_ids)
-    cre_rows = [
-        (
-            r["id"],
-            r["external_id"] or "",
-            r["description"] or "",
-            r["name"],
-            r["tags"] or "",
+    cre_rows = []
+    for start in range(0, len(ordered_ids), _SQLITE_IN_BATCH):
+        batch = ordered_ids[start : start + _SQLITE_IN_BATCH]
+        placeholders = ",".join("?" for _ in batch)
+        cre_rows.extend(
+            (
+                r["id"],
+                r["external_id"] or "",
+                r["description"] or "",
+                r["name"],
+                r["tags"] or "",
+            )
+            for r in conn.execute(
+                f"SELECT id, external_id, description, name, tags FROM cre "
+                f"WHERE id IN ({placeholders})",
+                batch,
+            )
         )
-        for r in conn.execute(
-            f"SELECT id, external_id, description, name, tags FROM cre "
-            f"WHERE id IN ({placeholders})",
-            ordered_ids,
-        )
-    ]
     conn.close()
     return cre_rows, emb_rows
 
@@ -131,10 +136,11 @@ def _fetch_postgres(
 ) -> Tuple[List[Tuple[Any, ...]], List[Tuple[Any, ...]]]:
     url = _normalize_pg_url(pg_url)
     # Heroku URLs often need sslmode=require
-    host = (urllib.parse.urlparse(url).hostname or "").lower()
-    if host.endswith(".amazonaws.com") or "heroku" in url:
-        if "sslmode=" not in url:
-            url = url + ("&" if "?" in url else "?") + "sslmode=require"
+    parsed = urllib.parse.urlparse(url)
+    host = (parsed.hostname or "").lower()
+    managed_host = host.endswith((".amazonaws.com", ".heroku.com", ".herokuapp.com"))
+    if managed_host and "sslmode" not in urllib.parse.parse_qs(parsed.query):
+        url = url + ("&" if "?" in url else "?") + "sslmode=require"
 
     with psycopg2.connect(url) as conn:
         with conn.cursor() as cur:
@@ -244,8 +250,12 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     args = p.parse_args(list(argv) if argv is not None else None)
 
     dest = _normalize_pg_url(args.to_postgres)
-    host = (urllib.parse.urlparse(dest).hostname or "").lower()
-    local = host in ("127.0.0.1", "localhost", "::1", "") or host == "0.0.0.0"
+    dest_parsed = urllib.parse.urlparse(dest)
+    dest_query = urllib.parse.parse_qs(dest_parsed.query)
+    dest_hosts = [(dest_parsed.hostname or "").lower()] + [
+        h.lower() for key in ("host", "hostaddr") for h in dest_query.get(key, [])
+    ]
+    local = all(h in _LOOPBACK_HOSTS or h.startswith("/") for h in dest_hosts)
     if (
         args.require_local_destination
         and not args.allow_remote_destination
@@ -290,7 +300,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
         "replaced_cre_embeddings": n_emb,
         "dest_cre_total": cre_total,
         "dest_cre_embeddings_with_vec": emb_total,
-        "to": dest,
+        "to": f"{dest_parsed.hostname}:{dest_parsed.port or 5432}{dest_parsed.path}",
     }
     print(json.dumps(report, indent=2))
     return 0 if emb_total else 1
