@@ -516,6 +516,10 @@ def phase_classify_dual(state: Dict[str, Any]) -> None:
     )
 
     gem_run = sample_run + "-gemini"
+    # content_hash is globally unique: rows kept by the first model would make the
+    # second model's identical chunks dedupe away and skew the agreement rate.
+    _clear_knowledge(db_url, sample_run)
+    _clear_knowledge(db_url, gem_run)
     _clone_harvest_run(db_url, sample_run, gem_run)
     # Reset sample rows already marked processed so clone is the only gemini input
     gem = _run_noise_filter(db_url, gem_run, cloud_model)
@@ -553,6 +557,19 @@ def phase_classify_dual(state: Dict[str, Any]) -> None:
     _save_state(state)
 
 
+def _clear_knowledge(db_url: str, run_id: str) -> None:
+    sys.path.insert(0, str(ROOT))
+    from application.cmd.cre_main import db_connect
+    from application import sqla
+    from application.database.db import KnowledgeQueueItem
+
+    db_connect(db_url)
+    sqla.session.query(KnowledgeQueueItem).filter_by(pipeline_run_id=run_id).delete(
+        synchronize_session=False
+    )
+    sqla.session.commit()
+
+
 def _clone_harvest_run(db_url: str, src_run: str, dst_run: str) -> None:
     sys.path.insert(0, str(ROOT))
     from application.cmd.cre_main import db_connect
@@ -561,6 +578,9 @@ def _clone_harvest_run(db_url: str, src_run: str, dst_run: str) -> None:
     import copy
 
     db_connect(db_url)
+    sqla.session.query(HarvestInput).filter_by(pipeline_run_id=dst_run).delete(
+        synchronize_session=False
+    )
     rows = sqla.session.query(HarvestInput).filter_by(pipeline_run_id=src_run).all()
     for row in rows:
         payload = copy.deepcopy(row.payload or {})

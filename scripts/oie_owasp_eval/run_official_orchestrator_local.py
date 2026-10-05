@@ -336,6 +336,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     )
     args = parser.parse_args(argv)
 
+    from application.utils.db_url import redact_db_url
+
     os.environ.setdefault("FLASK_CONFIG", "development")
     os.environ.setdefault("NO_LOAD_GRAPH_DB", "1")
     os.environ.setdefault("CRE_LIBRARIAN_RETRIEVER_BACKEND", "in_memory")
@@ -350,10 +352,15 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if args.cache_file.strip():
         cache_file = args.cache_file.strip()
-        print(f"using cache_file={cache_file}", flush=True)
-        db_label = cache_file
+        db_label = redact_db_url(cache_file)
+        print(f"using cache_file={db_label}", flush=True)
     else:
-        cache_file = _prepare_db(src=args.hub_db, dst=args.db, reuse=args.reuse_db)
+        if args.skip_a and not args.db.is_file():
+            print(f"--skip-a requires an existing --db: {args.db}", file=sys.stderr)
+            return 2
+        cache_file = _prepare_db(
+            src=args.hub_db, dst=args.db, reuse=args.reuse_db or args.skip_a
+        )
         db_label = str(args.db.resolve())
     run_id = (args.run_id or "").strip() or _now_run_id()
 
@@ -371,7 +378,8 @@ def main(argv: Optional[List[str]] = None) -> int:
                 )
 
         else:
-            _write_tiny_repos_yaml(args.repos_yaml)
+            if args.repos_yaml.resolve() == DEFAULT_REPOS_YAML.resolve():
+                _write_tiny_repos_yaml(args.repos_yaml)
             from application.utils.harvester.pipeline import run_harvester
 
             repos_yaml = args.repos_yaml
@@ -393,7 +401,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         json.dumps(
             {
                 "run_id": run_id,
-                "cache_file": cache_file,
+                "cache_file": db_label,
                 "a_mode": "skipped" if args.skip_a else args.a_mode,
                 "orchestrator": "application.utils.oie_orchestrator.run_oie_pipeline",
             },
@@ -427,6 +435,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         ),
     }
     report_path = ART / f"orchestrator_full_{run_id}.json"
+    ART.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(out, indent=2) + "\n")
     print(json.dumps(out, indent=2))
     print(f"wrote {report_path}", flush=True)
