@@ -221,7 +221,7 @@ parent_index=getattr(components, "parent_index", None),
             getattr(components, "leaf_drilldown_min_children", 3) or 3
         ),
         leaf_drilldown_min_sections=int(
-            getattr(components, "leaf_drilldown_min_sections", 20) or 20
+            getattr(components, "leaf_drilldown_min_sections", 20)
         ),
         leaf_drilldown_keep_hub=bool(
             getattr(components, "leaf_drilldown_keep_hub", False)
