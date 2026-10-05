@@ -1,12 +1,12 @@
 from cre_logging import get_logger
- 
+
 logger = get_logger(__name__)
- 
+
 import json
 import os
 import tempfile
 import unittest
- 
+
 from application.defs.cheatsheet_defs import CheatsheetRecord
 from application.utils.external_project_parsers.parsers.cheatsheet_knowledge_queue_item import (
     knowledge_queue_item_from_cheatsheet_record,
@@ -20,11 +20,13 @@ from application.utils.librarian.schemas import (
     SourceType,
 )
 from application.utils.librarian.section_validator import section_from_queue_row
- 
+
 RUN_ID = "run-cheatsheet-test"
-HYPERLINK = "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html"
- 
- 
+HYPERLINK = (
+    "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html"
+)
+
+
 def _record(headings=None):
     if headings is None:
         headings = ["Introduction", "Architectural Patterns"]
@@ -42,15 +44,16 @@ def _record(headings=None):
             "committed_at": "2026-06-14T10:22:03+00:00",
         },
     )
- 
+
+
 class TestKnowledgeQueueItemFromCheatsheetRecord(unittest.TestCase):
     # Happy Path
     def test_valid_record_maps_every_field(self):
         item = knowledge_queue_item_from_cheatsheet_record(
             _record(), pipeline_run_id=RUN_ID
         )
- 
-        self.assertTrue(item.id) ## confirms id is created. 
+
+        self.assertTrue(item.id)  ## confirms id is created.
         self.assertEqual(
             item.artifact_id, "art:owasp_cheatsheets:Secrets_Management_Cheat_Sheet"
         )
@@ -64,7 +67,7 @@ class TestKnowledgeQueueItemFromCheatsheetRecord(unittest.TestCase):
         self.assertEqual(item.content_hash, compute_content_hash(item.text))
         self.assertEqual(item.pipeline_run_id, RUN_ID)
         self.assertEqual(item.schema_version, SCHEMA_VERSION)
-        self.assertEqual(item.source_type, SourceType.url) ## provenance
+        self.assertEqual(item.source_type, SourceType.url)  ## provenance
         self.assertIsNone(item.source_repo)
         self.assertIsNone(item.source_commit_sha)
         self.assertEqual(
@@ -92,7 +95,7 @@ class TestKnowledgeQueueItemFromCheatsheetRecord(unittest.TestCase):
             _record(headings=[]), pipeline_run_id=RUN_ID
         )
         self.assertIsNone(item.span_heading_path)
- 
+
     def test_row_passes_c0_validation(self):
         item = knowledge_queue_item_from_cheatsheet_record(
             _record(),
@@ -100,7 +103,7 @@ class TestKnowledgeQueueItemFromCheatsheetRecord(unittest.TestCase):
         )
         # If C.0 rejects our item, the test fails.
         section_from_queue_row(item)
-    
+
     def test_jsonl_can_be_read_by_fixture_knowledge_source(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "cheatsheets.jsonl")
@@ -113,7 +116,7 @@ class TestKnowledgeQueueItemFromCheatsheetRecord(unittest.TestCase):
 
             # If this raises, the test fails.
             list(FixtureKnowledgeSource(path).items())
- 
- 
+
+
 if __name__ == "__main__":
     unittest.main()
