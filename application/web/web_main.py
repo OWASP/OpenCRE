@@ -49,6 +49,7 @@ from flask import (
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 from sqlalchemy.exc import SQLAlchemyError
+from werkzeug.security import safe_join
 from application.utils.spreadsheet import write_csv
 import oauthlib
 import google.auth.transport.requests
@@ -747,10 +748,21 @@ def faq_markdown() -> Any:
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 def index(path: str) -> Any:
-    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
-        return send_from_directory(app.static_folder, path)
-    else:
-        return send_from_directory(app.static_folder, "index.html")
+    # Resolve the requested path with the same containment rule that
+    # ``send_from_directory`` applies internally. ``os.path.join`` applies no
+    # containment check and Flask's ``<path:path>`` converter passes ``..``
+    # through, so joining first would let ``os.path.exists`` answer truthfully
+    # about paths outside the static folder: an existing path took the first
+    # branch and 404'd from ``safe_join``, a missing one fell through to
+    # index.html with 200. That status difference was a filesystem existence
+    # oracle (CWE-204) reachable without authentication. Asking
+    # ``safe_join`` first makes both branches agree on what is in bounds.
+    if path != "":
+        resolved = safe_join(app.static_folder, path)
+        if resolved is not None and os.path.exists(resolved):
+            return send_from_directory(app.static_folder, path)
+
+    return send_from_directory(app.static_folder, "index.html")
 
 
 @app.route("/smartlink/<ntype>/<name>/<section>", methods=["GET"])
