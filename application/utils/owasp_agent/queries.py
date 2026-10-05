@@ -81,7 +81,10 @@ class MetaQueries:
         )
 
     def count_projects(
-        self, topic: Optional[str] = None, level: Optional[str] = None
+        self,
+        topic: Optional[str] = None,
+        level: Optional[str] = None,
+        list_mode: bool = False,
     ) -> QueryResult:
         items = self._safe_entities("project")
         if not isinstance(items, list):
@@ -117,6 +120,35 @@ class MetaQueries:
                     clarify="Which tags or keywords should count as this topic?",
                 )
             filtered = matched
+        if list_mode:
+            rows = sorted(filtered, key=lambda p: str(p.get("name") or "").lower())
+            lines = [
+                f"| {p.get('name') or p.get('key')} | {p.get('level') or 'n/a'} | {p.get('url') or 'n/a'} |"
+                for p in rows[:40]
+            ]
+            more = f" ({len(rows) - 40} more not shown.)" if len(rows) > 40 else ""
+            # Always include the markdown header so callers can detect table form.
+            table = "| Project | Level | URL |\n|---|---|---|\n" + (
+                "\n".join(lines) if lines else "| (none) | n/a | n/a |"
+            )
+            return QueryResult(
+                ok=True,
+                kind="list_projects",
+                data={
+                    "count": len(filtered),
+                    "topic": topic,
+                    "level": level,
+                    "projects": [_public_entity(p) for p in rows[:40]],
+                    "conflicted_excluded": conflicted_n,
+                },
+                message=(
+                    f"Found {len(filtered)} OWASP projects"
+                    + (f" matching topic {topic!r}" if topic else "")
+                    + (f" at level {level!r}" if level else "")
+                    + f".{more}\n\n{table}"
+                ),
+                citations=_citations(rows[:10]),
+            )
         return QueryResult(
             ok=True,
             kind="count_projects",
@@ -181,6 +213,31 @@ class MetaQueries:
         years_m = sorted({int(m["year"]) for m in hit_m})
         years_c = sorted({int(c["year"]) for c in hit_c})
         roles = sorted({f"{m.get('year')}:{m.get('role') or 'member'}" for m in hit_m})
+        # Prefer earliest candidacy statement (first board interview / statement)
+        statements = sorted(
+            [
+                c
+                for c in hit_c
+                if (c.get("statement") or "").strip() or (c.get("url") or "").strip()
+            ],
+            key=lambda c: int(c.get("year") or 0),
+        )
+        first = statements[0] if statements else None
+        msg = _format_person(name, years_m, years_c, roles)
+        if first:
+            yr = first.get("year")
+            url = first.get("url") or ""
+            excerpt = (first.get("statement") or "").strip()
+            msg += f" First indexed candidacy: {yr}."
+            if url:
+                msg += f" Candidate page: {url}."
+            if excerpt:
+                msg += f" Statement excerpt: {excerpt}"
+        citations = [
+            "https://github.com/OWASP/www-board/blob/master/_data/board-history.yml"
+        ]
+        if first and first.get("url"):
+            citations.append(str(first["url"]))
         return QueryResult(
             ok=True,
             kind="board_person",
@@ -189,12 +246,251 @@ class MetaQueries:
                 "member_years": years_m,
                 "candidate_years": years_c,
                 "roles": roles,
+                "first_candidacy": _public_entity(first) if first else None,
             },
-            message=_format_person(name, years_m, years_c, roles),
-            citations=[
-                "https://github.com/OWASP/www-board/blob/master/_data/board-history.yml"
-            ],
+            message=msg,
+            citations=citations,
         )
+
+    def board_members_years(self, years: Sequence[int]) -> QueryResult:
+        cleaned = sorted({int(y) for y in years})
+        if not cleaned:
+            return QueryResult(
+                ok=False,
+                kind="board_members",
+                message="Which board year should I look up?",
+                clarify="Please provide a year (e.g. 2025).",
+            )
+        if len(cleaned) == 1:
+            return self.board_members(cleaned[0])
+        parts = []
+        data = {}
+        citations = [
+            "https://github.com/OWASP/www-board/blob/master/_data/board-history.yml"
+        ]
+        ok_any = False
+        for year in cleaned:
+            r = self.board_members(year)
+            if r.ok:
+                ok_any = True
+                data[str(year)] = r.data
+                parts.append(r.message.rstrip("."))
+            else:
+                parts.append(f"No board members found for year {year}")
+        return QueryResult(
+            ok=ok_any,
+            kind="board_members",
+            data=data,
+            message=" ".join(p + "." for p in parts),
+            citations=citations,
+        )
+
+    def chapter_lookup(
+        self, place: Optional[str] = None, places: Optional[Sequence[str]] = None
+    ) -> QueryResult:
+        targets = [p for p in (places or []) if p and str(p).strip()]
+        if place and place.strip():
+            targets = [place.strip()] + [t for t in targets if t != place.strip()]
+        if not targets:
+            return QueryResult(
+                ok=False,
+                kind="chapter_lookup",
+                message="Which chapter or city should I look up?",
+                clarify="Please name a city or chapter (e.g. Athens, Los Angeles).",
+            )
+        chapters = self._merged_chapters()
+        messages: List[str] = []
+        rows: List[Dict[str, Any]] = []
+        citations: List[str] = []
+        found_any = False
+        for target in targets:
+            hit = _match_chapter(chapters, target)
+            alias = _metro_chapter_alias(target) if not hit else None
+            via_alias = False
+            if not hit and alias:
+                hit = _match_chapter(chapters, alias)
+                via_alias = bool(hit)
+            if not hit:
+                messages.append(
+                    f"No OWASP chapter is indexed for {target!r} "
+                    "(no active chapter and no historical chapter page in the local index)."
+                )
+                rows.append({"query": target, "found": False})
+                continue
+            found_any = True
+            leaders = [x for x in (hit.get("leaders") or []) if x]
+            active = hit.get("active")
+            name = hit.get("name") or hit.get("key")
+            url = hit.get("url") or ""
+            suburb_bit = (
+                f" For {target}, the nearest indexed chapter is {name}."
+                if via_alias
+                else ""
+            )
+            if active is False:
+                leader_bit = (
+                    f" Last known leaders: {', '.join(leaders)}."
+                    if leaders
+                    else " No leaders are indexed."
+                )
+                messages.append(
+                    f"There is no active OWASP chapter for {name}. "
+                    f"A chapter page is indexed but marked inactive "
+                    f"(site data: Needs Website Update / no pages).{leader_bit}"
+                    + suburb_bit
+                    + (f" Page: {url}." if url else "")
+                )
+            else:
+                leader_bit = (
+                    f" Leaders: {', '.join(leaders)}."
+                    if leaders
+                    else " Leaders are not indexed for this chapter."
+                )
+                status = "active" if active is True else "indexed"
+                messages.append(
+                    f"OWASP chapter {name} is {status}.{leader_bit}"
+                    + suburb_bit
+                    + (f" Page: {url}." if url else "")
+                )
+            if url:
+                citations.append(str(url))
+            rows.append(
+                {
+                    "query": target,
+                    "found": True,
+                    "chapter": _public_entity(hit),
+                    "leaders": leaders,
+                    "active": active,
+                    "via_suburb_alias": via_alias,
+                }
+            )
+        return QueryResult(
+            ok=found_any,
+            kind="chapter_lookup",
+            data={"results": rows},
+            message=" ".join(messages),
+            citations=citations,
+        )
+
+    def membership_info(
+        self,
+        country: Optional[str] = None,
+        countries: Optional[Sequence[str]] = None,
+        student: bool = False,
+        renew_only: bool = False,
+    ) -> QueryResult:
+        from application.utils.owasp_agent.membership import format_membership_answer
+
+        discount_map: Dict[str, bool] = {}
+        for row in self.store.list_entities("membership_country"):
+            name = str(row.get("name") or "")
+            if name:
+                from application.utils.owasp_agent.membership import normalize_country
+
+                discount_map[normalize_country(name)] = bool(row.get("discount"))
+        payload = format_membership_answer(
+            country=country,
+            compare_countries=countries,
+            student=student,
+            renew_only=renew_only,
+            country_discount_map=discount_map or None,
+        )
+        return QueryResult(
+            ok=bool(payload.get("ok")),
+            kind="membership",
+            data=payload.get("data"),
+            message=str(payload.get("message") or ""),
+            citations=list(payload.get("citations") or []),
+        )
+
+    def talk_lookup(
+        self, person: Optional[str] = None, topic: Optional[str] = None
+    ) -> QueryResult:
+        """Fail-closed: only answer from indexed event talks (never invent)."""
+        events = self._safe_entities("event")
+        if not isinstance(events, list):
+            events = []
+        person_n = _norm(person or "")
+        topic_n = (topic or "").lower().strip()
+        hits: List[Dict[str, Any]] = []
+        for ev in events:
+            if ev.get("_conflict"):
+                continue
+            talks = [str(t) for t in (ev.get("talks") or [])]
+            blob = " ".join(
+                talks + [str(ev.get("name") or ""), str(ev.get("description") or "")]
+            ).lower()
+            if (
+                person_n
+                and person_n not in blob
+                and person_n not in _norm(str(ev.get("name") or ""))
+            ):
+                # Speakers are rarely indexed separately; require talk/event text match.
+                continue
+            if topic_n and topic_n not in blob:
+                continue
+            if person_n or topic_n:
+                hits.append(ev)
+        if not hits:
+            who = person or "that person"
+            about = f" about {topic}" if topic else ""
+            return QueryResult(
+                ok=True,
+                kind="talk_lookup",
+                data={"person": person, "topic": topic, "events": []},
+                message=(
+                    f"I have no indexed OWASP talk or keynote by {who}{about}. "
+                    "I will not invent talk content (fail closed). "
+                    "If this was a board candidate interview/statement, ask about their "
+                    "board candidacy instead."
+                ),
+            )
+        top = hits[0]
+        return QueryResult(
+            ok=True,
+            kind="talk_lookup",
+            data={"events": [_public_entity(e) for e in hits[:5]]},
+            message=(
+                f"Indexed match: {top.get('name')} on {top.get('start_date')}. "
+                f"Talks: {'; '.join(top.get('talks') or []) or 'n/a'}."
+            ),
+            citations=_citations(hits[:3]),
+        )
+
+    def _merged_chapters(self) -> List[Dict[str, Any]]:
+        """Merge chapter fields across nest/site/github for leaders/active."""
+        by_key: Dict[str, Dict[str, Any]] = {}
+        for item in self.store.list_entities("chapter"):
+            key = str(item.get("key") or "")
+            if not key:
+                continue
+            cur = by_key.get(key)
+            if cur is None:
+                by_key[key] = dict(item)
+                continue
+            # Prefer non-empty leaders / explicit active / url
+            if item.get("leaders") and not cur.get("leaders"):
+                cur["leaders"] = item.get("leaders")
+            elif item.get("leaders") and cur.get("leaders"):
+                merged = list(cur.get("leaders") or [])
+                for n in item.get("leaders") or []:
+                    if n not in merged:
+                        merged.append(n)
+                cur["leaders"] = merged
+            if cur.get("active") is None and item.get("active") is not None:
+                cur["active"] = item.get("active")
+            if item.get("active") is False:
+                cur["active"] = False
+            if item.get("url") and not cur.get("url"):
+                cur["url"] = item.get("url")
+            if item.get("country") and not cur.get("country"):
+                cur["country"] = item.get("country")
+            if item.get("name") and (
+                not cur.get("name") or cur.get("source") != "site"
+            ):
+                if item.get("source") == "site" or not cur.get("name"):
+                    cur["name"] = item.get("name")
+        return list(by_key.values())
 
     def board_candidate_stats(self, names: Sequence[str]) -> QueryResult:
         cleaned = [n.strip() for n in names if n and n.strip()]
@@ -350,6 +646,28 @@ class MetaQueries:
                 for c in self.store.prefer_source_entities("chapter")
                 if not c.get("_conflict")
             ]
+            # Prefer chapters with coords; for a short metro alias list, map place→chapter.
+            alias = _metro_chapter_alias(place)
+            if alias:
+                for ch in chapters:
+                    key = str(ch.get("key") or "").lower()
+                    name = str(ch.get("name") or "").lower()
+                    if alias in key or alias in name:
+                        return QueryResult(
+                            ok=True,
+                            kind="events_near",
+                            data={
+                                "place": place,
+                                "nearest_chapter": _public_entity(ch),
+                                "events": [],
+                            },
+                            message=(
+                                f"You told me you are in {place}. Nearest indexed OWASP chapter is "
+                                f"{ch.get('name')}. No matching upcoming events indexed"
+                                + (f" for topic {topic!r}." if topic else ".")
+                            ),
+                            citations=_citations([ch]),
+                        )
             nearest_ch = nearest_by_coords(origin, chapters, limit=1)
             if nearest_ch:
                 ch = nearest_ch[0]
@@ -406,9 +724,16 @@ class MetaQueries:
         self, items: List[Dict[str, Any]], topic: str
     ) -> Tuple[List[Dict[str, Any]], bool]:
         keys = TOPIC_KEYWORDS.get(_topic_key(topic))
+        free_text = False
         if not keys:
-            # Unknown topic taxonomy → fail closed / ambiguous
-            return [], True
+            # Free-text topic: substring/token match on name/desc/tags (not invent).
+            raw = (topic or "").strip().lower()
+            if not raw or len(raw) < 2:
+                return [], True
+            free_text = True
+            keys = tuple(
+                part for part in re.split(r"[\s/_-]+", raw) if len(part) >= 2
+            ) or (raw,)
         matched: List[Dict[str, Any]] = []
         for item in items:
             tags = [str(t).lower() for t in (item.get("tags") or [])]
@@ -418,6 +743,9 @@ class MetaQueries:
             blob = f"{name} {desc}"
             if _topic_matches(keys, blob=blob, tokens=tags + topics):
                 matched.append(item)
+        # Unknown free-text with zero evidence → ambiguous (fail closed).
+        if free_text and not matched:
+            return [], True
         return matched, False
 
 
@@ -474,6 +802,12 @@ _PUBLIC_FIELDS = (
     "level",
     "chapter_key",
     "source",
+    "leaders",
+    "active",
+    "meetings",
+    "year",
+    "statement",
+    "notes",
 )
 
 
@@ -522,3 +856,49 @@ def _format_person(
     if years_c:
         parts.append(f"candidate in {', '.join(map(str, years_c))}")
     return " ".join(parts) + "."
+
+
+def _match_chapter(
+    chapters: List[Dict[str, Any]], place: str
+) -> Optional[Dict[str, Any]]:
+    target = _norm(place)
+    if not target:
+        return None
+    for prefix in ("owasp ", "chapter ", "the "):
+        if target.startswith(prefix):
+            target = target[len(prefix) :]
+    best = None
+    for ch in chapters:
+        key = _norm(str(ch.get("key") or "").replace("-", " "))
+        name = _norm(str(ch.get("name") or ""))
+        city = _norm(str(ch.get("city") or ""))
+        hay = f"{key} {name} {city}"
+        if target == key or target == city or target in name or name.endswith(target):
+            return ch
+        if target.replace(" ", "") == key.replace(" ", ""):
+            return ch
+        if target in hay and best is None:
+            best = ch
+    return best
+
+
+def _metro_chapter_alias(place: str) -> Optional[str]:
+    """Map well-known localities to chapter key/name fragments without geocoding."""
+    p = _norm(place)
+    aliases = {
+        "pasadena": "los angeles",
+        "santa monica": "los angeles",
+        "glendale": "los angeles",
+        "burbank": "los angeles",
+        "oakland": "los angeles",
+        "beverly hills": "los angeles",
+        "long beach": "los angeles",
+        "croydon": "london",
+        "peckham": "london",
+        "potsdam": "berlin",
+        "yokohama": "tokyo",
+        "brooklyn": "new york",
+        "manhattan": "new york",
+        "cambridge": "boston",
+    }
+    return aliases.get(p)
