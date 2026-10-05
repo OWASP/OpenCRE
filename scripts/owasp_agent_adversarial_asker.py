@@ -702,7 +702,7 @@ def _staging_ssh_params() -> Any:
             "BatchMode=yes",
             "-o",
             "ConnectTimeout=30",
-            "sg@100.74.143.62",
+            "user@staging-host",
             "docker",
             "exec",
             "-i",
