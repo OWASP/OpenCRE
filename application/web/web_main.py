@@ -254,10 +254,26 @@ def find_node_by_name(
     if typ:
         ntype = typ[0]
 
+    # Parse once: int() on a non-integer raises ValueError with nothing to
+    # handle it, so a client typo became a 500. items_per_page was also passed
+    # straight through with no upper bound, so a single request could pull the
+    # whole table; cap it the way all_cres does. A value of zero or less falls
+    # back to the default.
     page = 1
-    if request.args.get("page") is not None and int(request.args.get("page")) > 0:
-        page = request.args.get("page")
-    items_per_page = request.args.get("items_per_page") or ITEMS_PER_PAGE
+    items_per_page = ITEMS_PER_PAGE
+    try:
+        if request.args.get("page") is not None:
+            requested_page = int(request.args.get("page"))
+            if requested_page > 0:
+                page = requested_page
+
+        if request.args.get("items_per_page") is not None:
+            requested_items_per_page = int(request.args.get("items_per_page"))
+            if requested_items_per_page > 0:
+                items_per_page = requested_items_per_page
+    except ValueError:
+        abort(400, "page and items_per_page must be integers")
+    items_per_page = min(items_per_page, MAX_ITEMS_PER_PAGE)
 
     include_only = request.args.getlist("include_only")
     total_pages, nodes = None, None
@@ -1498,14 +1514,21 @@ def all_cres() -> Any:
 
     page = 1
     per_page = ITEMS_PER_PAGE
-    if request.args.get("page") is not None and int(request.args.get("page")) > 0:
-        page = int(request.args.get("page"))
+    # int() on a non-integer raises ValueError, which has no handler and
+    # surfaced as a 500 for what is a client mistake. A value of zero or less
+    # still falls back to the default.
+    try:
+        if request.args.get("page") is not None:
+            requested_page = int(request.args.get("page"))
+            if requested_page > 0:
+                page = requested_page
 
-    if (
-        request.args.get("per_page") is not None
-        and int(request.args.get("per_page")) > 0
-    ):
-        per_page = int(request.args.get("per_page"))
+        if request.args.get("per_page") is not None:
+            requested_per_page = int(request.args.get("per_page"))
+            if requested_per_page > 0:
+                per_page = requested_per_page
+    except ValueError:
+        abort(400, "page and per_page must be integers")
     per_page = min(per_page, MAX_ITEMS_PER_PAGE)
 
     documents, page, total_pages = database.all_cres_with_pagination(page, per_page)
