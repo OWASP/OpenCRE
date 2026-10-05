@@ -73,7 +73,7 @@ make install-python   # or: pip install -r requirements.txt -r requirements-dev.
 | Variable | Required for | Notes |
 | --- | --- | --- |
 | `OWASP_AGENT_ENABLED=1` | Agent + MCP meta tools | Off by default |
-| `OWASP_AGENT_DB` | Index path | Default: `./tmp/owasp_agent.sqlite` |
+| `OWASP_AGENT_DB` | Index path or Postgres URL | Default: `./tmp/owasp_agent.sqlite`. Scheduled runs (`--run_scheduled`) fall back to the app database when unset, so set the same value for web/MCP processes |
 | `NEST_API_KEY` | Nest sync (chapters/events/projects) | From [nest.owasp.org](https://nest.owasp.org) while logged in |
 | `NEST_API_BASE` | Nest sync | Default `https://nest.owasp.org/api/v0` |
 | `GITHUB_TOKEN` | GitHub sync / board-history crawl | Optional but raises rate limits; board YAML needs GitHub |

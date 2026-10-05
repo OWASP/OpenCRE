@@ -349,6 +349,43 @@ repositories:
         self.assertEqual(harvest.summary["deferred"], 1)
         self.assertEqual(harvest.summary["repository_ids"], ["owasp-p1", "owasp-p2"])
 
+    def _agent_sync(self, agent_db):
+        from application.utils.owasp_agent import index_store
+        from application.utils.owasp_agent import sync as agent_sync
+
+        targets = []
+
+        class RecordingStore:
+            def __init__(self, target):
+                targets.append(target)
+
+        ctx = jobs.JobContext(
+            collection=self.collection,
+            cache_file="unused",
+            run_id="owasp-test",
+            now=NOW,
+            config=SchedulerConfig(repos_yaml=str(self.repos), agent_db=agent_db),
+        )
+        report = agent_sync.SyncReport(nest_ok=True, github_ok=True)
+        with patch.object(index_store, "IndexStore", RecordingStore), patch.object(
+            agent_sync, "sync_all", lambda **_: report
+        ):
+            return jobs.stage_agent_sync(ctx), targets
+
+    def test_agent_sync_reports_and_redacts_its_index_target(self) -> None:
+        url = "postgresql://cre:hunter2@db.example/cre"
+        result, targets = self._agent_sync(url)
+        self.assertEqual(targets, [url])
+        self.assertEqual(
+            result.summary["index_target"], "postgresql://cre:***@db.example/cre"
+        )
+        self.assertNotIn("hunter2", json.dumps(result.summary))
+
+    def test_agent_sync_falls_back_to_the_app_database(self) -> None:
+        result, targets = self._agent_sync(None)
+        self.assertEqual(targets, [str(sqla.session.get_bind().url)])
+        self.assertEqual(result.status, "ok")
+
     def test_harvest_errors_mark_the_stage_degraded(self) -> None:
         def fake(*, repo_cfg, **_):
             raise RuntimeError("clone failed")
