@@ -249,13 +249,30 @@ def reset_queues() -> None:
     )
 
 
-def claim_combo(combo_id: str) -> bool:
+def _lock_owner_alive(lock: Path) -> bool:
+    try:
+        pid = int((lock / "pid").read_text().strip() or 0)
+    except (OSError, ValueError):
+        return False
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except OSError:
+        return True
+    return True
+
+
+def claim_combo(combo_id: str, *, force: bool = False) -> bool:
     """Exclusive claim via mkdir lockdir so parallel workers never double-write.
 
-    Returns False if another worker holds the claim or a completed JSON exists.
+    Returns False if another live worker holds the claim or, unless ``force``,
+    a completed JSON exists. Claims left by dead workers are reclaimed.
     """
     out = GRID_DIR / f"{combo_id}.json"
-    if out.is_file():
+    if out.is_file() and not force:
         try:
             data = json.loads(out.read_text())
             if data.get("status") == "ok" and data.get("headline"):
@@ -264,6 +281,8 @@ def claim_combo(combo_id: str) -> bool:
             pass
     LOCKS_DIR.mkdir(parents=True, exist_ok=True)
     lock = LOCKS_DIR / combo_id
+    if lock.is_dir() and not _lock_owner_alive(lock):
+        release_combo_claim(combo_id)
     try:
         lock.mkdir()
         (lock / "pid").write_text(f"{os.getpid()}\n")
@@ -366,7 +385,9 @@ def install_query_embed_disk_cache() -> None:
     def _cached(self: Any, text: Any) -> Any:
         if not isinstance(text, str):
             return original(self, text)
-        key = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        key = hashlib.sha256(
+            f"{getattr(self, 'embed_model', '')}\n{text}".encode("utf-8")
+        ).hexdigest()
         path = EMBED_CACHE_DIR / f"{key}.json"
         if path.is_file():
             try:
@@ -429,7 +450,7 @@ def run_module_c(flags: Mapping[str, str]) -> Dict[str, Any]:
 
     cfg = load_config()
     snapshot = {
-        k: getattr(cfg, k)
+        k: getattr(cfg, k, os.environ.get(f"CRE_LIBRARIAN_{k.upper()}"))
         for k in (
             "cre_summary",
             "dual_index",
@@ -714,8 +735,9 @@ def promote_winners(ranked: Sequence[Mapping[str, Any]]) -> None:
         if k == "CRE_LIBRARIAN_MARGIN_GAMMA":
             yaml_flags[k] = str(v)
             continue
-        if str(v) in ("1", "true", "True"):
-            yaml_flags[k] = "1"
+        # Write explicit zeros too: cre_summary/dual_index default to on, and the
+        # experiment runner clears the environment before applying winners.
+        yaml_flags[k] = "1" if str(v) in ("1", "true", "True") else "0"
 
     if yaml_flags:
         flag_block = "".join(f'  {k}: "{v}"\n' for k, v in sorted(yaml_flags.items()))
@@ -895,10 +917,12 @@ def run_one(
             "summary": {
                 k: (mc.get("summary") or {}).get(k)
                 for k in (
-                    "decisions_total",
+                    "read",
                     "linked",
-                    "review_required",
-                    "errors",
+                    "review",
+                    "skipped",
+                    "errored",
+                    "persisted",
                     "consumed",
                 )
                 if isinstance(mc.get("summary"), dict)
@@ -1175,7 +1199,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                     continue
                 if not _in_shard(combo_index):
                     continue
-                if not claim_combo(combo_id):
+                if not claim_combo(combo_id, force=args.force):
                     print(f"SKIP_CLAIMED {combo_id}", flush=True)
                     continue
                 try:

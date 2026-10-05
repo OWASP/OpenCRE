@@ -789,7 +789,12 @@ def main() -> int:
         run_id = args.run_id or (
             "orch-b2-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         )
-        print(json.dumps({"run_id": run_id, "cache": cache}, indent=2), flush=True)
+        from application.utils.db_url import redact_db_url
+
+        print(
+            json.dumps({"run_id": run_id, "cache": redact_db_url(cache)}, indent=2),
+            flush=True,
+        )
         orch = run_pipeline(run_id, cache, keep_all_knowledge=args.keep_all_knowledge)
         (ART / "b2_phase_status.json").write_text(json.dumps(orch, indent=2) + "\n")
         print(json.dumps(orch, indent=2), flush=True)

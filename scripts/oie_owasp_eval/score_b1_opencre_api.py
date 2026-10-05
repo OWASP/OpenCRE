@@ -185,13 +185,22 @@ def top2_cre_external_ids(
     return ordered[:2]
 
 
-def match_gold(keys: Set[str], key_to_cres: Dict[str, Set[str]]) -> Set[str]:
+def match_gold(
+    keys: Set[str], key_to_cres: Dict[str, Set[str]], *, exact: bool = False
+) -> Set[str]:
+    """Union the gold CREs of every matching key.
+
+    ``exact`` disables substring matching, which would otherwise let
+    ``authentication cheat sheet`` pull in ``multifactor authentication cheat sheet``.
+    """
     gold: Set[str] = set()
     for k in keys:
         if k in key_to_cres:
             gold |= key_to_cres[k]
+        if exact:
+            continue
         for gk, cres in key_to_cres.items():
-            if len(k) >= 8 and (k in gk or gk in k):
+            if len(k) >= 8 and len(gk) >= 8 and (k in gk or gk in k):
                 gold |= cres
     return gold
 
@@ -306,7 +315,7 @@ def main() -> int:
                 }
                 sheet_keys.discard("")
                 sheet_gold[stem] = match_gold(
-                    sheet_keys, gold_by_resource[spec["label"]]
+                    sheet_keys, gold_by_resource[spec["label"]], exact=True
                 )
             sheet_meta[stem] = {
                 "resource": spec["label"],
