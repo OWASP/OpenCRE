@@ -13,6 +13,8 @@
 #   PORT                        Flask port (default 5000)
 #   SKIP_DOCKER=1               Do not start the container (fail if unreachable)
 #   SKIP_MIGRATE=1              Skip flask db upgrade
+#   SKIP_UPSTREAM_SYNC=1        Do not pull CRE graph when cre/node tables are empty
+#   FORCE_UPSTREAM_SYNC=1       Always run cre.py --upstream_sync before Flask
 
 set -euo pipefail
 
@@ -25,6 +27,8 @@ PG_URL="${PG_URL:-${DEV_DATABASE_URL:-${DEFAULT_PG_URL}}}"
 PORT="${PORT:-5000}"
 SKIP_DOCKER="${SKIP_DOCKER:-0}"
 SKIP_MIGRATE="${SKIP_MIGRATE:-0}"
+SKIP_UPSTREAM_SYNC="${SKIP_UPSTREAM_SYNC:-0}"
+FORCE_UPSTREAM_SYNC="${FORCE_UPSTREAM_SYNC:-0}"
 # Model-only tables (e.g. staged_change_set) until Alembic catches up.
 ADMIN_LOCAL_CREATE_ALL="${ADMIN_LOCAL_CREATE_ALL:-1}"
 MIGRATE_ONLY=0
@@ -35,7 +39,7 @@ die() { echo "[admin-local] ERROR: $*" >&2; exit 1; }
 redact_url() { sed -E 's#(://[^:/@]+):[^@/]*@#\1:***@#' <<<"$1"; }
 
 usage() {
-  sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 while [[ $# -gt 0 ]]; do
@@ -43,6 +47,8 @@ while [[ $# -gt 0 ]]; do
     --migrate-only) MIGRATE_ONLY=1; shift ;;
     --skip-docker) SKIP_DOCKER=1; shift ;;
     --skip-migrate) SKIP_MIGRATE=1; shift ;;
+    --skip-upstream-sync) SKIP_UPSTREAM_SYNC=1; shift ;;
+    --force-upstream-sync) FORCE_UPSTREAM_SYNC=1; shift ;;
     --pg-url) PG_URL="${2:-}"; shift 2 ;;
     --port) PORT="${2:-}"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
@@ -160,6 +166,53 @@ PY
   fi
 }
 
+cre_graph_empty() {
+  ensure_venv
+  PYTHONPATH="${ROOT}" DEV_DATABASE_URL="${PG_URL}" python - <<'PY'
+import os
+from sqlalchemy import create_engine, text
+from application.utils.postgres_url import sqlalchemy_postgres_url
+
+url = sqlalchemy_postgres_url(os.environ["DEV_DATABASE_URL"])
+engine = create_engine(url, pool_pre_ping=True)
+cre_n = node_n = 0
+try:
+    with engine.connect() as conn:
+        cre_n = conn.execute(text("SELECT COUNT(*) FROM cre")).scalar() or 0
+        node_n = conn.execute(text("SELECT COUNT(*) FROM node")).scalar() or 0
+except Exception:
+    # Tables may not exist yet; treat as empty so upstream sync can populate.
+    raise SystemExit(0)
+finally:
+    engine.dispose()
+raise SystemExit(0 if (cre_n == 0 or node_n == 0) else 1)
+PY
+}
+
+ensure_upstream_graph() {
+  if [[ "${SKIP_UPSTREAM_SYNC}" == "1" ]]; then
+    log "skipping upstream CRE sync (SKIP_UPSTREAM_SYNC=1)"
+    return 0
+  fi
+  ensure_venv
+  export FLASK_APP="${ROOT}/cre.py"
+  export FLASK_CONFIG=development
+  export DEV_DATABASE_URL="${PG_URL}"
+  export CRE_EMBED_EXPECTED_DIM="${CRE_EMBED_EXPECTED_DIM:-3072}"
+  unset CRE_CACHE_FILE || true
+  if [[ "${FORCE_UPSTREAM_SYNC}" == "1" ]]; then
+    log "FORCE_UPSTREAM_SYNC=1 — pulling CRE graph from opencre.org"
+  elif cre_graph_empty; then
+    log "CRE graph empty (cre/node) — pulling from opencre.org via --upstream_sync"
+  else
+    log "CRE graph already present — skip upstream sync"
+    return 0
+  fi
+  # OIE/admin harvest fills harvest_input; explorer needs the CRE/standards graph.
+  PYTHONPATH="${ROOT}" python cre.py --upstream_sync --cache_file "${PG_URL}"
+  log "upstream CRE sync finished"
+}
+
 run_flask() {
   ensure_venv
   export FLASK_APP="${ROOT}/cre.py"
@@ -181,6 +234,7 @@ run_flask() {
 
 ensure_postgres
 migrate
+ensure_upstream_graph
 if [[ "${MIGRATE_ONLY}" == "1" ]]; then
   log "migrate-only done"
   exit 0
