@@ -20,7 +20,6 @@ from application.utils.librarian.schemas import (
 
 def knowledge_queue_item_from_cheatsheet_record(
     record: CheatsheetRecord,
-    *,
     pipeline_run_id: str,
     llm_label: str = "KNOWLEDGE",
     confidence: float = 1.0,
@@ -39,13 +38,6 @@ def knowledge_queue_item_from_cheatsheet_record(
         source_repo=None,
         source_commit_sha=None,
         source_committed_at=section.source.committed_at,
-        # section_validator._source_ref() builds SourceRef.url from
-        # row.feed_url for every non-github source_type — it's really an
-        # "rss-shaped" fallback branch, not a url-specific one. Without this,
-        # source.url silently comes back None even though locator.url (below)
-        # is populated correctly. Legal per KnowledgeQueueItem's own
-        # validator: feed_url is only *required* when source_type=='rss',
-        # never forbidden otherwise.
         feed_url=str(section.locator.url),
         post_guid=None,
         locator_kind=LocatorKind.url,
@@ -65,7 +57,6 @@ def knowledge_queue_item_from_cheatsheet_record(
 def write_knowledge_queue_jsonl(
     records: Iterable[CheatsheetRecord],
     out_path: str,
-    *,
     pipeline_run_id: str,
     llm_label: str = "KNOWLEDGE",
     confidence: float = 1.0,
