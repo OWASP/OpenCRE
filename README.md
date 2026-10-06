@@ -64,11 +64,11 @@ make install
 make dev                 # same as make dev-flask / make admin-local
 ```
 
-Then open http://127.0.0.1:5000/admin and http://127.0.0.1:5000/explorer. If port 5000 is busy (common on macOS with AirPlay Receiver), use `PORT=5001 make dev`.
+Then open http://127.0.0.1:5000/admin and http://127.0.0.1:5000/explorer. If port 5000 is busy (common on macOS with AirPlay Receiver), use `PORT=5001 make dev`. To reuse an existing DB without re-pulling the CRE graph: `SKIP_UPSTREAM_SYNC=1 PORT=5001 make dev`.
 
 For contributors, this is the supported local data bootstrap path. You do
 **not** need access to the internal OpenCRE Google Sheet to work on the
-project. Optional later: `make owasp-agent-sync`, or Admin → Pipeline for OIE golden-set ingest.
+project. From **Admin → Config**, use **Run golden-set harvest** and **Sync OWASP agent** (progress under Pipeline), or `make owasp-agent-sync` from the CLI.
 
 You can precompute local gap-analysis cache after imports with:
 

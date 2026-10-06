@@ -263,6 +263,68 @@ describe('Admin', () => {
     expect(getByText('CRE_ALLOW_IMPORT')).toBeTruthy();
   });
 
+  it('runs golden-set harvest and OWASP agent sync from Config', async () => {
+    loggedIn();
+    (global as any).fetch = jest.fn((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/admin/config') && (!init || init.method === 'GET' || !init.method)) {
+        return jsonRes({
+          restart_instructions: 'HTTP cannot change process env.',
+          config: [],
+        });
+      }
+      if (u.includes('/admin/repos.yaml')) {
+        return jsonRes({ yaml: 'sources: []\n', source: 'repos.yaml:abc' });
+      }
+      if (u.includes('/admin/agent/status')) {
+        return jsonRes({
+          enabled: true,
+          db_url: 'postgresql://cre:***@127.0.0.1:5432/cre',
+          counts: { projects: 1 },
+          last_sync: '2026-01-01T00:00:00+00:00',
+        });
+      }
+      if (u.includes('/admin/ingest/start')) {
+        return jsonRes({ source: 'repos.yaml:deadbeef', async: true, run_id: 'g1' });
+      }
+      if (u.includes('/admin/agent/sync')) {
+        return jsonRes({
+          run_id: 'a1b2c3d4-eeee',
+          async: true,
+          skip_nest: true,
+          source: 'owasp-agent-sync',
+        });
+      }
+      return jsonRes({});
+    });
+    const { getByText, findByText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    fireEvent.click(getByText('Config'));
+    expect(await findByText(/End-to-end bootstrap/)).toBeTruthy();
+    fireEvent.click(getByText('Run golden-set harvest'));
+    await waitFor(() =>
+      expect((global as any).fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/admin/ingest/start'),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ packaged: true }),
+        })
+      )
+    );
+    expect(await findByText(/Golden-set harvest started/)).toBeTruthy();
+    fireEvent.click(getByText('Sync OWASP agent'));
+    await waitFor(() =>
+      expect((global as any).fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/admin/agent/sync'),
+        expect.objectContaining({ method: 'POST' })
+      )
+    );
+    expect(await findByText(/OWASP agent sync started/)).toBeTruthy();
+  });
+
   it('shows agent disabled when the flag is off', async () => {
     loggedIn();
     (global as any).fetch = jest.fn((url: string) => {

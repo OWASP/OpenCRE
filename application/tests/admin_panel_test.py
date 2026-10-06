@@ -404,6 +404,69 @@ class TestAdminPanel(unittest.TestCase):
             self.assertEqual(r.status_code, 200)
             self.assertFalse(r.get_json()["enabled"])
 
+    @patch.dict(
+        os.environ,
+        {
+            "NO_LOGIN": "1",
+            "CRE_ALLOW_IMPORT": "1",
+            "OWASP_AGENT_ENABLED": "1",
+            "DEV_DATABASE_URL": "postgresql://cre:password@127.0.0.1:1/opencre",
+        },
+        clear=False,
+    )
+    def test_agent_sync_starts_and_records_events(self) -> None:
+        os.environ.pop("NEST_API_KEY", None)
+        os.environ.pop("OWASP_AGENT_DB", None)
+        fake = {
+            "status": "ok",
+            "sync": {"nest_ok": False, "github_ok": True, "errors": []},
+            "concepts": [],
+        }
+        with patch(
+            "application.utils.admin_panel.service._run_agent_sync_job",
+            return_value=fake,
+        ) as job:
+            with self.app.test_client() as c:
+                r = c.post(
+                    "/admin/agent/sync",
+                    json={"wait": True, "auto_concepts": True},
+                )
+            self.assertEqual(r.status_code, 200)
+            body = r.get_json()
+            self.assertEqual(body["source"], "owasp-agent-sync")
+            self.assertTrue(body["skip_nest"])
+            self.assertFalse(body["async"])
+            self.assertEqual(body["result"]["status"], "ok")
+            job.assert_called_once()
+            run = db.get_import_run(run_id=body["run_id"])
+            self.assertIsNotNone(run)
+            events = (
+                sqla.session.query(db.AdminPipelineEvent)
+                .filter(db.AdminPipelineEvent.run_id == body["run_id"])
+                .all()
+            )
+            stages = {e.stage for e in events}
+            self.assertIn("queued", stages)
+            self.assertIn("agent_sync", stages)
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_agent_sync_requires_postgres(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "NO_LOGIN": "1",
+                "CRE_ALLOW_IMPORT": "1",
+                "DEV_DATABASE_URL": "/tmp/not-postgres.sqlite",
+            },
+            clear=False,
+        ):
+            os.environ.pop("DATABASE_URL", None)
+            os.environ.pop("PROD_DATABASE_URL", None)
+            with self.app.test_client() as c:
+                r = c.post("/admin/agent/sync", json={"wait": True})
+            self.assertEqual(r.status_code, 400)
+            self.assertIn("Postgres", r.get_json()["description"])
+
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_agent_status_ignores_sqlite_main_db(self) -> None:
         with patch.dict(
@@ -601,9 +664,7 @@ class TestAdminPanel(unittest.TestCase):
                     json={"target_id": "repo1", "max_repos": 0},
                 )
                 self.assertEqual(r.status_code, 400)
-                self.assertIn(
-                    "max_repos", (r.get_json() or {}).get("description", "")
-                )
+                self.assertIn("max_repos", (r.get_json() or {}).get("description", ""))
 
             with self.app.test_client() as c:
                 c.post(
