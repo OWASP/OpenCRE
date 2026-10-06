@@ -343,4 +343,27 @@ describe('Admin', () => {
     fireEvent.click(getByText('Remove'));
     expect(await findByText(/target not found/)).toBeTruthy();
   });
+
+  it('surfaces a failed changeset load', async () => {
+    loggedIn();
+    (global as any).fetch = jest.fn((url: string) => {
+      const u = String(url);
+      if (u.includes('/changeset')) {
+        return jsonRes({ description: 'run not found' }, 404);
+      }
+      if (u.includes('/admin/imports/runs')) {
+        return jsonRes({ runs: [{ id: 'r1', source: 'asvs', staging_status: 'pending_review' }] });
+      }
+      return jsonRes({});
+    });
+    const { getByText, findByText, queryByText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    await findByText('asvs');
+    fireEvent.click(getByText('Changeset'));
+    expect(await findByText(/run not found/)).toBeTruthy();
+    expect(queryByText('Edit mapping')).toBeNull();
+  });
 });
