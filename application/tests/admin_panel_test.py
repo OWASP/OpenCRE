@@ -596,6 +596,15 @@ class TestAdminPanel(unittest.TestCase):
                     skip_c=True,
                 )
 
+                r = c.post(
+                    "/admin/ingest/start",
+                    json={"target_id": "repo1", "max_repos": 0},
+                )
+                self.assertEqual(r.status_code, 400)
+                self.assertIn(
+                    "max_repos", (r.get_json() or {}).get("description", "")
+                )
+
             with self.app.test_client() as c:
                 c.post(
                     "/admin/targets",
