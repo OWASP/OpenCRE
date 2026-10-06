@@ -217,22 +217,20 @@ class TestAdminPanel(unittest.TestCase):
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_oie_start_defaults_dry_run_and_no_git_sync(self) -> None:
-        class Fake:
-            def to_dict(self) -> dict:
-                return {
-                    "ok": True,
-                    "stages": [
-                        {
-                            "name": "module_a_harvester",
-                            "status": "ok",
-                            "detail": "dry",
-                        }
-                    ],
+        oie = {
+            "ok": True,
+            "stages": [
+                {
+                    "name": "module_a_harvester",
+                    "status": "ok",
+                    "detail": "dry",
                 }
+            ],
+        }
 
         with patch(
             "application.utils.admin_panel.service.invoke_oie_cli",
-            return_value=Fake().to_dict(),
+            return_value=oie,
         ) as mock_oie:
             with self.app.test_client() as c:
                 r = c.post(
@@ -305,7 +303,13 @@ class TestAdminPanel(unittest.TestCase):
         from application.utils.admin_panel import service
 
         proc = type(
-            "P", (), {"stdout": '{"ok": true}', "stderr": "", "returncode": 0}
+            "P",
+            (),
+            {
+                "stdout": '{"ok": true, "run_id": "run-1", "stages": []}',
+                "stderr": "",
+                "returncode": 0,
+            },
         )()
         with patch(
             "application.utils.admin_panel.service.subprocess.run", return_value=proc
@@ -315,7 +319,25 @@ class TestAdminPanel(unittest.TestCase):
         argv = mock_run.call_args.args[0]
         self.assertIn("--dry-run", argv)
         self.assertIn("--no-sync-repos", argv)
+        self.assertIn("sqlite://", argv)
         self.assertTrue(str(argv[1]).endswith("run_oie_pipeline.py"))
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_oie_failure_is_logged_as_error(self) -> None:
+        with patch(
+            "application.utils.admin_panel.service.invoke_oie_cli",
+            return_value={"ok": False, "returncode": 1},
+        ):
+            with self.app.test_client() as c:
+                c.post(
+                    "/admin/targets",
+                    json={"id": "repo-fail", "kind": "oie_repo", "name": "repo-fail"},
+                )
+                r = c.post("/admin/ingest/start", json={"target_id": "repo-fail"})
+                self.assertEqual(r.status_code, 200)
+                pipe = c.get("/admin/pipeline").get_json()
+                oie_events = [e for e in pipe["events"] if e["stage"] == "oie"]
+                self.assertTrue(any(e["status"] == "error" for e in oie_events))
 
     def test_anonymous_json_gets_401(self) -> None:
         with patch.dict(
