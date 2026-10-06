@@ -267,8 +267,6 @@ class StagedChangeSet(BaseModel):  # type: ignore
 
 
 class IngestionTarget(BaseModel):  # type: ignore
-    """Admin-managed ingestion target (OIE repo or import source)."""
-
     __tablename__ = "ingestion_target"
     id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
     kind = sqla.Column(sqla.String, nullable=False)  # oie_repo | import_source
@@ -279,8 +277,6 @@ class IngestionTarget(BaseModel):  # type: ignore
 
 
 class AdminPipelineEvent(BaseModel):  # type: ignore
-    """Per-run stage log for the admin pipeline view."""
-
     __tablename__ = "admin_pipeline_event"
     id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
     run_id = sqla.Column(sqla.String, nullable=False)
