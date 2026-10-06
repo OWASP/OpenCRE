@@ -95,6 +95,38 @@ class PrepareEventPageTests(unittest.TestCase):
         )
 
 
+class AdversarialInputTests(unittest.TestCase):
+    """Page content is untrusted repo text; unclosed constructs must not blow up."""
+
+    def test_unterminated_markup_is_linear_enough(self) -> None:
+        import time
+
+        for text in (
+            "{% if x %} text\n" * 20000,
+            '<script type="application/ld+json">' * 5000,
+            "{% if a %}" * 5000 + "{% endif %}" * 5000,
+            "{{ " * 50000,
+            "<!-- " * 50000,
+            "{% " * 50000,
+            "<script " * 50000,
+        ):
+            started = time.monotonic()
+            prepare_event_page(text)
+            self.assertLess(time.monotonic() - started, 5.0, text[:20])
+
+    def test_unterminated_block_keeps_the_prose_around_it(self) -> None:
+        out = prepare_event_page("Before.\n{% if x %}\nAfter.\n")
+        self.assertIn("Before.", out)
+        self.assertIn("After.", out)
+
+    def test_nested_blocks_are_removed_whole(self) -> None:
+        out = prepare_event_page(
+            "Keep.\n{% if a %}\n{% for b in c %}x{% endfor %}\ngone\n{% endif %}\nKeep too.\n"
+        )
+        self.assertNotIn("gone", out)
+        self.assertIn("Keep too.", out)
+
+
 RAW = (
     "https://raw.githubusercontent.com/OWASP/www-event-2020-07-virtual/master/index.md"
 )
