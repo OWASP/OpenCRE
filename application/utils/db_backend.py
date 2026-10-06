@@ -8,6 +8,8 @@ logger = get_logger(__name__)
 
 from dataclasses import dataclass
 
+from application.utils.postgres_url import is_postgres_url
+
 
 @dataclass(frozen=True)
 class BackendCapabilities:
@@ -19,20 +21,16 @@ class BackendCapabilities:
 
 def detect_backend(db_connection_str: str) -> BackendCapabilities:
     """Best-effort backend detection from SQLAlchemy connection string."""
-    conn = (db_connection_str or "").strip().lower()
-    if (
-        conn.startswith("postgresql://")
-        or conn.startswith("postgres://")
-        or conn.startswith("postgresql+psycopg2://")
-        or conn.startswith("postgresql+psycopg://")
-    ):
+    conn = (db_connection_str or "").strip()
+    if is_postgres_url(conn):
         return BackendCapabilities(
             backend="postgres",
             is_postgres=True,
             supports_pair_ga_scheduler=True,
             reason="postgres backend detected",
         )
-    if conn.startswith("sqlite://") or conn.endswith(".sqlite") or conn == "":
+    lowered = conn.lower()
+    if lowered.startswith("sqlite://") or lowered.endswith(".sqlite") or conn == "":
         return BackendCapabilities(
             backend="sqlite",
             is_postgres=False,

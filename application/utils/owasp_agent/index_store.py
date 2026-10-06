@@ -18,7 +18,11 @@ from sqlalchemy.dialects import postgresql, sqlite
 from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.pool import NullPool
 
-from application.utils.postgres_url import is_postgres_url, sqlalchemy_postgres_url
+from application.utils.postgres_url import (
+    is_postgres_url,
+    main_db_env_keys,
+    sqlalchemy_postgres_url,
+)
 from application.utils.owasp_agent.models import (
     BoardCandidate,
     BoardMember,
@@ -80,15 +84,9 @@ _concept_merge_audit = sa.Table(
 def app_db_url_and_key() -> tuple[Optional[str], Optional[str]]:
     """URL + env key Flask would use for this process (no sqlite fallback)."""
     flask_cfg = (
-        (os.environ.get("FLASK_CONFIG") or os.environ.get("FLASK_ENV") or "development")
-        .strip()
-        .lower()
+        os.environ.get("FLASK_CONFIG") or os.environ.get("FLASK_ENV") or "development"
     )
-    if flask_cfg in ("production", "prod"):
-        keys = ("DATABASE_URL", "PROD_DATABASE_URL", "SQLALCHEMY_DATABASE_URI")
-    else:
-        keys = ("DEV_DATABASE_URL", "DATABASE_URL", "SQLALCHEMY_DATABASE_URI")
-    for key in keys:
+    for key in main_db_env_keys(flask_cfg):
         raw = (os.environ.get(key) or "").strip()
         if raw:
             return raw, key
