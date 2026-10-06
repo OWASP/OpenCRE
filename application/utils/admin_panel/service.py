@@ -340,12 +340,26 @@ def _normalize_postgres_url(value: str) -> str:
     return raw
 
 
+def _main_db_url() -> tuple[Optional[str], Optional[str]]:
+    """Return (raw_url, env_key) for the app's main database."""
+    for key in (
+        "DATABASE_URL",
+        "DEV_DATABASE_URL",
+        "PROD_DATABASE_URL",
+        "SQLALCHEMY_DATABASE_URI",
+    ):
+        raw = (os.getenv(key) or "").strip()
+        if raw:
+            return raw, key
+    return None, None
+
+
 def _agent_db_stats(db_url: Optional[str]) -> Dict[str, Any]:
     out: Dict[str, Any] = {"db_exists": False, "counts": None, "last_sync": None}
     if not db_url:
         return out
     if not _is_postgres_url(db_url):
-        logger.warning("OWASP_AGENT_DB is not a Postgres URL; ignoring %r", db_url)
+        logger.warning("main app DB is not a Postgres URL; ignoring %r", db_url)
         return out
     engine = None
     try:
@@ -374,7 +388,7 @@ def _agent_db_stats(db_url: Optional[str]) -> Dict[str, Any]:
                 )
             out["counts"] = counts
     except Exception:
-        logger.warning("OWASP_AGENT_DB Postgres probe failed")
+        logger.warning("main app Postgres probe failed")
         return {"db_exists": False, "counts": None, "last_sync": None}
     finally:
         if engine is not None:
@@ -384,32 +398,47 @@ def _agent_db_stats(db_url: Optional[str]) -> Dict[str, Any]:
 
 def agent_status() -> Dict[str, Any]:
     enabled = os.getenv("OWASP_AGENT_ENABLED", "").strip().lower() in TRUE_VALUES
-    raw_db = (os.getenv("OWASP_AGENT_DB") or "").strip() or None
+    raw_db, db_env_key = _main_db_url()
     db_url = raw_db if raw_db and _is_postgres_url(raw_db) else None
     if raw_db and not db_url:
-        logger.warning("OWASP_AGENT_DB is not a Postgres URL; ignoring %r", raw_db)
+        logger.warning(
+            "main app DB (%s) is not a Postgres URL; agent needs Postgres", db_env_key
+        )
     pkg = importlib.util.find_spec("application.utils.owasp_agent") is not None
     stats = _agent_db_stats(db_url)
     params = []
-    for key in ("OWASP_AGENT_ENABLED", "OWASP_AGENT_DB"):
-        spec = config_catalog.CATALOG.get(key)
-        if not spec:
-            continue
+    enabled_spec = config_catalog.CATALOG.get("OWASP_AGENT_ENABLED")
+    if enabled_spec:
         params.append(
             {
-                "key": key,
+                "key": "OWASP_AGENT_ENABLED",
+                "value": os.getenv("OWASP_AGENT_ENABLED"),
+                "help_text": enabled_spec.help_text,
+                "help_url": enabled_spec.help_url,
+            }
+        )
+    if db_env_key:
+        db_spec = config_catalog.CATALOG.get(db_env_key)
+        params.append(
+            {
+                "key": db_env_key,
                 "value": (
-                    config_catalog.redact_postgres_url(os.getenv(key) or "")
-                    if key == "OWASP_AGENT_DB" and os.getenv(key)
-                    else os.getenv(key)
+                    config_catalog.redact_postgres_url(raw_db)
+                    if raw_db and db_url
+                    else raw_db
                 ),
-                "help_text": spec.help_text,
-                "help_url": spec.help_url,
+                "help_text": (
+                    db_spec.help_text
+                    if db_spec
+                    else "Main app Postgres URL (shared with the OWASP agent)."
+                ),
+                "help_url": db_spec.help_url if db_spec else config_catalog.DOCS_ENV,
             }
         )
     return {
         "enabled": enabled,
         "db_url": config_catalog.redact_postgres_url(db_url) if db_url else None,
+        "db_env_key": db_env_key if db_url else None,
         "db_configured": bool(db_url),
         "db_exists": stats["db_exists"],
         "counts": stats["counts"],
