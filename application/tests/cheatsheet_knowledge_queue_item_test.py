@@ -67,7 +67,7 @@ class TestKnowledgeQueueItemFromCheatsheetRecord(unittest.TestCase):
         self.assertEqual(item.content_hash, compute_content_hash(item.text))
         self.assertEqual(item.pipeline_run_id, RUN_ID)
         self.assertEqual(item.schema_version, SCHEMA_VERSION)
-        self.assertEqual(item.source_type, SourceType.url)  ## provenance
+        self.assertEqual(item.source_type, SourceType.url)  # preserves upstream provenance
         self.assertIsNone(item.source_repo)
         self.assertIsNone(item.source_commit_sha)
         self.assertEqual(
@@ -101,7 +101,7 @@ class TestKnowledgeQueueItemFromCheatsheetRecord(unittest.TestCase):
             _record(),
             pipeline_run_id=RUN_ID,
         )
-        # If C.0 rejects our item, the test fails.
+        # If C.0 rejects our JSONL item, the test fails.
         section_from_queue_row(item)
 
     def test_jsonl_can_be_read_by_fixture_knowledge_source(self):
@@ -114,7 +114,7 @@ class TestKnowledgeQueueItemFromCheatsheetRecord(unittest.TestCase):
                 pipeline_run_id=RUN_ID,
             )
 
-            # If this raises, the test fails.
+            # If FixtureKnowledgeSource rejects our generated JSONL, the test fails.
             list(FixtureKnowledgeSource(path).items())
 
 
