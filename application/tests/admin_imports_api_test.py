@@ -248,6 +248,29 @@ class TestAdminImportsApi(unittest.TestCase):
             self.assertEqual(r.status_code, 200)
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_admin_accept_missing_changeset_returns_json(self) -> None:
+        run = db.create_import_run(source="orphan-cs", version="r1")
+        with self.app.test_client() as c:
+            r = c.post(f"/admin/imports/runs/{run.id}/accept")
+            self.assertEqual(r.status_code, 404)
+            self.assertEqual(r.content_type, "application/json")
+            body = r.get_json()
+            self.assertIn("staged change set", (body or {}).get("description", "").lower())
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_admin_list_backfills_missing_changeset(self) -> None:
+        run = db.create_import_run(source="list-backfill", version="r1")
+        self.assertIsNone(db.get_staged_change_set(run_id=run.id))
+        with self.app.test_client() as c:
+            r = c.get("/admin/imports/runs")
+            self.assertEqual(r.status_code, 200)
+            rows = {row["id"]: row for row in (r.get_json() or {}).get("runs") or []}
+            self.assertIn(run.id, rows)
+            self.assertEqual(rows[run.id]["staging_status"], "pending_review")
+            self.assertEqual(rows[run.id]["operation_count"], 0)
+        self.assertIsNotNone(db.get_staged_change_set(run_id=run.id))
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_admin_discard_blocks_apply(self) -> None:
         run = db.create_import_run(source="discard_flow", version="r1")
         db.persist_staged_change_set(
