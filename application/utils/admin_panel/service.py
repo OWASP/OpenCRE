@@ -13,8 +13,11 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import threading
 import uuid
 from typing import Any, Dict, List, Optional
+
+from flask import current_app, has_app_context
 
 import yaml
 from pydantic import ValidationError
@@ -596,26 +599,97 @@ def _subprocess_env() -> Dict[str, str]:
     return env
 
 
-def invoke_oie_cli(run_id: str, repos_yaml: Optional[str] = None) -> Dict[str, Any]:
+# Cap packaged org expands so admin "New" does not clone the whole of GitHub.
+DEFAULT_OIE_MAX_REPOS = 5
+ADMIN_OIE_YAML_DIR = REPO_ROOT / "tmp" / "admin_oie"
+
+
+def _llm_keys_present() -> bool:
+    for key in (
+        "GEMINI_API_KEY",
+        "GOOGLE_API_KEY",
+        "OPENAI_API_KEY",
+        "VERTEX_PROJECT",
+    ):
+        if (os.getenv(key) or "").strip():
+            return True
+    return False
+
+
+def _default_skip_bc() -> tuple[bool, bool]:
+    """Skip Module B/C when no LLM credentials are configured."""
+    if _llm_keys_present():
+        return False, False
+    return True, True
+
+
+def _write_run_repos_yaml(run_id: str, yaml_text: str) -> Path:
+    ADMIN_OIE_YAML_DIR.mkdir(parents=True, exist_ok=True)
+    path = ADMIN_OIE_YAML_DIR / f"{run_id}.yaml"
+    path.write_text(yaml_text, encoding="utf-8")
+    return path
+
+
+def invoke_oie_cli(
+    run_id: str,
+    repos_yaml: Optional[str] = None,
+    *,
+    dry_run: bool = False,
+    sync_repos: bool = True,
+    max_repos: Optional[int] = DEFAULT_OIE_MAX_REPOS,
+    continue_on_error: bool = True,
+    skip_b: Optional[bool] = None,
+    skip_c: Optional[bool] = None,
+    timeout: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Run Module A→B→C via the CLI against the app Postgres URL.
+
+    Defaults are live (sync + persist) so admin ingest is end-to-end. Pass
+    ``dry_run=True`` / ``sync_repos=False`` only for hermetic probes.
+    """
     script = REPO_ROOT / "scripts" / "run_oie_pipeline.py"
     cache_file = _oie_cache_file()
+    if skip_b is None or skip_c is None:
+        auto_b, auto_c = _default_skip_bc()
+        if skip_b is None:
+            skip_b = auto_b
+        if skip_c is None:
+            skip_c = auto_c
     argv = [
         sys.executable,
         str(script),
-        "--dry-run",
-        "--no-sync-repos",
         "--run_id",
         run_id,
         "--cache_file",
         cache_file,
     ]
+    if dry_run:
+        argv.append("--dry-run")
+    if not sync_repos:
+        argv.append("--no-sync-repos")
+    if continue_on_error:
+        argv.append("--continue-on-error")
+    if skip_b:
+        argv.append("--skip-b")
+    if skip_c:
+        argv.append("--skip-c")
+    if max_repos is not None and max_repos > 0:
+        argv.extend(["--max-repos", str(int(max_repos))])
     if repos_yaml:
         argv.extend(["--repos_yaml", repos_yaml])
+    # Clones need headroom; dry/no-sync probes stay short. B/C skipped → shorter.
+    if timeout is None:
+        if dry_run and not sync_repos:
+            timeout = 120
+        elif skip_b and skip_c:
+            timeout = 600
+        else:
+            timeout = 1800
     proc = subprocess.run(
         argv,
         capture_output=True,
         text=True,
-        timeout=120,
+        timeout=timeout,
         check=False,
         cwd=str(REPO_ROOT),
         env=_subprocess_env(),
@@ -626,6 +700,8 @@ def invoke_oie_cli(run_id: str, repos_yaml: Optional[str] = None) -> Dict[str, A
         if isinstance(parsed, dict) and ("stages" in parsed or "run_id" in parsed):
             parsed["ok"] = bool(parsed.get("ok", proc.returncode == 0))
             parsed["returncode"] = proc.returncode
+            parsed["skip_b"] = bool(skip_b)
+            parsed["skip_c"] = bool(skip_c)
             return parsed
     except json.JSONDecodeError:
         pass
@@ -633,7 +709,64 @@ def invoke_oie_cli(run_id: str, repos_yaml: Optional[str] = None) -> Dict[str, A
         "ok": proc.returncode == 0,
         "raw": ((proc.stdout or "") + (proc.stderr or ""))[-2000:],
         "returncode": proc.returncode,
+        "skip_b": bool(skip_b),
+        "skip_c": bool(skip_c),
     }
+
+
+def _record_oie_result(run_id: str, oie: Dict[str, Any]) -> None:
+    oie_ok = bool(oie.get("ok", oie.get("returncode", 1) == 0))
+    append_event(
+        run_id,
+        "oie",
+        "ok" if oie_ok else "error",
+        json.dumps(oie)[:2000],
+    )
+    for stage in oie.get("stages") or []:
+        if not isinstance(stage, dict):
+            continue
+        append_event(
+            run_id,
+            str(stage.get("name") or "oie"),
+            str(stage.get("status") or "ok"),
+            str(stage.get("detail") or "")[:2000],
+        )
+
+
+def _run_oie_job(
+    run_id: str,
+    repos_yaml_path: Optional[str],
+    *,
+    dry_run: bool,
+    sync_repos: bool,
+    max_repos: Optional[int],
+    skip_b: Optional[bool],
+    skip_c: Optional[bool],
+    cleanup_yaml: bool,
+) -> Dict[str, Any]:
+    try:
+        oie = invoke_oie_cli(
+            run_id,
+            repos_yaml=repos_yaml_path,
+            dry_run=dry_run,
+            sync_repos=sync_repos,
+            max_repos=max_repos,
+            skip_b=skip_b,
+            skip_c=skip_c,
+        )
+        _record_oie_result(run_id, oie)
+        return oie
+    except Exception as exc:  # noqa: BLE001
+        append_event(run_id, "oie", "error", str(exc)[:2000])
+        return {"error": str(exc), "ok": False}
+    finally:
+        if cleanup_yaml and repos_yaml_path:
+            try:
+                path = Path(repos_yaml_path)
+                if path.resolve().is_relative_to(ADMIN_OIE_YAML_DIR.resolve()):
+                    path.unlink(missing_ok=True)
+            except OSError:
+                logger.warning("failed to remove admin oie yaml %s", repos_yaml_path)
 
 
 def _packaged_harvest_source(custom_name: str) -> tuple[str, Optional[str]]:
@@ -649,98 +782,127 @@ def start_ingestion(
     yaml_text: Optional[str] = None,
     name: Optional[str] = None,
     packaged: bool = False,
+    dry_run: bool = False,
+    sync_repos: bool = True,
+    max_repos: Optional[int] = DEFAULT_OIE_MAX_REPOS,
+    skip_b: Optional[bool] = None,
+    skip_c: Optional[bool] = None,
+    wait: Optional[bool] = None,
 ) -> Dict[str, Any]:
     custom_name = (name or "").strip()
     do_oie = False
     repos_yaml_path: Optional[str] = None
-    tmp_path: Optional[Path] = None
+    cleanup_yaml = False
+    one_off_yaml: Optional[str] = None
     stripped_target = str(target_id).strip() if target_id else ""
 
-    try:
-        if yaml_text is not None:
-            data = load_repos_mapping(yaml_text)
-            probe_github_sources(data.get("sources") or [])
-            source = repos_yaml_source_name(custom_name, yaml_text)
-            tmp_path = _write_temp_repos_yaml(yaml_text)
-            repos_yaml_path = str(tmp_path)
-            do_oie = True
-        elif packaged:
+    if yaml_text is not None:
+        data = load_repos_mapping(yaml_text)
+        probe_github_sources(data.get("sources") or [])
+        source = repos_yaml_source_name(custom_name, yaml_text)
+        one_off_yaml = yaml_text
+        do_oie = True
+    elif packaged:
+        do_oie = True
+        source, repos_yaml_path = _packaged_harvest_source(custom_name)
+    elif stripped_target:
+        if stripped_target == AGENT_RESOURCE_ID:
             do_oie = True
             source, repos_yaml_path = _packaged_harvest_source(custom_name)
-        elif stripped_target:
-            if stripped_target == AGENT_RESOURCE_ID:
+        else:
+            target = (
+                sqla.session.query(db.IngestionTarget)
+                .filter(db.IngestionTarget.id == stripped_target)
+                .first()
+            )
+            if not target:
+                raise KeyError("target not found")
+            if not target.enabled:
+                raise ValueError("target is disabled")
+            if target.kind in HARVEST_KINDS:
                 do_oie = True
                 source, repos_yaml_path = _packaged_harvest_source(custom_name)
             else:
-                target = (
-                    sqla.session.query(db.IngestionTarget)
-                    .filter(db.IngestionTarget.id == stripped_target)
-                    .first()
-                )
-                if not target:
-                    raise KeyError("target not found")
-                if not target.enabled:
-                    raise ValueError("target is disabled")
-                if target.kind in HARVEST_KINDS:
-                    do_oie = True
-                    source, repos_yaml_path = _packaged_harvest_source(custom_name)
-                else:
-                    source = custom_name or target.name or target.id
-        else:
-            source = custom_name or (source or "").strip()
-            if not source:
-                raise ValueError("source is required")
+                source = custom_name or target.name or target.id
+    else:
+        source = custom_name or (source or "").strip()
+        if not source:
+            raise ValueError("source is required")
 
-        run = db.create_import_run(source=source, version="admin-start")
-        db.persist_staged_change_set(
-            run_id=run.id,
-            changeset_json=import_diff.change_set_to_json([]),
-            staging_status="pending_review",
+    run = db.create_import_run(source=source, version="admin-start")
+    db.persist_staged_change_set(
+        run_id=run.id,
+        changeset_json=import_diff.change_set_to_json([]),
+        staging_status="pending_review",
+    )
+    append_event(run.id, "queued", "ok", f"source={source}")
+    oie: Optional[Dict[str, Any]] = None
+    async_job = False
+    if do_oie:
+        if one_off_yaml is not None:
+            repos_yaml_path = str(_write_run_repos_yaml(run.id, one_off_yaml))
+            cleanup_yaml = True
+        auto_b, auto_c = _default_skip_bc()
+        eff_skip_b = auto_b if skip_b is None else skip_b
+        eff_skip_c = auto_c if skip_c is None else skip_c
+        append_event(
+            run.id,
+            "oie",
+            "started",
+            (
+                f"dry_run={dry_run} sync_repos={sync_repos} max_repos={max_repos} "
+                f"skip_b={eff_skip_b} skip_c={eff_skip_c}"
+            ),
         )
-        append_event(run.id, "queued", "ok", f"source={source}")
-        oie: Optional[Dict[str, Any]] = None
-        if do_oie:
-            append_event(
-                run.id,
-                "oie",
-                "started",
-                "dry_run=True sync_repos=False",
-            )
-            try:
-                oie = invoke_oie_cli(run.id, repos_yaml=repos_yaml_path)
-                oie_ok = bool(oie.get("ok", oie.get("returncode", 1) == 0))
-                append_event(
-                    run.id,
-                    "oie",
-                    "ok" if oie_ok else "error",
-                    json.dumps(oie)[:2000],
-                )
-                for stage in oie.get("stages") or []:
-                    if not isinstance(stage, dict):
-                        continue
-                    append_event(
-                        run.id,
-                        str(stage.get("name") or "oie"),
-                        str(stage.get("status") or "ok"),
-                        str(stage.get("detail") or "")[:2000],
-                    )
-            except Exception as exc:  # noqa: BLE001
-                append_event(run.id, "oie", "error", str(exc))
-                oie = {"error": str(exc)}
+        testing = (
+            bool(has_app_context() and current_app.config.get("TESTING"))
+            or (os.getenv("ADMIN_OIE_SYNC") or "").strip().lower() in TRUE_VALUES
+        )
+        run_sync = testing if wait is None else bool(wait)
+        job_kwargs = dict(
+            dry_run=dry_run,
+            sync_repos=sync_repos,
+            max_repos=max_repos,
+            skip_b=eff_skip_b,
+            skip_c=eff_skip_c,
+            cleanup_yaml=cleanup_yaml,
+        )
+        if run_sync:
+            oie = _run_oie_job(run.id, repos_yaml_path, **job_kwargs)
         else:
-            append_event(
-                run.id,
-                "recorded",
-                "ok",
-                "Import run staged; apply via /admin/imports when ready",
-            )
-        return {"run_id": run.id, "source": source, "oie": oie, "dry_run": True}
-    finally:
-        if tmp_path is not None:
-            try:
-                tmp_path.unlink()
-            except OSError:
-                logger.warning("failed to remove temp repos.yaml %s", tmp_path)
+            app = current_app._get_current_object()
+            run_id = run.id
+            yaml_path = repos_yaml_path
+
+            def _worker() -> None:
+                with app.app_context():
+                    _run_oie_job(run_id, yaml_path, **job_kwargs)
+
+            threading.Thread(
+                target=_worker, daemon=True, name=f"admin-oie-{run.id}"
+            ).start()
+            async_job = True
+            oie = {
+                "async": True,
+                "started": True,
+                "skip_b": eff_skip_b,
+                "skip_c": eff_skip_c,
+            }
+    else:
+        append_event(
+            run.id,
+            "recorded",
+            "ok",
+            "Import run staged; apply via /admin/imports when ready",
+        )
+    return {
+        "run_id": run.id,
+        "source": source,
+        "oie": oie,
+        "dry_run": dry_run,
+        "sync_repos": sync_repos,
+        "async": async_job,
+    }
 
 
 def import_stage_strip(status: Optional[str]) -> List[Dict[str, str]]:

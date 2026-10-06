@@ -528,17 +528,25 @@ class TestAdminPanel(unittest.TestCase):
                     self.assertIsNone(body["last_sync"])
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
-    def test_oie_start_defaults_dry_run_and_no_git_sync(self) -> None:
+    def test_oie_start_defaults_to_live_sync(self) -> None:
         oie = {
             "ok": True,
             "stages": [
                 {
                     "name": "module_a_harvester",
                     "status": "ok",
-                    "detail": "dry",
+                    "detail": "live",
                 }
             ],
         }
+
+        for key in (
+            "GEMINI_API_KEY",
+            "GOOGLE_API_KEY",
+            "OPENAI_API_KEY",
+            "VERTEX_PROJECT",
+        ):
+            os.environ.pop(key, None)
 
         with patch(
             "application.utils.admin_panel.service.invoke_oie_cli",
@@ -552,9 +560,17 @@ class TestAdminPanel(unittest.TestCase):
                 self.assertEqual(r.status_code, 201)
                 r = c.post("/admin/ingest/start", json={"target_id": "repo1"})
                 self.assertEqual(r.status_code, 200)
+                body = r.get_json()
+                self.assertFalse(body["dry_run"])
+                self.assertTrue(body["sync_repos"])
                 mock_oie.assert_called_once_with(
-                    r.get_json()["run_id"],
+                    body["run_id"],
                     repos_yaml=str(service.REPOS_YAML),
+                    dry_run=False,
+                    sync_repos=True,
+                    max_repos=service.DEFAULT_OIE_MAX_REPOS,
+                    skip_b=True,
+                    skip_c=True,
                 )
                 pipe = c.get("/admin/pipeline").get_json()
                 stages = {e["stage"] for e in pipe["events"]}
@@ -564,15 +580,20 @@ class TestAdminPanel(unittest.TestCase):
                     "/admin/ingest/start",
                     json={
                         "target_id": "repo1",
-                        "dry_run": False,
-                        "sync_repos": True,
-                        "run_oie": False,
+                        "dry_run": True,
+                        "sync_repos": False,
+                        "max_repos": 2,
                     },
                 )
                 self.assertEqual(r.status_code, 200)
                 mock_oie.assert_called_with(
                     r.get_json()["run_id"],
                     repos_yaml=str(service.REPOS_YAML),
+                    dry_run=True,
+                    sync_repos=False,
+                    max_repos=2,
+                    skip_b=True,
+                    skip_c=True,
                 )
 
             with self.app.test_client() as c:
@@ -617,8 +638,16 @@ class TestAdminPanel(unittest.TestCase):
             self.assertEqual(r.status_code, 200)
             self.assertTrue(r.get_json()["run_id"])
 
-    def test_invoke_oie_cli_is_dry_run_child_process(self) -> None:
+    def test_invoke_oie_cli_defaults_to_live_sync(self) -> None:
         from application.utils.admin_panel import service
+
+        for key in (
+            "GEMINI_API_KEY",
+            "GOOGLE_API_KEY",
+            "OPENAI_API_KEY",
+            "VERTEX_PROJECT",
+        ):
+            os.environ.pop(key, None)
 
         proc = type(
             "P",
@@ -643,8 +672,11 @@ class TestAdminPanel(unittest.TestCase):
                 out = service.invoke_oie_cli("run-1")
         self.assertEqual(out["ok"], True)
         argv = mock_run.call_args.args[0]
-        self.assertIn("--dry-run", argv)
-        self.assertIn("--no-sync-repos", argv)
+        self.assertNotIn("--dry-run", argv)
+        self.assertNotIn("--no-sync-repos", argv)
+        self.assertIn("--max-repos", argv)
+        self.assertIn("--skip-b", argv)
+        self.assertIn("--skip-c", argv)
         self.assertNotIn("sqlite://", argv)
         self.assertIn("postgresql+psycopg2://cre:password@127.0.0.1:5432/cre", argv)
         self.assertTrue(str(argv[1]).endswith("run_oie_pipeline.py"))
@@ -656,6 +688,38 @@ class TestAdminPanel(unittest.TestCase):
         for part in prior.split(os.pathsep):
             if part:
                 self.assertIn(part, path_parts)
+
+    def test_invoke_oie_cli_honors_dry_run_and_no_sync(self) -> None:
+        from application.utils.admin_panel import service
+
+        proc = type(
+            "P",
+            (),
+            {
+                "stdout": '{"ok": true, "run_id": "run-1", "stages": []}',
+                "stderr": "",
+                "returncode": 0,
+            },
+        )()
+        pg = "postgresql://cre:password@127.0.0.1:5432/cre"
+        with patch.dict(
+            os.environ,
+            {"DEV_DATABASE_URL": pg, "FLASK_CONFIG": "development"},
+            clear=False,
+        ):
+            os.environ.pop("DATABASE_URL", None)
+            with patch(
+                "application.utils.admin_panel.service.subprocess.run",
+                return_value=proc,
+            ) as mock_run:
+                service.invoke_oie_cli(
+                    "run-1", dry_run=True, sync_repos=False, max_repos=3
+                )
+        argv = mock_run.call_args.args[0]
+        self.assertIn("--dry-run", argv)
+        self.assertIn("--no-sync-repos", argv)
+        self.assertIn("--max-repos", argv)
+        self.assertIn("3", argv)
 
     def test_invoke_oie_cli_rejects_missing_postgres(self) -> None:
         from application.utils.admin_panel import service
@@ -1159,7 +1223,9 @@ class TestAdminPanel(unittest.TestCase):
             packaged.write_text(MINIMAL_REPOS_YAML, encoding="utf-8")
             seen: dict = {}
 
-            def _capture(run_id: str, repos_yaml: Optional[str] = None) -> dict:
+            def _capture(
+                run_id: str, repos_yaml: Optional[str] = None, **_kwargs: object
+            ) -> dict:
                 seen["run_id"] = run_id
                 seen["repos_yaml"] = repos_yaml
                 if repos_yaml:
@@ -1227,6 +1293,13 @@ class TestAdminPanel(unittest.TestCase):
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_built_in_agent_is_a_resource_not_a_crud_row(self) -> None:
+        for key in (
+            "GEMINI_API_KEY",
+            "GOOGLE_API_KEY",
+            "OPENAI_API_KEY",
+            "VERTEX_PROJECT",
+        ):
+            os.environ.pop(key, None)
         with patch(
             "application.utils.admin_panel.service.invoke_oie_cli",
             return_value={"ok": True, "stages": []},
@@ -1276,6 +1349,11 @@ class TestAdminPanel(unittest.TestCase):
                 mock_oie.assert_called_once_with(
                     r.get_json()["run_id"],
                     repos_yaml=str(service.REPOS_YAML),
+                    dry_run=False,
+                    sync_repos=True,
+                    max_repos=service.DEFAULT_OIE_MAX_REPOS,
+                    skip_b=True,
+                    skip_c=True,
                 )
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
