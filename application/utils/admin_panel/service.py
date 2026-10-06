@@ -5,16 +5,23 @@ from cre_logging import get_logger
 logger = get_logger(__name__)
 
 from datetime import datetime, timezone
+import copy
+import hashlib
 import importlib.util
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
+import tempfile
+import urllib.error
+import urllib.request
 import uuid
 from typing import Any, Dict, List, Optional
 
 import yaml
+from pydantic import ValidationError
 from sqlalchemy import create_engine, text
 
 from application import sqla  # type: ignore[attr-defined]
@@ -22,6 +29,7 @@ from application.database import db
 from application.feature_flags import TRUE_VALUES
 from application.utils import import_diff
 from application.utils.admin_panel import config_catalog
+from application.utils.harvester.schemas import ReposFile
 
 REPOS_YAML = Path(__file__).resolve().parents[1] / "harvester" / "repos.yaml"
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -35,6 +43,245 @@ IMPORT_STRIP = (
     ("accepted", "Accepted"),
     ("applied", "Applied"),
 )
+GITHUB_API = "https://api.github.com"
+GITHUB_PAGE_SIZE = 100
+GITHUB_MAX_PAGES = 10
+ORG_REPO_DEFAULTS: Dict[str, Any] = {
+    "paths": {"include": ["**/*.md"], "exclude": []},
+    "chunking": {
+        "strategy": "markdown_heading",
+        "max_tokens": 1200,
+        "overlap_tokens": 100,
+    },
+    "polling": {"mode": "incremental", "interval_minutes": 60},
+}
+
+
+def repos_yaml_source_name(custom_name: Optional[str], yaml_text: str) -> str:
+    name = (custom_name or "").strip()
+    if name:
+        return name
+    digest = hashlib.sha256((yaml_text or "").encode("utf-8")).hexdigest()[:12]
+    return f"repos.yaml:{digest}"
+
+
+def _dump_repos_mapping(data: Dict[str, Any]) -> str:
+    dumped = yaml.safe_dump(
+        data,
+        sort_keys=False,
+        default_flow_style=False,
+        allow_unicode=True,
+    )
+    return dumped if dumped.endswith("\n") else dumped + "\n"
+
+
+def load_repos_mapping(yaml_text: str, *, allow_empty: bool = False) -> Dict[str, Any]:
+    try:
+        data = yaml.safe_load(yaml_text)
+    except yaml.YAMLError as exc:
+        raise ValueError(f"invalid YAML: {exc}") from exc
+    if data is None:
+        data = {}
+    if not isinstance(data, dict):
+        raise ValueError("repos.yaml must be a mapping")
+    repos = data.get("repositories")
+    if repos is None:
+        data["repositories"] = []
+        repos = data["repositories"]
+    if not isinstance(repos, list):
+        raise ValueError("repositories must be a list")
+    if repos or not allow_empty:
+        try:
+            ReposFile.model_validate(data)
+        except ValidationError as exc:
+            raise ValueError(f"invalid repos.yaml: {exc}") from exc
+    return data
+
+
+def read_repos_yaml() -> Dict[str, Any]:
+    if not REPOS_YAML.is_file():
+        raise FileNotFoundError("repos.yaml not found")
+    text = REPOS_YAML.read_text(encoding="utf-8")
+    load_repos_mapping(text)
+    return {
+        "yaml": text,
+        "source": repos_yaml_source_name(None, text),
+        "path": "application/utils/harvester/repos.yaml",
+    }
+
+
+def write_repos_yaml(yaml_text: str) -> Dict[str, Any]:
+    if not isinstance(yaml_text, str):
+        raise ValueError("yaml must be a string")
+    load_repos_mapping(yaml_text)
+    REPOS_YAML.parent.mkdir(parents=True, exist_ok=True)
+    REPOS_YAML.write_text(yaml_text, encoding="utf-8")
+    return {
+        "yaml": yaml_text,
+        "source": repos_yaml_source_name(None, yaml_text),
+        "path": "application/utils/harvester/repos.yaml",
+        "saved": True,
+    }
+
+
+def _org_repo_defaults(existing: List[Any]) -> Dict[str, Any]:
+    defaults = copy.deepcopy(ORG_REPO_DEFAULTS)
+    for row in existing:
+        if not isinstance(row, dict):
+            continue
+        for key in ("paths", "chunking", "polling"):
+            if isinstance(row.get(key), dict):
+                defaults[key] = copy.deepcopy(row[key])
+        break
+    return defaults
+
+
+def _repo_entry_id(owner: str, repo: str, taken: set[str]) -> str:
+    base = re.sub(r"[^a-z0-9]+", "-", f"{owner}-{repo}".lower()).strip("-")
+    if not base:
+        base = "repo"
+    candidate = base
+    n = 2
+    while candidate in taken:
+        candidate = f"{base}-{n}"
+        n += 1
+    taken.add(candidate)
+    return candidate
+
+
+def _github_headers() -> Dict[str, str]:
+    headers = {
+        "User-Agent": "OpenCRE-admin",
+        "Accept": "application/vnd.github+json",
+    }
+    token = (os.getenv("GITHUB_TOKEN") or os.getenv("GH_TOKEN") or "").strip()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
+
+
+def _github_list_owner_repos(owner: str) -> List[Dict[str, Any]]:
+    headers = _github_headers()
+    last_404 = False
+    for kind in ("orgs", "users"):
+        collected: List[Dict[str, Any]] = []
+        found = True
+        for page in range(1, GITHUB_MAX_PAGES + 1):
+            url = (
+                f"{GITHUB_API}/{kind}/{owner}/repos"
+                f"?per_page={GITHUB_PAGE_SIZE}&page={page}"
+            )
+            req = urllib.request.Request(url, headers=headers)
+            try:
+                with urllib.request.urlopen(req, timeout=20) as resp:
+                    payload = json.loads(resp.read().decode("utf-8"))
+            except urllib.error.HTTPError as exc:
+                if exc.code == 404:
+                    last_404 = True
+                    found = False
+                    break
+                raise ValueError(f"GitHub API error {exc.code}") from exc
+            except urllib.error.URLError as exc:
+                raise ValueError("GitHub API request failed") from exc
+            except json.JSONDecodeError as exc:
+                raise ValueError("GitHub API returned invalid JSON") from exc
+            if not isinstance(payload, list):
+                raise ValueError("GitHub API returned unexpected payload")
+            collected.extend(item for item in payload if isinstance(item, dict))
+            if len(payload) < GITHUB_PAGE_SIZE:
+                break
+        if found:
+            return collected
+    if last_404:
+        raise ValueError(f"GitHub owner not found: {owner}")
+    return []
+
+
+def expand_github_org_into_yaml(yaml_text: str, owner: str) -> Dict[str, Any]:
+    owner = (owner or "").strip()
+    if not owner or "/" in owner:
+        raise ValueError("owner is required (GitHub org or user login)")
+    data = load_repos_mapping(yaml_text, allow_empty=True)
+    existing = list(data.get("repositories") or [])
+    seen_pairs = {
+        (
+            str(row.get("owner") or "").strip().lower(),
+            str(row.get("repo") or "").strip().lower(),
+        )
+        for row in existing
+        if isinstance(row, dict)
+    }
+    taken_ids = {
+        str(row.get("id") or "").strip()
+        for row in existing
+        if isinstance(row, dict) and str(row.get("id") or "").strip()
+    }
+    defaults = _org_repo_defaults(existing)
+    remote = _github_list_owner_repos(owner)
+    added = 0
+    skipped = 0
+    for item in remote:
+        repo_name = str(item.get("name") or "").strip()
+        item_owner = (
+            str(
+                (item.get("owner") or {}).get("login")
+                if isinstance(item.get("owner"), dict)
+                else owner
+            ).strip()
+            or owner
+        )
+        if not repo_name:
+            skipped += 1
+            continue
+        if item.get("fork") or item.get("archived"):
+            skipped += 1
+            continue
+        pair = (item_owner.lower(), repo_name.lower())
+        if pair in seen_pairs:
+            skipped += 1
+            continue
+        branch = str(item.get("default_branch") or "main").strip() or "main"
+        entry = {
+            "id": _repo_entry_id(item_owner, repo_name, taken_ids),
+            "type": "github",
+            "enabled": True,
+            "owner": item_owner,
+            "repo": repo_name,
+            "branch": branch,
+            "paths": copy.deepcopy(defaults["paths"]),
+            "chunking": copy.deepcopy(defaults["chunking"]),
+            "polling": copy.deepcopy(defaults["polling"]),
+        }
+        existing.append(entry)
+        seen_pairs.add(pair)
+        added += 1
+    data["repositories"] = existing
+    if not existing:
+        raise ValueError("no repositories to add after expanding owner")
+    load_repos_mapping(_dump_repos_mapping(data))
+    text = _dump_repos_mapping(data)
+    return {
+        "yaml": text,
+        "owner": owner,
+        "added": added,
+        "skipped": skipped,
+        "source": repos_yaml_source_name(None, text),
+    }
+
+
+def _write_temp_repos_yaml(yaml_text: str) -> Path:
+    handle = tempfile.NamedTemporaryFile(
+        mode="w",
+        encoding="utf-8",
+        suffix=".yaml",
+        prefix="repos-oneoff-",
+        delete=False,
+    )
+    try:
+        handle.write(yaml_text)
+    finally:
+        handle.close()
+    return Path(handle.name)
 
 
 def _now() -> datetime:
@@ -254,19 +501,22 @@ def append_event(run_id: str, stage: str, status: str, detail: str = "") -> None
     sqla.session.commit()
 
 
-def invoke_oie_cli(run_id: str) -> Dict[str, Any]:
+def invoke_oie_cli(run_id: str, repos_yaml: Optional[str] = None) -> Dict[str, Any]:
     script = REPO_ROOT / "scripts" / "run_oie_pipeline.py"
+    argv = [
+        sys.executable,
+        str(script),
+        "--dry-run",
+        "--no-sync-repos",
+        "--run_id",
+        run_id,
+        "--cache_file",
+        "sqlite://",
+    ]
+    if repos_yaml:
+        argv.extend(["--repos_yaml", repos_yaml])
     proc = subprocess.run(
-        [
-            sys.executable,
-            str(script),
-            "--dry-run",
-            "--no-sync-repos",
-            "--run_id",
-            run_id,
-            "--cache_file",
-            "sqlite://",
-        ],
+        argv,
         capture_output=True,
         text=True,
         timeout=120,
@@ -291,72 +541,102 @@ def invoke_oie_cli(run_id: str) -> Dict[str, Any]:
 
 def start_ingestion(
     *,
-    source: str,
+    source: str = "",
     target_id: Optional[str] = None,
+    yaml_text: Optional[str] = None,
+    name: Optional[str] = None,
 ) -> Dict[str, Any]:
-    if not source:
-        raise ValueError("source is required")
+    custom_name = (name or "").strip()
     target = None
-    if target_id:
-        target_id = str(target_id).strip()
-        if not target_id:
-            raise ValueError("source is required")
-        target = (
-            sqla.session.query(db.IngestionTarget)
-            .filter(db.IngestionTarget.id == target_id)
-            .first()
-        )
-        if not target:
-            raise KeyError("target not found")
-        if not target.enabled:
-            raise ValueError("target is disabled")
-        source = target.name or target.id
-    do_oie = bool(target and target.kind == "oie_repo")
+    do_oie = False
+    repos_yaml_path: Optional[str] = None
+    tmp_path: Optional[Path] = None
+    stripped_target = str(target_id).strip() if target_id else ""
 
-    run = db.create_import_run(source=source, version="admin-start")
-    db.persist_staged_change_set(
-        run_id=run.id,
-        changeset_json=import_diff.change_set_to_json([]),
-        staging_status="pending_review",
-    )
-    append_event(run.id, "queued", "ok", f"source={source}")
-    oie: Optional[Dict[str, Any]] = None
-    if do_oie:
-        append_event(
-            run.id,
-            "oie",
-            "started",
-            "dry_run=True sync_repos=False",
+    try:
+        if yaml_text is not None:
+            load_repos_mapping(yaml_text)
+            source = repos_yaml_source_name(custom_name, yaml_text)
+            tmp_path = _write_temp_repos_yaml(yaml_text)
+            repos_yaml_path = str(tmp_path)
+            do_oie = True
+        elif stripped_target:
+            target = (
+                sqla.session.query(db.IngestionTarget)
+                .filter(db.IngestionTarget.id == stripped_target)
+                .first()
+            )
+            if not target:
+                raise KeyError("target not found")
+            if not target.enabled:
+                raise ValueError("target is disabled")
+            if target.kind == "oie_repo":
+                do_oie = True
+                packaged = (
+                    REPOS_YAML.read_text(encoding="utf-8")
+                    if REPOS_YAML.is_file()
+                    else ""
+                )
+                source = repos_yaml_source_name(custom_name, packaged)
+                if REPOS_YAML.is_file():
+                    repos_yaml_path = str(REPOS_YAML)
+            else:
+                source = custom_name or target.name or target.id
+        else:
+            source = custom_name or (source or "").strip()
+            if not source:
+                raise ValueError("source is required")
+
+        run = db.create_import_run(source=source, version="admin-start")
+        db.persist_staged_change_set(
+            run_id=run.id,
+            changeset_json=import_diff.change_set_to_json([]),
+            staging_status="pending_review",
         )
-        try:
-            oie = invoke_oie_cli(run.id)
-            oie_ok = bool(oie.get("ok", oie.get("returncode", 1) == 0))
+        append_event(run.id, "queued", "ok", f"source={source}")
+        oie: Optional[Dict[str, Any]] = None
+        if do_oie:
             append_event(
                 run.id,
                 "oie",
-                "ok" if oie_ok else "error",
-                json.dumps(oie)[:2000],
+                "started",
+                "dry_run=True sync_repos=False",
             )
-            for stage in oie.get("stages") or []:
-                if not isinstance(stage, dict):
-                    continue
+            try:
+                oie = invoke_oie_cli(run.id, repos_yaml=repos_yaml_path)
+                oie_ok = bool(oie.get("ok", oie.get("returncode", 1) == 0))
                 append_event(
                     run.id,
-                    str(stage.get("name") or "oie"),
-                    str(stage.get("status") or "ok"),
-                    str(stage.get("detail") or "")[:2000],
+                    "oie",
+                    "ok" if oie_ok else "error",
+                    json.dumps(oie)[:2000],
                 )
-        except Exception as exc:  # noqa: BLE001
-            append_event(run.id, "oie", "error", str(exc))
-            oie = {"error": str(exc)}
-    else:
-        append_event(
-            run.id,
-            "recorded",
-            "ok",
-            "Import run staged; apply via /admin/imports when ready",
-        )
-    return {"run_id": run.id, "source": source, "oie": oie, "dry_run": True}
+                for stage in oie.get("stages") or []:
+                    if not isinstance(stage, dict):
+                        continue
+                    append_event(
+                        run.id,
+                        str(stage.get("name") or "oie"),
+                        str(stage.get("status") or "ok"),
+                        str(stage.get("detail") or "")[:2000],
+                    )
+            except Exception as exc:  # noqa: BLE001
+                append_event(run.id, "oie", "error", str(exc))
+                oie = {"error": str(exc)}
+        else:
+            append_event(
+                run.id,
+                "recorded",
+                "ok",
+                "Import run staged; apply via /admin/imports when ready",
+            )
+        return {"run_id": run.id, "source": source, "oie": oie, "dry_run": True}
+    finally:
+        if tmp_path is not None:
+            try:
+                tmp_path.unlink()
+            except OSError:
+                logger.warning("failed to remove temp repos.yaml %s", tmp_path)
 
 
 def import_stage_strip(status: Optional[str]) -> List[Dict[str, str]]:
