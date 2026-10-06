@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Mapping, MutableMapping, Optional
+from typing import Any, Dict, List, Mapping, MutableMapping, Optional
 
 
 DOCS_ENV = "https://github.com/OWASP/OpenCRE/blob/main/.env.example"
@@ -95,7 +95,7 @@ CATALOG: Dict[str, ConfigKey] = {
 }
 
 
-def present_config(environ: Mapping[str, str]) -> list[dict]:
+def present_config(environ: Mapping[str, str]) -> List[Dict[str, Any]]:
     rows = []
     for key, spec in CATALOG.items():
         raw = environ.get(key)
