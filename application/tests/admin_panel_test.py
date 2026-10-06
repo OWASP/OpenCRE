@@ -693,14 +693,15 @@ class TestAdminPanel(unittest.TestCase):
                     self.assertEqual(path.read_text(encoding="utf-8"), updated)
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
-    def test_add_org_appends_source_without_github_call(self) -> None:
+    def test_add_org_probes_github_before_append(self) -> None:
         packaged_before = service.REPOS_YAML.read_text(encoding="utf-8")
         with patch(
-            "application.utils.harvester.github_sources.urllib.request.urlopen"
-        ) as mock_open:
+            "application.utils.admin_panel.service.probe_github_source"
+        ) as probe:
             with self.app.test_client() as c:
                 r = c.post("/admin/repos.yaml/expand-org", json={"owner": ""})
                 self.assertEqual(r.status_code, 400)
+                probe.assert_not_called()
                 r = c.post(
                     "/admin/repos.yaml/expand-org",
                     json={"yaml": MINIMAL_REPOS_YAML, "owner": "OWASP"},
@@ -711,16 +712,66 @@ class TestAdminPanel(unittest.TestCase):
                 self.assertEqual(body["source_url"], "github.com/OWASP/")
                 self.assertIn("github.com/OWASP/", body["yaml"])
                 self.assertIn("owasp-asvs", body["yaml"])
-                self.assertTrue(body["source"].startswith("repos.yaml:"))
+                probe.assert_called_once()
                 r = c.post(
                     "/admin/repos.yaml/expand-org",
                     json={"yaml": body["yaml"], "owner": "github.com/OWASP/"},
                 )
                 self.assertEqual(r.get_json()["added"], 0)
-            mock_open.assert_not_called()
+                probe.assert_called_once()
+        with patch(
+            "application.utils.admin_panel.service.probe_github_source",
+            side_effect=ValueError(
+                "GitHub source is not accessible: github.com/NoSuchOrgCcdd/"
+            ),
+        ):
+            with self.app.test_client() as c:
+                r = c.post(
+                    "/admin/repos.yaml/expand-org",
+                    json={"yaml": MINIMAL_REPOS_YAML, "owner": "NoSuchOrgCcdd"},
+                )
+                self.assertEqual(r.status_code, 400)
+                self.assertIn(
+                    "not accessible",
+                    (r.get_json() or {}).get("description", ""),
+                )
+                self.assertIn(
+                    "github.com/NoSuchOrgCcdd/",
+                    (r.get_json() or {}).get("description", ""),
+                )
         self.assertEqual(
             service.REPOS_YAML.read_text(encoding="utf-8"), packaged_before
         )
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_save_and_one_off_reject_inaccessible_source(self) -> None:
+        yaml_text = "sources:\n  - github.com/NoSuchOrgCcdd/\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "repos.yaml"
+            path.write_text(MINIMAL_REPOS_YAML, encoding="utf-8")
+            with patch.object(service, "REPOS_YAML", path):
+                with patch(
+                    "application.utils.admin_panel.service.probe_github_sources",
+                    side_effect=ValueError(
+                        "GitHub source is not accessible: github.com/NoSuchOrgCcdd/"
+                    ),
+                ):
+                    with patch(
+                        "application.utils.admin_panel.service.invoke_oie_cli"
+                    ) as mock_oie:
+                        with self.app.test_client() as c:
+                            r = c.put("/admin/repos.yaml", json={"yaml": yaml_text})
+                            self.assertEqual(r.status_code, 400)
+                            self.assertIn(
+                                "not accessible",
+                                (r.get_json() or {}).get("description", ""),
+                            )
+                            self.assertEqual(
+                                path.read_text(encoding="utf-8"), MINIMAL_REPOS_YAML
+                            )
+                            r = c.post("/admin/ingest/start", json={"yaml": yaml_text})
+                            self.assertEqual(r.status_code, 400)
+                            mock_oie.assert_not_called()
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_expand_org_rejects_injected_owner(self) -> None:
