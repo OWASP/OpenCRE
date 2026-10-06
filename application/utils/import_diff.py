@@ -278,8 +278,29 @@ def live_standard_defs_for_resource(
     return out
 
 
+def standard_name_from_op_key(op: ChangeSetOp) -> str:
+    if not op.key or len(op.key) == 0:
+        return ""
+    return str(op.key[0] or "").strip()
+
+
 def impacted_standard_names_from_ops(ops: List[ChangeSetOp]) -> Set[str]:
-    return {str(op.key[0]) for op in ops if op.key and len(op.key) > 0}
+    names: Set[str] = set()
+    skipped = 0
+    for op in ops:
+        name = standard_name_from_op_key(op)
+        if not name:
+            skipped += 1
+            logger.warning(
+                "Skipping impact op with empty standard key: op=%s key=%s",
+                getattr(op, "op", type(op).__name__),
+                op.key,
+            )
+            continue
+        names.add(name)
+    if skipped:
+        logger.warning("Impact skipped %s ops with empty standard keys", skipped)
+    return names
 
 
 def impacted_cre_external_ids_for_standards(
@@ -288,7 +309,15 @@ def impacted_cre_external_ids_for_standards(
     """CRE external ids linked to any node under the given standard names."""
     ids: Set[str] = set()
     for name in standard_names:
-        for node in collection.get_nodes(name=name) or []:
+        if not (name or "").strip():
+            logger.warning("Skipping CRE impact lookup for empty standard name")
+            continue
+        try:
+            nodes = collection.get_nodes(name=name) or []
+        except ValueError as e:
+            logger.warning("CRE impact lookup failed for standard %r: %s", name, e)
+            continue
+        for node in nodes:
             for link in getattr(node, "links", None) or []:
                 doc = getattr(link, "document", None)
                 if doc is None:
