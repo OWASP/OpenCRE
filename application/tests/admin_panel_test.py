@@ -175,6 +175,14 @@ class TestAdminPanel(unittest.TestCase):
             self.assertTrue(body["params"])
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_agent_status_disabled_when_flag_off(self) -> None:
+        os.environ.pop("OWASP_AGENT_ENABLED", None)
+        with self.app.test_client() as c:
+            r = c.get("/admin/agent/status")
+            self.assertEqual(r.status_code, 200)
+            self.assertFalse(r.get_json()["enabled"])
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_agent_status_counts_env_sqlite_only(self) -> None:
         import sqlite3
         import tempfile
