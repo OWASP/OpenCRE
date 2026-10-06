@@ -70,8 +70,18 @@ async function readJson(res: Response) {
   try {
     return JSON.parse(text);
   } catch {
-    return { error: text || res.statusText };
+    // Flask HTML aborts (legacy) — surface a short line, not the whole page.
+    const plain = text
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const clipped = plain.slice(0, 240);
+    return { description: clipped || res.statusText, error: clipped || res.statusText };
   }
+}
+
+function apiError(body: any, res: Response): string {
+  return body?.description || body?.error || res.statusText || 'Request failed';
 }
 
 export const Admin = () => {
@@ -279,15 +289,17 @@ function GraphManagementTab({ origin }: { origin: string }) {
   const [graph, setGraph] = useState<any>(null);
   const [links, setLinks] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [source, setSource] = useState('');
   const [relink, setRelink] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(() => {
     let cancelled = false;
     fetch(`${origin}/admin/imports/runs`)
       .then(async (res) => {
         const body = await readJson(res);
-        if (!res.ok) throw new Error(body.description || body.error || res.statusText);
+        if (!res.ok) throw new Error(apiError(body, res));
         if (!cancelled) setRuns(body.runs || []);
       })
       .catch((err) => {
@@ -302,22 +314,35 @@ function GraphManagementTab({ origin }: { origin: string }) {
 
   const act = async (runId: string, path: string, method = 'POST') => {
     setError(null);
+    setNotice(null);
+    setBusy(`${runId}:${path}`);
     try {
       const res = await fetch(`${origin}/admin/imports/runs/${runId}/${path}`, { method });
       const body = await readJson(res);
       if (!res.ok) {
-        setError(body.description || body.error || res.statusText);
+        setError(apiError(body, res));
         return;
       }
+      const status = body.staging_status || body.status;
+      const ops =
+        typeof body.applied_ops === 'number'
+          ? ` applied_ops=${body.applied_ops} skipped=${body.skipped_ops ?? 0}`
+          : typeof body.operation_count === 'number'
+            ? ` operations=${body.operation_count}`
+            : '';
+      setNotice(`${path.split('?')[0]} → ${status || 'ok'}${ops}`);
       setDetail(body);
       load();
     } catch (err) {
       setError(String(err));
+    } finally {
+      setBusy(null);
     }
   };
 
   const openRun = async (runId: string) => {
     setError(null);
+    setNotice(null);
     try {
       const [csRes, linkRes] = await Promise.all([
         fetch(`${origin}/admin/imports/runs/${runId}/changeset`),
@@ -326,12 +351,18 @@ function GraphManagementTab({ origin }: { origin: string }) {
       const csBody = await readJson(csRes);
       const linkBody = await readJson(linkRes);
       if (!csRes.ok) {
-        setError(csBody.description || csBody.error || csRes.statusText);
+        setError(apiError(csBody, csRes));
         return;
       }
       if (!linkRes.ok) {
-        setError(linkBody.description || linkBody.error || linkRes.statusText);
+        setError(apiError(linkBody, linkRes));
         return;
+      }
+      const ops = Array.isArray(csBody.changeset) ? csBody.changeset.length : 0;
+      if (ops === 0) {
+        setNotice(
+          'This run has an empty CRE import changeset (typical for OIE harvest). Accept/Discard only change review status; there are no controls/links to apply yet.'
+        );
       }
       setDetail(csBody);
       setLinks(linkBody.links || []);
@@ -343,11 +374,17 @@ function GraphManagementTab({ origin }: { origin: string }) {
 
   const openGraph = async (runId: string) => {
     setError(null);
+    setNotice(null);
     try {
       const res = await fetch(`${origin}/admin/imports/runs/${runId}/changeset/graph`);
       const body = await readJson(res);
-      if (!res.ok) setError(body.description || body.error || res.statusText);
-      else setGraph(body);
+      if (!res.ok) setError(apiError(body, res));
+      else {
+        setGraph(body);
+        if (!(body.nodes || []).length) {
+          setNotice('No graph nodes — staged CRE import ops are empty for this run.');
+        }
+      }
     } catch (err) {
       setError(String(err));
     }
@@ -355,6 +392,7 @@ function GraphManagementTab({ origin }: { origin: string }) {
 
   const review = async (runId: string, row: any, action: string) => {
     setError(null);
+    setNotice(null);
     const key = `${row.op_index}:${row.link_index}`;
     const payload: any = { op_index: row.op_index, link_index: row.link_index, action };
     if (action === 'relink') {
@@ -373,11 +411,12 @@ function GraphManagementTab({ origin }: { origin: string }) {
       });
       const body = await readJson(res);
       if (!res.ok) {
-        setError(body.description || body.error || res.statusText);
+        setError(apiError(body, res));
         return;
       }
       setLinks(body.links || []);
       setDetail({ ...detail, changeset: body.changeset, run_id: body.run_id });
+      setNotice(`Link ${action} saved`);
     } catch (err) {
       setError(String(err));
     }
@@ -395,9 +434,10 @@ function GraphManagementTab({ origin }: { origin: string }) {
         body: JSON.stringify({ source: source.trim() }),
       });
       const body = await readJson(res);
-      if (!res.ok) setError(body.description || body.error || res.statusText);
+      if (!res.ok) setError(apiError(body, res));
       else {
         setDetail(body);
+        setNotice(`Dropped last staged run for ${source.trim()}`);
         load();
       }
     } catch (err) {
@@ -408,50 +448,76 @@ function GraphManagementTab({ origin }: { origin: string }) {
   return (
     <div>
       {error && <Message negative>{error}</Message>}
+      {notice && <Message info>{notice}</Message>}
       {Array.isArray(detail?.warnings) && detail.warnings.length > 0 && (
         <Message warning>{detail.warnings.join(' ')}</Message>
       )}
       <p className="admin-help">
         Approve, deny, or relink each proposed CRE link on a run. Decisions are stored on the staged
-        changeset. Apply still writes standard node fields; CRE edge apply is follow-on.
+        changeset. OIE harvest runs often have an empty CRE changeset (chunks live in harvest_input);
+        Accept still marks review status. Apply writes standard node fields; CRE edge apply is
+        follow-on.
       </p>
       <table className="admin-table">
         <thead>
           <tr>
             <th>Source</th>
             <th>Status</th>
+            <th>Ops</th>
             <th>Created</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
-          {runs.map((run) => (
-            <tr key={run.id}>
-              <td>{run.source}</td>
-              <td>{run.staging_status || '—'}</td>
-              <td>{run.created_at}</td>
-              <td>
-                <Button size="mini" onClick={() => openRun(run.id)}>
-                  Changeset
-                </Button>
-                <Button size="mini" onClick={() => openGraph(run.id)}>
-                  Graph
-                </Button>
-                <Button size="mini" onClick={() => act(run.id, 'accept')}>
-                  Accept
-                </Button>
-                <Button size="mini" onClick={() => act(run.id, 'discard')}>
-                  Discard
-                </Button>
-                <Button size="mini" onClick={() => act(run.id, 'apply?dry_run=1')}>
-                  Dry-run
-                </Button>
-                <Button size="mini" onClick={() => act(run.id, 'impact', 'GET')}>
-                  Impact
-                </Button>
-              </td>
-            </tr>
-          ))}
+          {runs.map((run) => {
+            const status = run.staging_status || '—';
+            const terminal = status === 'applied' || status === 'discarded';
+            const rowBusy = busy?.startsWith(`${run.id}:`);
+            return (
+              <tr key={run.id}>
+                <td>{run.source}</td>
+                <td>{status}</td>
+                <td>{typeof run.operation_count === 'number' ? run.operation_count : '—'}</td>
+                <td>{run.created_at}</td>
+                <td>
+                  <Button size="mini" disabled={!!rowBusy} onClick={() => openRun(run.id)}>
+                    Changeset
+                  </Button>
+                  <Button size="mini" disabled={!!rowBusy} onClick={() => openGraph(run.id)}>
+                    Graph
+                  </Button>
+                  <Button
+                    size="mini"
+                    disabled={!!rowBusy || status !== 'pending_review'}
+                    onClick={() => act(run.id, 'accept')}
+                  >
+                    Accept
+                  </Button>
+                  <Button
+                    size="mini"
+                    disabled={!!rowBusy || terminal}
+                    onClick={() => act(run.id, 'discard')}
+                  >
+                    Discard
+                  </Button>
+                  <Button
+                    size="mini"
+                    disabled={!!rowBusy || status === 'discarded'}
+                    onClick={() => act(run.id, 'apply?dry_run=1')}
+                  >
+                    Dry-run
+                  </Button>
+                  <Button
+                    size="mini"
+                    disabled={!!rowBusy}
+                    onClick={() => act(run.id, 'impact', 'GET')}
+                  >
+                    Impact
+                  </Button>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
       <p>
