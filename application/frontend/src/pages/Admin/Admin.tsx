@@ -110,18 +110,22 @@ function ImportsTab({ origin }: { origin: string }) {
   const [drafts, setDrafts] = useState<Record<number, string>>({});
 
   const load = useCallback(() => {
+    let cancelled = false;
     fetch(`${origin}/admin/imports/runs`)
       .then(async (res) => {
         const body = await readJson(res);
         if (!res.ok) throw new Error(body.description || body.error || res.statusText);
-        setRuns(body.runs || []);
+        if (!cancelled) setRuns(body.runs || []);
       })
-      .catch((err) => setError(String(err)));
+      .catch((err) => {
+        if (!cancelled) setError(String(err));
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [origin]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => load(), [load]);
 
   const act = async (runId: string, path: string, method = 'POST') => {
     setError(null);
@@ -299,13 +303,19 @@ function PipelineTab({ origin }: { origin: string }) {
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
+    let cancelled = false;
     fetch(`${origin}/admin/pipeline`)
       .then(async (res) => {
         const body = await readJson(res);
         if (!res.ok) throw new Error(body.description || body.error || res.statusText);
-        setData(body);
+        if (!cancelled) setData(body);
       })
-      .catch((err) => setError(String(err)));
+      .catch((err) => {
+        if (!cancelled) setError(String(err));
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [origin]);
   if (error) return <Message negative>{error}</Message>;
   if (!data) return <p>Loading pipeline…</p>;
@@ -371,15 +381,21 @@ function TargetsTab({ origin }: { origin: string }) {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
+    let cancelled = false;
     fetch(`${origin}/admin/targets`)
       .then((res) => res.json())
-      .then((body) => setTargets(body.targets || []))
-      .catch((err) => setError(String(err)));
+      .then((body) => {
+        if (!cancelled) setTargets(body.targets || []);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(String(err));
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [origin]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => load(), [load]);
 
   const add = async () => {
     const res = await fetch(`${origin}/admin/targets`, {
@@ -475,13 +491,20 @@ function ConfigTab({ origin }: { origin: string }) {
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     fetch(`${origin}/admin/config`)
       .then((res) => res.json())
       .then((body) => {
+        if (cancelled) return;
         setRows(body.config || []);
         setInstructions(body.restart_instructions || '');
       })
-      .catch(() => setMsg('failed to load config'));
+      .catch(() => {
+        if (!cancelled) setMsg('failed to load config');
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [origin]);
 
   const copyRow = async (row: any) => {
@@ -537,13 +560,19 @@ function AgentTab({ origin }: { origin: string }) {
   const [status, setStatus] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
+    let cancelled = false;
     fetch(`${origin}/admin/agent/status`)
       .then(async (res) => {
         const body = await readJson(res);
         if (!res.ok) throw new Error(body.description || body.error || res.statusText);
-        setStatus(body);
+        if (!cancelled) setStatus(body);
       })
-      .catch((err) => setError(String(err)));
+      .catch((err) => {
+        if (!cancelled) setError(String(err));
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [origin]);
   if (error) return <Message negative>{error}</Message>;
   if (!status) return <p>Loading agent…</p>;
