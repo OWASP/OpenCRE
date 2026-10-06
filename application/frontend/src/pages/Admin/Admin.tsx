@@ -88,11 +88,26 @@ export const Admin = () => {
   );
 };
 
+function StageStrip({ steps }: { steps?: { id: string; label: string; state: string }[] }) {
+  if (!steps || !steps.length) return null;
+  return (
+    <ol className="admin-strip">
+      {steps.map((step) => (
+        <li key={step.id} className={`admin-strip-step is-${step.state}`}>
+          {step.label}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 function ImportsTab({ origin }: { origin: string }) {
   const [runs, setRuns] = useState<any[]>([]);
   const [detail, setDetail] = useState<any>(null);
+  const [graph, setGraph] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState('');
+  const [drafts, setDrafts] = useState<Record<number, string>>({});
 
   const load = useCallback(() => {
     fetch(`${origin}/admin/imports/runs`)
@@ -122,7 +137,42 @@ function ImportsTab({ origin }: { origin: string }) {
 
   const openRun = async (runId: string) => {
     const res = await fetch(`${origin}/admin/imports/runs/${runId}/changeset`);
-    setDetail(await readJson(res));
+    const body = await readJson(res);
+    setDetail(body);
+    setGraph(null);
+    const next: Record<number, string> = {};
+    (body.changeset || []).forEach((op: any, i: number) => {
+      next[i] = JSON.stringify(op.after || op.document || {}, null, 2);
+    });
+    setDrafts(next);
+  };
+
+  const openGraph = async (runId: string) => {
+    const res = await fetch(`${origin}/admin/imports/runs/${runId}/changeset/graph`);
+    const body = await readJson(res);
+    if (!res.ok) setError(body.description || body.error || res.statusText);
+    else setGraph(body);
+  };
+
+  const saveMapping = async (runId: string, opIndex: number) => {
+    let after: unknown;
+    try {
+      after = JSON.parse(drafts[opIndex] || '{}');
+    } catch {
+      setError('Mapping JSON is invalid');
+      return;
+    }
+    const res = await fetch(`${origin}/admin/imports/runs/${runId}/mapping`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ op_index: opIndex, after }),
+    });
+    const body = await readJson(res);
+    if (!res.ok) setError(body.description || body.error || res.statusText);
+    else {
+      setDetail(body);
+      load();
+    }
   };
 
   const dropLast = async () => {
@@ -139,6 +189,8 @@ function ImportsTab({ origin }: { origin: string }) {
       load();
     }
   };
+
+  const ops = Array.isArray(detail?.changeset) ? detail.changeset : [];
 
   return (
     <div>
@@ -161,6 +213,9 @@ function ImportsTab({ origin }: { origin: string }) {
               <td>
                 <Button size="mini" onClick={() => openRun(run.id)}>
                   Changeset
+                </Button>
+                <Button size="mini" onClick={() => openGraph(run.id)}>
+                  Graph
                 </Button>
                 <Button size="mini" onClick={() => act(run.id, 'accept')}>
                   Accept
@@ -186,6 +241,55 @@ function ImportsTab({ origin }: { origin: string }) {
           Drop last
         </Button>
       </p>
+      <p className="admin-help">
+        Applied runs return 409 — graph rollback is not implemented. Edit staged mappings before apply.
+      </p>
+      {graph && (
+        <div>
+          <h3>Changeset graph</h3>
+          {!(graph.nodes || []).length ? (
+            <p>No graph nodes</p>
+          ) : (
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Node</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {graph.nodes.map((n: any) => (
+                  <tr key={n.id}>
+                    <td>{n.label}</td>
+                    <td>{n.type}</td>
+                    <td>{n.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+      {ops.length > 0 && (
+        <div>
+          <h3>Edit mapping</h3>
+          {ops.map((op: any, i: number) => (
+            <div key={i} className="admin-map-op">
+              <p>
+                #{i} {op.op || op.__class__ || 'op'}
+              </p>
+              <textarea
+                value={drafts[i] || ''}
+                onChange={(e) => setDrafts({ ...drafts, [i]: e.target.value })}
+              />
+              <Button size="mini" onClick={() => saveMapping(detail.run_id, i)}>
+                Save mapping
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
       {detail && <pre className="admin-pre">{JSON.stringify(detail, null, 2)}</pre>}
     </div>
   );
@@ -193,20 +297,30 @@ function ImportsTab({ origin }: { origin: string }) {
 
 function PipelineTab({ origin }: { origin: string }) {
   const [data, setData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     fetch(`${origin}/admin/pipeline`)
-      .then((res) => res.json())
-      .then(setData)
-      .catch(() => setData({ error: 'failed to load pipeline' }));
+      .then(async (res) => {
+        const body = await readJson(res);
+        if (!res.ok) throw new Error(body.description || body.error || res.statusText);
+        setData(body);
+      })
+      .catch((err) => setError(String(err)));
   }, [origin]);
+  if (error) return <Message negative>{error}</Message>;
   if (!data) return <p>Loading pipeline…</p>;
+  const empty = !(data.import_runs || []).length && !(data.events || []).length;
   return (
     <div>
+      <h3>Latest run</h3>
+      <StageStrip steps={data.latest_strip} />
+      {empty && <p>No pipeline runs yet.</p>}
       <h3>Import runs</h3>
       <ol>
         {(data.import_runs || []).map((r: any) => (
           <li key={r.id}>
             {r.source} — {r.staging_status || 'none'}
+            <StageStrip steps={r.strip} />
           </li>
         ))}
       </ol>
@@ -232,6 +346,18 @@ function PipelineTab({ origin }: { origin: string }) {
       <h3>OIE decisions</h3>
       <p>Unconsumed: {data.oie?.unconsumed ?? 0}</p>
       <pre className="admin-pre">{JSON.stringify(data.oie?.recent || [], null, 2)}</pre>
+      <h3>LLM reasoning</h3>
+      {(data.oie?.knowledge || []).length === 0 ? (
+        <p>No knowledge-queue artifacts.</p>
+      ) : (
+        <ul>
+          {(data.oie.knowledge || []).map((k: any) => (
+            <li key={k.id}>
+              {k.llm_label}: {k.llm_reasoning || '—'}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -240,6 +366,8 @@ function TargetsTab({ origin }: { origin: string }) {
   const [targets, setTargets] = useState<any[]>([]);
   const [id, setId] = useState('');
   const [kind, setKind] = useState('import_source');
+  const [dryRun, setDryRun] = useState(true);
+  const [syncRepos, setSyncRepos] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
@@ -268,11 +396,16 @@ function TargetsTab({ origin }: { origin: string }) {
     load();
   };
 
-  const start = async (targetId: string) => {
+  const start = async (targetId: string, targetKind: string) => {
     const res = await fetch(`${origin}/admin/ingest/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ target_id: targetId, dry_run: true }),
+      body: JSON.stringify({
+        target_id: targetId,
+        dry_run: dryRun,
+        sync_repos: syncRepos,
+        run_oie: targetKind === 'oie_repo',
+      }),
     });
     const body = await readJson(res);
     if (!res.ok) setError(body.description || body.error || res.statusText);
@@ -297,6 +430,16 @@ function TargetsTab({ origin }: { origin: string }) {
           Add
         </Button>
       </p>
+      <p>
+        <label>
+          <input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} /> dry-run
+          (default)
+        </label>{' '}
+        <label>
+          <input type="checkbox" checked={syncRepos} onChange={(e) => setSyncRepos(e.target.checked)} /> sync
+          repos
+        </label>
+      </p>
       <table className="admin-table">
         <thead>
           <tr>
@@ -311,7 +454,7 @@ function TargetsTab({ origin }: { origin: string }) {
               <td>{t.id}</td>
               <td>{t.kind}</td>
               <td>
-                <Button size="mini" onClick={() => start(t.id)}>
+                <Button size="mini" onClick={() => start(t.id, t.kind)}>
                   Start now
                 </Button>
                 <Button size="mini" onClick={() => del(t.id)}>
@@ -328,24 +471,40 @@ function TargetsTab({ origin }: { origin: string }) {
 
 function ConfigTab({ origin }: { origin: string }) {
   const [rows, setRows] = useState<any[]>([]);
+  const [instructions, setInstructions] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`${origin}/admin/config`)
       .then((res) => res.json())
-      .then((body) => setRows(body.config || []))
+      .then((body) => {
+        setRows(body.config || []);
+        setInstructions(body.restart_instructions || '');
+      })
       .catch(() => setMsg('failed to load config'));
   }, [origin]);
+
+  const copyRow = async (row: any) => {
+    const line = `${row.key}=${row.value ?? ''}`;
+    try {
+      await navigator.clipboard.writeText(line);
+      setMsg(`Copied ${row.key}`);
+    } catch {
+      setMsg(line);
+    }
+  };
 
   return (
     <div>
       {msg && <Message>{msg}</Message>}
+      {instructions && <p className="admin-help">{instructions}</p>}
       <table className="admin-table">
         <thead>
           <tr>
             <th>Key</th>
             <th>Value</th>
             <th>Help</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -358,6 +517,13 @@ function ConfigTab({ origin }: { origin: string }) {
                 <a href={row.help_url} target="_blank" rel="noreferrer">
                   docs
                 </a>
+              </td>
+              <td>
+                {!row.secret && (
+                  <Button size="mini" onClick={() => copyRow(row)}>
+                    Copy
+                  </Button>
+                )}
               </td>
             </tr>
           ))}
@@ -388,6 +554,17 @@ function AgentTab({ origin }: { origin: string }) {
         {String(status.writes_cre_graph)}
       </p>
       <p>Agent DB configured: {String(status.db_configured)}</p>
+      <p>DB path: {status.db_path || '—'}</p>
+      <p>Last sync: {status.last_sync || '—'}</p>
+      <p>Counts: {status.counts ? JSON.stringify(status.counts) : '—'}</p>
+      {(status.params || []).map((p: any) => (
+        <p key={p.key} className="admin-help" title={p.help_text}>
+          {p.key}={p.value || '—'}{' '}
+          <a href={p.help_url} target="_blank" rel="noreferrer">
+            docs
+          </a>
+        </p>
+      ))}
       <p className="admin-help">
         <a href={status.help_url} target="_blank" rel="noreferrer">
           Agent README
