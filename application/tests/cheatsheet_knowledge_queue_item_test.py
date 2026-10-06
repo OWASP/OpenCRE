@@ -67,7 +67,9 @@ class TestKnowledgeQueueItemFromCheatsheetRecord(unittest.TestCase):
         self.assertEqual(item.content_hash, compute_content_hash(item.text))
         self.assertEqual(item.pipeline_run_id, RUN_ID)
         self.assertEqual(item.schema_version, SCHEMA_VERSION)
-        self.assertEqual(item.source_type, SourceType.url)  # preserves upstream provenance
+        self.assertEqual(
+            item.source_type, SourceType.url
+        )  # preserves upstream provenance
         self.assertIsNone(item.source_repo)
         self.assertIsNone(item.source_commit_sha)
         self.assertEqual(

@@ -3,6 +3,7 @@
 Uses the merged CheatsheetRecord -> Section adapter and produces rows matching
 the Module B knowledge_queue contract.
 """
+
 from __future__ import annotations
 
 import json
