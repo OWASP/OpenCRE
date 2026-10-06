@@ -88,6 +88,12 @@ class TestAdminPanel(unittest.TestCase):
             self.assertEqual(body["latest_strip"][0]["state"], "current")
             self.assertEqual(body["oie"]["knowledge"], [])
 
+    def test_import_strip_marks_apply_failed(self) -> None:
+        strip = service.import_stage_strip("apply_failed")
+        self.assertEqual(strip[-1]["id"], "applied")
+        self.assertEqual(strip[-1]["state"], "failed")
+        self.assertTrue(all(step["state"] == "done" for step in strip[:-1]))
+
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_targets_crud_and_start_and_drop(self) -> None:
         with self.app.test_client() as c:

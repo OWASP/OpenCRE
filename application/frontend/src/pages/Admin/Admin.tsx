@@ -409,6 +409,10 @@ function GraphManagementTab({ origin }: { origin: string }) {
       {Array.isArray(detail?.warnings) && detail.warnings.length > 0 && (
         <Message warning>{detail.warnings.join(' ')}</Message>
       )}
+      <p className="admin-help">
+        Approve, deny, or relink each proposed CRE link on a run. Decisions are stored on the staged
+        changeset. Apply still writes standard node fields; CRE edge apply is follow-on.
+      </p>
       <table className="admin-table">
         <thead>
           <tr>
@@ -795,13 +799,23 @@ function ConfigTab({ origin }: { origin: string }) {
         setError(body.description || body.error || res.statusText);
         return;
       }
+      const saved = await fetch(`${origin}/admin/repos.yaml`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ yaml: body.yaml }),
+      });
+      const savedBody = await readJson(saved);
+      if (!saved.ok) {
+        setError(savedBody.description || savedBody.error || saved.statusText);
+        return;
+      }
       setError(null);
-      if (typeof body.yaml === 'string') setYamlText(body.yaml);
-      if (typeof body.source === 'string') setYamlSource(body.source);
+      setYamlText(savedBody.yaml ?? body.yaml);
+      setYamlSource(savedBody.source || body.source || '');
       const added = Number(body.added || 0);
       setNotice(
         added
-          ? `Added source ${body.source_url || org.trim()}. Indexer expands it on ingest.`
+          ? `Saved source ${body.source_url || org.trim()}. Indexer expands it on ingest.`
           : `Source ${body.source_url || org.trim()} is already in the yaml`
       );
     } catch (err) {
@@ -864,8 +878,8 @@ function ConfigTab({ origin }: { origin: string }) {
       <h3>targets.yaml</h3>
       <p className="admin-help">
         Packaged harvester file (<code>repos.yaml</code>). Each source/repo can set a 5-field cron for how
-        often ingest runs. Save and Add org probe GitHub immediately. Add target opens a form for owner,
-        paths, chunking, and cron.
+        often ingest runs. Add org and Add target probe GitHub, then save the packaged file. You can still
+        edit the yaml and click Save repos.yaml.
       </p>
       <p>
         Source: <code>{yamlSource || 'repos.yaml:&lt;hash&gt;'}</code>

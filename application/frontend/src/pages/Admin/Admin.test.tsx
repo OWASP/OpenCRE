@@ -426,7 +426,7 @@ describe('Admin', () => {
     expect(savedBody.yaml).toContain('custom');
     fireEvent.change(getByPlaceholderText('GitHub org'), { target: { value: 'OWASP' } });
     fireEvent.click(getByText('Add org'));
-    expect(await findByText(/Added source github.com\/OWASP/)).toBeTruthy();
+    expect(await findByText(/Saved source github.com\/OWASP/)).toBeTruthy();
     expect(expandBody.owner).toBe('OWASP');
   });
 
