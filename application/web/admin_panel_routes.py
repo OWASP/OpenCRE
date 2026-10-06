@@ -35,6 +35,30 @@ def register_admin_panel_routes(
             logger.exception("agent status failed")
             return _err(500, f"agent status failed: {exc}")
 
+    @bp.route("/admin/agent/sync", methods=["POST"])
+    @login_required
+    @imports_enabled
+    def admin_agent_sync() -> Any:
+        body = request.get_json(silent=True) or {}
+        skip_nest = body.get("skip_nest")
+        if skip_nest is not None:
+            skip_nest = bool(skip_nest)
+        wait = bool(body["wait"]) if "wait" in body else None
+        try:
+            return jsonify(
+                service.start_agent_sync(
+                    skip_nest=skip_nest,
+                    skip_github=bool(body.get("skip_github", False)),
+                    auto_concepts=bool(body.get("auto_concepts", True)),
+                    wait=wait,
+                )
+            )
+        except ValueError as exc:
+            return _err(400, _exc_message(exc))
+        except Exception as exc:
+            logger.exception("agent sync failed")
+            return _err(500, f"agent sync failed: {exc}")
+
     @bp.route("/admin/config", methods=["GET"])
     @login_required
     @imports_enabled

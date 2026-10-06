@@ -328,8 +328,8 @@ function GraphManagementTab({ origin }: { origin: string }) {
         typeof body.applied_ops === 'number'
           ? ` applied_ops=${body.applied_ops} skipped=${body.skipped_ops ?? 0}`
           : typeof body.operation_count === 'number'
-            ? ` operations=${body.operation_count}`
-            : '';
+          ? ` operations=${body.operation_count}`
+          : '';
       setNotice(`${path.split('?')[0]} → ${status || 'ok'}${ops}`);
       setDetail(body);
       load();
@@ -454,9 +454,8 @@ function GraphManagementTab({ origin }: { origin: string }) {
       )}
       <p className="admin-help">
         Approve, deny, or relink each proposed CRE link on a run. Decisions are stored on the staged
-        changeset. OIE harvest runs often have an empty CRE changeset (chunks live in harvest_input);
-        Accept still marks review status. Apply writes standard node fields; CRE edge apply is
-        follow-on.
+        changeset. OIE harvest runs often have an empty CRE changeset (chunks live in harvest_input); Accept
+        still marks review status. Apply writes standard node fields; CRE edge apply is follow-on.
       </p>
       <table className="admin-table">
         <thead>
@@ -493,11 +492,7 @@ function GraphManagementTab({ origin }: { origin: string }) {
                   >
                     Accept
                   </Button>
-                  <Button
-                    size="mini"
-                    disabled={!!rowBusy || terminal}
-                    onClick={() => act(run.id, 'discard')}
-                  >
+                  <Button size="mini" disabled={!!rowBusy || terminal} onClick={() => act(run.id, 'discard')}>
                     Discard
                   </Button>
                   <Button
@@ -507,11 +502,7 @@ function GraphManagementTab({ origin }: { origin: string }) {
                   >
                     Dry-run
                   </Button>
-                  <Button
-                    size="mini"
-                    disabled={!!rowBusy}
-                    onClick={() => act(run.id, 'impact', 'GET')}
-                  >
+                  <Button size="mini" disabled={!!rowBusy} onClick={() => act(run.id, 'impact', 'GET')}>
                     Impact
                   </Button>
                 </td>
@@ -721,10 +712,10 @@ function PipelineTab({ origin }: { origin: string }) {
       </ol>
       <h3>Stage logs</h3>
       <p className="admin-help">
-        Look for <code>oie</code>/<code>started</code> (flags + skip_reason) and{' '}
-        <code>oie_trace</code> (engine, graph_path, visited). Skipped B/C means the run
-        passed <code>skip_b/skip_c</code> (admin default). Module A with chunks=0 usually
-        means harvester checkpoints were already at HEAD (no file diffs).
+        Look for <code>oie</code>/<code>started</code> (flags + skip_reason) and <code>oie_trace</code>{' '}
+        (engine, graph_path, visited). Skipped B/C means the run passed <code>skip_b/skip_c</code> (admin
+        default). Module A with chunks=0 usually means harvester checkpoints were already at HEAD (no file
+        diffs).
       </p>
       <table className="admin-table">
         <thead>
@@ -799,6 +790,8 @@ function ConfigTab({ origin }: { origin: string }) {
   const [orgCron, setOrgCron] = useState('0 2 * * *');
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<RepoForm>(emptyRepo());
+  const [agent, setAgent] = useState<any>(null);
+  const [busy, setBusy] = useState<string | null>(null);
 
   const loadYaml = useCallback(() => {
     let cancelled = false;
@@ -818,8 +811,25 @@ function ConfigTab({ origin }: { origin: string }) {
     };
   }, [origin]);
 
+  const loadAgent = useCallback(() => {
+    let cancelled = false;
+    fetch(`${origin}/admin/agent/status`)
+      .then(async (res) => {
+        const body = await readJson(res);
+        if (!res.ok) throw new Error(body.description || body.error || res.statusText);
+        if (!cancelled) setAgent(body);
+      })
+      .catch(() => {
+        if (!cancelled) setAgent(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [origin]);
+
   useEffect(() => {
     const cancelYaml = loadYaml();
+    const cancelAgent = loadAgent();
     let cancelled = false;
     fetch(`${origin}/admin/config`)
       .then(async (res) => {
@@ -834,9 +844,63 @@ function ConfigTab({ origin }: { origin: string }) {
       });
     return () => {
       cancelYaml();
+      cancelAgent();
       cancelled = true;
     };
-  }, [origin, loadYaml]);
+  }, [origin, loadYaml, loadAgent]);
+
+  const runGoldenHarvest = async () => {
+    setError(null);
+    setNotice(null);
+    setBusy('golden');
+    try {
+      const res = await fetch(`${origin}/admin/ingest/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packaged: true }),
+      });
+      const body = await readJson(res);
+      if (!res.ok) {
+        setError(body.description || body.error || res.statusText);
+        return;
+      }
+      setNotice(
+        `Golden-set harvest started (${body.source})${body.async ? ' — watch Pipeline for stage logs' : ''}`
+      );
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const runAgentSync = async () => {
+    setError(null);
+    setNotice(null);
+    setBusy('agent');
+    try {
+      const res = await fetch(`${origin}/admin/agent/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ auto_concepts: true }),
+      });
+      const body = await readJson(res);
+      if (!res.ok) {
+        setError(body.description || body.error || res.statusText);
+        return;
+      }
+      setNotice(
+        `OWASP agent sync started (run ${String(body.run_id || '').slice(0, 8)}…)` +
+          `${body.async ? ' — watch Pipeline for agent_sync events' : ''}` +
+          `${body.skip_nest ? ' (Nest skipped — no NEST_API_KEY)' : ''}`
+      );
+      loadAgent();
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const saveYaml = async () => {
     try {
@@ -946,16 +1010,35 @@ function ConfigTab({ origin }: { origin: string }) {
     }
   };
 
+  const counts = agent?.counts || {};
   return (
     <div>
       {error && <Message negative>{error}</Message>}
       {notice && <Message>{notice}</Message>}
       {msg && <Message>{msg}</Message>}
+      <h3>End-to-end bootstrap</h3>
+      <p className="admin-help">
+        CRE explorer graph comes from upstream at <code>make install</code> / <code>make dev</code> (skip with{' '}
+        <code>SKIP_UPSTREAM_SYNC=1</code>). Use these buttons to run the golden-set OIE harvest and OWASP
+        agent metadata sync yourself — progress shows under Pipeline.
+      </p>
+      <p>
+        OWASP agent: enabled={String(agent?.enabled ?? '…')} · db={agent?.db_url || '—'}
+        {agent?.last_sync ? ` · last_sync=${agent.last_sync}` : ''}
+        {counts && Object.keys(counts).length ? ` · rows=${JSON.stringify(counts)}` : ''}
+      </p>
+      <p>
+        <Button primary size="mini" disabled={!!busy} onClick={runGoldenHarvest}>
+          {busy === 'golden' ? 'Starting…' : 'Run golden-set harvest'}
+        </Button>{' '}
+        <Button size="mini" disabled={!!busy || agent?.enabled === false} onClick={runAgentSync}>
+          {busy === 'agent' ? 'Starting…' : 'Sync OWASP agent'}
+        </Button>
+      </p>
       <h3>targets.yaml</h3>
       <p className="admin-help">
-        Packaged harvester file (<code>repos.yaml</code>). Each source/repo can set a 5-field cron for how
-        often ingest runs. Add org and Add target probe GitHub, then save the packaged file. You can still
-        edit the yaml and click Save repos.yaml.
+        Packaged harvester file (<code>repos.yaml</code>) — the golden-set list used by Run golden-set
+        harvest. Each source/repo can set a 5-field cron. Add org and Add target probe GitHub, then save.
       </p>
       <p>
         Source: <code>{yamlSource || 'repos.yaml:&lt;hash&gt;'}</code>

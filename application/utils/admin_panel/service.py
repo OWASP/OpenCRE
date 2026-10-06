@@ -474,6 +474,141 @@ def agent_resource() -> Dict[str, Any]:
     }
 
 
+def _run_agent_sync_job(
+    run_id: str,
+    *,
+    skip_nest: bool,
+    skip_github: bool,
+    auto_concepts: bool,
+) -> Dict[str, Any]:
+    from application.utils.owasp_agent.concepts import auto_concepts_from_index
+    from application.utils.owasp_agent.index_store import IndexStore
+    from application.utils.owasp_agent.sync import sync_all
+
+    store = IndexStore()
+    report = sync_all(
+        store=store,
+        skip_nest=skip_nest,
+        skip_github=skip_github,
+    )
+    concept_actions: List[Dict[str, str]] = []
+    if auto_concepts and (report.nest_ok or report.github_ok):
+        concept_actions = [
+            {"action": a.action, "key": a.concept_key, "detail": a.detail}
+            for a in auto_concepts_from_index(store)
+        ]
+    summary = report.to_dict()
+    summary["concepts"] = len(concept_actions)
+    summary["skip_nest"] = skip_nest
+    summary["skip_github"] = skip_github
+    if not (report.nest_ok or report.github_ok):
+        status = "error"
+    elif report.errors:
+        status = "degraded"
+    else:
+        status = "ok"
+    detail = json.dumps(summary)[:2000]
+    append_event(run_id, "agent_sync", status, detail)
+    if status != "error":
+        cs = db.get_staged_change_set(run_id=run_id)
+        if cs is not None:
+            cs.staging_status = "accepted"
+            sqla.session.commit()
+    return {"status": status, "sync": summary, "concepts": concept_actions}
+
+
+def start_agent_sync(
+    *,
+    skip_nest: Optional[bool] = None,
+    skip_github: bool = False,
+    auto_concepts: bool = True,
+    wait: Optional[bool] = None,
+) -> Dict[str, Any]:
+    """Sync Nest/GitHub OWASP metadata into the main Postgres agent index.
+
+    Creates an import run so progress shows under Admin → Pipeline. Skips Nest
+    by default when ``NEST_API_KEY`` is unset (GitHub-only sync still runs).
+    """
+    raw_db, _db_env_key = _main_db_url()
+    if not raw_db or not is_postgres_url(raw_db):
+        raise ValueError(
+            "OWASP agent sync needs a Postgres main DB "
+            "(set DEV_DATABASE_URL / DATABASE_URL)"
+        )
+    if skip_nest is None:
+        skip_nest = not bool((os.getenv("NEST_API_KEY") or "").strip())
+
+    run = db.create_import_run(source="owasp-agent-sync", version="admin-agent-sync")
+    db.persist_staged_change_set(
+        run_id=run.id,
+        changeset_json=import_diff.change_set_to_json([]),
+        staging_status="pending_review",
+    )
+    append_event(
+        run.id,
+        "queued",
+        "ok",
+        json.dumps(
+            {
+                "skip_nest": skip_nest,
+                "skip_github": skip_github,
+                "auto_concepts": auto_concepts,
+            }
+        )[:2000],
+    )
+    append_event(run.id, "agent_sync", "started", "Nest/GitHub metadata sync")
+
+    testing = (
+        bool(has_app_context() and current_app.config.get("TESTING"))
+        or (os.getenv("ADMIN_AGENT_SYNC") or "").strip().lower() in TRUE_VALUES
+    )
+    run_sync = testing if wait is None else bool(wait)
+    job_kwargs = dict(
+        skip_nest=bool(skip_nest),
+        skip_github=bool(skip_github),
+        auto_concepts=bool(auto_concepts),
+    )
+    sync_result: Optional[Dict[str, Any]] = None
+    async_job = False
+    if run_sync:
+        try:
+            sync_result = _run_agent_sync_job(run.id, **job_kwargs)
+        except Exception as exc:
+            logger.exception("agent sync failed")
+            append_event(run.id, "agent_sync", "error", str(exc)[:2000])
+            raise
+    else:
+        app = current_app._get_current_object()
+        run_id = run.id
+
+        def _worker() -> None:
+            with app.app_context():
+                try:
+                    _run_agent_sync_job(run_id, **job_kwargs)
+                except Exception as exc:
+                    logger.exception("async agent sync failed")
+                    try:
+                        append_event(run_id, "agent_sync", "error", str(exc)[:2000])
+                    except Exception:
+                        logger.exception("failed to record agent sync error event")
+
+        threading.Thread(
+            target=_worker, daemon=True, name=f"admin-agent-{run.id}"
+        ).start()
+        async_job = True
+        sync_result = {"async": True, "started": True}
+
+    return {
+        "run_id": run.id,
+        "source": "owasp-agent-sync",
+        "async": async_job,
+        "skip_nest": bool(skip_nest),
+        "skip_github": bool(skip_github),
+        "auto_concepts": bool(auto_concepts),
+        "result": sync_result,
+    }
+
+
 def list_targets() -> List[Dict[str, Any]]:
     seed_targets_from_yaml_if_empty()
     rows = (
