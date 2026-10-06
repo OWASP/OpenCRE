@@ -1,14 +1,36 @@
+import hashlib
 import json
 import os
 import tempfile
 import unittest
+import urllib.error
 from pathlib import Path
+from typing import Optional
 from unittest.mock import patch
 
 from application import create_app, sqla
 from application.database import db
 from application.utils.admin_panel import config_catalog, service
 from application.utils import import_diff
+
+MINIMAL_REPOS_YAML = """repositories:
+  - id: owasp-asvs
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: ASVS
+    branch: master
+    paths:
+      include:
+        - "**/*.md"
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1200
+      overlap_tokens: 100
+    polling:
+      mode: incremental
+      interval_minutes: 60
+"""
 
 
 class TestAdminPanel(unittest.TestCase):
@@ -492,7 +514,10 @@ class TestAdminPanel(unittest.TestCase):
                 self.assertEqual(r.status_code, 201)
                 r = c.post("/admin/ingest/start", json={"target_id": "repo1"})
                 self.assertEqual(r.status_code, 200)
-                mock_oie.assert_called_once_with(r.get_json()["run_id"])
+                mock_oie.assert_called_once_with(
+                    r.get_json()["run_id"],
+                    repos_yaml=str(service.REPOS_YAML),
+                )
                 pipe = c.get("/admin/pipeline").get_json()
                 stages = {e["stage"] for e in pipe["events"]}
                 self.assertIn("module_a_harvester", stages)
@@ -507,7 +532,10 @@ class TestAdminPanel(unittest.TestCase):
                     },
                 )
                 self.assertEqual(r.status_code, 200)
-                mock_oie.assert_called_with(r.get_json()["run_id"])
+                mock_oie.assert_called_with(
+                    r.get_json()["run_id"],
+                    repos_yaml=str(service.REPOS_YAML),
+                )
 
             with self.app.test_client() as c:
                 c.post(
@@ -573,6 +601,25 @@ class TestAdminPanel(unittest.TestCase):
         self.assertIn("--no-sync-repos", argv)
         self.assertIn("sqlite://", argv)
         self.assertTrue(str(argv[1]).endswith("run_oie_pipeline.py"))
+        self.assertNotIn("--repos_yaml", argv)
+
+    def test_invoke_oie_cli_passes_repos_yaml(self) -> None:
+        proc = type(
+            "P",
+            (),
+            {
+                "stdout": '{"ok": true, "run_id": "run-1", "stages": []}',
+                "stderr": "",
+                "returncode": 0,
+            },
+        )()
+        with patch(
+            "application.utils.admin_panel.service.subprocess.run", return_value=proc
+        ) as mock_run:
+            service.invoke_oie_cli("run-1", repos_yaml="/tmp/custom.yaml")
+        argv = mock_run.call_args.args[0]
+        self.assertIn("--repos_yaml", argv)
+        self.assertIn("/tmp/custom.yaml", argv)
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_oie_failure_is_logged_as_error(self) -> None:
@@ -590,6 +637,200 @@ class TestAdminPanel(unittest.TestCase):
                 pipe = c.get("/admin/pipeline").get_json()
                 oie_events = [e for e in pipe["events"] if e["stage"] == "oie"]
                 self.assertTrue(any(e["status"] == "error" for e in oie_events))
+
+    def test_repos_yaml_source_name(self) -> None:
+        digest = hashlib.sha256(b"hello").hexdigest()[:12]
+        self.assertEqual(service.repos_yaml_source_name("Nightly", "hello"), "Nightly")
+        self.assertEqual(
+            service.repos_yaml_source_name("  ", "hello"), f"repos.yaml:{digest}"
+        )
+        self.assertEqual(
+            service.repos_yaml_source_name(None, "hello"), f"repos.yaml:{digest}"
+        )
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_repos_yaml_get_put_and_invalid(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "repos.yaml"
+            path.write_text(MINIMAL_REPOS_YAML, encoding="utf-8")
+            with patch.object(service, "REPOS_YAML", path):
+                with self.app.test_client() as c:
+                    r = c.get("/admin/repos.yaml")
+                    self.assertEqual(r.status_code, 200)
+                    body = r.get_json()
+                    self.assertEqual(body["yaml"], MINIMAL_REPOS_YAML)
+                    self.assertEqual(
+                        body["source"],
+                        service.repos_yaml_source_name(None, MINIMAL_REPOS_YAML),
+                    )
+                    r = c.put("/admin/repos.yaml", json={})
+                    self.assertEqual(r.status_code, 400)
+                    r = c.put("/admin/repos.yaml", json={"yaml": "repositories: ["})
+                    self.assertEqual(r.status_code, 400)
+                    self.assertIn(
+                        "invalid YAML", (r.get_json() or {}).get("description", "")
+                    )
+                    r = c.put("/admin/repos.yaml", json={"yaml": "repositories: []"})
+                    self.assertEqual(r.status_code, 400)
+                    updated = MINIMAL_REPOS_YAML.replace("owasp-asvs", "owasp-asvs-2")
+                    r = c.put("/admin/repos.yaml", json={"yaml": updated})
+                    self.assertEqual(r.status_code, 200)
+                    self.assertTrue(r.get_json()["saved"])
+                    self.assertEqual(path.read_text(encoding="utf-8"), updated)
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_expand_org_adds_skips_forks_and_existing(self) -> None:
+        payload = [
+            {
+                "name": "ASVS",
+                "fork": False,
+                "archived": False,
+                "default_branch": "master",
+                "owner": {"login": "OWASP"},
+            },
+            {
+                "name": "CheatSheetSeries",
+                "fork": False,
+                "archived": False,
+                "default_branch": "master",
+                "owner": {"login": "OWASP"},
+            },
+            {
+                "name": "forked-tool",
+                "fork": True,
+                "archived": False,
+                "default_branch": "main",
+                "owner": {"login": "OWASP"},
+            },
+            {
+                "name": "old-repo",
+                "fork": False,
+                "archived": True,
+                "default_branch": "main",
+                "owner": {"login": "OWASP"},
+            },
+        ]
+
+        class _Resp:
+            def read(self) -> bytes:
+                return json.dumps(payload).encode("utf-8")
+
+            def __enter__(self) -> "_Resp":
+                return self
+
+            def __exit__(self, *args: object) -> None:
+                return None
+
+        with patch(
+            "application.utils.admin_panel.service.urllib.request.urlopen",
+            return_value=_Resp(),
+        ):
+            with self.app.test_client() as c:
+                r = c.post("/admin/repos.yaml/expand-org", json={"owner": ""})
+                self.assertEqual(r.status_code, 400)
+                r = c.post(
+                    "/admin/repos.yaml/expand-org",
+                    json={"yaml": MINIMAL_REPOS_YAML, "owner": "OWASP"},
+                )
+                self.assertEqual(r.status_code, 200)
+                body = r.get_json()
+                self.assertEqual(body["added"], 1)
+                self.assertGreaterEqual(body["skipped"], 3)
+                self.assertIn("CheatSheetSeries", body["yaml"])
+                self.assertNotIn("forked-tool", body["yaml"])
+                self.assertNotIn("old-repo", body["yaml"])
+                self.assertTrue(body["source"].startswith("repos.yaml:"))
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_expand_org_not_found(self) -> None:
+        def _raise(req: object, timeout: int = 20) -> None:
+            url = getattr(req, "full_url", "https://api.github.com")
+            raise urllib.error.HTTPError(url, 404, "Not Found", hdrs=None, fp=None)
+
+        with patch(
+            "application.utils.admin_panel.service.urllib.request.urlopen",
+            side_effect=_raise,
+        ):
+            with self.app.test_client() as c:
+                r = c.post(
+                    "/admin/repos.yaml/expand-org",
+                    json={"yaml": MINIMAL_REPOS_YAML, "org": "missing-org"},
+                )
+                self.assertEqual(r.status_code, 400)
+                self.assertIn("not found", (r.get_json() or {}).get("description", ""))
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_one_off_yaml_uses_custom_name_or_hash_without_overwriting(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            packaged = Path(tmp) / "repos.yaml"
+            packaged.write_text(MINIMAL_REPOS_YAML, encoding="utf-8")
+            seen: dict = {}
+
+            def _capture(run_id: str, repos_yaml: Optional[str] = None) -> dict:
+                seen["run_id"] = run_id
+                seen["repos_yaml"] = repos_yaml
+                if repos_yaml:
+                    seen["text"] = Path(repos_yaml).read_text(encoding="utf-8")
+                return {"ok": True, "stages": []}
+
+            one_off = MINIMAL_REPOS_YAML.replace("owasp-asvs", "one-off-asvs")
+            with patch.object(service, "REPOS_YAML", packaged):
+                with patch(
+                    "application.utils.admin_panel.service.invoke_oie_cli",
+                    side_effect=_capture,
+                ):
+                    with self.app.test_client() as c:
+                        r = c.post("/admin/ingest/start", json={"yaml": "nope: ["})
+                        self.assertEqual(r.status_code, 400)
+                        r = c.post(
+                            "/admin/ingest/start",
+                            json={"yaml": one_off, "name": "nightly-asvs"},
+                        )
+                        self.assertEqual(r.status_code, 200)
+                        self.assertEqual(r.get_json()["source"], "nightly-asvs")
+                        self.assertEqual(seen["text"], one_off)
+                        self.assertFalse(Path(seen["repos_yaml"]).exists())
+                        self.assertEqual(
+                            packaged.read_text(encoding="utf-8"), MINIMAL_REPOS_YAML
+                        )
+
+                        r = c.post("/admin/ingest/start", json={"yaml": one_off})
+                        self.assertEqual(r.status_code, 200)
+                        expected = service.repos_yaml_source_name(None, one_off)
+                        self.assertEqual(r.get_json()["source"], expected)
+                        pipe = c.get("/admin/pipeline").get_json()
+                        sources = [row["source"] for row in pipe["import_runs"]]
+                        self.assertIn("nightly-asvs", sources)
+                        self.assertIn(expected, sources)
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_oie_repo_start_source_is_yaml_hash_or_name(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            packaged = Path(tmp) / "repos.yaml"
+            packaged.write_text(MINIMAL_REPOS_YAML, encoding="utf-8")
+            with patch.object(service, "REPOS_YAML", packaged):
+                with patch(
+                    "application.utils.admin_panel.service.invoke_oie_cli",
+                    return_value={"ok": True, "stages": []},
+                ):
+                    with self.app.test_client() as c:
+                        c.post(
+                            "/admin/targets",
+                            json={"id": "repo-hash", "kind": "oie_repo"},
+                        )
+                        r = c.post(
+                            "/admin/ingest/start", json={"target_id": "repo-hash"}
+                        )
+                        self.assertEqual(r.status_code, 200)
+                        self.assertEqual(
+                            r.get_json()["source"],
+                            service.repos_yaml_source_name(None, MINIMAL_REPOS_YAML),
+                        )
+                        r = c.post(
+                            "/admin/ingest/start",
+                            json={"target_id": "repo-hash", "name": "custom-oie"},
+                        )
+                        self.assertEqual(r.get_json()["source"], "custom-oie")
 
     def test_anonymous_json_gets_401(self) -> None:
         with patch.dict(
