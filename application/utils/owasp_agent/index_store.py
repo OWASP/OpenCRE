@@ -1,8 +1,8 @@
-"""Local OWASP metadata index (separate from the CRE graph).
+"""Local OWASP metadata index (tables alongside the CRE graph).
 
-Backed by SQLAlchemy Core so the same code runs on Postgres (the real target,
-``OWASP_AGENT_DB`` set to a ``postgresql://`` URL) and on a throwaway SQLite
-file (tests and quick local poking, ``OWASP_AGENT_DB`` set to a path).
+Backed by SQLAlchemy Core on the main app Postgres
+(``DATABASE_URL`` / ``DEV_DATABASE_URL``). Tests may pass a SQLite path or set
+``OWASP_AGENT_DB`` as an override.
 """
 
 from __future__ import annotations
@@ -77,9 +77,21 @@ _concept_merge_audit = sa.Table(
 
 
 def default_db_path() -> str:
-    return os.environ.get(
-        "OWASP_AGENT_DB",
-        os.path.join(os.getcwd(), "tmp", "owasp_agent.sqlite"),
+    override = (os.environ.get("OWASP_AGENT_DB") or "").strip()
+    if override:
+        return override
+    for key in (
+        "DATABASE_URL",
+        "DEV_DATABASE_URL",
+        "PROD_DATABASE_URL",
+        "SQLALCHEMY_DATABASE_URI",
+    ):
+        raw = (os.environ.get(key) or "").strip()
+        if raw:
+            return raw
+    raise RuntimeError(
+        "OWASP agent index needs DATABASE_URL (or DEV_DATABASE_URL); "
+        "no separate agent database"
     )
 
 

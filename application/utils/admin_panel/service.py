@@ -13,11 +13,8 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
-import threading
 import uuid
 from typing import Any, Dict, List, Optional
-
-from flask import current_app, has_app_context
 
 import yaml
 from pydantic import ValidationError
@@ -38,11 +35,6 @@ from application.utils.harvester.repos_validator import (
     validate_repositories,
 )
 from application.utils.harvester.schemas import ReposFile, validate_cron_line
-from application.utils.owasp_agent.index_store import app_db_url_and_key
-from application.utils.postgres_url import (
-    is_postgres_url,
-    sqlalchemy_postgres_url,
-)
 
 REPOS_YAML = Path(__file__).resolve().parents[1] / "harvester" / "repos.yaml"
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -336,34 +328,43 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _is_postgres_url(value: str) -> bool:
+    lowered = value.strip().lower()
+    return lowered.startswith("postgresql://") or lowered.startswith("postgres://")
+
+
+def _normalize_postgres_url(value: str) -> str:
+    raw = value.strip()
+    if raw.lower().startswith("postgres://"):
+        return "postgresql://" + raw.split("://", 1)[1]
+    return raw
+
+
 def _main_db_url() -> tuple[Optional[str], Optional[str]]:
     """Return (raw_url, env_key) for the app's main database."""
-    return app_db_url_and_key()
-
-
-def _oie_cache_file() -> str:
-    """Postgres URL for the admin OIE child (never sqlite)."""
-    raw, key = _main_db_url()
-    if not raw or not is_postgres_url(raw):
-        raise RuntimeError(
-            "Admin OIE requires Postgres (set DEV_DATABASE_URL or run "
-            "`make admin-local` to start cre-postgres). "
-            f"current={key or 'unset'}"
-        )
-    return sqlalchemy_postgres_url(raw)
+    for key in (
+        "DATABASE_URL",
+        "DEV_DATABASE_URL",
+        "PROD_DATABASE_URL",
+        "SQLALCHEMY_DATABASE_URI",
+    ):
+        raw = (os.getenv(key) or "").strip()
+        if raw:
+            return raw, key
+    return None, None
 
 
 def _agent_db_stats(db_url: Optional[str]) -> Dict[str, Any]:
     out: Dict[str, Any] = {"db_exists": False, "counts": None, "last_sync": None}
     if not db_url:
         return out
-    if not is_postgres_url(db_url):
+    if not _is_postgres_url(db_url):
         logger.warning("main app DB is not a Postgres URL; ignoring %r", db_url)
         return out
     engine = None
     try:
         engine = create_engine(
-            sqlalchemy_postgres_url(db_url),
+            _normalize_postgres_url(db_url),
             pool_pre_ping=True,
             connect_args={"connect_timeout": 2},
         )
@@ -379,21 +380,13 @@ def _agent_db_stats(db_url: Optional[str]) -> Dict[str, Any]:
                 ).fetchall()
             ]
             counts: Dict[str, int] = {}
-            for name in names:
+            for name in names[:20]:
                 if not name.replace("_", "").isalnum():
                     continue
                 counts[name] = int(
                     conn.execute(text(f'SELECT COUNT(*) FROM "{name}"')).scalar() or 0
                 )
             out["counts"] = counts
-            if "meta_entity" in names:
-                last = conn.execute(
-                    text("SELECT MAX(fetched_at) FROM meta_entity")
-                ).scalar()
-                if last is not None:
-                    out["last_sync"] = (
-                        last.isoformat() if hasattr(last, "isoformat") else str(last)
-                    )
     except Exception:
         logger.warning("main app Postgres probe failed")
         return {"db_exists": False, "counts": None, "last_sync": None}
@@ -406,7 +399,7 @@ def _agent_db_stats(db_url: Optional[str]) -> Dict[str, Any]:
 def agent_status() -> Dict[str, Any]:
     enabled = os.getenv("OWASP_AGENT_ENABLED", "").strip().lower() in TRUE_VALUES
     raw_db, db_env_key = _main_db_url()
-    db_url = raw_db if raw_db and is_postgres_url(raw_db) else None
+    db_url = raw_db if raw_db and _is_postgres_url(raw_db) else None
     if raw_db and not db_url:
         logger.warning(
             "main app DB (%s) is not a Postgres URL; agent needs Postgres", db_env_key
@@ -471,141 +464,6 @@ def agent_resource() -> Dict[str, Any]:
         "enabled": True,
         "created_at": None,
         "built_in": True,
-    }
-
-
-def _run_agent_sync_job(
-    run_id: str,
-    *,
-    skip_nest: bool,
-    skip_github: bool,
-    auto_concepts: bool,
-) -> Dict[str, Any]:
-    from application.utils.owasp_agent.concepts import auto_concepts_from_index
-    from application.utils.owasp_agent.index_store import IndexStore
-    from application.utils.owasp_agent.sync import sync_all
-
-    store = IndexStore()
-    report = sync_all(
-        store=store,
-        skip_nest=skip_nest,
-        skip_github=skip_github,
-    )
-    concept_actions: List[Dict[str, str]] = []
-    if auto_concepts and (report.nest_ok or report.github_ok):
-        concept_actions = [
-            {"action": a.action, "key": a.concept_key, "detail": a.detail}
-            for a in auto_concepts_from_index(store)
-        ]
-    summary = report.to_dict()
-    summary["concepts"] = len(concept_actions)
-    summary["skip_nest"] = skip_nest
-    summary["skip_github"] = skip_github
-    if not (report.nest_ok or report.github_ok):
-        status = "error"
-    elif report.errors:
-        status = "degraded"
-    else:
-        status = "ok"
-    detail = json.dumps(summary)[:2000]
-    append_event(run_id, "agent_sync", status, detail)
-    if status != "error":
-        cs = db.get_staged_change_set(run_id=run_id)
-        if cs is not None:
-            cs.staging_status = "accepted"
-            sqla.session.commit()
-    return {"status": status, "sync": summary, "concepts": concept_actions}
-
-
-def start_agent_sync(
-    *,
-    skip_nest: Optional[bool] = None,
-    skip_github: bool = False,
-    auto_concepts: bool = True,
-    wait: Optional[bool] = None,
-) -> Dict[str, Any]:
-    """Sync Nest/GitHub OWASP metadata into the main Postgres agent index.
-
-    Creates an import run so progress shows under Admin → Pipeline. Skips Nest
-    by default when ``NEST_API_KEY`` is unset (GitHub-only sync still runs).
-    """
-    raw_db, _db_env_key = _main_db_url()
-    if not raw_db or not is_postgres_url(raw_db):
-        raise ValueError(
-            "OWASP agent sync needs a Postgres main DB "
-            "(set DEV_DATABASE_URL / DATABASE_URL)"
-        )
-    if skip_nest is None:
-        skip_nest = not bool((os.getenv("NEST_API_KEY") or "").strip())
-
-    run = db.create_import_run(source="owasp-agent-sync", version="admin-agent-sync")
-    db.persist_staged_change_set(
-        run_id=run.id,
-        changeset_json=import_diff.change_set_to_json([]),
-        staging_status="pending_review",
-    )
-    append_event(
-        run.id,
-        "queued",
-        "ok",
-        json.dumps(
-            {
-                "skip_nest": skip_nest,
-                "skip_github": skip_github,
-                "auto_concepts": auto_concepts,
-            }
-        )[:2000],
-    )
-    append_event(run.id, "agent_sync", "started", "Nest/GitHub metadata sync")
-
-    testing = (
-        bool(has_app_context() and current_app.config.get("TESTING"))
-        or (os.getenv("ADMIN_AGENT_SYNC") or "").strip().lower() in TRUE_VALUES
-    )
-    run_sync = testing if wait is None else bool(wait)
-    job_kwargs = dict(
-        skip_nest=bool(skip_nest),
-        skip_github=bool(skip_github),
-        auto_concepts=bool(auto_concepts),
-    )
-    sync_result: Optional[Dict[str, Any]] = None
-    async_job = False
-    if run_sync:
-        try:
-            sync_result = _run_agent_sync_job(run.id, **job_kwargs)
-        except Exception as exc:
-            logger.exception("agent sync failed")
-            append_event(run.id, "agent_sync", "error", str(exc)[:2000])
-            raise
-    else:
-        app = current_app._get_current_object()
-        run_id = run.id
-
-        def _worker() -> None:
-            with app.app_context():
-                try:
-                    _run_agent_sync_job(run_id, **job_kwargs)
-                except Exception as exc:
-                    logger.exception("async agent sync failed")
-                    try:
-                        append_event(run_id, "agent_sync", "error", str(exc)[:2000])
-                    except Exception:
-                        logger.exception("failed to record agent sync error event")
-
-        threading.Thread(
-            target=_worker, daemon=True, name=f"admin-agent-{run.id}"
-        ).start()
-        async_job = True
-        sync_result = {"async": True, "started": True}
-
-    return {
-        "run_id": run.id,
-        "source": "owasp-agent-sync",
-        "async": async_job,
-        "skip_nest": bool(skip_nest),
-        "skip_github": bool(skip_github),
-        "auto_concepts": bool(auto_concepts),
-        "result": sync_result,
     }
 
 
@@ -742,93 +600,25 @@ def _subprocess_env() -> Dict[str, str]:
     return env
 
 
-# Cap packaged org expands so admin "New" does not clone the whole of GitHub.
-DEFAULT_OIE_MAX_REPOS = 5
-ADMIN_OIE_YAML_DIR = REPO_ROOT / "tmp" / "admin_oie"
-
-
-def _default_skip_bc() -> tuple[bool, bool]:
-    """Admin ingest runs Module B and C unless the client opts out.
-
-    Pass ``skip_b=True`` / ``skip_c=True`` to skip the noise filter or librarian.
-    Module C.1 (graph filer) is skipped only when ``skip_c1`` is true.
-    """
-    return False, False
-
-
-def _write_run_repos_yaml(run_id: str, yaml_text: str) -> Path:
-    ADMIN_OIE_YAML_DIR.mkdir(parents=True, exist_ok=True)
-    path = ADMIN_OIE_YAML_DIR / f"{run_id}.yaml"
-    path.write_text(yaml_text, encoding="utf-8")
-    return path
-
-
-def invoke_oie_cli(
-    run_id: str,
-    repos_yaml: Optional[str] = None,
-    *,
-    dry_run: bool = False,
-    sync_repos: bool = True,
-    max_repos: Optional[int] = DEFAULT_OIE_MAX_REPOS,
-    continue_on_error: bool = True,
-    skip_b: Optional[bool] = None,
-    skip_c: Optional[bool] = None,
-    skip_c1: Optional[bool] = None,
-    timeout: Optional[int] = None,
-) -> Dict[str, Any]:
-    """Run Module A→B→C→C.1 via the CLI against the app Postgres URL.
-
-    Defaults are live (sync + persist) so admin ingest is end-to-end. Pass
-    ``dry_run=True`` / ``sync_repos=False`` only for hermetic probes.
-    """
+def invoke_oie_cli(run_id: str, repos_yaml: Optional[str] = None) -> Dict[str, Any]:
     script = REPO_ROOT / "scripts" / "run_oie_pipeline.py"
-    cache_file = _oie_cache_file()
-    if skip_b is None or skip_c is None:
-        auto_b, auto_c = _default_skip_bc()
-        if skip_b is None:
-            skip_b = auto_b
-        if skip_c is None:
-            skip_c = auto_c
-    if skip_c1 is None:
-        skip_c1 = False
     argv = [
         sys.executable,
         str(script),
+        "--dry-run",
+        "--no-sync-repos",
         "--run_id",
         run_id,
         "--cache_file",
-        cache_file,
+        "sqlite://",
     ]
-    if dry_run:
-        argv.append("--dry-run")
-    if not sync_repos:
-        argv.append("--no-sync-repos")
-    if continue_on_error:
-        argv.append("--continue-on-error")
-    if skip_b:
-        argv.append("--skip-b")
-    if skip_c:
-        argv.append("--skip-c")
-    if skip_c1:
-        argv.append("--skip-c1")
-    if max_repos is not None and max_repos > 0:
-        argv.extend(["--max-repos", str(int(max_repos))])
     if repos_yaml:
         argv.extend(["--repos_yaml", repos_yaml])
-    # Clones need headroom; dry/no-sync probes stay short. B/C skipped → shorter.
-    if timeout is None:
-        if dry_run and not sync_repos:
-            timeout = 120
-        elif skip_b and skip_c:
-            timeout = 600
-        else:
-            # Clone + LLM for the golden set (and later the org) exceeds 30 minutes.
-            timeout = 24 * 60 * 60
     proc = subprocess.run(
         argv,
         capture_output=True,
         text=True,
-        timeout=timeout,
+        timeout=120,
         check=False,
         cwd=str(REPO_ROOT),
         env=_subprocess_env(),
@@ -839,9 +629,6 @@ def invoke_oie_cli(
         if isinstance(parsed, dict) and ("stages" in parsed or "run_id" in parsed):
             parsed["ok"] = bool(parsed.get("ok", proc.returncode == 0))
             parsed["returncode"] = proc.returncode
-            parsed["skip_b"] = bool(skip_b)
-            parsed["skip_c"] = bool(skip_c)
-            parsed["skip_c1"] = bool(skip_c1)
             return parsed
     except json.JSONDecodeError:
         pass
@@ -849,77 +636,7 @@ def invoke_oie_cli(
         "ok": proc.returncode == 0,
         "raw": ((proc.stdout or "") + (proc.stderr or ""))[-2000:],
         "returncode": proc.returncode,
-        "skip_b": bool(skip_b),
-        "skip_c": bool(skip_c),
-        "skip_c1": bool(skip_c1),
     }
-
-
-def _record_oie_result(run_id: str, oie: Dict[str, Any]) -> None:
-    oie_ok = bool(oie.get("ok", oie.get("returncode", 1) == 0))
-    append_event(
-        run_id,
-        "oie",
-        "ok" if oie_ok else "error",
-        json.dumps(oie)[:2000],
-    )
-    # Compact trace so Pipeline UI can show flags/path without parsing the blob.
-    trace = {
-        "engine": oie.get("engine"),
-        "flags": oie.get("flags"),
-        "graph_path": oie.get("graph_path"),
-        "visited": oie.get("visited"),
-        "ok": oie_ok,
-    }
-    if any(trace.values()):
-        append_event(
-            run_id, "oie_trace", "ok" if oie_ok else "error", json.dumps(trace)[:2000]
-        )
-    for stage in oie.get("stages") or []:
-        if not isinstance(stage, dict):
-            continue
-        append_event(
-            run_id,
-            str(stage.get("name") or "oie"),
-            str(stage.get("status") or "ok"),
-            str(stage.get("detail") or "")[:2000],
-        )
-
-
-def _run_oie_job(
-    run_id: str,
-    repos_yaml_path: Optional[str],
-    *,
-    dry_run: bool,
-    sync_repos: bool,
-    max_repos: Optional[int],
-    skip_b: Optional[bool],
-    skip_c: Optional[bool],
-    cleanup_yaml: bool,
-) -> Dict[str, Any]:
-    try:
-        oie = invoke_oie_cli(
-            run_id,
-            repos_yaml=repos_yaml_path,
-            dry_run=dry_run,
-            sync_repos=sync_repos,
-            max_repos=max_repos,
-            skip_b=skip_b,
-            skip_c=skip_c,
-        )
-        _record_oie_result(run_id, oie)
-        return oie
-    except Exception as exc:  # noqa: BLE001
-        append_event(run_id, "oie", "error", str(exc)[:2000])
-        return {"error": str(exc), "ok": False}
-    finally:
-        if cleanup_yaml and repos_yaml_path:
-            try:
-                path = Path(repos_yaml_path)
-                if path.resolve().is_relative_to(ADMIN_OIE_YAML_DIR.resolve()):
-                    path.unlink(missing_ok=True)
-            except OSError:
-                logger.warning("failed to remove admin oie yaml %s", repos_yaml_path)
 
 
 def _packaged_harvest_source(custom_name: str) -> tuple[str, Optional[str]]:
@@ -935,156 +652,98 @@ def start_ingestion(
     yaml_text: Optional[str] = None,
     name: Optional[str] = None,
     packaged: bool = False,
-    dry_run: bool = False,
-    sync_repos: bool = True,
-    max_repos: Optional[int] = DEFAULT_OIE_MAX_REPOS,
-    skip_b: Optional[bool] = None,
-    skip_c: Optional[bool] = None,
-    wait: Optional[bool] = None,
 ) -> Dict[str, Any]:
     custom_name = (name or "").strip()
     do_oie = False
     repos_yaml_path: Optional[str] = None
-    cleanup_yaml = False
-    one_off_yaml: Optional[str] = None
+    tmp_path: Optional[Path] = None
     stripped_target = str(target_id).strip() if target_id else ""
 
-    if yaml_text is not None:
-        data = load_repos_mapping(yaml_text)
-        probe_github_sources(data.get("sources") or [])
-        source = repos_yaml_source_name(custom_name, yaml_text)
-        one_off_yaml = yaml_text
-        do_oie = True
-    elif packaged:
-        do_oie = True
-        source, repos_yaml_path = _packaged_harvest_source(custom_name)
-    elif stripped_target:
-        if stripped_target == AGENT_RESOURCE_ID:
+    try:
+        if yaml_text is not None:
+            data = load_repos_mapping(yaml_text)
+            probe_github_sources(data.get("sources") or [])
+            source = repos_yaml_source_name(custom_name, yaml_text)
+            tmp_path = _write_temp_repos_yaml(yaml_text)
+            repos_yaml_path = str(tmp_path)
+            do_oie = True
+        elif packaged:
             do_oie = True
             source, repos_yaml_path = _packaged_harvest_source(custom_name)
-        else:
-            target = (
-                sqla.session.query(db.IngestionTarget)
-                .filter(db.IngestionTarget.id == stripped_target)
-                .first()
-            )
-            if not target:
-                raise KeyError("target not found")
-            if not target.enabled:
-                raise ValueError("target is disabled")
-            if target.kind in HARVEST_KINDS:
+        elif stripped_target:
+            if stripped_target == AGENT_RESOURCE_ID:
                 do_oie = True
                 source, repos_yaml_path = _packaged_harvest_source(custom_name)
             else:
-                source = custom_name or target.name or target.id
-    else:
-        source = custom_name or (source or "").strip()
-        if not source:
-            raise ValueError("source is required")
-
-    run = db.create_import_run(source=source, version="admin-start")
-    db.persist_staged_change_set(
-        run_id=run.id,
-        changeset_json=import_diff.change_set_to_json([]),
-        staging_status="pending_review",
-    )
-    append_event(run.id, "queued", "ok", f"source={source}")
-    oie: Optional[Dict[str, Any]] = None
-    async_job = False
-    if do_oie:
-        if one_off_yaml is not None:
-            repos_yaml_path = str(_write_run_repos_yaml(run.id, one_off_yaml))
-            cleanup_yaml = True
-        auto_b, auto_c = _default_skip_bc()
-        eff_skip_b = auto_b if skip_b is None else skip_b
-        eff_skip_c = auto_c if skip_c is None else skip_c
-        skip_reason = (
-            "admin_default_skip_bc"
-            if skip_b is None and skip_c is None and eff_skip_b and eff_skip_c
-            else "client_flags" if skip_b is not None or skip_c is not None else "none"
-        )
-        append_event(
-            run.id,
-            "oie",
-            "started",
-            json.dumps(
-                {
-                    "dry_run": dry_run,
-                    "sync_repos": sync_repos,
-                    "max_repos": max_repos,
-                    "skip_b": eff_skip_b,
-                    "skip_c": eff_skip_c,
-                    "skip_c1": False,
-                    "skip_reason": skip_reason,
-                    "repos_yaml": repos_yaml_path,
-                    "wait": wait,
-                    "graph_path": [
-                        "START",
-                        "module_a_harvester",
-                        "module_b_noise_filter",
-                        "module_c_librarian",
-                        "module_c1_graph_filer",
-                        "END",
-                    ],
-                    "note": (
-                        "Admin default runs Module B, C, and C.1; "
-                        "C.1 only auto-files when OIE_GRAPH_FILING_ENABLED=1 "
-                        "(Config toggle; default off — review decision_queue first). "
-                        "Pass skip_b/skip_c/skip_c1 true to opt out of stages. "
-                        "Module A may write 0 chunks when checkpoints are already at HEAD."
-                    ),
-                }
-            )[:2000],
-        )
-        testing = (
-            bool(has_app_context() and current_app.config.get("TESTING"))
-            or (os.getenv("ADMIN_OIE_SYNC") or "").strip().lower() in TRUE_VALUES
-        )
-        run_sync = testing if wait is None else bool(wait)
-        job_kwargs = dict(
-            dry_run=dry_run,
-            sync_repos=sync_repos,
-            max_repos=max_repos,
-            skip_b=eff_skip_b,
-            skip_c=eff_skip_c,
-            cleanup_yaml=cleanup_yaml,
-        )
-        if run_sync:
-            oie = _run_oie_job(run.id, repos_yaml_path, **job_kwargs)
+                target = (
+                    sqla.session.query(db.IngestionTarget)
+                    .filter(db.IngestionTarget.id == stripped_target)
+                    .first()
+                )
+                if not target:
+                    raise KeyError("target not found")
+                if not target.enabled:
+                    raise ValueError("target is disabled")
+                if target.kind in HARVEST_KINDS:
+                    do_oie = True
+                    source, repos_yaml_path = _packaged_harvest_source(custom_name)
+                else:
+                    source = custom_name or target.name or target.id
         else:
-            app = current_app._get_current_object()
-            run_id = run.id
-            yaml_path = repos_yaml_path
+            source = custom_name or (source or "").strip()
+            if not source:
+                raise ValueError("source is required")
 
-            def _worker() -> None:
-                with app.app_context():
-                    _run_oie_job(run_id, yaml_path, **job_kwargs)
-
-            threading.Thread(
-                target=_worker, daemon=True, name=f"admin-oie-{run.id}"
-            ).start()
-            async_job = True
-            oie = {
-                "async": True,
-                "started": True,
-                "skip_b": eff_skip_b,
-                "skip_c": eff_skip_c,
-            }
-    else:
-        append_event(
-            run.id,
-            "recorded",
-            "ok",
-            "Import run staged; apply via /admin/imports when ready",
+        run = db.create_import_run(source=source, version="admin-start")
+        db.persist_staged_change_set(
+            run_id=run.id,
+            changeset_json=import_diff.change_set_to_json([]),
+            staging_status="pending_review",
         )
-    return {
-        "run_id": run.id,
-        "source": source,
-        "oie": oie,
-        "dry_run": dry_run,
-        "sync_repos": sync_repos,
-        "async": async_job,
-    }
+        append_event(run.id, "queued", "ok", f"source={source}")
+        oie: Optional[Dict[str, Any]] = None
+        if do_oie:
+            append_event(
+                run.id,
+                "oie",
+                "started",
+                "dry_run=True sync_repos=False",
+            )
+            try:
+                oie = invoke_oie_cli(run.id, repos_yaml=repos_yaml_path)
+                oie_ok = bool(oie.get("ok", oie.get("returncode", 1) == 0))
+                append_event(
+                    run.id,
+                    "oie",
+                    "ok" if oie_ok else "error",
+                    json.dumps(oie)[:2000],
+                )
+                for stage in oie.get("stages") or []:
+                    if not isinstance(stage, dict):
+                        continue
+                    append_event(
+                        run.id,
+                        str(stage.get("name") or "oie"),
+                        str(stage.get("status") or "ok"),
+                        str(stage.get("detail") or "")[:2000],
+                    )
+            except Exception as exc:  # noqa: BLE001
+                append_event(run.id, "oie", "error", str(exc))
+                oie = {"error": str(exc)}
+        else:
+            append_event(
+                run.id,
+                "recorded",
+                "ok",
+                "Import run staged; apply via /admin/imports when ready",
+            )
+        return {"run_id": run.id, "source": source, "oie": oie, "dry_run": True}
+    finally:
+        if tmp_path is not None:
+            try:
+                tmp_path.unlink()
+            except OSError:
+                logger.warning("failed to remove temp repos.yaml %s", tmp_path)
 
 
 def import_stage_strip(status: Optional[str]) -> List[Dict[str, str]]:
@@ -1411,38 +1070,19 @@ def dashboard_payload() -> Dict[str, Any]:
 
 
 def config_payload() -> Dict[str, Any]:
-    from application.utils.admin_panel import runtime_settings
-
-    runtime_settings.hydrate_environ_from_db(os.environ)
-    rows = config_catalog.present_config(os.environ)
     return {
-        "config": rows,
-        "writable": any(bool(r.get("writable")) for r in rows),
+        "config": config_catalog.present_config(os.environ),
+        "writable": False,
         "restart_instructions": RESTART_INSTRUCTIONS,
     }
 
 
 def config_put(updates: Dict[str, Optional[str]]) -> Dict[str, Any]:
-    from flask import g, session
-
-    from application.utils.admin_panel import runtime_settings
-
     applied, rejected = config_catalog.apply_updates(os.environ, updates)
-    actor = session.get("email") or getattr(g, "api_key_email", None)
-    if "OIE_GRAPH_FILING_ENABLED" in applied:
-        runtime_settings.set_setting(
-            runtime_settings.FILING_KEY,
-            os.environ.get("OIE_GRAPH_FILING_ENABLED", "0"),
-            actor=str(actor) if actor else None,
-        )
-    # Filing flag is durable in DB + mirrored to env — no process restart required.
-    needs_restart = bool(applied) and any(
-        key != "OIE_GRAPH_FILING_ENABLED" for key in applied
-    )
     return {
         "applied": applied,
         "rejected": rejected,
         "config": config_catalog.present_config(os.environ),
-        "needs_restart": needs_restart,
-        "note": RESTART_INSTRUCTIONS if needs_restart else None,
+        "needs_restart": True,
+        "note": RESTART_INSTRUCTIONS,
     }
