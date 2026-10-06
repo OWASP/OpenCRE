@@ -149,25 +149,38 @@ def list_targets() -> List[Dict[str, Any]]:
 
 
 def seed_targets_from_yaml_if_empty() -> None:
-    if sqla.session.query(db.IngestionTarget).first() is not None:
-        return
-    if not REPOS_YAML.is_file():
-        return
-    data = yaml.safe_load(REPOS_YAML.read_text(encoding="utf-8")) or {}
-    for repo in data.get("repositories") or []:
-        rid = str(repo.get("id") or "").strip()
-        if not rid:
-            continue
-        t = db.IngestionTarget(
-            id=rid,
-            kind="oie_repo",
-            name=rid,
-            spec_json=json.dumps(repo),
-            enabled=bool(repo.get("enabled", True)),
-            created_at=_now(),
-        )
-        sqla.session.add(t)
-    sqla.session.commit()
+    try:
+        if sqla.session.query(db.IngestionTarget).first() is not None:
+            return
+        if not REPOS_YAML.is_file():
+            return
+        data = yaml.safe_load(REPOS_YAML.read_text(encoding="utf-8")) or {}
+        if not isinstance(data, dict):
+            logger.warning("repos.yaml is not a mapping; skip target seed")
+            return
+        repos = data.get("repositories") or []
+        if not isinstance(repos, list):
+            logger.warning("repos.yaml repositories is not a list; skip target seed")
+            return
+        for repo in repos:
+            if not isinstance(repo, dict):
+                continue
+            rid = str(repo.get("id") or "").strip()
+            if not rid:
+                continue
+            t = db.IngestionTarget(
+                id=rid,
+                kind="oie_repo",
+                name=rid,
+                spec_json=json.dumps(repo),
+                enabled=bool(repo.get("enabled", True)),
+                created_at=_now(),
+            )
+            sqla.session.add(t)
+        sqla.session.commit()
+    except Exception:
+        logger.exception("Failed to seed ingestion targets from yaml")
+        sqla.session.rollback()
 
 
 def add_target(
@@ -285,6 +298,9 @@ def start_ingestion(
         raise ValueError("source is required")
     target = None
     if target_id:
+        target_id = str(target_id).strip()
+        if not target_id:
+            raise ValueError("source is required")
         target = (
             sqla.session.query(db.IngestionTarget)
             .filter(db.IngestionTarget.id == target_id)
@@ -455,7 +471,12 @@ def edit_staged_mapping(
         raise KeyError("no staged change set")
     if cs.staging_status not in ("pending_review", "accepted"):
         raise ValueError("can only edit pending or accepted staged mappings")
-    ops = json.loads(cs.changeset_json or "[]")
+    try:
+        ops = json.loads(cs.changeset_json or "[]")
+    except json.JSONDecodeError as exc:
+        raise ValueError("invalid changeset json") from exc
+    if not isinstance(ops, list):
+        raise ValueError("changeset must be a list")
     if op_index < 0 or op_index >= len(ops):
         raise IndexError("op_index out of range")
     op = ops[op_index]
