@@ -52,9 +52,7 @@ def impact_summary_from_changeset_json(
             import_diff.impacted_cre_external_ids_for_standards(collection, set(names))
         )
     except Exception as e:
-        logger.exception(
-            "Impact CRE lookup failed run_id=%s names=%s", run_id, names
-        )
+        logger.exception("Impact CRE lookup failed run_id=%s names=%s", run_id, names)
         warnings.append(f"CRE impact lookup failed: {e}")
     logger.info(
         "Impact summary run_id=%s ops=%s standards=%s cres=%s warnings=%s",
