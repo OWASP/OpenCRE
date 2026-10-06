@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, List, Mapping, MutableMapping, Optional
+from urllib.parse import urlsplit, urlunsplit
 
 
 DOCS_ENV = "https://github.com/OWASP/OpenCRE/blob/main/.env.example"
@@ -95,14 +96,32 @@ CATALOG: Dict[str, ConfigKey] = {
 }
 
 
+def redact_postgres_url(value: str) -> str:
+    parts = urlsplit(value)
+    if not parts.password:
+        return value
+    user = parts.username or ""
+    host = parts.hostname or ""
+    netloc = f"{user}:***@{host}" if user else f"***@{host}"
+    if parts.port is not None:
+        netloc = f"{netloc}:{parts.port}"
+    return urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment))
+
+
 def present_config(environ: Mapping[str, str]) -> List[Dict[str, Any]]:
     rows = []
     for key, spec in CATALOG.items():
         raw = environ.get(key)
+        if spec.secret:
+            shown = "***" if raw else None
+        elif key == "OWASP_AGENT_DB" and raw:
+            shown = redact_postgres_url(raw)
+        else:
+            shown = raw
         rows.append(
             {
                 "key": key,
-                "value": ("***" if raw else None) if spec.secret else raw,
+                "value": shown,
                 "help_text": spec.help_text,
                 "help_url": spec.help_url,
                 "secret": spec.secret,
