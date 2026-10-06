@@ -60,8 +60,11 @@ def _summary_dict(summary: Any) -> Dict[str, Any]:
 def _stage_status_from_summary(summary: Any) -> str:
     """Map module RunSummary.status to orchestrator stage status.
 
-    ``ok`` and ``degraded`` (partial A/B harvest, Module C safety-path gap)
-    keep the pipeline movable; only unknown/non-ok statuses become ``error``.
+    Module C currently always reports ``degraded: N decided without the safety
+    path`` behind ``NullSafetyGuard`` — that is declared, not a hard failure, so
+    the stage is ``degraded`` (pipeline may continue; Module D must refuse while
+    unevaluated > 0). Other ``degraded`` values (A/B partial runs, C row errors)
+    map to ``error`` so ``stop_on_error`` can halt.
     """
     raw = getattr(summary, "status", None)
     if isinstance(summary, dict):
@@ -69,8 +72,10 @@ def _stage_status_from_summary(summary: Any) -> str:
     text = str(raw or "ok")
     if text == "ok":
         return "ok"
-    if text.startswith("degraded"):
-        return "degraded"
+    if text.startswith("degraded") and "without the safety path" in text:
+        # Pure safety-path gap, no errored rows mixed in.
+        if "errored" not in text:
+            return "degraded"
     return "error"
 
 
