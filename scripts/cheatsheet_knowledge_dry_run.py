@@ -98,7 +98,7 @@ def build_knowledge_queue():
 
         except Exception as exc:
             print(f"❌ extraction failed: {exc}")
-            raise
+            continue
 
     if not records:
         raise RuntimeError(f"No Cheat Sheet fixtures found in {FIXTURES_DIR}")
