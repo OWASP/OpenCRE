@@ -172,10 +172,15 @@ function ImportsTab({ origin }: { origin: string }) {
   };
 
   const openGraph = async (runId: string) => {
-    const res = await fetch(`${origin}/admin/imports/runs/${runId}/changeset/graph`);
-    const body = await readJson(res);
-    if (!res.ok) setError(body.description || body.error || res.statusText);
-    else setGraph(body);
+    setError(null);
+    try {
+      const res = await fetch(`${origin}/admin/imports/runs/${runId}/changeset/graph`);
+      const body = await readJson(res);
+      if (!res.ok) setError(body.description || body.error || res.statusText);
+      else setGraph(body);
+    } catch (err) {
+      setError(String(err));
+    }
   };
 
   const saveMapping = async (runId: string, opIndex: number) => {
@@ -186,31 +191,42 @@ function ImportsTab({ origin }: { origin: string }) {
       setError('Mapping JSON is invalid');
       return;
     }
-    const res = await fetch(`${origin}/admin/imports/runs/${runId}/mapping`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ op_index: opIndex, after }),
-    });
-    const body = await readJson(res);
-    if (!res.ok) setError(body.description || body.error || res.statusText);
-    else {
-      setDetail(body);
-      load();
+    try {
+      const res = await fetch(`${origin}/admin/imports/runs/${runId}/mapping`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ op_index: opIndex, after }),
+      });
+      const body = await readJson(res);
+      if (!res.ok) setError(body.description || body.error || res.statusText);
+      else {
+        setDetail(body);
+        load();
+      }
+    } catch (err) {
+      setError(String(err));
     }
   };
 
   const dropLast = async () => {
-    if (!source.trim()) return;
-    const res = await fetch(`${origin}/admin/imports/drop-last`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: source.trim() }),
-    });
-    const body = await readJson(res);
-    if (!res.ok) setError(body.description || body.error || res.statusText);
-    else {
-      setDetail(body);
-      load();
+    if (!source.trim()) {
+      setError('source is required');
+      return;
+    }
+    try {
+      const res = await fetch(`${origin}/admin/imports/drop-last`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: source.trim() }),
+      });
+      const body = await readJson(res);
+      if (!res.ok) setError(body.description || body.error || res.statusText);
+      else {
+        setDetail(body);
+        load();
+      }
+    } catch (err) {
+      setError(String(err));
     }
   };
 
@@ -420,46 +436,62 @@ function TargetsTab({ origin }: { origin: string }) {
   useEffect(() => load(), [load]);
 
   const add = async () => {
-    const res = await fetch(`${origin}/admin/targets`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, kind, name: id }),
-    });
-    if (!res.ok) {
-      const body = await readJson(res);
-      setError(body.description || body.error || res.statusText);
+    if (!id.trim()) {
+      setError('id and kind are required');
       return;
     }
-    setError(null);
-    setId('');
-    load();
+    try {
+      const res = await fetch(`${origin}/admin/targets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: id.trim(), kind, name: id.trim() }),
+      });
+      if (!res.ok) {
+        const body = await readJson(res);
+        setError(body.description || body.error || res.statusText);
+        return;
+      }
+      setError(null);
+      setId('');
+      load();
+    } catch (err) {
+      setError(String(err));
+    }
   };
 
   const start = async (targetId: string) => {
-    const res = await fetch(`${origin}/admin/ingest/start`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ target_id: targetId }),
-    });
-    const body = await readJson(res);
-    if (!res.ok) setError(body.description || body.error || res.statusText);
-    else {
-      setError(null);
-      load();
+    try {
+      const res = await fetch(`${origin}/admin/ingest/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_id: targetId }),
+      });
+      const body = await readJson(res);
+      if (!res.ok) setError(body.description || body.error || res.statusText);
+      else {
+        setError(null);
+        load();
+      }
+    } catch (err) {
+      setError(String(err));
     }
   };
 
   const del = async (targetId: string) => {
-    const res = await fetch(`${origin}/admin/targets/${encodeURIComponent(targetId)}`, {
-      method: 'DELETE',
-    });
-    const body = await readJson(res);
-    if (!res.ok) {
-      setError(body.description || body.error || res.statusText);
-      return;
+    try {
+      const res = await fetch(`${origin}/admin/targets/${encodeURIComponent(targetId)}`, {
+        method: 'DELETE',
+      });
+      const body = await readJson(res);
+      if (!res.ok) {
+        setError(body.description || body.error || res.statusText);
+        return;
+      }
+      setError(null);
+      load();
+    } catch (err) {
+      setError(String(err));
     }
-    setError(null);
-    load();
   };
 
   return (

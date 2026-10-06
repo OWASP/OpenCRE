@@ -1,11 +1,13 @@
 import json
 import os
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from application import create_app, sqla
 from application.database import db
-from application.utils.admin_panel import config_catalog
+from application.utils.admin_panel import config_catalog, service
 from application.utils import import_diff
 
 
@@ -105,6 +107,148 @@ class TestAdminPanel(unittest.TestCase):
             self.assertEqual(r.status_code, 200)
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_targets_reject_blank_duplicate_and_bad_kind(self) -> None:
+        with self.app.test_client() as c:
+            r = c.post("/admin/targets", json={})
+            self.assertEqual(r.status_code, 400)
+            self.assertIn("id and kind", (r.get_json() or {}).get("description", ""))
+            r = c.post("/admin/targets", json={"id": "  ", "kind": "import_source"})
+            self.assertEqual(r.status_code, 400)
+            r = c.post(
+                "/admin/targets",
+                json={"id": "src", "kind": "not-a-kind"},
+            )
+            self.assertEqual(r.status_code, 400)
+            self.assertIn("oie_repo", (r.get_json() or {}).get("description", ""))
+            self.assertEqual(
+                c.post(
+                    "/admin/targets",
+                    json={"id": "src", "kind": "import_source"},
+                ).status_code,
+                201,
+            )
+            r = c.post(
+                "/admin/targets",
+                json={"id": "src", "kind": "import_source"},
+            )
+            self.assertEqual(r.status_code, 400)
+            self.assertIn("already exists", (r.get_json() or {}).get("description", ""))
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_ingest_start_rejects_missing_disabled_and_unknown(self) -> None:
+        with self.app.test_client() as c:
+            r = c.post("/admin/ingest/start", json={})
+            self.assertEqual(r.status_code, 400)
+            self.assertIn("source", (r.get_json() or {}).get("description", ""))
+            r = c.post("/admin/ingest/start", json={"target_id": "missing"})
+            self.assertEqual(r.status_code, 404)
+            self.assertEqual(
+                (r.get_json() or {}).get("description"), "target not found"
+            )
+            c.post(
+                "/admin/targets",
+                json={
+                    "id": "off-src",
+                    "kind": "import_source",
+                    "enabled": False,
+                },
+            )
+            r = c.post("/admin/ingest/start", json={"target_id": "off-src"})
+            self.assertEqual(r.status_code, 400)
+            self.assertIn("disabled", (r.get_json() or {}).get("description", ""))
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_delete_missing_target_is_json_404(self) -> None:
+        with self.app.test_client() as c:
+            r = c.delete("/admin/targets/nope")
+            self.assertEqual(r.status_code, 404)
+            self.assertEqual(
+                (r.get_json() or {}).get("description"), "target not found"
+            )
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_drop_last_requires_source_and_existing_run(self) -> None:
+        with self.app.test_client() as c:
+            r = c.post("/admin/imports/drop-last", json={})
+            self.assertEqual(r.status_code, 400)
+            self.assertIn("source", (r.get_json() or {}).get("description", ""))
+            r = c.post("/admin/imports/drop-last", json={"source": "ghost"})
+            self.assertEqual(r.status_code, 404)
+            self.assertIn("no import run", (r.get_json() or {}).get("description", ""))
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_mapping_rejects_bad_payloads(self) -> None:
+        run = db.create_import_run(source="map-bad", version="v")
+        db.persist_staged_change_set(
+            run_id=run.id,
+            changeset_json="not-json",
+            staging_status="pending_review",
+        )
+        with self.app.test_client() as c:
+            r = c.post(f"/admin/imports/runs/{run.id}/mapping", json={})
+            self.assertEqual(r.status_code, 400)
+            self.assertIn("op_index", (r.get_json() or {}).get("description", ""))
+            r = c.post(
+                f"/admin/imports/runs/{run.id}/mapping",
+                json={"op_index": 0, "after": {"description": "x"}},
+            )
+            self.assertEqual(r.status_code, 400)
+            self.assertIn(
+                "invalid changeset", (r.get_json() or {}).get("description", "")
+            )
+            r = c.post(
+                "/admin/imports/runs/missing/mapping",
+                json={"op_index": 0, "after": {}},
+            )
+            self.assertEqual(r.status_code, 404)
+
+        run2 = db.create_import_run(source="map-range", version="v")
+        db.persist_staged_change_set(
+            run_id=run2.id,
+            changeset_json="[]",
+            staging_status="pending_review",
+        )
+        with self.app.test_client() as c:
+            r = c.post(
+                f"/admin/imports/runs/{run2.id}/mapping",
+                json={"op_index": 0, "after": {}},
+            )
+            self.assertEqual(r.status_code, 400)
+            self.assertIn("out of range", (r.get_json() or {}).get("description", ""))
+
+        run3 = db.create_import_run(source="map-applied", version="v")
+        db.persist_staged_change_set(
+            run_id=run3.id,
+            changeset_json=json.dumps(
+                [{"op": "modify_control", "after": {"description": "old"}}]
+            ),
+            staging_status="applied",
+        )
+        with self.app.test_client() as c:
+            r = c.post(
+                f"/admin/imports/runs/{run3.id}/mapping",
+                json={"op_index": 0, "after": {"description": "new"}},
+            )
+            self.assertEqual(r.status_code, 400)
+            self.assertIn(
+                "pending or accepted", (r.get_json() or {}).get("description", "")
+            )
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_targets_list_survives_invalid_yaml(self) -> None:
+        with tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False) as handle:
+            handle.write("{[")
+            path = handle.name
+        try:
+            with patch.object(service, "REPOS_YAML", Path(path)):
+                with self.app.test_client() as c:
+                    r = c.get("/admin/targets")
+            self.assertEqual(r.status_code, 200)
+            self.assertEqual((r.get_json() or {}).get("targets"), [])
+        finally:
+            os.unlink(path)
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_drop_applied_returns_409(self) -> None:
         run = db.create_import_run(source="applied-src", version="v")
         db.persist_staged_change_set(
@@ -115,6 +259,12 @@ class TestAdminPanel(unittest.TestCase):
         with self.app.test_client() as c:
             r = c.post("/admin/imports/drop-last", json={"source": "applied-src"})
             self.assertEqual(r.status_code, 409)
+            self.assertIn(
+                "already applied", (r.get_json() or {}).get("description", "")
+            )
+            self.assertIn(
+                "already applied", (r.get_json() or {}).get("description", "")
+            )
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_edit_mapping_pending(self) -> None:
@@ -232,6 +382,29 @@ class TestAdminPanel(unittest.TestCase):
                 self.assertFalse(body["db_exists"])
                 self.assertIsNone(body["counts"])
                 mock_engine.assert_not_called()
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_agent_status_ignores_sqlite_and_blank_urls(self) -> None:
+        for raw in ("sqlite:////tmp/agent.db", "file:/tmp/agent.db", "   "):
+            with patch.dict(
+                os.environ,
+                {
+                    "NO_LOGIN": "1",
+                    "CRE_ALLOW_IMPORT": "1",
+                    "OWASP_AGENT_ENABLED": "1",
+                    "OWASP_AGENT_DB": raw,
+                },
+            ):
+                with patch(
+                    "application.utils.admin_panel.service.create_engine"
+                ) as mock_engine:
+                    with self.app.test_client() as c:
+                        r = c.get("/admin/agent/status")
+                    self.assertEqual(r.status_code, 200)
+                    body = r.get_json()
+                    self.assertFalse(body["db_configured"])
+                    self.assertIsNone(body["db_url"])
+                    mock_engine.assert_not_called()
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_agent_status_counts_postgres(self) -> None:
