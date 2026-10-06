@@ -15,6 +15,7 @@ from application.utils.oie_orchestrator.pipeline import (
     OrchestratorResult,
     StageResult,
     _connect,
+    _harvester_detail,
     _stage_status_from_summary,
     _summary_dict,
 )
@@ -32,6 +33,7 @@ class OieState(TypedDict, total=False):
     skip_c: bool
     stop_on_error: bool
     repos_yaml: Optional[str]
+    max_repos: Optional[int]
     stage_a: Dict[str, Any]
     stage_b: Dict[str, Any]
     stage_c: Dict[str, Any]
@@ -67,17 +69,19 @@ def _run_a(
         fn = run_harvester
     try:
         session = _connect(state["cache_file"])
-        summary = fn(
-            session,
-            state["run_id"],
-            dry_run=bool(state.get("dry_run")),
-            sync_repos=bool(state.get("sync_repos", True)),
-            repos_yaml=state.get("repos_yaml"),
-        )
+        kwargs: Dict[str, Any] = {
+            "dry_run": bool(state.get("dry_run")),
+            "sync_repos": bool(state.get("sync_repos", True)),
+            "repos_yaml": state.get("repos_yaml"),
+        }
+        max_repos = state.get("max_repos")
+        if max_repos is not None:
+            kwargs["max_repos"] = max_repos
+        summary = fn(session, state["run_id"], **kwargs)
         stage = StageResult(
             name="module_a_harvester",
             status=_stage_status_from_summary(summary),
-            detail=f"run_harvester completed for run_id={state['run_id']!r}",
+            detail=_harvester_detail(state["run_id"], summary),
             summary=_summary_dict(summary),
         )
     except Exception as exc:  # noqa: BLE001
@@ -228,6 +232,7 @@ def run_oie_pipeline_langgraph(
     run_noise_filter_fn: Optional[Callable[..., Any]] = None,
     run_librarian_queue_fn: Optional[Callable[..., Any]] = None,
     repos_yaml: Optional[str] = None,
+    max_repos: Optional[int] = None,
 ) -> OrchestratorResult:
     """Compile a LangGraph ``A → B → C`` and invoke it once."""
     from langgraph.graph import END, START, StateGraph
@@ -257,6 +262,7 @@ def run_oie_pipeline_langgraph(
             "skip_c": skip_c,
             "stop_on_error": stop_on_error,
             "repos_yaml": repos_yaml,
+            "max_repos": max_repos,
             "halt": False,
         }
     )

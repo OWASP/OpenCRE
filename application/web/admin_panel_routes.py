@@ -1,7 +1,7 @@
 # type: ignore
 from __future__ import annotations
 
-from typing import Any, Tuple
+from typing import Any, Optional, Tuple
 
 from cre_logging import get_logger
 
@@ -187,6 +187,21 @@ def register_admin_panel_routes(
         if yaml_text is not None and not isinstance(yaml_text, str):
             return _err(400, "yaml must be a string")
         name = str(body.get("name") or "").strip() or None
+        dry_run = bool(body["dry_run"]) if "dry_run" in body else False
+        sync_repos = bool(body["sync_repos"]) if "sync_repos" in body else True
+        skip_b = bool(body["skip_b"]) if "skip_b" in body else None
+        skip_c = bool(body["skip_c"]) if "skip_c" in body else None
+        wait = bool(body["wait"]) if "wait" in body else None
+        max_repos: Optional[int]
+        if "max_repos" in body and body["max_repos"] is not None:
+            try:
+                max_repos = int(body["max_repos"])
+            except (TypeError, ValueError):
+                return _err(400, "max_repos must be an integer")
+            if max_repos < 0:
+                return _err(400, "max_repos must be >= 0")
+        else:
+            max_repos = service.DEFAULT_OIE_MAX_REPOS
         try:
             result = service.start_ingestion(
                 source=source or (str(target_id) if target_id else ""),
@@ -194,6 +209,12 @@ def register_admin_panel_routes(
                 yaml_text=yaml_text if isinstance(yaml_text, str) else None,
                 name=name,
                 packaged=bool(body.get("packaged") or body.get("current")),
+                dry_run=dry_run,
+                sync_repos=sync_repos,
+                max_repos=max_repos,
+                skip_b=skip_b,
+                skip_c=skip_c,
+                wait=wait,
             )
         except KeyError as exc:
             return _err(404, _exc_message(exc))
