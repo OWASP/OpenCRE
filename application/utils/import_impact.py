@@ -37,15 +37,40 @@ def impact_summary_from_changeset_json(
     run_id: str | None = None,
 ) -> Dict[str, Any]:
     ops = import_diff.change_set_from_json(changeset_json or "[]")
+    empty_key_ops = sum(
+        1 for op in ops if not import_diff.standard_name_from_op_key(op)
+    )
     names = sorted(import_diff.impacted_standard_names_from_ops(ops))
-    cre_ids = sorted(
-        import_diff.impacted_cre_external_ids_for_standards(collection, set(names))
+    warnings: list[str] = []
+    if empty_key_ops:
+        msg = f"Skipped {empty_key_ops} operation(s) with empty standard keys"
+        logger.warning("Impact run_id=%s: %s", run_id, msg)
+        warnings.append(msg)
+    cre_ids: list[str] = []
+    try:
+        cre_ids = sorted(
+            import_diff.impacted_cre_external_ids_for_standards(collection, set(names))
+        )
+    except Exception as e:
+        logger.exception(
+            "Impact CRE lookup failed run_id=%s names=%s", run_id, names
+        )
+        warnings.append(f"CRE impact lookup failed: {e}")
+    logger.info(
+        "Impact summary run_id=%s ops=%s standards=%s cres=%s warnings=%s",
+        run_id,
+        len(ops),
+        names,
+        cre_ids,
+        warnings,
     )
     out: Dict[str, Any] = {
         "operation_count": len(ops),
         "impacted_standard_names": names,
         "impacted_cre_external_ids": cre_ids,
     }
+    if warnings:
+        out["warnings"] = warnings
     if run_id is not None:
         out["run_id"] = run_id
     return out
