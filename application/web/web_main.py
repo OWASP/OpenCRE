@@ -1717,7 +1717,7 @@ def admin_imports_rerun() -> Any:
         abort(404, description=str(exc))
     except ValueError as exc:
         abort(400, description=str(exc))
-    return jsonify({"status": "success", "run_id": result["run_id"], **result})
+    return jsonify({"status": "success", **result})
 
 
 @app.route("/rest/v1/cre_csv_import", methods=["POST"])

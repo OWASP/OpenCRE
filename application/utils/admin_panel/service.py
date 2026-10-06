@@ -215,15 +215,9 @@ def start_ingestion(
     *,
     source: str,
     target_id: Optional[str] = None,
-    run_oie: Optional[bool] = None,
-    dry_run: bool = True,
-    sync_repos: bool = False,
 ) -> Dict[str, Any]:
     if not source:
         raise ValueError("source is required")
-    _ = (run_oie, dry_run, sync_repos)
-    dry_run = True
-    sync_repos = False
     target = None
     if target_id:
         target = (
@@ -251,7 +245,7 @@ def start_ingestion(
             run.id,
             "oie",
             "started",
-            "dry_run=%s sync_repos=%s" % (dry_run, sync_repos),
+            "dry_run=True sync_repos=False",
         )
         try:
             from application.utils.oie_orchestrator.pipeline import run_oie_pipeline
@@ -262,8 +256,8 @@ def start_ingestion(
             result = run_oie_pipeline(
                 cache_file=cache,
                 pipeline_run_id=run.id,
-                dry_run=dry_run,
-                sync_repos=sync_repos,
+                dry_run=True,
+                sync_repos=False,
                 stop_on_error=True,
             )
             oie = (
@@ -289,7 +283,7 @@ def start_ingestion(
             "ok",
             "Import run staged; apply via /admin/imports when ready",
         )
-    return {"run_id": run.id, "source": source, "oie": oie, "dry_run": dry_run}
+    return {"run_id": run.id, "source": source, "oie": oie, "dry_run": True}
 
 
 def import_stage_strip(status: Optional[str]) -> List[Dict[str, str]]:
