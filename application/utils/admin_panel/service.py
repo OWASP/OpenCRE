@@ -379,13 +379,21 @@ def _agent_db_stats(db_url: Optional[str]) -> Dict[str, Any]:
                 ).fetchall()
             ]
             counts: Dict[str, int] = {}
-            for name in names[:20]:
+            for name in names:
                 if not name.replace("_", "").isalnum():
                     continue
                 counts[name] = int(
                     conn.execute(text(f'SELECT COUNT(*) FROM "{name}"')).scalar() or 0
                 )
             out["counts"] = counts
+            if "meta_entity" in names:
+                last = conn.execute(
+                    text("SELECT MAX(fetched_at) FROM meta_entity")
+                ).scalar()
+                if last is not None:
+                    out["last_sync"] = (
+                        last.isoformat() if hasattr(last, "isoformat") else str(last)
+                    )
     except Exception:
         logger.warning("main app Postgres probe failed")
         return {"db_exists": False, "counts": None, "last_sync": None}
