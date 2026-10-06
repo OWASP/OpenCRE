@@ -1,14 +1,14 @@
 """admin panel tables: ingestion_target, admin_pipeline_event
 
 Revision ID: f8a9b0c1d2e3
-Revises: 967016ee10fa
+Revises: b8c9d0e1f2a3
 """
 
 from alembic import op
 import sqlalchemy as sa
 
 revision = "f8a9b0c1d2e3"
-down_revision = "967016ee10fa"
+down_revision = "b8c9d0e1f2a3"
 branch_labels = None
 depends_on = None
 
