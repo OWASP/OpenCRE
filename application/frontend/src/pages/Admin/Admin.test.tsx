@@ -305,7 +305,7 @@ describe('Admin', () => {
       }
       return jsonRes({});
     });
-    const { getByText, findByText } = render(
+    const { getByText, findByText, findAllByText } = render(
       <MemoryRouter>
         <Admin />
       </MemoryRouter>
@@ -318,7 +318,7 @@ describe('Admin', () => {
         expect.objectContaining({ method: 'GET' })
       )
     );
-    expect(await findByText(/empty standard keys/)).toBeTruthy();
+    expect(await findAllByText(/empty standard keys/)).toBeTruthy();
     fireEvent.click(getByText('Discard'));
     await waitFor(() =>
       expect((global as any).fetch).toHaveBeenCalledWith(
