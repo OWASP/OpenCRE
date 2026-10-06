@@ -108,6 +108,7 @@ describe('Admin', () => {
           demo_path: '/chatbot',
           help_url: 'https://example.test',
           counts: { chapters: 2 },
+          db_url: 'postgresql://cre:password@127.0.0.1:5432/owasp_agent',
         });
       }
       if (String(url).includes('/admin/imports/runs')) {
@@ -122,6 +123,8 @@ describe('Admin', () => {
     );
     fireEvent.click(getByText('OWASP agent'));
     await findByText(/writes CRE graph: false/);
+    expect(getByText(/DB URL:/)).toBeTruthy();
+    expect(getByText(/postgresql:\/\/cre:password@127.0.0.1:5432\/owasp_agent/)).toBeTruthy();
     expect(getByText('Open chat demo').closest('a')?.getAttribute('href')).toBe('/chatbot');
   });
 
@@ -246,7 +249,7 @@ describe('Admin', () => {
           writes_cre_graph: false,
           demo_path: '/chatbot',
           help_url: 'https://example.test',
-          db_path: null,
+          db_url: null,
           counts: null,
         });
       }
