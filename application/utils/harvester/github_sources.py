@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Optional
 GITHUB_API = "https://api.github.com"
 GITHUB_PAGE_SIZE = 100
 GITHUB_MAX_PAGES = 10
+GITHUB_PROBE_TIMEOUT = 8
 GITHUB_OWNER_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$")
 GITHUB_REPO_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 
@@ -82,6 +83,80 @@ def parse_github_source(raw: str) -> GithubSource:
         repo=repo,
         canonical=f"github.com/{owner}/{repo}",
     )
+
+
+def _github_http_status(url: str, *, timeout: float = GITHUB_PROBE_TIMEOUT) -> int:
+    req = urllib.request.Request(url, headers=_github_headers())
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            resp.read(64)
+            return int(getattr(resp, "status", 200) or 200)
+    except urllib.error.HTTPError as exc:
+        try:
+            exc.read()
+        except Exception:
+            pass
+        return int(exc.code)
+    except urllib.error.URLError as exc:
+        reason = str(getattr(exc, "reason", exc)).lower()
+        if "timed out" in reason or "timeout" in reason:
+            raise ValueError("GitHub request timed out") from exc
+        raise ValueError("GitHub request failed") from exc
+    except (OSError, TimeoutError) as exc:
+        raise ValueError("GitHub request failed") from exc
+
+
+def probe_github_source(source: GithubSource) -> None:
+    """Reject an org/user or repo URL that GitHub cannot serve right now."""
+    owner_q = urllib.parse.quote(source.owner, safe="")
+    if source.repo:
+        repo_q = urllib.parse.quote(source.repo, safe="")
+        url = f"{GITHUB_API}/repos/{owner_q}/{repo_q}"
+        _raise_if_inaccessible(url, source.canonical)
+        return
+    last_status = 0
+    for kind in ("orgs", "users"):
+        url = f"{GITHUB_API}/{kind}/{owner_q}"
+        try:
+            status = _github_http_status(url)
+        except ValueError as exc:
+            raise ValueError(f"{exc}: {source.canonical}") from exc
+        if status == 200:
+            return
+        last_status = status
+        if status != 404:
+            raise ValueError(
+                f"GitHub source is not accessible (HTTP {status}): {source.canonical}"
+            )
+    raise ValueError(
+        f"GitHub source is not accessible (HTTP {last_status}): {source.canonical}"
+        if last_status
+        else f"GitHub source is not accessible: {source.canonical}"
+    )
+
+
+def _raise_if_inaccessible(url: str, canonical: str) -> None:
+    try:
+        status = _github_http_status(url)
+    except ValueError as exc:
+        raise ValueError(f"{exc}: {canonical}") from exc
+    if status == 200:
+        return
+    raise ValueError(f"GitHub source is not accessible (HTTP {status}): {canonical}")
+
+
+def probe_github_sources(raw_sources: List[Any]) -> None:
+    seen: set[str] = set()
+    for raw in raw_sources or []:
+        text = str(raw).strip() if raw is not None else ""
+        if not text:
+            continue
+        source = parse_github_source(text)
+        key = source.canonical.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        probe_github_source(source)
 
 
 def _github_headers() -> Dict[str, str]:

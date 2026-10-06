@@ -492,6 +492,36 @@ describe('Admin', () => {
     expect(startBody.yaml).toContain('github.com/OWASP/');
   });
 
+  it('surfaces an inaccessible GitHub source immediately', async () => {
+    loggedIn();
+    (global as any).fetch = jest.fn((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/expand-org') && init?.method === 'POST') {
+        return jsonRes({ description: 'GitHub source is not accessible: github.com/NoSuchOrgCcdd/' }, 400);
+      }
+      if (u.includes('/admin/repos.yaml')) {
+        return jsonRes({ yaml: 'sources: []\n', source: 'repos.yaml:abc123abc123' });
+      }
+      if (u.includes('/admin/targets')) {
+        return jsonRes({ targets: [agentResource()] });
+      }
+      if (u.includes('/admin/imports/runs')) {
+        return jsonRes({ runs: [] });
+      }
+      return jsonRes({});
+    });
+    const { getByText, getByPlaceholderText, findByText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    fireEvent.click(getByText('Resources'));
+    await findByText('repos.yaml');
+    fireEvent.change(getByPlaceholderText('GitHub org'), { target: { value: 'NoSuchOrgCcdd' } });
+    fireEvent.click(getByText('Add org'));
+    expect(await findByText(/not accessible: github.com\/NoSuchOrgCcdd\//)).toBeTruthy();
+  });
+
   it('surfaces a failed ingest start', async () => {
     loggedIn();
     (global as any).fetch = jest.fn((url: string, init?: RequestInit) => {

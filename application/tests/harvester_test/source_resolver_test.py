@@ -3,6 +3,8 @@ from cre_logging import get_logger
 logger = get_logger(__name__)
 
 import unittest
+from unittest import mock
+import urllib.error
 
 from application.utils.harvester.dest_classifier import classify_github_repo
 from application.utils.harvester.github_sources import parse_github_source
@@ -27,6 +29,56 @@ class GithubSourceParseTests(unittest.TestCase):
         for raw in ("OWASP?x=1", "github.com/OWASP#frag", ".."):
             with self.assertRaises(ValueError):
                 parse_github_source(raw)
+
+
+class GithubSourceProbeTests(unittest.TestCase):
+    def test_org_ok_and_repo_ok(self) -> None:
+        from application.utils.harvester.github_sources import probe_github_source
+
+        def urlopen(req, timeout=None):
+            self.assertIn("api.github.com", req.full_url)
+            resp = mock.MagicMock()
+            resp.status = 200
+            resp.read.return_value = b"{}"
+            resp.__enter__.return_value = resp
+            resp.__exit__.return_value = False
+            return resp
+
+        with mock.patch(
+            "application.utils.harvester.github_sources.urllib.request.urlopen",
+            side_effect=urlopen,
+        ):
+            probe_github_source(parse_github_source("github.com/OWASP/"))
+            probe_github_source(parse_github_source("github.com/OWASP/ASVS"))
+
+    def test_org_not_found_and_timeout(self) -> None:
+        from application.utils.harvester.github_sources import probe_github_source
+
+        def not_found(req, timeout=None):
+            raise urllib.error.HTTPError(
+                req.full_url, 404, "Not Found", hdrs=None, fp=None
+            )
+
+        with mock.patch(
+            "application.utils.harvester.github_sources.urllib.request.urlopen",
+            side_effect=not_found,
+        ):
+            with self.assertRaises(ValueError) as ctx:
+                probe_github_source(parse_github_source("github.com/NoSuchOrgCcdd/"))
+            self.assertIn("not accessible", str(ctx.exception))
+            self.assertIn("github.com/NoSuchOrgCcdd/", str(ctx.exception))
+
+        def timed_out(req, timeout=None):
+            raise urllib.error.URLError(TimeoutError("timed out"))
+
+        with mock.patch(
+            "application.utils.harvester.github_sources.urllib.request.urlopen",
+            side_effect=timed_out,
+        ):
+            with self.assertRaises(ValueError) as ctx:
+                probe_github_source(parse_github_source("github.com/OWASP/"))
+            self.assertIn("timed out", str(ctx.exception))
+            self.assertIn("github.com/OWASP/", str(ctx.exception))
 
 
 class DestClassifierTests(unittest.TestCase):
