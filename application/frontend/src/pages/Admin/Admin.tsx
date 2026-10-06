@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button, Message, Header as SUIHeader } from 'semantic-ui-react';
 
-import { useEnvironment } from '../../hooks';
+import { useCapabilities, useEnvironment } from '../../hooks';
 import { useUser } from '../../hooks/useUser';
 
 type Tab = 'imports' | 'pipeline' | 'targets' | 'config' | 'agent' | 'myopencre';
@@ -28,10 +28,11 @@ async function readJson(res: Response) {
 export const Admin = () => {
   const { apiUrl } = useEnvironment();
   const { isLoggedIn, loading, login } = useUser();
+  const { capabilities, loading: capsLoading } = useCapabilities();
   const [tab, setTab] = useState<Tab>('imports');
   const origin = adminOrigin(apiUrl);
 
-  if (loading) {
+  if (loading || capsLoading) {
     return (
       <div className="admin-page">
         <SUIHeader as="h1">Admin</SUIHeader>
@@ -48,6 +49,15 @@ export const Admin = () => {
         <Button primary onClick={login}>
           Login
         </Button>
+      </div>
+    );
+  }
+
+  if (!capabilities?.admin) {
+    return (
+      <div className="admin-page">
+        <SUIHeader as="h1">Admin</SUIHeader>
+        <p>Admin APIs are off. Set CRE_ALLOW_IMPORT and restart the process.</p>
       </div>
     );
   }
@@ -423,7 +433,14 @@ function TargetsTab({ origin }: { origin: string }) {
   };
 
   const del = async (targetId: string) => {
-    await fetch(`${origin}/admin/targets/${encodeURIComponent(targetId)}`, { method: 'DELETE' });
+    const res = await fetch(`${origin}/admin/targets/${encodeURIComponent(targetId)}`, {
+      method: 'DELETE',
+    });
+    const body = await readJson(res);
+    if (!res.ok) {
+      setError(body.description || body.error || res.statusText);
+      return;
+    }
     load();
   };
 

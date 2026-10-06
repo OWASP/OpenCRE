@@ -53,11 +53,15 @@ export const ROUTES = (capabilities: Capabilities): IRoute[] => [
         },
       ]
     : []),
-  {
-    path: '/admin',
-    component: Admin,
-    showFilter: false,
-  },
+  ...(capabilities.admin
+    ? [
+        {
+          path: '/admin',
+          component: Admin,
+          showFilter: false,
+        },
+      ]
+    : []),
 
   {
     path: INDEX,
