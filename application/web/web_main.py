@@ -320,7 +320,6 @@ def find_node_by_name(
         abort(404, "Node does not exist")
 
 
-# TODO: (spyros) paginate
 @openapi_documented("find_document_by_tag")
 @app.route("/rest/v1/tags", methods=["GET"])
 def find_document_by_tag() -> Any:
@@ -331,12 +330,13 @@ def find_document_by_tag() -> Any:
     database = db.Node_collection()
     # opt_osib = request.args.get("osib")
     opt_format = request.args.get("format")
-    documents = database.get_by_tags(tags)
-    if documents:
-        res = [doc.todict() for doc in documents]
-        result = {"data": res}
-        # if opt_osib:
-        #     result["osib"] = odefs.cre2osib(documents).todict()
+
+    if opt_format:
+        # Export formats keep the unpaginated lookup, same as /rest/v1/id/...
+        # does for its own opt_format branch.
+        documents = database.get_by_tags(tags)
+        if not documents:
+            abort(404, "Tag does not exist")
         if opt_format == SupportedFormats.Markdown.value:
             return f"<pre>{mdutils.cre_to_md(documents)}</pre>"
         elif opt_format == SupportedFormats.CSV.value:
@@ -353,9 +353,27 @@ def find_document_by_tag() -> Any:
                     "OSCAL export is unavailable on this deployment "
                     "(compliance-trestle not installed).",
                 )
-
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
+    try:
+        page = int(request.args.get("page") or 1)
+        if page <= 0:
+            page = 1
+        items_per_page = int(request.args.get("items_per_page") or ITEMS_PER_PAGE)
+        items_per_page = min(items_per_page, MAX_ITEMS_PER_PAGE)
+    except ValueError:
+        abort(400, "page and items_per_page must be integers")
+
+    total_pages, node_documents, cre_documents = database.get_by_tags_with_pagination(
+        tags, page=page, items_per_page=items_per_page
+    )
+    if node_documents or cre_documents:
+        result = {
+            "nodes": [doc.todict() for doc in node_documents],
+            "cres": [doc.todict() for doc in cre_documents],
+            "page": page,
+            "total_pages": total_pages,
+        }
         return jsonify(result)
     abort(404, "Tag does not exist")
 
