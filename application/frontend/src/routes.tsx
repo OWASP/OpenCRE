@@ -15,6 +15,7 @@ import {
   SUBSECTION,
 } from './const';
 import { CommonRequirementEnumeration, Graph, SearchPage, Standard } from './pages';
+import { Admin } from './pages/Admin/Admin';
 import { BrowseRootCres } from './pages/BrowseRootCres/browseRootCres';
 import { Chatbot } from './pages/chatbot/chatbot';
 import { Docs } from './pages/Docs/Docs';
@@ -40,6 +41,7 @@ export interface IRoute {
 export interface Capabilities {
   myopencre: boolean;
   login: boolean;
+  admin?: boolean;
 }
 export const ROUTES = (capabilities: Capabilities): IRoute[] => [
   ...(capabilities.myopencre
@@ -51,6 +53,11 @@ export const ROUTES = (capabilities: Capabilities): IRoute[] => [
         },
       ]
     : []),
+  {
+    path: '/admin',
+    component: Admin,
+    showFilter: false,
+  },
 
   {
     path: INDEX,

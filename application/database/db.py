@@ -263,6 +263,32 @@ class StagedChangeSet(BaseModel):  # type: ignore
     created_at = sqla.Column(sqla.DateTime, nullable=False)
 
 
+class IngestionTarget(BaseModel):  # type: ignore
+    """Admin-managed ingestion target (OIE repo or import source)."""
+
+    __tablename__ = "ingestion_target"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    kind = sqla.Column(sqla.String, nullable=False)  # oie_repo | import_source
+    name = sqla.Column(sqla.String, nullable=False)
+    spec_json = sqla.Column(sqla.Text, nullable=False, default="{}")
+    enabled = sqla.Column(sqla.Boolean, nullable=False, default=True)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+
+
+class AdminPipelineEvent(BaseModel):  # type: ignore
+    """Per-run stage log for the admin pipeline view."""
+
+    __tablename__ = "admin_pipeline_event"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    run_id = sqla.Column(sqla.String, nullable=False)
+    stage = sqla.Column(sqla.String, nullable=False)
+    status = sqla.Column(sqla.String, nullable=False)
+    detail = sqla.Column(sqla.Text, nullable=True)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+
+    __table_args__ = (sqla.Index("ix_admin_pipeline_event_run", "run_id"),)
+
+
 class User(BaseModel):  # type: ignore
     """Persisted account identity for OIDC login (issue #586, RFC #876 TODO 1).
 
@@ -744,6 +770,7 @@ def update_staged_change_set(
     staging_status: Optional[str] = None,
     has_conflicts: Optional[bool] = None,
     apply_error: Optional[str] = None,
+    changeset_json: Optional[str] = None,
 ) -> Optional[StagedChangeSet]:
     cs = get_staged_change_set(run_id=run_id)
     if not cs:
@@ -754,6 +781,8 @@ def update_staged_change_set(
         cs.has_conflicts = has_conflicts
     if apply_error is not None:
         cs.apply_error = apply_error
+    if changeset_json is not None:
+        cs.changeset_json = changeset_json
     sqla.session.add(cs)
     sqla.session.commit()
     return cs

@@ -1783,8 +1783,10 @@ class TestMain(unittest.TestCase):
                 body = json.loads(response.data.decode())
                 self.assertIn("myopencre", body)
                 self.assertIn("login", body)
+                self.assertIn("admin", body)
                 self.assertIsInstance(body["myopencre"], bool)
                 self.assertIsInstance(body["login"], bool)
+                self.assertIsInstance(body["admin"], bool)
 
     def test_capabilities_myopencre_false_by_default(self) -> None:
         """myopencre is False when CRE_ENABLE_MYOPENCRE is unset."""
@@ -1823,6 +1825,16 @@ class TestMain(unittest.TestCase):
                 self.assertEqual(200, response.status_code)
                 body = json.loads(response.data.decode())
                 self.assertTrue(body["login"])
+                self.assertFalse(body["admin"])
+
+    def test_capabilities_admin_true_when_login_and_import_enabled(self) -> None:
+        with patch.dict(
+            os.environ, {"CRE_ENABLE_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"}, clear=False
+        ):
+            with self.app.test_client() as client:
+                response = client.get("/api/capabilities")
+                self.assertEqual(200, response.status_code)
+                self.assertTrue(json.loads(response.data.decode())["admin"])
 
     def test_faq_markdown_endpoint_serves_repo_faq(self) -> None:
         """GET /docs/faq.md returns the committed FAQ markdown."""
