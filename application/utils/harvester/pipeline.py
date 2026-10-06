@@ -21,6 +21,7 @@ from application.utils.harvester.checkpoint_store import CheckpointStore
 from application.utils.harvester.chunk_pipeline import DocumentChunkPipeline
 from application.utils.harvester.config_loader import load_repo_config
 from application.utils.harvester.document_builder import DocumentBuilder
+from application.utils.harvester.event_page import prepare_event_page
 from application.utils.harvester.file_filter import FileFilter
 from application.utils.harvester.git_repository_client import GitRepositoryClient
 from application.utils.harvester.harvest_writer import write_harvest_input
@@ -196,6 +197,10 @@ def _harvest_repository(
     documents: list[Document] = []
     for path in candidates:
         text = client.get_file_at_commit(head, path)
+        if repo_cfg.kind == "event":
+            text = prepare_event_page(text)
+            if not text.strip():
+                continue
         block = DiffBlock(
             file_path=path,
             added_lines=[],

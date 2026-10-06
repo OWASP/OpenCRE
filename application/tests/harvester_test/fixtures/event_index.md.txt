@@ -1,0 +1,45 @@
+---
+
+title: AppSec Days - July 2020
+layout: event
+
+---
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Event",
+  "name": " AppSec Days - Summer of Security 2020",
+  "description": "The OWASP Foundation is hosting virtual AppSec Days on the last Tuesday and Wednesday in June, July, and August.",
+  "startDate": "2020-06-23",
+  "endDate": "2020-08-26",
+  "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
+  "location": {
+    "@type": "VirtualLocation",
+    "url": "https://appsecdays.org/"
+  },
+  "offers": [{
+    "@type": "Offer",
+    "name": "Training Courses",
+    "price": "495",
+    "priceCurrency": "USD",
+    "url": "https://appsecdays.org/register/"
+  }]
+}
+</script>
+
+<!-- rebuild 13 -->
+
+{{ site.data.event-details.pitch | markdownify }}
+
+ **[Check out our sponsors](https://appsecdays.org/sponsors/swag/)**
+
+### Training Sessions Include
+
+* Learn threat modeling with the OWASP Top 10.
+{% if site.data.trainings.count > 0 %}
+<ul>
+  {% for trainer in trainings %}
+    <li><a href="{{trainer.URL}}">{{ trainer.Title }}</a></li>
+  {% endfor %}
+</ul>
+{% endif %}
