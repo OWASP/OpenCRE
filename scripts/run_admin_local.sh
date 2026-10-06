@@ -19,11 +19,14 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT}"
 
+# Keep in sync with application.utils.postgres_url.DEFAULT_LOCAL_POSTGRES_URL
 DEFAULT_PG_URL="postgresql://cre:password@127.0.0.1:5432/cre"
 PG_URL="${PG_URL:-${DEV_DATABASE_URL:-${DEFAULT_PG_URL}}}"
 PORT="${PORT:-5000}"
 SKIP_DOCKER="${SKIP_DOCKER:-0}"
 SKIP_MIGRATE="${SKIP_MIGRATE:-0}"
+# Model-only tables (e.g. staged_change_set) until Alembic catches up.
+ADMIN_LOCAL_CREATE_ALL="${ADMIN_LOCAL_CREATE_ALL:-1}"
 MIGRATE_ONLY=0
 
 log() { echo "[admin-local] $*"; }
@@ -62,9 +65,15 @@ pg_reachable() {
   PYTHONPATH="${ROOT}" python - "$url" <<'PY'
 import sys
 from sqlalchemy import create_engine, text
-from application.utils.postgres_url import sqlalchemy_postgres_url
+from application.utils.postgres_url import is_postgres_url, sqlalchemy_postgres_url
 
-url = sqlalchemy_postgres_url(sys.argv[1])
+raw = sys.argv[1]
+if not is_postgres_url(raw):
+    sys.exit(1)
+try:
+    url = sqlalchemy_postgres_url(raw)
+except ValueError:
+    sys.exit(1)
 engine = create_engine(url, pool_pre_ping=True, connect_args={"connect_timeout": 2})
 try:
     with engine.connect() as conn:
@@ -134,9 +143,11 @@ migrate() {
   unset CRE_CACHE_FILE || true
   # Stacked feature branches can leave multiple Alembic heads.
   flask db upgrade heads
-  # Some tables (e.g. staged_change_set) are still model-only on this stack.
-  log "sqla.create_all for any model tables missing from migrations"
-  PYTHONPATH="${ROOT}" python - <<'PY'
+  if [[ "${ADMIN_LOCAL_CREATE_ALL}" == "1" ]]; then
+    # Some tables (e.g. staged_change_set) are still model-only on this stack.
+    # Set ADMIN_LOCAL_CREATE_ALL=0 to require migrations only.
+    log "sqla.create_all (ADMIN_LOCAL_CREATE_ALL=1) for model-only tables"
+    PYTHONPATH="${ROOT}" python - <<'PY'
 from application import create_app, sqla
 
 app = create_app(mode="development")
@@ -144,6 +155,9 @@ with app.app_context():
     sqla.create_all()
 print("create_all ok")
 PY
+  else
+    log "skipping create_all (ADMIN_LOCAL_CREATE_ALL=0)"
+  fi
 }
 
 run_flask() {

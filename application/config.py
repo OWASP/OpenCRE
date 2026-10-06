@@ -4,7 +4,11 @@ logger = get_logger(__name__)
 
 import os
 
-from application.utils.postgres_url import is_postgres_url, sqlalchemy_postgres_url
+from application.utils.postgres_url import (
+    is_postgres_url,
+    main_db_env_keys,
+    sqlalchemy_postgres_url,
+)
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -14,6 +18,14 @@ def _sqlalchemy_uri_from_env(raw: str) -> str:
     if is_postgres_url(raw):
         return sqlalchemy_postgres_url(raw)
     return raw
+
+
+def _first_env_url(*keys: str) -> str:
+    for key in keys:
+        raw = (os.environ.get(key) or "").strip()
+        if raw:
+            return raw
+    return ""
 
 
 class Config:
@@ -28,7 +40,7 @@ class DevelopmentConfig(Config):
     ENVIRONMENT = "DEVELOPMENT"
     CACHE_TYPE = "SimpleCache"
     SQLALCHEMY_DATABASE_URI = _sqlalchemy_uri_from_env(
-        os.environ.get("DEV_DATABASE_URL")
+        _first_env_url(*main_db_env_keys("development"))
         or f'sqlite:///{os.path.join(basedir, "../standards_cache.sqlite")}'
     )
 
@@ -45,8 +57,7 @@ class ProductionConfig(Config):
     CACHE_TYPE = "SimpleCache"
     CACHE_DEFAULT_TIMEOUT = 3000
     SQLALCHEMY_DATABASE_URI = _sqlalchemy_uri_from_env(
-        os.environ.get("PROD_DATABASE_URL")
-        or os.environ.get("DATABASE_URL")
+        _first_env_url(*main_db_env_keys("production"))
         or f'sqlite:///{os.path.join(basedir, "../standards_cache.sqlite")}'
     )
 
