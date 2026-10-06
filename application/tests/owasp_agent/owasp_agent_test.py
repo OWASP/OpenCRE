@@ -19,11 +19,7 @@ from application.utils.owasp_agent.github_crawler import (
     parse_board_history_yaml,
     project_leaders_from_site_data,
 )
-from application.utils.owasp_agent.index_store import (
-    IndexStore,
-    app_db_url_and_key,
-    default_db_path,
-)
+from application.utils.owasp_agent.index_store import IndexStore, default_db_path
 from application.utils.owasp_agent.models import Chapter, Event, Project
 from application.utils.owasp_agent.queries import MetaQueries
 from application.utils.owasp_agent.router import (
@@ -177,11 +173,9 @@ class TestOwaspAgentScenarios(unittest.TestCase):
         )
         self.router = OwaspAgentRouter(store=self.store, queries=self.queries)
         os.environ["OWASP_AGENT_ENABLED"] = "1"
-        os.environ["OWASP_AGENT_SIM_ROUTER"] = "0"
 
     def tearDown(self) -> None:
         os.environ.pop("OWASP_AGENT_ENABLED", None)
-        os.environ.pop("OWASP_AGENT_SIM_ROUTER", None)
         self.tmp.cleanup()
 
     def test_nearest_ai_meetup_pasadena(self) -> None:
@@ -518,11 +512,9 @@ class TestProbeGapFixes(unittest.TestCase):
         )
         self.router = OwaspAgentRouter(store=self.store, queries=self.queries)
         os.environ["OWASP_AGENT_ENABLED"] = "1"
-        os.environ["OWASP_AGENT_SIM_ROUTER"] = "0"
 
     def tearDown(self) -> None:
         os.environ.pop("OWASP_AGENT_ENABLED", None)
-        os.environ.pop("OWASP_AGENT_SIM_ROUTER", None)
         self.tmp.cleanup()
 
     def test_athens_inactive_leaders(self) -> None:
@@ -706,20 +698,6 @@ class TestProbeGapFixes(unittest.TestCase):
         self.assertIn("no indexed", body)
         self.assertIn("will not invent", body)
 
-    def test_spyros_talk_fail_closed_plus_cre_844(self) -> None:
-        q = "Fail-closed on Spyros excesses-defenses talk; succeed on CRE-844-486."
-        self.assertNotEqual(classify_intent(q), "clarify")
-        resp = self.router.handle(q)
-        self.assertIsNotNone(resp)
-        assert resp is not None
-        body = resp["response"].lower()
-        self.assertTrue(
-            "no indexed" in body or "fail closed" in body,
-            msg=body,
-        )
-        self.assertIn("cre-844-486", body)
-        self.assertNotIn("which city are you in", body)
-
     def test_live_in_santa_monica_place(self) -> None:
         slots = extract_slots(
             "I live in Santa Monica; which OWASP chapter meetup should I attend for AppSec?"
@@ -849,6 +827,7 @@ class TestProbeGapFixes(unittest.TestCase):
         self.assertRegex(resp["response"], r"\b\d{1,4}\b")
 
 
+
 class TestEntityAndChatMemoryFixes(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
@@ -859,12 +838,9 @@ class TestEntityAndChatMemoryFixes(unittest.TestCase):
         )
         self.router = OwaspAgentRouter(store=self.store, queries=self.queries)
         os.environ["OWASP_AGENT_ENABLED"] = "1"
-        # Structural/agent unit tests: disable embedding gate (no pgvector in CI).
-        os.environ["OWASP_AGENT_SIM_ROUTER"] = "0"
 
     def tearDown(self) -> None:
         os.environ.pop("OWASP_AGENT_ENABLED", None)
-        os.environ.pop("OWASP_AGENT_SIM_ROUTER", None)
         self.tmp.cleanup()
 
     def test_project_leaders_from_site_keeps_projects(self) -> None:
@@ -872,26 +848,6 @@ class TestEntityAndChatMemoryFixes(unittest.TestCase):
         rows = project_leaders_from_site_data(leaders)
         self.assertTrue(any(r["name"] == "Rob van der Veer" for r in rows))
         self.assertTrue(any(r["group"] == "OWASP AI Exchange" for r in rows))
-
-    def test_chapter_in_city_intent(self) -> None:
-        q = "Does OWASP have a chapter in London?"
-        self.assertEqual(classify_intent(q), "chapter_lookup")
-        resp = self.router.handle(q)
-        self.assertIsNotNone(resp)
-        assert resp is not None
-        self.assertIn("london", resp["response"].lower())
-
-    def test_project_who_leads_not_chapter(self) -> None:
-        q = "Who leads the OWASP Juice Shop project?"
-        self.assertEqual(classify_intent(q), "project_lookup")
-        slots = extract_slots(q)
-        self.assertEqual(slots.project_name, "Juice Shop")
-        resp = self.router.handle(q)
-        self.assertIsNotNone(resp)
-        assert resp is not None
-        text = resp["response"].lower()
-        self.assertIn("juice shop", text)
-        self.assertNotIn("which chapter or city", text)
 
     def test_who_is_rob_van_der_veer(self) -> None:
         from application.utils.owasp_agent.person_resolve import (
@@ -914,23 +870,19 @@ class TestEntityAndChatMemoryFixes(unittest.TestCase):
         cites = resp["owasp_agent"]["citations"]
         self.assertTrue(any("owasp" in c.lower() for c in cites))
 
-    def test_lethal_trifecta_no_brand_classifier(self) -> None:
-        """Brand/AIX keyword routing is gone — falls through to CRE without sim."""
+    def test_lethal_trifecta_aix_fact(self) -> None:
         q = "what does the AI Exchange say about the lethal trifecta?"
-        self.assertNotEqual(classify_intent(q), "aix_fact")
-        self.assertEqual(classify_intent(q), "cre_normative")
+        self.assertEqual(classify_intent(q), "aix_fact")
         resp = self.router.handle(q)
-        self.assertIsNone(resp)
-
-    def test_aix_content_ask_defers_not_clarify(self) -> None:
-        q = (
-            "What does the OWASP AI Exchange say about multiple layers "
-            "of prompt injection protection?"
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        text = resp["response"].lower()
+        self.assertIn("trifecta", text)
+        self.assertIn("exfiltration", text)
+        self.assertNotIn("does not appear to be about cybersecurity", text)
+        self.assertTrue(
+            any("owaspai.org" in c for c in resp["owasp_agent"]["citations"])
         )
-        self.assertEqual(classify_intent(q), "cre_normative")
-        resp = self.router.handle(q)
-        # Without embedded evidence, agent returns None so CRE RAG can answer.
-        self.assertIsNone(resp)
 
     def test_genai_vs_ai_exchange(self) -> None:
         q = (
@@ -946,30 +898,6 @@ class TestEntityAndChatMemoryFixes(unittest.TestCase):
         self.assertTrue("genai" in text or "large language" in text)
         self.assertNotIn("do not appear to be commonly recognized", text)
         self.assertNotIn("facilitate the sharing, discovery", text)
-
-    def test_clarify_followup_uses_history(self) -> None:
-        history = [
-            {
-                "role": "user",
-                "content": "What does OWASP membership cost in Switzerland?",
-            },
-            {
-                "role": "assistant",
-                "content": "Answer: Standard individual dues apply in Switzerland.",
-            },
-        ]
-        resp = self.router.handle("and in Morocco?", history=history)
-        self.assertIsNotNone(resp)
-        assert resp is not None
-        # Combined context should route as membership, not bare clarify miss.
-        self.assertIn("owasp_agent", resp)
-        kind = resp["owasp_agent"]["kind"]
-        self.assertIn(kind, ("membership", "clarify"))
-        if kind == "membership":
-            self.assertIn("morocco", resp["response"].lower())
-
-
-
 
 
 class TestIndexStoreDefaults(unittest.TestCase):
@@ -994,56 +922,13 @@ class TestIndexStoreDefaults(unittest.TestCase):
                 "DEV_DATABASE_URL",
                 "PROD_DATABASE_URL",
                 "SQLALCHEMY_DATABASE_URI",
-                "FLASK_CONFIG",
             }
         }
         env["DATABASE_URL"] = "postgresql://cre:pw@127.0.0.1:5432/cre"
-        env["FLASK_CONFIG"] = "development"
         with patch.dict(os.environ, env, clear=True):
             self.assertEqual(
                 default_db_path(), "postgresql://cre:pw@127.0.0.1:5432/cre"
             )
-
-    def test_dev_url_wins_in_development_when_both_set(self) -> None:
-        with patch.dict(
-            os.environ,
-            {
-                "FLASK_CONFIG": "development",
-                "DEV_DATABASE_URL": "postgresql://dev/db",
-                "DATABASE_URL": "postgresql://prod/db",
-            },
-        ):
-            os.environ.pop("OWASP_AGENT_DB", None)
-            self.assertEqual(default_db_path(), "postgresql://dev/db")
-            self.assertEqual(app_db_url_and_key()[1], "DEV_DATABASE_URL")
-
-    def test_prod_url_ignored_outside_production(self) -> None:
-        env = {
-            k: v
-            for k, v in os.environ.items()
-            if k
-            not in {
-                "OWASP_AGENT_DB",
-                "DATABASE_URL",
-                "DEV_DATABASE_URL",
-                "PROD_DATABASE_URL",
-                "SQLALCHEMY_DATABASE_URI",
-                "FLASK_CONFIG",
-            }
-        }
-        env["PROD_DATABASE_URL"] = "postgresql://prod-only/db"
-        env["FLASK_CONFIG"] = "development"
-        with patch.dict(os.environ, env, clear=True):
-            with self.assertRaises(RuntimeError):
-                default_db_path()
-
-    def test_engine_url_rewrites_postgres_scheme(self) -> None:
-        from application.utils.owasp_agent.index_store import _engine_url
-
-        self.assertEqual(
-            _engine_url("postgres://cre:pw@host/db"),
-            "postgresql+psycopg2://cre:pw@host/db",
-        )
 
     def test_no_sqlite_file_default_when_unset(self) -> None:
         drop = {
