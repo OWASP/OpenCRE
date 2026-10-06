@@ -15,8 +15,8 @@ def main() -> int:
     )
     parser.add_argument(
         "--db",
-        default=os.environ.get("OWASP_AGENT_DB", "tmp/owasp_agent.sqlite"),
-        help="Postgres URL (or SQLite file path for local poking) for the meta index",
+        default=None,
+        help="Postgres URL for the meta index (default: DATABASE_URL / DEV_DATABASE_URL)",
     )
     parser.add_argument("--skip-nest", action="store_true")
     parser.add_argument("--skip-github", action="store_true")
