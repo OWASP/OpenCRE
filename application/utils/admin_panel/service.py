@@ -25,7 +25,11 @@ from application.database import db
 from application.feature_flags import TRUE_VALUES
 from application.utils import import_diff
 from application.utils.admin_panel import config_catalog
-from application.utils.harvester.github_sources import parse_github_source
+from application.utils.harvester.github_sources import (
+    parse_github_source,
+    probe_github_source,
+    probe_github_sources,
+)
 from application.utils.harvester.repos_validator import (
     RepositoryValidationError,
     validate_repositories,
@@ -124,7 +128,8 @@ def read_repos_yaml() -> Dict[str, Any]:
 def write_repos_yaml(yaml_text: str) -> Dict[str, Any]:
     if not isinstance(yaml_text, str):
         raise ValueError("yaml must be a string")
-    load_repos_mapping(yaml_text)
+    data = load_repos_mapping(yaml_text)
+    probe_github_sources(data.get("sources") or [])
     REPOS_YAML.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_name = tempfile.mkstemp(
         dir=str(REPOS_YAML.parent), suffix=".yaml", prefix="repos."
@@ -156,6 +161,7 @@ def add_github_source_to_yaml(yaml_text: str, owner: str) -> Dict[str, Any]:
     existing = {parse_github_source(item).canonical.casefold() for item in sources}
     added = 0
     if parsed.canonical.casefold() not in existing:
+        probe_github_source(parsed)
         sources.append(parsed.canonical)
         added = 1
     ordered: Dict[str, Any] = {"sources": sources}
@@ -489,7 +495,8 @@ def start_ingestion(
 
     try:
         if yaml_text is not None:
-            load_repos_mapping(yaml_text)
+            data = load_repos_mapping(yaml_text)
+            probe_github_sources(data.get("sources") or [])
             source = repos_yaml_source_name(custom_name, yaml_text)
             tmp_path = _write_temp_repos_yaml(yaml_text)
             repos_yaml_path = str(tmp_path)
