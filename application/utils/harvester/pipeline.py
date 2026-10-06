@@ -29,6 +29,7 @@ from application.utils.harvester.models import DiffBlock, Document
 from application.utils.harvester.repos_validator import validate_repositories
 from application.utils.harvester.schemas import RepositoryConfig
 from application.utils.harvester.selection import select_repositories
+from application.utils.harvester.source_resolver import resolve_sources
 
 
 DEFAULT_REPOS_YAML = Path(__file__).with_name("repos.yaml")
@@ -40,6 +41,8 @@ class RunSummary:
 
     run_id: str
     repositories: int = 0
+    opencre_repos: int = 0
+    agent_repos: int = 0
     files_seen: int = 0
     files_retained: int = 0
     documents_emitted: int = 0
@@ -72,6 +75,7 @@ def run_harvester(
 
     ``kinds`` / ``only_due`` / ``max_repos`` narrow the batch (see
     ``harvester.selection``); the defaults visit every enabled ``standard`` repo.
+    ``sources`` org URLs are expanded here (indexer time) when present.
 
     For each enabled repo: optionally sync, detect files changed since the
     durable checkpoint, build documents, dedupe, chunk, validate as
@@ -86,12 +90,24 @@ def run_harvester(
     repos_path = Path(repos_yaml) if repos_yaml else DEFAULT_REPOS_YAML
     repos_file = load_repo_config(repos_path)
     validate_repositories(repos_file)
+    harvest_repos = repos_file.repositories
+    if repos_file.sources:
+        plan = resolve_sources(repos_file)
+        summary.opencre_repos = len(plan.opencre)
+        summary.agent_repos = len(plan.agent)
+        summary.errors += len(plan.errors)
+        harvest_repos = plan.opencre
+        if plan.agent:
+            logger.info(
+                "harvester classified %s repo(s) for the OWASP agent",
+                len(plan.agent),
+            )
 
     checkpoint_store = CheckpointStore(session=session)
     builder = DocumentBuilder()
 
     selection = select_repositories(
-        repos_file.repositories,
+        harvest_repos,
         checkpoint_store,
         kinds=kinds,
         only_due=only_due,
