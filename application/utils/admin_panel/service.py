@@ -36,6 +36,10 @@ from application.utils.harvester.repos_validator import (
 )
 from application.utils.harvester.schemas import ReposFile, validate_cron_line
 from application.utils.owasp_agent.index_store import app_db_url_and_key
+from application.utils.postgres_url import (
+    is_postgres_url,
+    sqlalchemy_postgres_url,
+)
 
 REPOS_YAML = Path(__file__).resolve().parents[1] / "harvester" / "repos.yaml"
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -329,34 +333,34 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _is_postgres_url(value: str) -> bool:
-    lowered = value.strip().lower()
-    return lowered.startswith("postgresql://") or lowered.startswith("postgres://")
-
-
-def _normalize_postgres_url(value: str) -> str:
-    raw = value.strip()
-    if raw.lower().startswith("postgres://"):
-        return "postgresql://" + raw.split("://", 1)[1]
-    return raw
-
-
 def _main_db_url() -> tuple[Optional[str], Optional[str]]:
     """Return (raw_url, env_key) for the app's main database."""
     return app_db_url_and_key()
+
+
+def _oie_cache_file() -> str:
+    """Postgres URL for the admin OIE child (never sqlite)."""
+    raw, key = _main_db_url()
+    if not raw or not is_postgres_url(raw):
+        raise RuntimeError(
+            "Admin OIE requires Postgres (set DEV_DATABASE_URL or run "
+            "`make admin-local` to start cre-postgres). "
+            f"current={key or 'unset'}"
+        )
+    return sqlalchemy_postgres_url(raw)
 
 
 def _agent_db_stats(db_url: Optional[str]) -> Dict[str, Any]:
     out: Dict[str, Any] = {"db_exists": False, "counts": None, "last_sync": None}
     if not db_url:
         return out
-    if not _is_postgres_url(db_url):
+    if not is_postgres_url(db_url):
         logger.warning("main app DB is not a Postgres URL; ignoring %r", db_url)
         return out
     engine = None
     try:
         engine = create_engine(
-            _normalize_postgres_url(db_url),
+            sqlalchemy_postgres_url(db_url),
             pool_pre_ping=True,
             connect_args={"connect_timeout": 2},
         )
@@ -391,7 +395,7 @@ def _agent_db_stats(db_url: Optional[str]) -> Dict[str, Any]:
 def agent_status() -> Dict[str, Any]:
     enabled = os.getenv("OWASP_AGENT_ENABLED", "").strip().lower() in TRUE_VALUES
     raw_db, db_env_key = _main_db_url()
-    db_url = raw_db if raw_db and _is_postgres_url(raw_db) else None
+    db_url = raw_db if raw_db and is_postgres_url(raw_db) else None
     if raw_db and not db_url:
         logger.warning(
             "main app DB (%s) is not a Postgres URL; agent needs Postgres", db_env_key
@@ -594,6 +598,7 @@ def _subprocess_env() -> Dict[str, str]:
 
 def invoke_oie_cli(run_id: str, repos_yaml: Optional[str] = None) -> Dict[str, Any]:
     script = REPO_ROOT / "scripts" / "run_oie_pipeline.py"
+    cache_file = _oie_cache_file()
     argv = [
         sys.executable,
         str(script),
@@ -602,7 +607,7 @@ def invoke_oie_cli(run_id: str, repos_yaml: Optional[str] = None) -> Dict[str, A
         "--run_id",
         run_id,
         "--cache_file",
-        "sqlite://",
+        cache_file,
     ]
     if repos_yaml:
         argv.extend(["--repos_yaml", repos_yaml])

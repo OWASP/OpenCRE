@@ -629,15 +629,24 @@ class TestAdminPanel(unittest.TestCase):
                 "returncode": 0,
             },
         )()
-        with patch(
-            "application.utils.admin_panel.service.subprocess.run", return_value=proc
-        ) as mock_run:
-            out = service.invoke_oie_cli("run-1")
+        pg = "postgresql://cre:password@127.0.0.1:5432/cre"
+        with patch.dict(
+            os.environ,
+            {"DEV_DATABASE_URL": pg, "FLASK_CONFIG": "development"},
+            clear=False,
+        ):
+            os.environ.pop("DATABASE_URL", None)
+            with patch(
+                "application.utils.admin_panel.service.subprocess.run",
+                return_value=proc,
+            ) as mock_run:
+                out = service.invoke_oie_cli("run-1")
         self.assertEqual(out["ok"], True)
         argv = mock_run.call_args.args[0]
         self.assertIn("--dry-run", argv)
         self.assertIn("--no-sync-repos", argv)
-        self.assertIn("sqlite://", argv)
+        self.assertNotIn("sqlite://", argv)
+        self.assertIn("postgresql+psycopg2://cre:password@127.0.0.1:5432/cre", argv)
         self.assertTrue(str(argv[1]).endswith("run_oie_pipeline.py"))
         self.assertNotIn("--repos_yaml", argv)
         env = mock_run.call_args.kwargs["env"]
@@ -647,6 +656,24 @@ class TestAdminPanel(unittest.TestCase):
         for part in prior.split(os.pathsep):
             if part:
                 self.assertIn(part, path_parts)
+
+    def test_invoke_oie_cli_rejects_missing_postgres(self) -> None:
+        from application.utils.admin_panel import service
+
+        drop = {
+            "OWASP_AGENT_DB",
+            "DATABASE_URL",
+            "DEV_DATABASE_URL",
+            "PROD_DATABASE_URL",
+            "SQLALCHEMY_DATABASE_URI",
+            "CRE_CACHE_FILE",
+        }
+        env = {k: v for k, v in os.environ.items() if k not in drop}
+        env["FLASK_CONFIG"] = "development"
+        with patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(RuntimeError) as ctx:
+                service.invoke_oie_cli("run-1")
+        self.assertIn("Postgres", str(ctx.exception))
 
     def test_invoke_oie_cli_passes_repos_yaml(self) -> None:
         proc = type(
@@ -658,10 +685,20 @@ class TestAdminPanel(unittest.TestCase):
                 "returncode": 0,
             },
         )()
-        with patch(
-            "application.utils.admin_panel.service.subprocess.run", return_value=proc
-        ) as mock_run:
-            service.invoke_oie_cli("run-1", repos_yaml="/tmp/custom.yaml")
+        with patch.dict(
+            os.environ,
+            {
+                "DEV_DATABASE_URL": "postgresql://cre:password@127.0.0.1:5432/cre",
+                "FLASK_CONFIG": "development",
+            },
+            clear=False,
+        ):
+            os.environ.pop("DATABASE_URL", None)
+            with patch(
+                "application.utils.admin_panel.service.subprocess.run",
+                return_value=proc,
+            ) as mock_run:
+                service.invoke_oie_cli("run-1", repos_yaml="/tmp/custom.yaml")
         argv = mock_run.call_args.args[0]
         self.assertIn("--repos_yaml", argv)
         self.assertIn("/tmp/custom.yaml", argv)
