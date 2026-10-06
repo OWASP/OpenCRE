@@ -381,8 +381,9 @@ function TargetsTab({ origin }: { origin: string }) {
   const load = useCallback(() => {
     let cancelled = false;
     fetch(`${origin}/admin/targets`)
-      .then((res) => res.json())
-      .then((body) => {
+      .then(async (res) => {
+        const body = await readJson(res);
+        if (!res.ok) throw new Error(body.description || body.error || res.statusText);
         if (!cancelled) setTargets(body.targets || []);
       })
       .catch((err) => {
@@ -477,8 +478,9 @@ function ConfigTab({ origin }: { origin: string }) {
   useEffect(() => {
     let cancelled = false;
     fetch(`${origin}/admin/config`)
-      .then((res) => res.json())
-      .then((body) => {
+      .then(async (res) => {
+        const body = await readJson(res);
+        if (!res.ok) throw new Error(body.description || body.error || res.statusText);
         if (cancelled) return;
         setRows(body.config || []);
         setInstructions(body.restart_instructions || '');
