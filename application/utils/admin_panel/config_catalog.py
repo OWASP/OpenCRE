@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, List, Mapping, MutableMapping, Optional
 from urllib.parse import urlsplit, urlunsplit
 
@@ -92,8 +93,80 @@ CATALOG: Dict[str, ConfigKey] = {
             DOCS_ENV,
             secret=True,
         ),
+        ConfigKey(
+            "GOOGLE_SECRET_JSON",
+            "Path to Google service-account JSON (never returned).",
+            DOCS_ENV,
+            secret=True,
+        ),
+        ConfigKey(
+            "OpenCRE_gspread_Auth",
+            "Spreadsheet credentials path (never returned).",
+            DOCS_ENV,
+            secret=True,
+        ),
+        ConfigKey(
+            "DEV_DATABASE_URL",
+            "App Postgres URL.",
+            DOCS_ENV,
+        ),
+        ConfigKey(
+            "NEO4J_URL",
+            "Neo4j bolt URL.",
+            DOCS_ENV,
+        ),
+        ConfigKey(
+            "REDIS_URL",
+            "Redis URL.",
+            DOCS_ENV,
+        ),
     )
 }
+
+ENV_EXAMPLE = Path(__file__).resolve().parents[3] / ".env.example"
+_SECRET_MARKERS = ("SECRET", "TOKEN", "PASSWORD", "API_KEY", "_AUTH")
+_URL_KEYS = ("_URL", "_DB", "DATABASE_URL")
+
+
+def _is_secret_key(key: str, spec: Optional[ConfigKey] = None) -> bool:
+    if spec and spec.secret:
+        return True
+    upper = key.upper()
+    return any(marker in upper for marker in _SECRET_MARKERS)
+
+
+def _should_redact_url(key: str) -> bool:
+    upper = key.upper()
+    return any(upper.endswith(suffix) or suffix in upper for suffix in _URL_KEYS)
+
+
+def keys_from_env_example(text: Optional[str] = None) -> List[str]:
+    if text is None:
+        if not ENV_EXAMPLE.is_file():
+            return []
+        text = ENV_EXAMPLE.read_text(encoding="utf-8")
+    keys: List[str] = []
+    seen: set[str] = set()
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key = stripped.split("=", 1)[0].strip()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        keys.append(key)
+    return keys
+
+
+def _ordered_keys() -> List[str]:
+    ordered = keys_from_env_example()
+    seen = set(ordered)
+    for key in CATALOG:
+        if key not in seen:
+            ordered.append(key)
+            seen.add(key)
+    return ordered
 
 
 def redact_postgres_url(value: str) -> str:
@@ -110,11 +183,13 @@ def redact_postgres_url(value: str) -> str:
 
 def present_config(environ: Mapping[str, str]) -> List[Dict[str, Any]]:
     rows = []
-    for key, spec in CATALOG.items():
+    for key in _ordered_keys():
+        spec = CATALOG.get(key)
         raw = environ.get(key)
-        if spec.secret:
+        secret = _is_secret_key(key, spec)
+        if secret:
             shown = "***" if raw else None
-        elif key == "OWASP_AGENT_DB" and raw:
+        elif raw and _should_redact_url(key):
             shown = redact_postgres_url(raw)
         else:
             shown = raw
@@ -122,9 +197,9 @@ def present_config(environ: Mapping[str, str]) -> List[Dict[str, Any]]:
             {
                 "key": key,
                 "value": shown,
-                "help_text": spec.help_text,
-                "help_url": spec.help_url,
-                "secret": spec.secret,
+                "help_text": spec.help_text if spec else "Declared in .env.example.",
+                "help_url": spec.help_url if spec else DOCS_ENV,
+                "secret": secret,
             }
         )
     return rows
