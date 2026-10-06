@@ -714,6 +714,13 @@ def import_stage_strip(status: Optional[str]) -> List[Dict[str, str]]:
             {"id": "accepted", "label": "Accepted", "state": "idle"},
             {"id": "applied", "label": "Applied", "state": "idle"},
         ]
+    if status == "apply_failed":
+        return [
+            {"id": "queued", "label": "Queued", "state": "done"},
+            {"id": "pending_review", "label": "Review", "state": "done"},
+            {"id": "accepted", "label": "Accepted", "state": "done"},
+            {"id": "applied", "label": "Applied", "state": "failed"},
+        ]
     current = status or "queued"
     seen = False
     out: List[Dict[str, str]] = []
