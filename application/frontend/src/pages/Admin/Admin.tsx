@@ -136,14 +136,18 @@ function ImportsTab({ origin }: { origin: string }) {
 
   const act = async (runId: string, path: string, method = 'POST') => {
     setError(null);
-    const res = await fetch(`${origin}/admin/imports/runs/${runId}/${path}`, { method });
-    const body = await readJson(res);
-    if (!res.ok) {
-      setError(body.description || body.error || res.statusText);
-      return;
+    try {
+      const res = await fetch(`${origin}/admin/imports/runs/${runId}/${path}`, { method });
+      const body = await readJson(res);
+      if (!res.ok) {
+        setError(body.description || body.error || res.statusText);
+        return;
+      }
+      setDetail(body);
+      load();
+    } catch (err) {
+      setError(String(err));
     }
-    setDetail(body);
-    load();
   };
 
   const openRun = async (runId: string) => {
@@ -215,6 +219,9 @@ function ImportsTab({ origin }: { origin: string }) {
   return (
     <div>
       {error && <Message negative>{error}</Message>}
+      {Array.isArray(detail?.warnings) && detail.warnings.length > 0 && (
+        <Message warning>{detail.warnings.join(' ')}</Message>
+      )}
       <table className="admin-table">
         <thead>
           <tr>
