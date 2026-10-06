@@ -788,6 +788,244 @@ class TestAdminPanel(unittest.TestCase):
             mock_open.assert_not_called()
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_add_org_keeps_cron_line(self) -> None:
+        with patch("application.utils.admin_panel.service.probe_github_source"):
+            with self.app.test_client() as c:
+                r = c.post(
+                    "/admin/repos.yaml/expand-org",
+                    json={
+                        "yaml": MINIMAL_REPOS_YAML,
+                        "owner": "OWASP",
+                        "cron": "0 2 * * *",
+                    },
+                )
+                self.assertEqual(r.status_code, 200)
+                self.assertIn("0 2 * * *", r.get_json()["yaml"])
+                r = c.post(
+                    "/admin/repos.yaml/expand-org",
+                    json={
+                        "yaml": MINIMAL_REPOS_YAML,
+                        "owner": "OWASP",
+                        "cron": "hourly",
+                    },
+                )
+                self.assertEqual(r.status_code, 400)
+                self.assertIn("cron", (r.get_json() or {}).get("description", ""))
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_add_repo_builds_yaml_without_writing_packaged_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            packaged = Path(tmp) / "repos.yaml"
+            packaged.write_text(MINIMAL_REPOS_YAML, encoding="utf-8")
+            with patch.object(service, "REPOS_YAML", packaged):
+                with patch(
+                    "application.utils.admin_panel.service.probe_github_source"
+                ) as probe:
+                    with self.app.test_client() as c:
+                        r = c.post(
+                            "/admin/repos.yaml/add-repo",
+                            json={
+                                "yaml": "sources: []\n",
+                                "owner": "OWASP",
+                                "repo": "ASVS",
+                                "id": "one-off-asvs",
+                                "include": "**/*.md\ndocs/**/*.md",
+                                "strategy": "markdown_heading",
+                                "max_tokens": 800,
+                                "overlap_tokens": 40,
+                                "cron": "0 * * * *",
+                            },
+                        )
+                        self.assertEqual(r.status_code, 200)
+                        body = r.get_json()
+                        self.assertEqual(body["added"], "one-off-asvs")
+                        self.assertIn("0 * * * *", body["yaml"])
+                        self.assertIn("one-off-asvs", body["yaml"])
+                        self.assertEqual(
+                            packaged.read_text(encoding="utf-8"), MINIMAL_REPOS_YAML
+                        )
+                        probe.assert_called_once()
+                        r = c.post(
+                            "/admin/repos.yaml/add-repo",
+                            json={"yaml": "sources: []\n", "owner": "OWASP"},
+                        )
+                        self.assertEqual(r.status_code, 400)
+                        self.assertIn(
+                            "owner and repo",
+                            (r.get_json() or {}).get("description", ""),
+                        )
+                        r = c.post(
+                            "/admin/repos.yaml/add-repo",
+                            json={
+                                "yaml": "sources: []\n",
+                                "owner": "OWASP",
+                                "repo": "ASVS",
+                                "max_tokens": "nope",
+                            },
+                        )
+                        self.assertEqual(r.status_code, 400)
+                        self.assertIn(
+                            "max_tokens", (r.get_json() or {}).get("description", "")
+                        )
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_packaged_ingest_start(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            packaged = Path(tmp) / "repos.yaml"
+            packaged.write_text(MINIMAL_REPOS_YAML, encoding="utf-8")
+            with patch.object(service, "REPOS_YAML", packaged):
+                with patch(
+                    "application.utils.admin_panel.service.invoke_oie_cli",
+                    return_value={"ok": True, "stages": []},
+                ) as mock_oie:
+                    with self.app.test_client() as c:
+                        r = c.post("/admin/ingest/start", json={"packaged": True})
+                        self.assertEqual(r.status_code, 200)
+                        self.assertEqual(
+                            r.get_json()["source"],
+                            service.repos_yaml_source_name(None, MINIMAL_REPOS_YAML),
+                        )
+                        mock_oie.assert_called_once()
+                        r = c.post("/admin/ingest/start", json={"current": True})
+                        self.assertEqual(r.status_code, 200)
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_dashboard_payload(self) -> None:
+        run = db.create_import_run(source="dash-src", version="v")
+        db.persist_staged_change_set(
+            run_id=run.id,
+            changeset_json="[]",
+            staging_status="pending_review",
+        )
+        service.append_event(run.id, "oie", "started", "running")
+        service.append_event(run.id, "oie", "error", "boom")
+        with self.app.test_client() as c:
+            r = c.get("/admin/dashboard")
+            self.assertEqual(r.status_code, 200)
+            body = r.get_json()
+            self.assertTrue(body["running"])
+            self.assertTrue(body["failed"])
+            self.assertEqual(body["import_runs"][0]["source"], "dash-src")
+            self.assertIn("agent", body)
+            self.assertFalse(body["agent"]["writes_cre_graph"])
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_review_links_approve_deny_relink(self) -> None:
+        run = db.create_import_run(source="link-src", version="v")
+        ops = [
+            {
+                "op": "add_control",
+                "document": {
+                    "name": "ASVS",
+                    "section": "1.1",
+                    "linked_cres": [{"id": "123", "name": "Auth"}],
+                },
+            },
+            {"op": "add_control", "document": {"name": "Orphan", "linked_cres": []}},
+            {
+                "op": "modify_control",
+                "key": [],
+                "after": {
+                    "linked_cres": [{"id": "9", "name": "Old"}],
+                },
+            },
+        ]
+        db.persist_staged_change_set(
+            run_id=run.id,
+            changeset_json=json.dumps(ops),
+            staging_status="pending_review",
+        )
+        with self.app.test_client() as c:
+            r = c.get(f"/admin/imports/runs/{run.id}/links")
+            self.assertEqual(r.status_code, 200)
+            links = r.get_json()["links"]
+            self.assertEqual(links[0]["linked_to"]["id"], "123")
+            self.assertIsNone(links[1]["linked_to"])
+            self.assertEqual(links[2]["added"]["name"], "")
+            r = c.post(
+                f"/admin/imports/runs/{run.id}/links",
+                json={"op_index": 0, "link_index": 0, "action": "approve"},
+            )
+            self.assertEqual(r.status_code, 200)
+            self.assertEqual(r.get_json()["links"][0]["decision"], "approved")
+            r = c.post(
+                f"/admin/imports/runs/{run.id}/links",
+                json={
+                    "op_index": 0,
+                    "link_index": 0,
+                    "action": "relink",
+                    "cre": {"id": "456", "name": "Session"},
+                },
+            )
+            self.assertEqual(r.get_json()["links"][0]["linked_to"]["id"], "456")
+            r = c.post(
+                f"/admin/imports/runs/{run.id}/links",
+                json={"op_index": 0, "link_index": 0, "action": "deny"},
+            )
+            self.assertEqual(r.status_code, 200)
+            remaining = r.get_json()["links"]
+            self.assertTrue(
+                all(
+                    row["op_index"] != 0 or row["linked_to"] is None
+                    for row in remaining
+                )
+            )
+            r = c.post(
+                f"/admin/imports/runs/{run.id}/links",
+                json={
+                    "op_index": 1,
+                    "action": "relink",
+                    "cre": {"name": "Access Control"},
+                },
+            )
+            self.assertEqual(r.status_code, 200)
+            added = [row for row in r.get_json()["links"] if row["op_index"] == 1]
+            self.assertEqual(added[0]["linked_to"]["name"], "Access Control")
+            r = c.post(
+                f"/admin/imports/runs/{run.id}/links",
+                json={"op_index": 0, "action": "nope"},
+            )
+            self.assertEqual(r.status_code, 400)
+            r = c.post(f"/admin/imports/runs/{run.id}/links", json={"op_index": 0})
+            self.assertEqual(r.status_code, 400)
+            r = c.get("/admin/imports/runs/missing/links")
+            self.assertEqual(r.status_code, 404)
+
+    def test_present_config_includes_env_example_keys(self) -> None:
+        keys = config_catalog.keys_from_env_example()
+        self.assertIn("DEV_DATABASE_URL", keys)
+        self.assertIn("OWASP_AGENT_DB", keys)
+        self.assertIn("CRE_ENABLE_LOGIN", keys)
+        rows = config_catalog.present_config(
+            {
+                "DEV_DATABASE_URL": "postgresql://cre:secret@localhost/opencre",
+                "GOOGLE_CLIENT_SECRET": "shh",
+                "CRE_ALLOW_IMPORT": "1",
+            }
+        )
+        by_key = {row["key"]: row for row in rows}
+        for key in keys:
+            self.assertIn(key, by_key)
+        self.assertIn("CRE_ALLOW_IMPORT", by_key)
+        self.assertEqual(
+            by_key["DEV_DATABASE_URL"]["value"],
+            "postgresql://cre:***@localhost/opencre",
+        )
+        self.assertEqual(by_key["GOOGLE_CLIENT_SECRET"]["value"], "***")
+        self.assertTrue(by_key["GOOGLE_CLIENT_SECRET"]["secret"])
+        self.assertEqual(by_key["CRE_ALLOW_IMPORT"]["value"], "1")
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_config_get_lists_env_example_keys(self) -> None:
+        with self.app.test_client() as c:
+            r = c.get("/admin/config")
+            self.assertEqual(r.status_code, 200)
+            keys = {row["key"] for row in r.get_json()["config"]}
+            for expected in config_catalog.keys_from_env_example():
+                self.assertIn(expected, keys)
+            self.assertIn("CRE_ALLOW_IMPORT", keys)
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_repos_yaml_rejects_oversized_payload(self) -> None:
         huge = "a" * (service.YAML_MAX_BYTES + 1)
         with self.app.test_client() as c:
@@ -968,4 +1206,6 @@ class TestAdminPanel(unittest.TestCase):
                 )
                 self.assertEqual(r.status_code, 401)
                 r = c.get("/admin/repos.yaml", headers={"Accept": "application/json"})
+                self.assertEqual(r.status_code, 401)
+                r = c.get("/admin/dashboard", headers={"Accept": "application/json"})
                 self.assertEqual(r.status_code, 401)

@@ -184,3 +184,47 @@ class SourceResolverTests(unittest.TestCase):
         )
         self.assertEqual([cfg.repo for cfg in plan.opencre], ["ASVS"])
         self.assertEqual(plan.agent, [])
+
+    def test_source_cron_copied_onto_discovered_repos(self) -> None:
+        repos_file = ReposFile.model_validate(
+            {
+                "sources": [
+                    {"url": "github.com/OWASP/", "cron": "0 2 * * *"},
+                ]
+            }
+        )
+
+        def list_owner(owner: str):
+            return [
+                {"name": "ASVS", "fork": False, "archived": False, "language": None},
+                {
+                    "name": "NestJS-demo",
+                    "fork": False,
+                    "archived": False,
+                    "language": "TypeScript",
+                    "description": "demo API",
+                },
+            ]
+
+        plan = resolve_sources(repos_file, list_owner_repos=list_owner)
+        asvs = next(cfg for cfg in plan.opencre if cfg.repo == "ASVS")
+        self.assertEqual(asvs.cron, "0 2 * * *")
+        self.assertEqual(plan.agent[0]["cron"], "0 2 * * *")
+
+    def test_disabled_source_is_skipped(self) -> None:
+        repos_file = ReposFile.model_validate(
+            {"sources": [{"url": "github.com/OWASP/", "enabled": False}]}
+        )
+        plan = resolve_sources(
+            repos_file, list_owner_repos=lambda owner: self.fail(owner)
+        )
+        self.assertEqual(plan.opencre, [])
+        self.assertEqual(plan.skipped, 1)
+
+    def test_invalid_cron_rejected(self) -> None:
+        from pydantic import ValidationError
+
+        with self.assertRaises(ValidationError):
+            ReposFile.model_validate(
+                {"sources": [{"url": "github.com/OWASP/", "cron": "hourly"}]}
+            )

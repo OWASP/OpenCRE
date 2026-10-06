@@ -34,7 +34,7 @@ from application.utils.harvester.repos_validator import (
     RepositoryValidationError,
     validate_repositories,
 )
-from application.utils.harvester.schemas import ReposFile
+from application.utils.harvester.schemas import ReposFile, validate_cron_line
 
 REPOS_YAML = Path(__file__).resolve().parents[1] / "harvester" / "repos.yaml"
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -152,17 +152,51 @@ def write_repos_yaml(yaml_text: str) -> Dict[str, Any]:
     }
 
 
-def add_github_source_to_yaml(yaml_text: str, owner: str) -> Dict[str, Any]:
+def _source_url(item: Any) -> str:
+    if isinstance(item, dict):
+        return str(item.get("url") or "").strip()
+    return str(item).strip() if item is not None else ""
+
+
+def _normalize_sources(items: Any) -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    for item in items or []:
+        if isinstance(item, str) and item.strip():
+            out.append({"url": item.strip(), "enabled": True})
+            continue
+        if not isinstance(item, dict):
+            continue
+        url = str(item.get("url") or "").strip()
+        if not url:
+            continue
+        entry: Dict[str, Any] = {
+            "url": url,
+            "enabled": bool(item.get("enabled", True)),
+        }
+        cron = validate_cron_line(item.get("cron"))
+        if cron:
+            entry["cron"] = cron
+        out.append(entry)
+    return out
+
+
+def add_github_source_to_yaml(
+    yaml_text: str, owner: str, cron: Optional[str] = None
+) -> Dict[str, Any]:
     parsed = parse_github_source(owner)
     data = load_repos_mapping(yaml_text, allow_empty=True)
-    sources = [
-        str(item).strip() for item in (data.get("sources") or []) if str(item).strip()
-    ]
-    existing = {parse_github_source(item).canonical.casefold() for item in sources}
+    sources = _normalize_sources(data.get("sources"))
+    existing = {
+        parse_github_source(_source_url(item)).canonical.casefold() for item in sources
+    }
     added = 0
     if parsed.canonical.casefold() not in existing:
         probe_github_source(parsed)
-        sources.append(parsed.canonical)
+        entry: Dict[str, Any] = {"url": parsed.canonical, "enabled": True}
+        cron_line = validate_cron_line(cron)
+        if cron_line:
+            entry["cron"] = cron_line
+        sources.append(entry)
         added = 1
     ordered: Dict[str, Any] = {"sources": sources}
     repos = data.get("repositories") or []
@@ -180,8 +214,99 @@ def add_github_source_to_yaml(yaml_text: str, owner: str) -> Dict[str, Any]:
     }
 
 
-def expand_github_org_into_yaml(yaml_text: str, owner: str) -> Dict[str, Any]:
-    return add_github_source_to_yaml(yaml_text, owner)
+def expand_github_org_into_yaml(
+    yaml_text: str, owner: str, cron: Optional[str] = None
+) -> Dict[str, Any]:
+    return add_github_source_to_yaml(yaml_text, owner, cron=cron)
+
+
+def _int_field(value: Any, default: int, name: str) -> int:
+    if value is None or value == "":
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be an integer") from exc
+
+
+def add_repository_to_yaml(yaml_text: str, spec: Dict[str, Any]) -> Dict[str, Any]:
+    data = load_repos_mapping(yaml_text, allow_empty=True)
+    owner = str(spec.get("owner") or "").strip()
+    repo = str(spec.get("repo") or "").strip()
+    if not owner or not repo:
+        raise ValueError("owner and repo are required")
+    repo_id = str(spec.get("id") or "").strip() or f"{owner}-{repo}".lower()
+    include = spec.get("include")
+    if isinstance(include, str):
+        include = [part.strip() for part in include.splitlines() if part.strip()]
+    if not include:
+        paths = spec.get("paths") if isinstance(spec.get("paths"), dict) else {}
+        include = paths.get("include") or ["**/*.md"]
+    exclude = spec.get("exclude")
+    if isinstance(exclude, str):
+        exclude = [part.strip() for part in exclude.splitlines() if part.strip()]
+    if exclude is None:
+        paths = spec.get("paths") if isinstance(spec.get("paths"), dict) else {}
+        exclude = paths.get("exclude") or []
+    chunking = spec.get("chunking") if isinstance(spec.get("chunking"), dict) else {}
+    polling = spec.get("polling") if isinstance(spec.get("polling"), dict) else {}
+    repo_cfg: Dict[str, Any] = {
+        "id": repo_id,
+        "type": "github",
+        "enabled": bool(spec.get("enabled", True)),
+        "owner": owner,
+        "repo": repo,
+        "branch": str(spec.get("branch") or "main").strip() or "main",
+        "paths": {"include": include, "exclude": exclude},
+        "chunking": {
+            "strategy": chunking.get("strategy")
+            or spec.get("strategy")
+            or "markdown_heading",
+            "max_tokens": _int_field(
+                chunking.get("max_tokens") or spec.get("max_tokens"),
+                1200,
+                "max_tokens",
+            ),
+            "overlap_tokens": _int_field(
+                chunking.get("overlap_tokens") or spec.get("overlap_tokens"),
+                100,
+                "overlap_tokens",
+            ),
+        },
+        "polling": {
+            "mode": polling.get("mode") or spec.get("mode") or "incremental",
+            "interval_minutes": _int_field(
+                polling.get("interval_minutes") or spec.get("interval_minutes"),
+                60,
+                "interval_minutes",
+            ),
+        },
+    }
+    cron_line = validate_cron_line(spec.get("cron"))
+    if cron_line:
+        repo_cfg["cron"] = cron_line
+    parsed = parse_github_source(f"github.com/{owner}/{repo}")
+    probe_github_source(parsed)
+    repos = list(data.get("repositories") or [])
+    if any(
+        str(r.get("id") or "").casefold() == repo_id.casefold()
+        for r in repos
+        if isinstance(r, dict)
+    ):
+        raise ValueError(f"target already exists: {repo_id}")
+    repos.append(repo_cfg)
+    ordered: Dict[str, Any] = {
+        "sources": _normalize_sources(data.get("sources")),
+        "repositories": repos,
+    }
+    text = _dump_repos_mapping(ordered)
+    load_repos_mapping(text)
+    return {
+        "yaml": text,
+        "added": repo_id,
+        "source": repos_yaml_source_name(None, text),
+        "repository": repo_cfg,
+    }
 
 
 def _write_temp_repos_yaml(yaml_text: str) -> Path:
@@ -486,6 +611,7 @@ def start_ingestion(
     target_id: Optional[str] = None,
     yaml_text: Optional[str] = None,
     name: Optional[str] = None,
+    packaged: bool = False,
 ) -> Dict[str, Any]:
     custom_name = (name or "").strip()
     do_oie = False
@@ -501,6 +627,9 @@ def start_ingestion(
             tmp_path = _write_temp_repos_yaml(yaml_text)
             repos_yaml_path = str(tmp_path)
             do_oie = True
+        elif packaged:
+            do_oie = True
+            source, repos_yaml_path = _packaged_harvest_source(custom_name)
         elif stripped_target:
             if stripped_target == AGENT_RESOURCE_ID:
                 do_oie = True
@@ -734,6 +863,163 @@ def drop_last_ingestion(source: str) -> Dict[str, Any]:
     db.update_staged_change_set(run_id=run.id, staging_status="discarded")
     append_event(run.id, "dropped", "ok", f"source={source}")
     return {"run_id": run.id, "staging_status": "discarded"}
+
+
+def _op_document(op: Dict[str, Any]) -> Dict[str, Any]:
+    kind = str(op.get("op") or "")
+    if kind == "modify_control":
+        doc = op.get("after")
+    else:
+        doc = op.get("document")
+    return doc if isinstance(doc, dict) else {}
+
+
+def _op_added_name(op: Dict[str, Any], doc: Dict[str, Any]) -> str:
+    name = doc.get("name")
+    if name:
+        return str(name)
+    key = op.get("key")
+    if isinstance(key, list) and key:
+        return str(key[0] or "")
+    return ""
+
+
+def review_run_links(run_id: str) -> Dict[str, Any]:
+    cs = db.get_staged_change_set(run_id=run_id)
+    if not cs:
+        raise KeyError("no staged change set")
+    try:
+        ops = json.loads(cs.changeset_json or "[]")
+    except json.JSONDecodeError as exc:
+        raise ValueError("invalid changeset json") from exc
+    if not isinstance(ops, list):
+        raise ValueError("changeset must be a list")
+    links: List[Dict[str, Any]] = []
+    for op_index, op in enumerate(ops):
+        if not isinstance(op, dict):
+            continue
+        doc = _op_document(op)
+        added = {
+            "name": _op_added_name(op, doc),
+            "section": doc.get("section") or "",
+            "sectionID": doc.get("sectionID") or "",
+            "op": op.get("op"),
+        }
+        cres = doc.get("linked_cres")
+        if not isinstance(cres, list) or not cres:
+            links.append(
+                {
+                    "op_index": op_index,
+                    "link_index": None,
+                    "added": added,
+                    "linked_to": None,
+                    "decision": "pending",
+                }
+            )
+            continue
+        for link_index, cre in enumerate(cres):
+            if not isinstance(cre, dict):
+                continue
+            links.append(
+                {
+                    "op_index": op_index,
+                    "link_index": link_index,
+                    "added": added,
+                    "linked_to": {
+                        "id": cre.get("id") or "",
+                        "name": cre.get("name") or "",
+                    },
+                    "decision": cre.get("decision") or "pending",
+                }
+            )
+    return {
+        "run_id": run_id,
+        "staging_status": cs.staging_status,
+        "links": links,
+        "changeset": ops,
+    }
+
+
+def review_link(
+    run_id: str,
+    *,
+    op_index: int,
+    action: str,
+    link_index: Optional[int] = None,
+    cre: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    action = (action or "").strip().lower()
+    if action not in ("approve", "deny", "relink"):
+        raise ValueError("action must be approve, deny, or relink")
+    cs = db.get_staged_change_set(run_id=run_id)
+    if not cs:
+        raise KeyError("no staged change set")
+    if cs.staging_status not in ("pending_review", "accepted"):
+        raise ValueError("can only edit pending or accepted staged mappings")
+    try:
+        ops = json.loads(cs.changeset_json or "[]")
+    except json.JSONDecodeError as exc:
+        raise ValueError("invalid changeset json") from exc
+    if not isinstance(ops, list):
+        raise ValueError("changeset must be a list")
+    if op_index < 0 or op_index >= len(ops):
+        raise IndexError("op_index out of range")
+    op = ops[op_index]
+    if not isinstance(op, dict):
+        raise ValueError("invalid op")
+    doc = _op_document(op)
+    cres = doc.get("linked_cres")
+    if not isinstance(cres, list):
+        cres = []
+        doc["linked_cres"] = cres
+    if action == "relink":
+        if not isinstance(cre, dict) or not (
+            str(cre.get("id") or "").strip() or str(cre.get("name") or "").strip()
+        ):
+            raise ValueError("relink requires cre.id or cre.name")
+        target = {
+            "id": str(cre.get("id") or "").strip(),
+            "name": str(cre.get("name") or "").strip(),
+            "decision": "relinked",
+        }
+        if link_index is None:
+            cres.append(target)
+        else:
+            if link_index < 0 or link_index >= len(cres):
+                raise IndexError("link_index out of range")
+            cres[link_index] = target
+    elif action == "deny":
+        if link_index is None or link_index < 0 or link_index >= len(cres):
+            raise IndexError("link_index out of range")
+        cres.pop(link_index)
+    else:
+        if link_index is None or link_index < 0 or link_index >= len(cres):
+            raise IndexError("link_index out of range")
+        if not isinstance(cres[link_index], dict):
+            raise ValueError("invalid link")
+        cres[link_index]["decision"] = "approved"
+    kind = str(op.get("op") or "")
+    if kind == "modify_control":
+        op["after"] = doc
+    else:
+        op["document"] = doc
+    db.update_staged_change_set(run_id=run_id, changeset_json=json.dumps(ops))
+    return review_run_links(run_id)
+
+
+def dashboard_payload() -> Dict[str, Any]:
+    pipe = pipeline_snapshot()
+    events = pipe.get("events") or []
+    running = [e for e in events if e.get("status") == "started"]
+    failed = [e for e in events if e.get("status") in ("error", "failed")]
+    return {
+        "running": running[:25],
+        "failed": failed[:25],
+        "import_runs": (pipe.get("import_runs") or [])[:15],
+        "latest_strip": pipe.get("latest_strip"),
+        "oie_unconsumed": (pipe.get("oie") or {}).get("unconsumed", 0),
+        "agent": agent_status(),
+    }
 
 
 def config_payload() -> Dict[str, Any]:

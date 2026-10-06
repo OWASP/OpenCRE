@@ -16,8 +16,8 @@ def validate_repositories(config: ReposFile) -> None:
     seen_repositories: set[tuple[str, str]] = set()
     seen_sources: set[str] = set()
 
-    for raw in config.sources:
-        source = parse_github_source(raw)
+    for src in config.sources:
+        source = parse_github_source(src.url)
         key = source.canonical.casefold()
         if key in seen_sources:
             raise RepositoryValidationError(f"Duplicate source: {source.canonical}")

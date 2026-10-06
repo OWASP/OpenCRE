@@ -53,6 +53,7 @@ def _make_opencre_config(
     repo: str,
     branch: str,
     taken_ids: Set[str],
+    cron: Optional[str] = None,
 ) -> RepositoryConfig:
     return RepositoryConfig(
         id=_repo_id(owner, repo, taken_ids),
@@ -68,6 +69,7 @@ def _make_opencre_config(
             overlap_tokens=100,
         ),
         polling=PollingConfig(mode="incremental", interval_minutes=60),
+        cron=cron,
     )
 
 
@@ -92,15 +94,18 @@ def resolve_sources(
             plan.opencre.append(cfg)
 
     seen: Set[Tuple[str, str]] = set(explicit.keys())
-    parsed_sources: List[GithubSource] = []
-    for raw in repos_file.sources:
+    parsed_sources: List[Tuple[GithubSource, Optional[str]]] = []
+    for src in repos_file.sources:
+        if not src.enabled:
+            plan.skipped += 1
+            continue
         try:
-            parsed_sources.append(parse_github_source(raw))
+            parsed_sources.append((parse_github_source(src.url), src.cron))
         except ValueError as exc:
             plan.errors.append(str(exc))
             plan.skipped += 1
 
-    for source in parsed_sources:
+    for source, cron in parsed_sources:
         if source.is_org:
             try:
                 remote = list_fn(source.owner)
@@ -116,6 +121,7 @@ def resolve_sources(
                     explicit=explicit,
                     seen=seen,
                     taken_ids=taken_ids,
+                    cron=cron,
                 )
             continue
         assert source.repo is not None
@@ -127,12 +133,15 @@ def resolve_sources(
         seen.add(key)
         if dest == "opencre":
             plan.opencre.append(
-                _make_opencre_config(source.owner, source.repo, "main", taken_ids)
+                _make_opencre_config(
+                    source.owner, source.repo, "main", taken_ids, cron=cron
+                )
             )
         else:
-            plan.agent.append(
-                {"owner": source.owner, "repo": source.repo, "dest": "agent"}
-            )
+            entry = {"owner": source.owner, "repo": source.repo, "dest": "agent"}
+            if cron:
+                entry["cron"] = cron
+            plan.agent.append(entry)
     return plan
 
 
@@ -144,6 +153,7 @@ def _add_discovered(
     explicit: Dict[Tuple[str, str], RepositoryConfig],
     seen: Set[Tuple[str, str]],
     taken_ids: Set[str],
+    cron: Optional[str] = None,
 ) -> None:
     repo_name = str(item.get("name") or "").strip()
     if not repo_name:
@@ -171,7 +181,11 @@ def _add_discovered(
                 repo_name,
                 str(item.get("default_branch") or "main"),
                 taken_ids,
+                cron=cron,
             )
         )
         return
-    plan.agent.append({"owner": owner, "repo": repo_name, "dest": "agent"})
+    entry = {"owner": owner, "repo": repo_name, "dest": "agent"}
+    if cron:
+        entry["cron"] = cron
+    plan.agent.append(entry)
