@@ -606,7 +606,7 @@ function TargetsTab({ origin }: { origin: string }) {
       <p className="admin-help">
         Save writes the packaged harvester file. Start one-off uses this editor yaml without overwriting that
         file. Import review source is the optional name, otherwise <code>repos.yaml:&lt;hash&gt;</code>. Start
-        is always dry-run; git sync is off.
+        is always dry-run; git sync is off. Yaml is capped at 4MiB so a full org expand still fits.
       </p>
       <p>
         Import review source: <code>{customName.trim() || yamlSource || 'repos.yaml:&lt;hash&gt;'}</code>
