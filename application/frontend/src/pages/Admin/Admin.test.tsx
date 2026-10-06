@@ -2,6 +2,7 @@ import { fireEvent, render, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 
+import { useCapabilities } from '../../hooks/useCapabilities';
 import { useUser } from '../../hooks/useUser';
 import { Admin } from './Admin';
 
@@ -9,8 +10,10 @@ jest.mock('../../hooks/useEnvironment', () => ({
   useEnvironment: () => ({ name: 'test', apiUrl: '/rest/v1' }),
 }));
 jest.mock('../../hooks/useUser');
+jest.mock('../../hooks/useCapabilities');
 
 const mockUser = useUser as jest.Mock;
+const mockCaps = useCapabilities as jest.Mock;
 
 function jsonRes(body: unknown, status = 200) {
   return Promise.resolve({
@@ -30,10 +33,36 @@ function loggedIn() {
     login: jest.fn(),
     logout: jest.fn(),
   });
+  mockCaps.mockReturnValue({
+    capabilities: { myopencre: true, login: true, admin: true },
+    loading: false,
+  });
 }
 
 describe('Admin', () => {
+  beforeEach(() => {
+    mockCaps.mockReturnValue({
+      capabilities: { myopencre: false, login: true, admin: false },
+      loading: false,
+    });
+  });
+
   afterEach(() => jest.clearAllMocks());
+
+  it('hides admin tabs when import capability is off', () => {
+    loggedIn();
+    mockCaps.mockReturnValue({
+      capabilities: { myopencre: true, login: true, admin: false },
+      loading: false,
+    });
+    const { getByText, queryByText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    expect(getByText(/CRE_ALLOW_IMPORT/)).toBeTruthy();
+    expect(queryByText('Import review')).toBeNull();
+  });
 
   it('asks anonymous users to log in', () => {
     mockUser.mockReturnValue({
@@ -287,5 +316,31 @@ describe('Admin', () => {
         expect.objectContaining({ method: 'POST' })
       )
     );
+  });
+
+  it('surfaces a failed target delete', async () => {
+    loggedIn();
+    (global as any).fetch = jest.fn((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/admin/targets/') && init?.method === 'DELETE') {
+        return jsonRes({ description: 'target not found' }, 404);
+      }
+      if (u.includes('/admin/targets')) {
+        return jsonRes({ targets: [{ id: 'asvs-src', kind: 'import_source' }] });
+      }
+      if (u.includes('/admin/imports/runs')) {
+        return jsonRes({ runs: [] });
+      }
+      return jsonRes({});
+    });
+    const { getByText, findByText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    fireEvent.click(getByText('Targets'));
+    await findByText('asvs-src');
+    fireEvent.click(getByText('Remove'));
+    expect(await findByText(/target not found/)).toBeTruthy();
   });
 });
