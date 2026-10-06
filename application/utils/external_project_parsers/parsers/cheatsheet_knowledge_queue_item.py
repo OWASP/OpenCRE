@@ -1,3 +1,8 @@
+"""Convert CheatsheetRecord objects to Module B [noise_filter} knowledge_queue rows.
+
+Uses the merged CheatsheetRecord -> Section adapter and produces rows matching
+the Module B knowledge_queue contract.
+"""
 from __future__ import annotations
 
 import json
@@ -25,6 +30,11 @@ def knowledge_queue_item_from_cheatsheet_record(
     confidence: float = 1.0,
     llm_reasoning: str | None = None,  ## this field is nullable
 ) -> KnowledgeQueueItem:
+    """Build a knowledge_queue row from a CheatsheetRecord.
+
+    Converts the record through the CheatsheetRecord -> Section adapter and
+    maps the resulting Section to a KnowledgeQueueItem.
+    """
     section = section_from_cheatsheet_record(record)
 
     return KnowledgeQueueItem(
@@ -62,6 +72,10 @@ def write_knowledge_queue_jsonl(
     confidence: float = 1.0,
     llm_reasoning: str | None = None,
 ) -> List[KnowledgeQueueItem]:
+    """Convert CheatsheetRecords to KnowledgeQueueItems and write them as JSONL.
+
+    Returns the items written in the same order as the input records.
+    """
     items = [
         knowledge_queue_item_from_cheatsheet_record(
             r,
