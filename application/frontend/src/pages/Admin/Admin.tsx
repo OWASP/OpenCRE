@@ -263,7 +263,9 @@ function DashboardTab({ origin, onOpenJobs }: { origin: string; onOpenJobs: () =
         Enabled: {String(agent.enabled)} · package: {String(agent.package_present)} · writes CRE graph:{' '}
         {String(agent.writes_cre_graph)}
       </p>
-      <p>DB URL: {agent.db_url || '—'}</p>
+      <p>
+        Main DB{agent.db_env_key ? ` (${agent.db_env_key})` : ''}: {agent.db_url || '—'}
+      </p>
       <Link className="ui mini button" to={agent.demo_path || '/chatbot'}>
         Open chat demo
       </Link>

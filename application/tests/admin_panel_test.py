@@ -62,19 +62,16 @@ class TestAdminPanel(unittest.TestCase):
         self.assertIn("GEMINI_API_KEY", rejected)
         self.assertIn("CRE_NOISE_FILTER_BATCH_SIZE", rejected)
         self.assertEqual(env["GEMINI_API_KEY"], "secret")
-        agent_db = next(r for r in rows if r["key"] == "OWASP_AGENT_DB")
-        self.assertEqual(
-            agent_db["help_text"],
-            "Postgres URL for the OWASP agent index (not the CRE graph).",
-        )
-        self.assertNotIn("sqlite", agent_db["help_text"].lower())
+        self.assertFalse(any(r["key"] == "OWASP_AGENT_DB" for r in rows))
+        agent_flag = next(r for r in rows if r["key"] == "OWASP_AGENT_ENABLED")
+        self.assertIn("main app Postgres", agent_flag["help_text"])
         redacted = config_catalog.present_config(
             {
-                "OWASP_AGENT_DB": "postgresql://cre:password@127.0.0.1:5432/owasp_agent",
+                "DEV_DATABASE_URL": "postgresql://cre:password@127.0.0.1:5432/opencre",
             }
         )
-        shown = next(r["value"] for r in redacted if r["key"] == "OWASP_AGENT_DB")
-        self.assertEqual(shown, "postgresql://cre:***@127.0.0.1:5432/owasp_agent")
+        shown = next(r["value"] for r in redacted if r["key"] == "DEV_DATABASE_URL")
+        self.assertEqual(shown, "postgresql://cre:***@127.0.0.1:5432/opencre")
         self.assertNotIn("password", shown)
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
@@ -363,10 +360,13 @@ class TestAdminPanel(unittest.TestCase):
             "NO_LOGIN": "1",
             "OWASP_AGENT_ENABLED": "1",
             "CRE_ALLOW_IMPORT": "1",
-            "OWASP_AGENT_DB": "postgresql://cre:password@127.0.0.1:1/owasp_agent",
+            "DEV_DATABASE_URL": "postgresql://cre:password@127.0.0.1:1/opencre",
         },
+        clear=False,
     )
     def test_agent_status(self) -> None:
+        os.environ.pop("OWASP_AGENT_DB", None)
+        os.environ.pop("DATABASE_URL", None)
         with patch(
             "application.utils.admin_panel.service.create_engine",
             side_effect=OSError("connection refused"),
@@ -379,19 +379,20 @@ class TestAdminPanel(unittest.TestCase):
             self.assertFalse(body["writes_cre_graph"])
             self.assertEqual(body["demo_path"], "/chatbot")
             self.assertTrue(body["db_configured"])
-            self.assertEqual(
-                body["db_url"], "postgresql://cre:***@127.0.0.1:1/owasp_agent"
-            )
+            self.assertEqual(body["db_env_key"], "DEV_DATABASE_URL")
+            self.assertEqual(body["db_url"], "postgresql://cre:***@127.0.0.1:1/opencre")
             self.assertNotIn("password", str(body))
             self.assertNotIn("db_path", body)
+            self.assertNotIn("OWASP_AGENT_DB", str(body))
             self.assertFalse(body["db_exists"])
             self.assertIsNone(body["counts"])
             self.assertTrue(body["params"])
             help_text = next(
-                p["help_text"] for p in body["params"] if p["key"] == "OWASP_AGENT_DB"
+                p["help_text"]
+                for p in body["params"]
+                if p["key"] == "OWASP_AGENT_ENABLED"
             )
-            self.assertIn("Postgres", help_text)
-            self.assertNotIn("sqlite", help_text.lower())
+            self.assertIn("main app Postgres", help_text)
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_agent_status_disabled_when_flag_off(self) -> None:
@@ -402,16 +403,21 @@ class TestAdminPanel(unittest.TestCase):
             self.assertFalse(r.get_json()["enabled"])
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
-    def test_agent_status_ignores_sqlite_file(self) -> None:
+    def test_agent_status_ignores_sqlite_main_db(self) -> None:
         with patch.dict(
             os.environ,
             {
                 "NO_LOGIN": "1",
                 "CRE_ALLOW_IMPORT": "1",
                 "OWASP_AGENT_ENABLED": "1",
-                "OWASP_AGENT_DB": "/tmp/owasp_agent_missing_ccdd.sqlite",
+                "DEV_DATABASE_URL": "/tmp/opencre_missing_ccdd.sqlite",
             },
+            clear=False,
         ):
+            os.environ.pop("OWASP_AGENT_DB", None)
+            os.environ.pop("DATABASE_URL", None)
+            os.environ.pop("PROD_DATABASE_URL", None)
+            os.environ.pop("SQLALCHEMY_DATABASE_URI", None)
             with patch(
                 "application.utils.admin_panel.service.create_engine"
             ) as mock_engine:
@@ -421,12 +427,13 @@ class TestAdminPanel(unittest.TestCase):
                 body = r.get_json()
                 self.assertFalse(body["db_configured"])
                 self.assertIsNone(body["db_url"])
+                self.assertIsNone(body["db_env_key"])
                 self.assertFalse(body["db_exists"])
                 self.assertIsNone(body["counts"])
                 mock_engine.assert_not_called()
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
-    def test_agent_status_ignores_sqlite_and_blank_urls(self) -> None:
+    def test_agent_status_ignores_sqlite_and_blank_main_db(self) -> None:
         for raw in ("sqlite:////tmp/agent.db", "file:/tmp/agent.db", "   "):
             with patch.dict(
                 os.environ,
@@ -434,9 +441,14 @@ class TestAdminPanel(unittest.TestCase):
                     "NO_LOGIN": "1",
                     "CRE_ALLOW_IMPORT": "1",
                     "OWASP_AGENT_ENABLED": "1",
-                    "OWASP_AGENT_DB": raw,
+                    "DEV_DATABASE_URL": raw,
                 },
+                clear=False,
             ):
+                os.environ.pop("OWASP_AGENT_DB", None)
+                os.environ.pop("DATABASE_URL", None)
+                os.environ.pop("PROD_DATABASE_URL", None)
+                os.environ.pop("SQLALCHEMY_DATABASE_URI", None)
                 with patch(
                     "application.utils.admin_panel.service.create_engine"
                 ) as mock_engine:
@@ -493,17 +505,21 @@ class TestAdminPanel(unittest.TestCase):
                     "NO_LOGIN": "1",
                     "CRE_ALLOW_IMPORT": "1",
                     "OWASP_AGENT_ENABLED": "1",
-                    "OWASP_AGENT_DB": "postgres://cre:password@127.0.0.1:5432/owasp_agent",
+                    "DEV_DATABASE_URL": "postgres://cre:password@127.0.0.1:5432/opencre",
                 },
+                clear=False,
             ):
+                os.environ.pop("OWASP_AGENT_DB", None)
+                os.environ.pop("DATABASE_URL", None)
                 with self.app.test_client() as c:
                     r = c.get("/admin/agent/status")
                     self.assertEqual(r.status_code, 200)
                     body = r.get_json()
                     self.assertEqual(
                         body["db_url"],
-                        "postgres://cre:***@127.0.0.1:5432/owasp_agent",
+                        "postgres://cre:***@127.0.0.1:5432/opencre",
                     )
+                    self.assertEqual(body["db_env_key"], "DEV_DATABASE_URL")
                     self.assertNotIn("password", str(body))
                     self.assertTrue(body["db_exists"])
                     self.assertEqual(body["counts"]["chapters"], 1)
@@ -1000,7 +1016,8 @@ class TestAdminPanel(unittest.TestCase):
     def test_present_config_includes_env_example_keys(self) -> None:
         keys = config_catalog.keys_from_env_example()
         self.assertIn("DEV_DATABASE_URL", keys)
-        self.assertIn("OWASP_AGENT_DB", keys)
+        self.assertNotIn("OWASP_AGENT_DB", keys)
+        self.assertIn("OWASP_AGENT_ENABLED", keys)
         self.assertIn("CRE_ENABLE_LOGIN", keys)
         rows = config_catalog.present_config(
             {

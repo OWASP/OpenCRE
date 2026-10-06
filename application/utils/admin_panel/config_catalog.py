@@ -68,12 +68,8 @@ CATALOG: Dict[str, ConfigKey] = {
         ),
         ConfigKey(
             "OWASP_AGENT_ENABLED",
-            "Route chat completions through the OWASP metadata agent.",
-            DOCS_ENV,
-        ),
-        ConfigKey(
-            "OWASP_AGENT_DB",
-            "Postgres URL for the OWASP agent index (not the CRE graph).",
+            "Route chat completions through the OWASP metadata agent "
+            "(uses the main app Postgres URL).",
             DOCS_ENV,
         ),
         ConfigKey(
@@ -107,7 +103,7 @@ CATALOG: Dict[str, ConfigKey] = {
         ),
         ConfigKey(
             "DEV_DATABASE_URL",
-            "App Postgres URL.",
+            "Main app Postgres URL (CRE graph, embeddings/pgvector, OWASP agent).",
             DOCS_ENV,
         ),
         ConfigKey(
