@@ -22,6 +22,16 @@ function jsonRes(body: unknown, status = 200) {
   });
 }
 
+function loggedIn() {
+  mockUser.mockReturnValue({
+    user: 'u',
+    isLoggedIn: true,
+    loading: false,
+    login: jest.fn(),
+    logout: jest.fn(),
+  });
+}
+
 describe('Admin', () => {
   afterEach(() => jest.clearAllMocks());
 
@@ -42,13 +52,7 @@ describe('Admin', () => {
   });
 
   it('loads import runs and links to MyOpenCRE', async () => {
-    mockUser.mockReturnValue({
-      user: 'u',
-      isLoggedIn: true,
-      loading: false,
-      login: jest.fn(),
-      logout: jest.fn(),
-    });
+    loggedIn();
     (global as any).fetch = jest.fn((url: string) => {
       if (String(url).includes('/admin/imports/runs')) {
         return jsonRes({ runs: [{ id: 'r1', source: 'asvs', staging_status: 'pending_review' }] });
@@ -66,13 +70,7 @@ describe('Admin', () => {
   });
 
   it('loads agent status on the agent tab', async () => {
-    mockUser.mockReturnValue({
-      user: 'u',
-      isLoggedIn: true,
-      loading: false,
-      login: jest.fn(),
-      logout: jest.fn(),
-    });
+    loggedIn();
     (global as any).fetch = jest.fn((url: string) => {
       if (String(url).includes('/admin/agent/status')) {
         return jsonRes({
@@ -99,13 +97,7 @@ describe('Admin', () => {
   });
 
   it('loads changeset graph and mapping editor', async () => {
-    mockUser.mockReturnValue({
-      user: 'u',
-      isLoggedIn: true,
-      loading: false,
-      login: jest.fn(),
-      logout: jest.fn(),
-    });
+    loggedIn();
     (global as any).fetch = jest.fn((url: string, init?: RequestInit) => {
       const u = String(url);
       if (u.includes('/changeset/graph')) {
@@ -155,13 +147,7 @@ describe('Admin', () => {
   });
 
   it('shows empty pipeline state', async () => {
-    mockUser.mockReturnValue({
-      user: 'u',
-      isLoggedIn: true,
-      loading: false,
-      login: jest.fn(),
-      logout: jest.fn(),
-    });
+    loggedIn();
     (global as any).fetch = jest.fn((url: string) => {
       if (String(url).includes('/admin/pipeline')) {
         return jsonRes({
@@ -190,13 +176,7 @@ describe('Admin', () => {
   });
 
   it('shows config restart instructions', async () => {
-    mockUser.mockReturnValue({
-      user: 'u',
-      isLoggedIn: true,
-      loading: false,
-      login: jest.fn(),
-      logout: jest.fn(),
-    });
+    loggedIn();
     (global as any).fetch = jest.fn((url: string) => {
       if (String(url).includes('/admin/config')) {
         return jsonRes({
