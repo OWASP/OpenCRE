@@ -79,16 +79,10 @@ def register_admin_panel_routes(
         body = request.get_json(silent=True) or {}
         source = str(body.get("source") or "").strip()
         target_id = body.get("target_id")
-        run_oie = body.get("run_oie")
-        if run_oie is not None:
-            run_oie = service.as_bool(run_oie, False)
         try:
             result = service.start_ingestion(
                 source=source or (str(target_id) if target_id else ""),
                 target_id=str(target_id) if target_id else None,
-                run_oie=run_oie,
-                dry_run=service.as_bool(body.get("dry_run"), True),
-                sync_repos=service.as_bool(body.get("sync_repos"), False),
             )
         except KeyError as exc:
             abort(404, description=str(exc))

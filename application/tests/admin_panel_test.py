@@ -105,7 +105,7 @@ class TestAdminPanel(unittest.TestCase):
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_edit_mapping_pending(self) -> None:
         run = db.create_import_run(source="map-src", version="v")
-        ops = [{"op": "modify", "after": {"description": "old"}}]
+        ops = [{"op": "modify_control", "after": {"description": "old"}}]
         db.persist_staged_change_set(
             run_id=run.id,
             changeset_json=json.dumps(ops),
@@ -119,6 +119,30 @@ class TestAdminPanel(unittest.TestCase):
             self.assertEqual(r.status_code, 200)
             cs = db.get_staged_change_set(run_id=run.id)
             self.assertIn("new", cs.changeset_json)
+            self.assertEqual(r.get_json()["field"], "after")
+            self.assertTrue(r.get_json()["changeset"])
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_edit_mapping_add_control_writes_document(self) -> None:
+        run = db.create_import_run(source="map-add", version="v")
+        ops = [{"op": "add_control", "document": {"description": "old"}}]
+        db.persist_staged_change_set(
+            run_id=run.id,
+            changeset_json=json.dumps(ops),
+            staging_status="pending_review",
+        )
+        with self.app.test_client() as c:
+            r = c.post(
+                f"/admin/imports/runs/{run.id}/mapping",
+                json={"op_index": 0, "after": {"description": "added"}},
+            )
+            self.assertEqual(r.status_code, 200)
+            body = r.get_json()
+            self.assertEqual(body["field"], "document")
+            cs = db.get_staged_change_set(run_id=run.id)
+            data = json.loads(cs.changeset_json)
+            self.assertEqual(data[0]["document"]["description"], "added")
+            self.assertNotIn("after", data[0])
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "OWASP_AGENT_ENABLED": "1"})
     def test_agent_status_requires_import_flag(self) -> None:
@@ -217,6 +241,33 @@ class TestAdminPanel(unittest.TestCase):
                 pipe = c.get("/admin/pipeline").get_json()
                 stages = {e["stage"] for e in pipe["events"]}
                 self.assertIn("module_a_harvester", stages)
+
+                r = c.post(
+                    "/admin/ingest/start",
+                    json={
+                        "target_id": "repo1",
+                        "dry_run": False,
+                        "sync_repos": True,
+                        "run_oie": False,
+                    },
+                )
+                self.assertEqual(r.status_code, 200)
+                kwargs2 = mock_oie.call_args.kwargs
+                self.assertTrue(kwargs2["dry_run"])
+                self.assertFalse(kwargs2["sync_repos"])
+
+            with self.app.test_client() as c:
+                c.post(
+                    "/admin/targets",
+                    json={"id": "src1", "kind": "import_source", "name": "src1"},
+                )
+                mock_oie.reset_mock()
+                r = c.post(
+                    "/admin/ingest/start",
+                    json={"target_id": "src1", "run_oie": True, "dry_run": False},
+                )
+                self.assertEqual(r.status_code, 200)
+                mock_oie.assert_not_called()
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_config_get_has_restart_instructions(self) -> None:
