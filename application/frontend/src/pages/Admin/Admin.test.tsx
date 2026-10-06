@@ -337,6 +337,14 @@ describe('Admin', () => {
       )
     );
     expect(await findAllByText(/empty standard keys/)).toBeTruthy();
+    fireEvent.click(getByText('Accept'));
+    await waitFor(() =>
+      expect((global as any).fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/accept'),
+        expect.objectContaining({ method: 'POST' })
+      )
+    );
+    expect(await findByText(/accept →/i)).toBeTruthy();
     fireEvent.click(getByText('Discard'));
     await waitFor(() =>
       expect((global as any).fetch).toHaveBeenCalledWith(

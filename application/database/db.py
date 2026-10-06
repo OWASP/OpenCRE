@@ -761,6 +761,24 @@ def get_staged_change_set(*, run_id: str) -> Optional[StagedChangeSet]:
     )
 
 
+def ensure_staged_change_set(
+    *,
+    run_id: str,
+    changeset_json: str = "[]",
+    staging_status: str = "pending_review",
+) -> StagedChangeSet:
+    """Return the staged set for ``run_id``, creating an empty one if missing."""
+    cs = get_staged_change_set(run_id=run_id)
+    if cs:
+        return cs
+    return persist_staged_change_set(
+        run_id=run_id,
+        changeset_json=changeset_json,
+        has_conflicts=False,
+        staging_status=staging_status,
+    )
+
+
 def update_staged_change_set(
     *,
     run_id: str,

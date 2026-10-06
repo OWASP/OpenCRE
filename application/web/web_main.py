@@ -722,9 +722,34 @@ def find_root_cres() -> Any:
     abort(404, "No root CREs")
 
 
+def _wants_json_error() -> bool:
+    path = request.path or ""
+    if path.startswith(("/admin/", "/rest/")):
+        return True
+    best = request.accept_mimetypes.best_match(["application/json", "text/html"])
+    return best == "application/json"
+
+
+def _http_error_response(e: Any, status: int, fallback: str) -> Any:
+    description = getattr(e, "description", None) or fallback
+    if _wants_json_error():
+        return jsonify({"description": description}), status
+    return description, status
+
+
+@app.errorhandler(400)
+def bad_request(e) -> Any:
+    return _http_error_response(e, 400, "Bad request")
+
+
 @app.errorhandler(404)
 def page_not_found(e) -> Any:
-    return "Resource Not found", 404
+    return _http_error_response(e, 404, "Resource Not found")
+
+
+@app.errorhandler(409)
+def conflict(e) -> Any:
+    return _http_error_response(e, 409, "Conflict")
 
 
 _REPO_ROOT = os.path.abspath(
@@ -1106,15 +1131,24 @@ def admin_import_runs() -> Any:
     runs = db.list_import_runs(source=source, limit=limit, offset=offset)
     out = []
     for r in runs:
-        cs = db.get_staged_change_set(run_id=r.id)
+        # Older admin/OIE starts sometimes wrote import_run without a staged row.
+        cs = db.ensure_staged_change_set(run_id=r.id)
+        ops_count = 0
+        try:
+            from application.utils import import_diff
+
+            ops_count = len(import_diff.change_set_from_json(cs.changeset_json or "[]"))
+        except Exception:  # noqa: BLE001
+            ops_count = 0
         out.append(
             {
                 "id": r.id,
                 "source": r.source,
                 "version": r.version,
                 "created_at": r.created_at.isoformat() if r.created_at else None,
-                "has_conflicts": bool(cs.has_conflicts) if cs else False,
-                "staging_status": cs.staging_status if cs else None,
+                "has_conflicts": bool(cs.has_conflicts),
+                "staging_status": cs.staging_status,
+                "operation_count": ops_count,
             }
         )
     return jsonify({"runs": out})
