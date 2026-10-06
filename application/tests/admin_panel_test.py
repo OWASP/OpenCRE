@@ -3,7 +3,6 @@ import json
 import os
 import tempfile
 import unittest
-import urllib.error
 from pathlib import Path
 from typing import Optional
 from unittest.mock import patch
@@ -679,52 +678,10 @@ class TestAdminPanel(unittest.TestCase):
                     self.assertEqual(path.read_text(encoding="utf-8"), updated)
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
-    def test_expand_org_adds_skips_forks_and_existing(self) -> None:
-        payload = [
-            {
-                "name": "ASVS",
-                "fork": False,
-                "archived": False,
-                "default_branch": "master",
-                "owner": {"login": "OWASP"},
-            },
-            {
-                "name": "CheatSheetSeries",
-                "fork": False,
-                "archived": False,
-                "default_branch": "master",
-                "owner": {"login": "OWASP"},
-            },
-            {
-                "name": "forked-tool",
-                "fork": True,
-                "archived": False,
-                "default_branch": "main",
-                "owner": {"login": "OWASP"},
-            },
-            {
-                "name": "old-repo",
-                "fork": False,
-                "archived": True,
-                "default_branch": "main",
-                "owner": {"login": "OWASP"},
-            },
-        ]
-
-        class _Resp:
-            def read(self) -> bytes:
-                return json.dumps(payload).encode("utf-8")
-
-            def __enter__(self) -> "_Resp":
-                return self
-
-            def __exit__(self, *args: object) -> None:
-                return None
-
+    def test_add_org_appends_source_without_github_call(self) -> None:
         packaged_before = service.REPOS_YAML.read_text(encoding="utf-8")
         with patch(
-            "application.utils.admin_panel.service.urllib.request.urlopen",
-            return_value=_Resp(),
+            "application.utils.harvester.github_sources.urllib.request.urlopen"
         ) as mock_open:
             with self.app.test_client() as c:
                 r = c.post("/admin/repos.yaml/expand-org", json={"owner": ""})
@@ -736,53 +693,32 @@ class TestAdminPanel(unittest.TestCase):
                 self.assertEqual(r.status_code, 200)
                 body = r.get_json()
                 self.assertEqual(body["added"], 1)
-                self.assertGreaterEqual(body["skipped"], 3)
-                self.assertIn("CheatSheetSeries", body["yaml"])
-                self.assertNotIn("forked-tool", body["yaml"])
-                self.assertNotIn("old-repo", body["yaml"])
+                self.assertEqual(body["source_url"], "github.com/OWASP/")
+                self.assertIn("github.com/OWASP/", body["yaml"])
+                self.assertIn("owasp-asvs", body["yaml"])
                 self.assertTrue(body["source"].startswith("repos.yaml:"))
-                req = mock_open.call_args.args[0]
-                self.assertTrue(
-                    req.full_url.startswith("https://api.github.com/orgs/OWASP/repos?")
-                )
-                self.assertEqual(
-                    service.REPOS_YAML.read_text(encoding="utf-8"), packaged_before
-                )
-
-    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
-    def test_expand_org_not_found(self) -> None:
-        def _raise(req: object, timeout: int = 20) -> None:
-            url = getattr(req, "full_url", "https://api.github.com")
-            raise urllib.error.HTTPError(url, 404, "Not Found", hdrs=None, fp=None)
-
-        with patch(
-            "application.utils.admin_panel.service.urllib.request.urlopen",
-            side_effect=_raise,
-        ):
-            with self.app.test_client() as c:
                 r = c.post(
                     "/admin/repos.yaml/expand-org",
-                    json={"yaml": MINIMAL_REPOS_YAML, "org": "missing-org"},
+                    json={"yaml": body["yaml"], "owner": "github.com/OWASP/"},
                 )
-                self.assertEqual(r.status_code, 400)
-                self.assertIn("not found", (r.get_json() or {}).get("description", ""))
+                self.assertEqual(r.get_json()["added"], 0)
+            mock_open.assert_not_called()
+        self.assertEqual(
+            service.REPOS_YAML.read_text(encoding="utf-8"), packaged_before
+        )
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_expand_org_rejects_injected_owner(self) -> None:
         with patch(
-            "application.utils.admin_panel.service.urllib.request.urlopen"
+            "application.utils.harvester.github_sources.urllib.request.urlopen"
         ) as mock_open:
             with self.app.test_client() as c:
-                for owner in ("OWASP?x=1", "OWASP#frag", "..", "OWASP/ASVS", "x\ny"):
+                for owner in ("OWASP?x=1", "OWASP#frag", "..", "x\ny"):
                     r = c.post(
                         "/admin/repos.yaml/expand-org",
                         json={"yaml": MINIMAL_REPOS_YAML, "owner": owner},
                     )
                     self.assertEqual(r.status_code, 400, owner)
-                    self.assertIn(
-                        "owner must be a GitHub",
-                        (r.get_json() or {}).get("description", ""),
-                    )
             mock_open.assert_not_called()
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
