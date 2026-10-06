@@ -39,6 +39,10 @@ class TestAdminPanel(unittest.TestCase):
         self.assertIn("GEMINI_API_KEY", rejected)
         self.assertIn("CRE_NOISE_FILTER_BATCH_SIZE", rejected)
         self.assertEqual(env["GEMINI_API_KEY"], "secret")
+        agent_db = next(r for r in rows if r["key"] == "OWASP_AGENT_DB")
+        self.assertIn("Postgres", agent_db["help_text"])
+        self.assertNotIn("sqlite", agent_db["help_text"].lower())
+        self.assertNotIn("SQLite", agent_db["help_text"])
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_pipeline_empty_has_queued_strip(self) -> None:
@@ -157,22 +161,34 @@ class TestAdminPanel(unittest.TestCase):
             "NO_LOGIN": "1",
             "OWASP_AGENT_ENABLED": "1",
             "CRE_ALLOW_IMPORT": "1",
-            "OWASP_AGENT_DB": "/tmp/owasp_agent_missing_ccdd.sqlite",
+            "OWASP_AGENT_DB": "postgresql://cre:password@127.0.0.1:1/owasp_agent",
         },
     )
     def test_agent_status(self) -> None:
-        with self.app.test_client() as c:
-            r = c.get("/admin/agent/status")
+        with patch(
+            "application.utils.admin_panel.service.create_engine",
+            side_effect=OSError("connection refused"),
+        ):
+            with self.app.test_client() as c:
+                r = c.get("/admin/agent/status")
             self.assertEqual(r.status_code, 200)
             body = r.get_json()
             self.assertTrue(body["enabled"])
             self.assertFalse(body["writes_cre_graph"])
             self.assertEqual(body["demo_path"], "/chatbot")
             self.assertTrue(body["db_configured"])
-            self.assertEqual(body["db_path"], "/tmp/owasp_agent_missing_ccdd.sqlite")
+            self.assertEqual(
+                body["db_url"], "postgresql://cre:password@127.0.0.1:1/owasp_agent"
+            )
+            self.assertNotIn("db_path", body)
             self.assertFalse(body["db_exists"])
             self.assertIsNone(body["counts"])
             self.assertTrue(body["params"])
+            help_text = next(
+                p["help_text"] for p in body["params"] if p["key"] == "OWASP_AGENT_DB"
+            )
+            self.assertIn("Postgres", help_text)
+            self.assertNotIn("sqlite", help_text.lower())
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_agent_status_disabled_when_flag_off(self) -> None:
@@ -183,37 +199,84 @@ class TestAdminPanel(unittest.TestCase):
             self.assertFalse(r.get_json()["enabled"])
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
-    def test_agent_status_counts_env_sqlite_only(self) -> None:
-        import sqlite3
-        import tempfile
+    def test_agent_status_ignores_sqlite_file(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "NO_LOGIN": "1",
+                "CRE_ALLOW_IMPORT": "1",
+                "OWASP_AGENT_ENABLED": "1",
+                "OWASP_AGENT_DB": "/tmp/owasp_agent_missing_ccdd.sqlite",
+            },
+        ):
+            with self.app.test_client() as c:
+                r = c.get("/admin/agent/status")
+                self.assertEqual(r.status_code, 200)
+                body = r.get_json()
+                self.assertFalse(body["db_configured"])
+                self.assertIsNone(body["db_url"])
+                self.assertFalse(body["db_exists"])
+                self.assertIsNone(body["counts"])
 
-        fd, path = tempfile.mkstemp(suffix=".sqlite")
-        os.close(fd)
-        try:
-            con = sqlite3.connect(path)
-            con.execute("CREATE TABLE chapters (id INTEGER)")
-            con.execute("INSERT INTO chapters VALUES (1)")
-            con.commit()
-            con.close()
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_agent_status_counts_postgres(self) -> None:
+        class FakeResult:
+            def __init__(self, rows: list, scalar_value: int | None = None) -> None:
+                self._rows = rows
+                self._scalar = scalar_value
+
+            def fetchall(self) -> list:
+                return self._rows
+
+            def scalar(self) -> int | None:
+                return self._scalar
+
+        class FakeConn:
+            def execute(self, stmt: object) -> FakeResult:
+                sql = str(stmt)
+                if "pg_tables" in sql:
+                    return FakeResult([("chapters",)])
+                if "COUNT" in sql:
+                    return FakeResult([], scalar_value=1)
+                return FakeResult([])
+
+            def __enter__(self) -> "FakeConn":
+                return self
+
+            def __exit__(self, *args: object) -> None:
+                return None
+
+        class FakeEngine:
+            def connect(self) -> FakeConn:
+                return FakeConn()
+
+            def dispose(self) -> None:
+                return None
+
+        with patch(
+            "application.utils.admin_panel.service.create_engine",
+            return_value=FakeEngine(),
+        ):
             with patch.dict(
                 os.environ,
                 {
                     "NO_LOGIN": "1",
                     "CRE_ALLOW_IMPORT": "1",
                     "OWASP_AGENT_ENABLED": "1",
-                    "OWASP_AGENT_DB": path,
+                    "OWASP_AGENT_DB": "postgres://cre:password@127.0.0.1:5432/owasp_agent",
                 },
             ):
                 with self.app.test_client() as c:
                     r = c.get("/admin/agent/status")
                     self.assertEqual(r.status_code, 200)
                     body = r.get_json()
-                    self.assertEqual(body["db_path"], path)
+                    self.assertEqual(
+                        body["db_url"],
+                        "postgres://cre:password@127.0.0.1:5432/owasp_agent",
+                    )
                     self.assertTrue(body["db_exists"])
                     self.assertEqual(body["counts"]["chapters"], 1)
-                    self.assertTrue(body["last_sync"])
-        finally:
-            os.unlink(path)
+                    self.assertIsNone(body["last_sync"])
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_oie_start_defaults_dry_run_and_no_git_sync(self) -> None:
