@@ -1813,3 +1813,90 @@ class TestMain(unittest.TestCase):
             body = response.data.decode()
             self.assertIn("openapi:", body)
             self.assertIn("/rest/v1/", body)
+
+    def test_index_serves_static_file_that_lives_in_static_folder(self) -> None:
+        """
+        Given: a real file inside the blueprint's static folder
+        When: the catch-all route is asked for it
+        Then: the file itself is served, not the SPA index.html
+        """
+        static_folder = web_main.app.static_folder
+        self.assertTrue(
+            os.path.exists(os.path.join(static_folder, "bundle.js")),
+            msg="test expects the committed bundle.js in the static folder",
+        )
+        with self.app.test_client() as client:
+            response = client.get("/bundle.js")
+            self.assertEqual(200, response.status_code)
+            self.assertNotIn(b"<html", response.data[:200].lower())
+
+    def test_index_falls_back_to_spa_index_for_unknown_route(self) -> None:
+        """
+        Given: a route that is not a file on disk
+        When: the catch-all route is asked for it
+        Then: the SPA index.html is served so client-side routing works
+        """
+        with self.app.test_client() as client:
+            response = client.get("/cre/065-782")
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(b"text/html", response.mimetype.encode())
+
+    def test_index_does_not_leak_path_existence_outside_static_folder(self) -> None:
+        """
+        Given: paths outside the static folder, both existing and missing
+        When: they are requested through the catch-all route
+        Then: every one of them gets the identical SPA index.html response, so
+          the status code cannot be used as a filesystem existence oracle
+          (CWE-204, issue #1112)
+        """
+        static_folder = os.path.realpath(web_main.app.static_folder or "")
+        # A directory outside the static root holding one known-present file,
+        # so the probe does not depend on the host's /etc contents.
+        with tempfile.TemporaryDirectory() as outside:
+            existing_file = os.path.join(outside, "secret")
+            with open(existing_file, "w") as f:
+                f.write("not secret, just a probe target")
+            # A directory counts as "exists" for os.path.exists, and the report
+            # called out directory probing separately, so cover both shapes.
+            existing_dir = os.path.join(outside, "a-directory")
+            os.mkdir(existing_dir)
+
+            def probe(client: Any, absolute_path: str) -> Any:
+                """Request `absolute_path` from the static folder's perspective.
+
+                ``os.path.join(static_folder, path)`` is what the route used to
+                resolve, so the traversal is built relative to the static
+                folder. ``..`` climbs out of it and back down to the target.
+                """
+                return client.get("/" + os.path.relpath(absolute_path, static_folder))
+
+            with self.app.test_client() as client:
+                baseline = client.get("/definitely-not-a-real-route")
+                self.assertEqual(200, baseline.status_code)
+
+                for target in (existing_file, existing_dir):
+                    response = probe(client, target)
+                    self.assertEqual(
+                        baseline.status_code,
+                        response.status_code,
+                        msg=(
+                            f"status differs for {target!r}: existence of an "
+                            "out-of-bounds path must not be observable"
+                        ),
+                    )
+                    self.assertEqual(
+                        baseline.data,
+                        response.data,
+                        msg=f"body differs for {target!r}",
+                    )
+
+                # And the two probes that motivated the report: a missing
+                # sibling path must be indistinguishable from the existing one.
+                missing = probe(client, os.path.join(outside, "no-such-file"))
+                self.assertEqual(baseline.status_code, missing.status_code)
+                self.assertEqual(baseline.data, missing.data)
+
+                # Sanity check that the static root is still reachable, i.e. the
+                # assertions above are not passing just because everything 404s.
+                self.assertEqual(200, client.get("/").status_code)
+                self.assertEqual(200, client.get("/bundle.js").status_code)
