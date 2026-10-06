@@ -462,13 +462,26 @@ paths:
         style: form
         explode: true
         description: Tag name(s)
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+        description: Page number (1-based). Providing page or items_per_page switches
+          the response to the paginated shape.
+      - name: items_per_page
+        in: query
+        required: false
+        schema:
+          type: integer
+        description: Items per page per result type (default 20, max 100)
       responses:
         '200':
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DataListResponseSchema'
+                $ref: '#/components/schemas/TagResponseSchema'
         '404':
           description: Not found
   /rest/v1/text_search:
@@ -999,14 +1012,38 @@ components:
             type: object
             additionalProperties: {}
       additionalProperties: false
-    DataListResponseSchema:
+    TagPagedCollection:
       type: object
       properties:
         data:
           type: array
+          description: Documents on this page
           items:
             type: object
             additionalProperties: {}
+        total_pages:
+          type: integer
+          description: Total number of pages
+      additionalProperties: false
+    TagResponseSchema:
+      type: object
+      properties:
+        data:
+          type: array
+          description: Unpaginated response (no page/items_per_page given)
+          items:
+            type: object
+            additionalProperties: {}
+        page:
+          type: integer
+        nodes:
+          description: Paginated Standards/Tools/Code matching the tag(s)
+          allOf:
+          - $ref: '#/components/schemas/TagPagedCollection'
+        cres:
+          description: Paginated CREs matching the tag(s)
+          allOf:
+          - $ref: '#/components/schemas/TagPagedCollection'
       additionalProperties: false
     MapAnalysisResponseSchema:
       type: object
@@ -1020,6 +1057,15 @@ components:
         status:
           type: string
         result: {}
+      additionalProperties: false
+    DataListResponseSchema:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
       additionalProperties: false
     HealthResponseSchema:
       type: object
