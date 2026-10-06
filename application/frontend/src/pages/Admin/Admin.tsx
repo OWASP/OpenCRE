@@ -2,12 +2,61 @@ import './Admin.scss';
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Message, Header as SUIHeader } from 'semantic-ui-react';
+import { Button, Form, Message, Modal, Header as SUIHeader } from 'semantic-ui-react';
 
 import { useCapabilities, useEnvironment } from '../../hooks';
 import { useUser } from '../../hooks/useUser';
 
-type Tab = 'imports' | 'pipeline' | 'targets' | 'config' | 'myopencre';
+type Tab = 'dashboard' | 'config' | 'pipeline' | 'graph' | 'myopencre';
+
+type RepoForm = {
+  id: string;
+  owner: string;
+  repo: string;
+  branch: string;
+  include: string;
+  exclude: string;
+  strategy: string;
+  max_tokens: string;
+  overlap_tokens: string;
+  mode: string;
+  interval_minutes: string;
+  cron: string;
+};
+
+function emptyRepo(): RepoForm {
+  return {
+    id: '',
+    owner: '',
+    repo: '',
+    branch: 'main',
+    include: '**/*.md',
+    exclude: '',
+    strategy: 'markdown_heading',
+    max_tokens: '1200',
+    overlap_tokens: '100',
+    mode: 'incremental',
+    interval_minutes: '60',
+    cron: '0 2 * * *',
+  };
+}
+
+function repoSpec(form: RepoForm) {
+  return {
+    id: form.id.trim() || `${form.owner.trim()}-${form.repo.trim()}`.toLowerCase(),
+    owner: form.owner.trim(),
+    repo: form.repo.trim(),
+    branch: form.branch.trim() || 'main',
+    include: form.include,
+    exclude: form.exclude,
+    strategy: form.strategy,
+    max_tokens: Number(form.max_tokens),
+    overlap_tokens: Number(form.overlap_tokens),
+    mode: form.mode,
+    interval_minutes: Number(form.interval_minutes),
+    cron: form.cron.trim(),
+  };
+}
 
 function adminOrigin(apiUrl: string): string {
   if (apiUrl.startsWith('http')) {
@@ -29,7 +78,7 @@ export const Admin = () => {
   const { apiUrl } = useEnvironment();
   const { isLoggedIn, loading, login } = useUser();
   const { capabilities, loading: capsLoading } = useCapabilities();
-  const [tab, setTab] = useState<Tab>('imports');
+  const [tab, setTab] = useState<Tab>('dashboard');
   const origin = adminOrigin(apiUrl);
 
   if (loading || capsLoading) {
@@ -68,10 +117,10 @@ export const Admin = () => {
       <div className="admin-tabs">
         {(
           [
-            ['imports', 'Import review'],
-            ['pipeline', 'Pipeline'],
-            ['targets', 'Resources'],
+            ['dashboard', 'Dashboard'],
             ['config', 'Config'],
+            ['pipeline', 'Pipeline'],
+            ['graph', 'Graph management'],
             ['myopencre', 'MyOpenCRE'],
           ] as [Tab, string][]
         ).map(([id, label]) => (
@@ -80,10 +129,10 @@ export const Admin = () => {
           </Button>
         ))}
       </div>
-      {tab === 'imports' && <ImportsTab origin={origin} />}
-      {tab === 'pipeline' && <PipelineTab origin={origin} />}
-      {tab === 'targets' && <ResourcesTab origin={origin} />}
+      {tab === 'dashboard' && <DashboardTab origin={origin} onOpenJobs={() => setTab('pipeline')} />}
       {tab === 'config' && <ConfigTab origin={origin} />}
+      {tab === 'pipeline' && <PipelineTab origin={origin} />}
+      {tab === 'graph' && <GraphManagementTab origin={origin} />}
       {tab === 'myopencre' && (
         <Link className="ui primary button" to="/myopencre">
           Open MyOpenCRE
@@ -106,13 +155,130 @@ function StageStrip({ steps }: { steps?: { id: string; label: string; state: str
   );
 }
 
-function ImportsTab({ origin }: { origin: string }) {
+function RepoFormFields({ form, setForm }: { form: RepoForm; setForm: (next: RepoForm) => void }) {
+  const set =
+    (key: keyof RepoForm) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+      setForm({ ...form, [key]: e.target.value });
+  return (
+    <Form>
+      <Form.Group widths="equal">
+        <Form.Input label="Id" value={form.id} onChange={set('id')} placeholder="owasp-asvs" />
+        <Form.Input label="Owner" value={form.owner} onChange={set('owner')} placeholder="OWASP" />
+        <Form.Input label="Repo" value={form.repo} onChange={set('repo')} placeholder="ASVS" />
+      </Form.Group>
+      <Form.Group widths="equal">
+        <Form.Input label="Branch" value={form.branch} onChange={set('branch')} />
+        <Form.Input label="Cron" value={form.cron} onChange={set('cron')} placeholder="0 2 * * *" />
+        <Form.Input
+          label="Interval minutes"
+          value={form.interval_minutes}
+          onChange={set('interval_minutes')}
+        />
+      </Form.Group>
+      <Form.Group widths="equal">
+        <Form.Field>
+          <label>Chunking</label>
+          <select value={form.strategy} onChange={set('strategy')}>
+            <option value="markdown_heading">markdown_heading</option>
+            <option value="html_readability">html_readability</option>
+            <option value="fixed_size">fixed_size</option>
+          </select>
+        </Form.Field>
+        <Form.Input label="Max tokens" value={form.max_tokens} onChange={set('max_tokens')} />
+        <Form.Input label="Overlap tokens" value={form.overlap_tokens} onChange={set('overlap_tokens')} />
+      </Form.Group>
+      <Form.Field>
+        <label>Include globs (one per line)</label>
+        <textarea aria-label="include globs" value={form.include} onChange={set('include')} />
+      </Form.Field>
+      <Form.Field>
+        <label>Exclude globs</label>
+        <textarea aria-label="exclude globs" value={form.exclude} onChange={set('exclude')} />
+      </Form.Field>
+      <Form.Field>
+        <label>Sync mode</label>
+        <select value={form.mode} onChange={set('mode')}>
+          <option value="incremental">incremental</option>
+          <option value="full">full</option>
+        </select>
+      </Form.Field>
+    </Form>
+  );
+}
+
+function DashboardTab({ origin, onOpenJobs }: { origin: string; onOpenJobs: () => void }) {
+  const [data, setData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${origin}/admin/dashboard`)
+      .then(async (res) => {
+        const body = await readJson(res);
+        if (!res.ok) throw new Error(body.description || body.error || res.statusText);
+        if (!cancelled) setData(body);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(String(err));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [origin]);
+  if (error) return <Message negative>{error}</Message>;
+  if (!data) return <p>Loading dashboard…</p>;
+  const agent = data.agent || {};
+  return (
+    <div>
+      <h3>Jobs</h3>
+      <StageStrip steps={data.latest_strip} />
+      <p>
+        Running: {(data.running || []).length} · Failed: {(data.failed || []).length} · OIE unconsumed:{' '}
+        {data.oie_unconsumed ?? 0}{' '}
+        <Button size="mini" onClick={onOpenJobs}>
+          Job management and logs
+        </Button>
+      </p>
+      {(data.running || []).length === 0 && (data.import_runs || []).length === 0 && <p>No jobs running.</p>}
+      <table className="admin-table">
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Status</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          {(data.import_runs || []).map((r: any) => (
+            <tr key={r.id}>
+              <td>{r.source}</td>
+              <td>{r.staging_status || '—'}</td>
+              <td>{r.created_at}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <h3>OWASP agent</h3>
+      <p>
+        Enabled: {String(agent.enabled)} · package: {String(agent.package_present)} · writes CRE graph:{' '}
+        {String(agent.writes_cre_graph)}
+      </p>
+      <p>DB URL: {agent.db_url || '—'}</p>
+      <Link className="ui mini button" to={agent.demo_path || '/chatbot'}>
+        Open chat demo
+      </Link>
+    </div>
+  );
+}
+
+function GraphManagementTab({ origin }: { origin: string }) {
   const [runs, setRuns] = useState<any[]>([]);
   const [detail, setDetail] = useState<any>(null);
   const [graph, setGraph] = useState<any>(null);
+  const [links, setLinks] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState('');
-  const [drafts, setDrafts] = useState<Record<number, string>>({});
+  const [relink, setRelink] = useState<Record<string, string>>({});
 
   const load = useCallback(() => {
     let cancelled = false;
@@ -151,19 +317,23 @@ function ImportsTab({ origin }: { origin: string }) {
   const openRun = async (runId: string) => {
     setError(null);
     try {
-      const res = await fetch(`${origin}/admin/imports/runs/${runId}/changeset`);
-      const body = await readJson(res);
-      if (!res.ok) {
-        setError(body.description || body.error || res.statusText);
+      const [csRes, linkRes] = await Promise.all([
+        fetch(`${origin}/admin/imports/runs/${runId}/changeset`),
+        fetch(`${origin}/admin/imports/runs/${runId}/links`),
+      ]);
+      const csBody = await readJson(csRes);
+      const linkBody = await readJson(linkRes);
+      if (!csRes.ok) {
+        setError(csBody.description || csBody.error || csRes.statusText);
         return;
       }
-      setDetail(body);
+      if (!linkRes.ok) {
+        setError(linkBody.description || linkBody.error || linkRes.statusText);
+        return;
+      }
+      setDetail(csBody);
+      setLinks(linkBody.links || []);
       setGraph(null);
-      const next: Record<number, string> = {};
-      (body.changeset || []).forEach((op: any, i: number) => {
-        next[i] = JSON.stringify(op.after || op.document || {}, null, 2);
-      });
-      setDrafts(next);
     } catch (err) {
       setError(String(err));
     }
@@ -181,26 +351,31 @@ function ImportsTab({ origin }: { origin: string }) {
     }
   };
 
-  const saveMapping = async (runId: string, opIndex: number) => {
-    let after: unknown;
-    try {
-      after = JSON.parse(drafts[opIndex] || '{}');
-    } catch {
-      setError('Mapping JSON is invalid');
-      return;
+  const review = async (runId: string, row: any, action: string) => {
+    setError(null);
+    const key = `${row.op_index}:${row.link_index}`;
+    const payload: any = { op_index: row.op_index, link_index: row.link_index, action };
+    if (action === 'relink') {
+      const raw = (relink[key] || '').trim();
+      if (!raw) {
+        setError('Relink requires a CRE id or name');
+        return;
+      }
+      payload.cre = raw.includes(' ') ? { name: raw } : { id: raw, name: raw };
     }
     try {
-      const res = await fetch(`${origin}/admin/imports/runs/${runId}/mapping`, {
+      const res = await fetch(`${origin}/admin/imports/runs/${runId}/links`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ op_index: opIndex, after }),
+        body: JSON.stringify(payload),
       });
       const body = await readJson(res);
-      if (!res.ok) setError(body.description || body.error || res.statusText);
-      else {
-        setDetail(body);
-        load();
+      if (!res.ok) {
+        setError(body.description || body.error || res.statusText);
+        return;
       }
+      setLinks(body.links || []);
+      setDetail({ ...detail, changeset: body.changeset, run_id: body.run_id });
     } catch (err) {
       setError(String(err));
     }
@@ -227,8 +402,6 @@ function ImportsTab({ origin }: { origin: string }) {
       setError(String(err));
     }
   };
-
-  const ops = Array.isArray(detail?.changeset) ? detail.changeset : [];
 
   return (
     <div>
@@ -282,9 +455,6 @@ function ImportsTab({ origin }: { origin: string }) {
           Drop last
         </Button>
       </p>
-      <p className="admin-help">
-        Applied runs return 409 — graph rollback is not implemented. Edit staged mappings before apply.
-      </p>
       {graph && (
         <div>
           <h3>Changeset graph</h3>
@@ -312,26 +482,61 @@ function ImportsTab({ origin }: { origin: string }) {
           )}
         </div>
       )}
-      {ops.length > 0 && (
+      {detail && (
         <div>
-          <h3>Edit mapping</h3>
-          {ops.map((op: any, i: number) => (
-            <div key={i} className="admin-map-op">
-              <p>
-                #{i} {op.op || op.__class__ || 'op'}
-              </p>
-              <textarea
-                value={drafts[i] || ''}
-                onChange={(e) => setDrafts({ ...drafts, [i]: e.target.value })}
-              />
-              <Button size="mini" onClick={() => saveMapping(detail.run_id, i)}>
-                Save mapping
-              </Button>
-            </div>
-          ))}
+          <h3>Added controls and links</h3>
+          {links.length === 0 ? (
+            <p>No staged links on this run.</p>
+          ) : (
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Added</th>
+                  <th>Linked to</th>
+                  <th>Decision</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {links.map((row: any) => {
+                  const key = `${row.op_index}:${row.link_index}`;
+                  const added = row.added || {};
+                  const linked = row.linked_to;
+                  return (
+                    <tr key={key}>
+                      <td>
+                        {added.op} {added.name} {added.section} {added.sectionID}
+                      </td>
+                      <td>{linked ? `${linked.id} ${linked.name}`.trim() : '—'}</td>
+                      <td>{row.decision}</td>
+                      <td>
+                        {linked && (
+                          <>
+                            <Button size="mini" onClick={() => review(detail.run_id, row, 'approve')}>
+                              Approve
+                            </Button>
+                            <Button size="mini" onClick={() => review(detail.run_id, row, 'deny')}>
+                              Deny
+                            </Button>
+                          </>
+                        )}
+                        <input
+                          placeholder="relink CRE id or name"
+                          value={relink[key] || ''}
+                          onChange={(e) => setRelink({ ...relink, [key]: e.target.value })}
+                        />
+                        <Button size="mini" onClick={() => review(detail.run_id, row, 'relink')}>
+                          Relink
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
-      {detail && <pre className="admin-pre">{JSON.stringify(detail, null, 2)}</pre>}
     </div>
   );
 }
@@ -339,7 +544,12 @@ function ImportsTab({ origin }: { origin: string }) {
 function PipelineTab({ origin }: { origin: string }) {
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  useEffect(() => {
+  const [notice, setNotice] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<'current' | 'single'>('current');
+  const [form, setForm] = useState<RepoForm>(emptyRepo());
+
+  const load = useCallback(() => {
     let cancelled = false;
     fetch(`${origin}/admin/pipeline`)
       .then(async (res) => {
@@ -354,11 +564,77 @@ function PipelineTab({ origin }: { origin: string }) {
       cancelled = true;
     };
   }, [origin]);
-  if (error) return <Message negative>{error}</Message>;
+
+  useEffect(() => load(), [load]);
+
+  const startCurrent = async () => {
+    setError(null);
+    try {
+      const res = await fetch(`${origin}/admin/ingest/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packaged: true }),
+      });
+      const body = await readJson(res);
+      if (!res.ok) {
+        setError(body.description || body.error || res.statusText);
+        return;
+      }
+      setNotice(`Started ${body.source}`);
+      setOpen(false);
+      load();
+    } catch (err) {
+      setError(String(err));
+    }
+  };
+
+  const startSingle = async () => {
+    if (!form.owner.trim() || !form.repo.trim()) {
+      setError('owner and repo are required');
+      return;
+    }
+    setError(null);
+    try {
+      const built = await fetch(`${origin}/admin/repos.yaml/add-repo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ yaml: 'sources: []\n', ...repoSpec(form) }),
+      });
+      const builtBody = await readJson(built);
+      if (!built.ok) {
+        setError(builtBody.description || builtBody.error || built.statusText);
+        return;
+      }
+      const res = await fetch(`${origin}/admin/ingest/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ yaml: builtBody.yaml, name: repoSpec(form).id }),
+      });
+      const body = await readJson(res);
+      if (!res.ok) {
+        setError(body.description || body.error || res.statusText);
+        return;
+      }
+      setNotice(`Started ${body.source}`);
+      setOpen(false);
+      load();
+    } catch (err) {
+      setError(String(err));
+    }
+  };
+
+  if (error && !data) return <Message negative>{error}</Message>;
   if (!data) return <p>Loading pipeline…</p>;
   const empty = !(data.import_runs || []).length && !(data.events || []).length;
   return (
     <div>
+      {error && <Message negative>{error}</Message>}
+      {notice && <Message>{notice}</Message>}
+      <p>
+        <Button primary size="mini" onClick={() => setOpen(true)}>
+          New
+        </Button>
+      </p>
       <h3>Latest run</h3>
       <StageStrip steps={data.latest_strip} />
       {empty && <p>No pipeline runs yet.</p>}
@@ -405,68 +681,44 @@ function PipelineTab({ origin }: { origin: string }) {
           ))}
         </ul>
       )}
+      <Modal open={open} onClose={() => setOpen(false)}>
+        <Modal.Header>New ingest</Modal.Header>
+        <Modal.Content>
+          <p>
+            <label>
+              <input type="radio" checked={mode === 'current'} onChange={() => setMode('current')} /> Current
+              targets.yaml
+            </label>{' '}
+            <label>
+              <input type="radio" checked={mode === 'single'} onChange={() => setMode('single')} /> Single
+              repository
+            </label>
+          </p>
+          {mode === 'single' && <RepoFormFields form={form} setForm={setForm} />}
+        </Modal.Content>
+        <Modal.Actions>
+          <Button onClick={() => setOpen(false)}>Cancel</Button>
+          <Button primary onClick={mode === 'current' ? startCurrent : startSingle}>
+            Start
+          </Button>
+        </Modal.Actions>
+      </Modal>
     </div>
   );
 }
 
-function AgentResourceDetail({ spec }: { spec: any }) {
-  if (!spec) return null;
-  return (
-    <div>
-      <p>
-        Enabled: {String(spec.enabled)} · package: {String(spec.package_present)} · writes CRE graph:{' '}
-        {String(spec.writes_cre_graph)}
-      </p>
-      <p>Agent DB configured: {String(spec.db_configured)}</p>
-      <p>DB URL: {spec.db_url || '—'}</p>
-      <p>Last sync: {spec.last_sync || '—'}</p>
-      <p>Counts: {spec.counts ? JSON.stringify(spec.counts) : '—'}</p>
-      {(spec.params || []).map((p: any) => (
-        <p key={p.key} className="admin-help" title={p.help_text}>
-          {p.key}={p.value || '—'}{' '}
-          <a href={p.help_url} target="_blank" rel="noreferrer">
-            docs
-          </a>
-        </p>
-      ))}
-      <p className="admin-help">
-        <a href={spec.help_url} target="_blank" rel="noreferrer">
-          Agent README
-        </a>
-      </p>
-      <Link className="ui mini button" to={spec.demo_path || '/chatbot'}>
-        Open chat demo
-      </Link>
-    </div>
-  );
-}
-
-function ResourcesTab({ origin }: { origin: string }) {
-  const [targets, setTargets] = useState<any[]>([]);
-  const [id, setId] = useState('');
-  const [kind, setKind] = useState('import_source');
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+function ConfigTab({ origin }: { origin: string }) {
+  const [rows, setRows] = useState<any[]>([]);
+  const [instructions, setInstructions] = useState('');
+  const [msg, setMsg] = useState<string | null>(null);
   const [yamlText, setYamlText] = useState('');
   const [yamlSource, setYamlSource] = useState('');
-  const [customName, setCustomName] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [org, setOrg] = useState('');
-
-  const loadTargets = useCallback(() => {
-    let cancelled = false;
-    fetch(`${origin}/admin/targets`)
-      .then(async (res) => {
-        const body = await readJson(res);
-        if (!res.ok) throw new Error(body.description || body.error || res.statusText);
-        if (!cancelled) setTargets(body.targets || []);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(String(err));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [origin]);
+  const [orgCron, setOrgCron] = useState('0 2 * * *');
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState<RepoForm>(emptyRepo());
 
   const loadYaml = useCallback(() => {
     let cancelled = false;
@@ -487,78 +739,24 @@ function ResourcesTab({ origin }: { origin: string }) {
   }, [origin]);
 
   useEffect(() => {
-    const cancelTargets = loadTargets();
     const cancelYaml = loadYaml();
-    return () => {
-      cancelTargets();
-      cancelYaml();
-    };
-  }, [loadTargets, loadYaml]);
-
-  const add = async () => {
-    if (!id.trim()) {
-      setError('id and kind are required');
-      return;
-    }
-    try {
-      const res = await fetch(`${origin}/admin/targets`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: id.trim(), kind, name: id.trim() }),
-      });
-      if (!res.ok) {
+    let cancelled = false;
+    fetch(`${origin}/admin/config`)
+      .then(async (res) => {
         const body = await readJson(res);
-        setError(body.description || body.error || res.statusText);
-        return;
-      }
-      setError(null);
-      setNotice(null);
-      setId('');
-      loadTargets();
-    } catch (err) {
-      setError(String(err));
-    }
-  };
-
-  const start = async (targetId: string) => {
-    try {
-      const res = await fetch(`${origin}/admin/ingest/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          target_id: targetId,
-          name: customName.trim() || undefined,
-        }),
+        if (!res.ok) throw new Error(body.description || body.error || res.statusText);
+        if (cancelled) return;
+        setRows(body.config || []);
+        setInstructions(body.restart_instructions || '');
+      })
+      .catch(() => {
+        if (!cancelled) setMsg('failed to load config');
       });
-      const body = await readJson(res);
-      if (!res.ok) setError(body.description || body.error || res.statusText);
-      else {
-        setError(null);
-        setNotice(`Started import source ${body.source}`);
-        loadTargets();
-      }
-    } catch (err) {
-      setError(String(err));
-    }
-  };
-
-  const del = async (targetId: string) => {
-    try {
-      const res = await fetch(`${origin}/admin/targets/${encodeURIComponent(targetId)}`, {
-        method: 'DELETE',
-      });
-      const body = await readJson(res);
-      if (!res.ok) {
-        setError(body.description || body.error || res.statusText);
-        return;
-      }
-      setError(null);
-      setNotice(null);
-      loadTargets();
-    } catch (err) {
-      setError(String(err));
-    }
-  };
+    return () => {
+      cancelYaml();
+      cancelled = true;
+    };
+  }, [origin, loadYaml]);
 
   const saveYaml = async () => {
     try {
@@ -581,28 +779,6 @@ function ResourcesTab({ origin }: { origin: string }) {
     }
   };
 
-  const startOneOff = async () => {
-    try {
-      const res = await fetch(`${origin}/admin/ingest/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          yaml: yamlText,
-          name: customName.trim() || undefined,
-        }),
-      });
-      const body = await readJson(res);
-      if (!res.ok) {
-        setError(body.description || body.error || res.statusText);
-        return;
-      }
-      setError(null);
-      setNotice(`Started import source ${body.source}`);
-    } catch (err) {
-      setError(String(err));
-    }
-  };
-
   const addOrg = async () => {
     if (!org.trim()) {
       setError('GitHub org is required');
@@ -612,7 +788,7 @@ function ResourcesTab({ origin }: { origin: string }) {
       const res = await fetch(`${origin}/admin/repos.yaml/expand-org`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ yaml: yamlText, owner: org.trim() }),
+        body: JSON.stringify({ yaml: yamlText, owner: org.trim(), cron: orgCron.trim() }),
       });
       const body = await readJson(res);
       if (!res.ok) {
@@ -633,109 +809,42 @@ function ResourcesTab({ origin }: { origin: string }) {
     }
   };
 
-  return (
-    <div>
-      {error && <Message negative>{error}</Message>}
-      {notice && <Message>{notice}</Message>}
-      <h3>repos.yaml</h3>
-      <p className="admin-help">
-        Save and Add org check each <code>sources</code> URL against GitHub immediately; a missing or
-        private-without-token org/repo is rejected before write. The indexer expands reachable orgs later and
-        routes each repo to OpenCRE or the OWASP agent. Start one-off uses this editor yaml without
-        overwriting the packaged file (same GitHub check). Import review source is the optional name,
-        otherwise <code>repos.yaml:&lt;hash&gt;</code>. Start is always dry-run; git sync is off.
-      </p>
-      <p>
-        Import review source: <code>{customName.trim() || yamlSource || 'repos.yaml:&lt;hash&gt;'}</code>
-      </p>
-      <p>
-        <input
-          placeholder="optional source name"
-          value={customName}
-          onChange={(e) => setCustomName(e.target.value)}
-        />
-        <input placeholder="GitHub org" value={org} onChange={(e) => setOrg(e.target.value)} />
-        <Button size="mini" onClick={addOrg}>
-          Add org
-        </Button>
-        <Button size="mini" onClick={saveYaml}>
-          Save repos.yaml
-        </Button>
-        <Button size="mini" onClick={startOneOff}>
-          Start one-off
-        </Button>
-      </p>
-      <textarea
-        className="admin-yaml"
-        aria-label="repos.yaml"
-        value={yamlText}
-        onChange={(e) => setYamlText(e.target.value)}
-      />
-      <p>
-        <input placeholder="id" value={id} onChange={(e) => setId(e.target.value)} />
-        <select value={kind} onChange={(e) => setKind(e.target.value)}>
-          <option value="import_source">import_source</option>
-          <option value="oie_repo">oie_repo</option>
-        </select>
-        <Button size="mini" onClick={add}>
-          Add
-        </Button>
-      </p>
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th>Id</th>
-            <th>Kind</th>
-            <th>Detail</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {targets.map((t) => (
-            <tr key={t.id}>
-              <td>{t.id}</td>
-              <td>{t.kind}</td>
-              <td>{t.kind === 'owasp_agent' ? <AgentResourceDetail spec={t.spec} /> : t.name || '—'}</td>
-              <td>
-                <Button size="mini" onClick={() => start(t.id)}>
-                  Start now
-                </Button>
-                {!t.built_in && t.kind !== 'owasp_agent' && t.id !== 'owasp-agent' && (
-                  <Button size="mini" onClick={() => del(t.id)}>
-                    Remove
-                  </Button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function ConfigTab({ origin }: { origin: string }) {
-  const [rows, setRows] = useState<any[]>([]);
-  const [instructions, setInstructions] = useState('');
-  const [msg, setMsg] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`${origin}/admin/config`)
-      .then(async (res) => {
-        const body = await readJson(res);
-        if (!res.ok) throw new Error(body.description || body.error || res.statusText);
-        if (cancelled) return;
-        setRows(body.config || []);
-        setInstructions(body.restart_instructions || '');
-      })
-      .catch(() => {
-        if (!cancelled) setMsg('failed to load config');
+  const addTarget = async () => {
+    if (!form.owner.trim() || !form.repo.trim()) {
+      setError('owner and repo are required');
+      return;
+    }
+    try {
+      const res = await fetch(`${origin}/admin/repos.yaml/add-repo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ yaml: yamlText, ...repoSpec(form) }),
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [origin]);
+      const body = await readJson(res);
+      if (!res.ok) {
+        setError(body.description || body.error || res.statusText);
+        return;
+      }
+      const saved = await fetch(`${origin}/admin/repos.yaml`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ yaml: body.yaml }),
+      });
+      const savedBody = await readJson(saved);
+      if (!saved.ok) {
+        setError(savedBody.description || savedBody.error || saved.statusText);
+        return;
+      }
+      setError(null);
+      setYamlText(savedBody.yaml ?? body.yaml);
+      setYamlSource(savedBody.source || body.source || '');
+      setNotice(`Added target ${body.added}`);
+      setOpen(false);
+      setForm(emptyRepo());
+    } catch (err) {
+      setError(String(err));
+    }
+  };
 
   const copyRow = async (row: any) => {
     const line = `${row.key}=${row.value ?? ''}`;
@@ -749,7 +858,38 @@ function ConfigTab({ origin }: { origin: string }) {
 
   return (
     <div>
+      {error && <Message negative>{error}</Message>}
+      {notice && <Message>{notice}</Message>}
       {msg && <Message>{msg}</Message>}
+      <h3>targets.yaml</h3>
+      <p className="admin-help">
+        Packaged harvester file (<code>repos.yaml</code>). Each source/repo can set a 5-field cron for how
+        often ingest runs. Save and Add org probe GitHub immediately. Add target opens a form for owner,
+        paths, chunking, and cron.
+      </p>
+      <p>
+        Source: <code>{yamlSource || 'repos.yaml:&lt;hash&gt;'}</code>
+      </p>
+      <p>
+        <input placeholder="GitHub org" value={org} onChange={(e) => setOrg(e.target.value)} />
+        <input placeholder="cron" value={orgCron} onChange={(e) => setOrgCron(e.target.value)} />
+        <Button size="mini" onClick={addOrg}>
+          Add org
+        </Button>
+        <Button size="mini" onClick={() => setOpen(true)}>
+          Add target
+        </Button>
+        <Button size="mini" onClick={saveYaml}>
+          Save repos.yaml
+        </Button>
+      </p>
+      <textarea
+        className="admin-yaml"
+        aria-label="repos.yaml"
+        value={yamlText}
+        onChange={(e) => setYamlText(e.target.value)}
+      />
+      <h3>Environment</h3>
       {instructions && <p className="admin-help">{instructions}</p>}
       <table className="admin-table">
         <thead>
@@ -782,6 +922,18 @@ function ConfigTab({ origin }: { origin: string }) {
           ))}
         </tbody>
       </table>
+      <Modal open={open} onClose={() => setOpen(false)}>
+        <Modal.Header>Add target</Modal.Header>
+        <Modal.Content>
+          <RepoFormFields form={form} setForm={setForm} />
+        </Modal.Content>
+        <Modal.Actions>
+          <Button onClick={() => setOpen(false)}>Cancel</Button>
+          <Button primary onClick={addTarget}>
+            Add
+          </Button>
+        </Modal.Actions>
+      </Modal>
     </div>
   );
 }
