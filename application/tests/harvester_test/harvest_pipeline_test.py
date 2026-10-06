@@ -210,6 +210,31 @@ class OieOrchestratorTests(unittest.TestCase):
         self.assertFalse(result.to_dict()["ok"])
         self.assertEqual(result.stages[0].status, "error")
 
+    def test_module_c_safety_path_degraded_is_non_fatal(self) -> None:
+        def ok_summary(*args, **kwargs):
+            summary = Mock()
+            summary.status = "ok"
+            summary.to_json.return_value = '{"status":"ok"}'
+            return summary
+
+        def c_summary(*args, **kwargs):
+            return {
+                "status": "degraded: 3 decided without the safety path",
+                "safety_unevaluated": 3,
+            }
+
+        result = run_oie_pipeline(
+            cache_file="sqlite://",
+            pipeline_run_id="run-safe",
+            dry_run=True,
+            sync_repos=False,
+            run_harvester_fn=ok_summary,
+            run_noise_filter_fn=ok_summary,
+            run_librarian_queue_fn=c_summary,
+        )
+        self.assertTrue(result.to_dict()["ok"])
+        self.assertEqual(result.stages[-1].status, "degraded")
+
     def test_runs_all_stages_when_ok(self) -> None:
         def ok_summary(*args, **kwargs):
             summary = Mock()

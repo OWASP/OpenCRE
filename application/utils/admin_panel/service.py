@@ -612,22 +612,11 @@ DEFAULT_OIE_MAX_REPOS = 5
 ADMIN_OIE_YAML_DIR = REPO_ROOT / "tmp" / "admin_oie"
 
 
-def _llm_keys_present() -> bool:
-    for key in (
-        "GEMINI_API_KEY",
-        "GOOGLE_API_KEY",
-        "OPENAI_API_KEY",
-        "VERTEX_PROJECT",
-    ):
-        if (os.getenv(key) or "").strip():
-            return True
-    return False
-
-
 def _default_skip_bc() -> tuple[bool, bool]:
-    """Skip Module B/C when no LLM credentials are configured."""
-    if _llm_keys_present():
-        return False, False
+    """Admin ingest skips B/C unless the client opts in (``skip_b``/``skip_c`` false).
+
+    LLM keys alone must not fire expensive Module B/C from a casual New click.
+    """
     return True, True
 
 
