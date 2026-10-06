@@ -42,6 +42,11 @@ def main() -> int:
         action="store_true",
         help="run later stages even if an earlier stage errors",
     )
+    parser.add_argument(
+        "--repos_yaml",
+        default="",
+        help="optional path to repos.yaml for Module A harvester",
+    )
     args = parser.parse_args()
 
     # db_connect (inside each stage) creates + pushes the Flask app context.
@@ -60,6 +65,7 @@ def main() -> int:
         dry_run=args.dry_run,
         sync_repos=not args.no_sync_repos,
         stop_on_error=not args.continue_on_error,
+        repos_yaml=args.repos_yaml or None,
     )
     print(result.to_json())
     return 0 if result.to_dict()["ok"] else 1
