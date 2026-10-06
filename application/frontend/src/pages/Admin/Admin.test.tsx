@@ -115,7 +115,8 @@ describe('Admin', () => {
             enabled: true,
             writes_cre_graph: false,
             demo_path: '/chatbot',
-            db_url: 'postgresql://cre:***@127.0.0.1:5432/owasp_agent',
+            db_url: 'postgresql://cre:***@127.0.0.1:5432/opencre',
+            db_env_key: 'DEV_DATABASE_URL',
             package_present: false,
           },
         });
@@ -128,8 +129,8 @@ describe('Admin', () => {
       </MemoryRouter>
     );
     await findByText(/writes CRE graph: false/);
-    expect(getByText(/DB URL:/)).toBeTruthy();
-    expect(getByText(/postgresql:\/\/cre:\*\*\*@127.0.0.1:5432\/owasp_agent/)).toBeTruthy();
+    expect(getByText(/Main DB \(DEV_DATABASE_URL\):/)).toBeTruthy();
+    expect(getByText(/postgresql:\/\/cre:\*\*\*@127.0.0.1:5432\/opencre/)).toBeTruthy();
     expect(getByText('Open chat demo').closest('a')?.getAttribute('href')).toBe('/chatbot');
     expect(queryByRole('button', { name: 'OWASP agent' })).toBeNull();
     fireEvent.click(getByText('Job management and logs'));
