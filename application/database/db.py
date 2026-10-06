@@ -266,7 +266,8 @@ class StagedChangeSet(BaseModel):  # type: ignore
 class IngestionTarget(BaseModel):  # type: ignore
     __tablename__ = "ingestion_target"
     id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
-    kind = sqla.Column(sqla.String, nullable=False)  # oie_repo | import_source
+    # oie_repo | import_source | owasp_agent (built-in, not persisted)
+    kind = sqla.Column(sqla.String, nullable=False)
     name = sqla.Column(sqla.String, nullable=False)
     spec_json = sqla.Column(sqla.Text, nullable=False, default="{}")
     enabled = sqla.Column(sqla.Boolean, nullable=False, default=True)
