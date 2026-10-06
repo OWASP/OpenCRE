@@ -71,7 +71,7 @@ CATALOG: Dict[str, ConfigKey] = {
         ),
         ConfigKey(
             "OWASP_AGENT_DB",
-            "SQLite path for the OWASP agent index (not the CRE graph).",
+            "Postgres URL for the OWASP agent index (not the CRE graph).",
             DOCS_ENV,
         ),
         ConfigKey(

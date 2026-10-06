@@ -604,7 +604,7 @@ function AgentTab({ origin }: { origin: string }) {
         {String(status.writes_cre_graph)}
       </p>
       <p>Agent DB configured: {String(status.db_configured)}</p>
-      <p>DB path: {status.db_path || '—'}</p>
+      <p>DB URL: {status.db_url || '—'}</p>
       <p>Last sync: {status.last_sync || '—'}</p>
       <p>Counts: {status.counts ? JSON.stringify(status.counts) : '—'}</p>
       {(status.params || []).map((p: any) => (

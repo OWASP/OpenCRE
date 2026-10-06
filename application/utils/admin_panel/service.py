@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from datetime import datetime, timezone
 import importlib.util
 import json
@@ -11,6 +15,7 @@ import uuid
 from typing import Any, Dict, List, Optional
 
 import yaml
+from sqlalchemy import create_engine, text
 
 from application import sqla  # type: ignore[attr-defined]
 from application.database import db
@@ -36,50 +41,68 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _agent_db_stats(db_path: Optional[str]) -> Dict[str, Any]:
-    out: Dict[str, Any] = {"db_exists": False, "counts": None, "last_sync": None}
-    if not db_path:
-        return out
-    path = Path(db_path)
-    try:
-        if not path.is_file():
-            return out
-        out["db_exists"] = True
-        out["last_sync"] = datetime.fromtimestamp(
-            path.stat().st_mtime, timezone.utc
-        ).isoformat()
-        import sqlite3
+def _is_postgres_url(value: str) -> bool:
+    lowered = value.strip().lower()
+    return lowered.startswith("postgresql://") or lowered.startswith("postgres://")
 
-        uri = "file:%s?mode=ro" % path.resolve().as_posix()
-        con = sqlite3.connect(uri, uri=True, timeout=1)
-        try:
+
+def _normalize_postgres_url(value: str) -> str:
+    raw = value.strip()
+    if raw.lower().startswith("postgres://"):
+        return "postgresql://" + raw.split("://", 1)[1]
+    return raw
+
+
+def _agent_db_stats(db_url: Optional[str]) -> Dict[str, Any]:
+    out: Dict[str, Any] = {"db_exists": False, "counts": None, "last_sync": None}
+    if not db_url:
+        return out
+    if not _is_postgres_url(db_url):
+        logger.warning("OWASP_AGENT_DB is not a Postgres URL; ignoring %r", db_url)
+        return out
+    engine = None
+    try:
+        engine = create_engine(
+            _normalize_postgres_url(db_url),
+            pool_pre_ping=True,
+            connect_args={"connect_timeout": 2},
+        )
+        with engine.connect() as conn:
+            out["db_exists"] = True
             names = [
-                row[0]
-                for row in con.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table' "
-                    "AND name NOT LIKE 'sqlite_%'"
-                )
+                str(row[0])
+                for row in conn.execute(
+                    text(
+                        "SELECT tablename FROM pg_catalog.pg_tables "
+                        "WHERE schemaname = 'public' ORDER BY tablename"
+                    )
+                ).fetchall()
             ]
             counts: Dict[str, int] = {}
             for name in names[:20]:
-                if not str(name).replace("_", "").isalnum():
+                if not name.replace("_", "").isalnum():
                     continue
                 counts[name] = int(
-                    con.execute('SELECT COUNT(*) FROM "%s"' % name).fetchone()[0]
+                    conn.execute(text(f'SELECT COUNT(*) FROM "{name}"')).scalar() or 0
                 )
             out["counts"] = counts
-        finally:
-            con.close()
-    except Exception:  # noqa: BLE001
-        return out
+    except Exception:
+        logger.warning("OWASP_AGENT_DB Postgres probe failed")
+        return {"db_exists": False, "counts": None, "last_sync": None}
+    finally:
+        if engine is not None:
+            engine.dispose()
     return out
 
 
 def agent_status() -> Dict[str, Any]:
     enabled = os.getenv("OWASP_AGENT_ENABLED", "").strip().lower() in TRUE_VALUES
-    db_path = os.getenv("OWASP_AGENT_DB") or None
+    raw_db = (os.getenv("OWASP_AGENT_DB") or "").strip() or None
+    db_url = raw_db if raw_db and _is_postgres_url(raw_db) else None
+    if raw_db and not db_url:
+        logger.warning("OWASP_AGENT_DB is not a Postgres URL; ignoring %r", raw_db)
     pkg = importlib.util.find_spec("application.utils.owasp_agent") is not None
-    stats = _agent_db_stats(db_path)
+    stats = _agent_db_stats(db_url)
     params = []
     for key in ("OWASP_AGENT_ENABLED", "OWASP_AGENT_DB"):
         spec = config_catalog.CATALOG.get(key)
@@ -95,8 +118,8 @@ def agent_status() -> Dict[str, Any]:
         )
     return {
         "enabled": enabled,
-        "db_path": db_path,
-        "db_configured": bool(db_path),
+        "db_url": db_url,
+        "db_configured": bool(db_url),
         "db_exists": stats["db_exists"],
         "counts": stats["counts"],
         "last_sync": stats["last_sync"],
