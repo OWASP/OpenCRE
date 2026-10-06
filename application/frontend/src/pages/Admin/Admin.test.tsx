@@ -207,4 +207,85 @@ describe('Admin', () => {
     expect(await findByText('HTTP cannot change process env.')).toBeTruthy();
     expect(getByText('CRE_ALLOW_IMPORT')).toBeTruthy();
   });
+
+  it('shows agent disabled when the flag is off', async () => {
+    loggedIn();
+    (global as any).fetch = jest.fn((url: string) => {
+      if (String(url).includes('/admin/agent/status')) {
+        return jsonRes({
+          enabled: false,
+          writes_cre_graph: false,
+          demo_path: '/chatbot',
+          help_url: 'https://example.test',
+          db_path: null,
+          counts: null,
+        });
+      }
+      if (String(url).includes('/admin/imports/runs')) {
+        return jsonRes({ runs: [] });
+      }
+      return jsonRes({});
+    });
+    const { getByText, findByText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    fireEvent.click(getByText('OWASP agent'));
+    expect(await findByText(/Enabled: false/)).toBeTruthy();
+  });
+
+  it('shows pipeline error state', async () => {
+    loggedIn();
+    (global as any).fetch = jest.fn((url: string) => {
+      if (String(url).includes('/admin/pipeline')) {
+        return jsonRes({ description: 'pipeline down' }, 500);
+      }
+      if (String(url).includes('/admin/imports/runs')) {
+        return jsonRes({ runs: [] });
+      }
+      return jsonRes({});
+    });
+    const { getByText, findByText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    fireEvent.click(getByText('Pipeline'));
+    expect(await findByText(/pipeline down/)).toBeTruthy();
+  });
+
+  it('accepts and discards a staged run', async () => {
+    loggedIn();
+    (global as any).fetch = jest.fn((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.endsWith('/accept') || u.endsWith('/discard') || u.includes('apply?dry_run')) {
+        return jsonRes({ run_id: 'r1', staging_status: 'ok' });
+      }
+      if (u.includes('/admin/imports/runs')) {
+        return jsonRes({ runs: [{ id: 'r1', source: 'asvs', staging_status: 'pending_review' }] });
+      }
+      return jsonRes({});
+    });
+    const { getByText, findByText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    await findByText('asvs');
+    fireEvent.click(getByText('Discard'));
+    await waitFor(() =>
+      expect((global as any).fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/discard'),
+        expect.objectContaining({ method: 'POST' })
+      )
+    );
+    fireEvent.click(getByText('Dry-run'));
+    await waitFor(() =>
+      expect((global as any).fetch).toHaveBeenCalledWith(
+        expect.stringContaining('apply?dry_run=1'),
+        expect.objectContaining({ method: 'POST' })
+      )
+    );
+  });
 });
