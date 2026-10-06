@@ -1,6 +1,8 @@
 import hashlib
 import json
 import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -638,6 +640,8 @@ class TestAdminPanel(unittest.TestCase):
         self.assertIn("sqlite://", argv)
         self.assertTrue(str(argv[1]).endswith("run_oie_pipeline.py"))
         self.assertNotIn("--repos_yaml", argv)
+        env = mock_run.call_args.kwargs["env"]
+        self.assertIn(str(service.REPO_ROOT), env["PYTHONPATH"].split(os.pathsep))
 
     def test_invoke_oie_cli_passes_repos_yaml(self) -> None:
         proc = type(
@@ -656,6 +660,35 @@ class TestAdminPanel(unittest.TestCase):
         argv = mock_run.call_args.args[0]
         self.assertIn("--repos_yaml", argv)
         self.assertIn("/tmp/custom.yaml", argv)
+        env = mock_run.call_args.kwargs["env"]
+        self.assertIn(str(service.REPO_ROOT), env["PYTHONPATH"].split(os.pathsep))
+
+    def test_run_oie_pipeline_script_imports_application_without_pythonpath(
+        self,
+    ) -> None:
+        """Admin child is `python /abs/scripts/run_oie_pipeline.py`; sys.path[0]
+        is scripts/, not the repo root. Other threads set PYTHONPATH=."""
+        script = service.REPO_ROOT / "scripts" / "run_oie_pipeline.py"
+        env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+        probe = (
+            "import pathlib, sys\n"
+            "script = pathlib.Path(sys.argv[1]).resolve()\n"
+            "sys.path[0] = str(script.parent)\n"
+            "ns = {'__name__': 'not_main', '__file__': str(script)}\n"
+            "exec(compile(script.read_text(), str(script), 'exec'), ns)\n"
+            "import application\n"
+            "print('ok')\n"
+        )
+        proc = subprocess.run(
+            [sys.executable, "-c", probe, str(script)],
+            cwd="/tmp",
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr + proc.stdout)
+        self.assertIn("ok", proc.stdout)
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_oie_failure_is_logged_as_error(self) -> None:
