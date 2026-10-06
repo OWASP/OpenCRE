@@ -386,4 +386,111 @@ describe('Admin', () => {
     expect(await findByText(/run not found/)).toBeTruthy();
     expect(queryByText('Edit mapping')).toBeNull();
   });
+
+  it('surfaces a failed ingest start', async () => {
+    loggedIn();
+    (global as any).fetch = jest.fn((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/admin/ingest/start') && init?.method === 'POST') {
+        return jsonRes({ description: 'target is disabled' }, 400);
+      }
+      if (u.includes('/admin/targets')) {
+        return jsonRes({ targets: [{ id: 'off-src', kind: 'import_source' }] });
+      }
+      if (u.includes('/admin/imports/runs')) {
+        return jsonRes({ runs: [] });
+      }
+      return jsonRes({});
+    });
+    const { getByText, findByText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    fireEvent.click(getByText('Targets'));
+    await findByText('off-src');
+    fireEvent.click(getByText('Start now'));
+    expect(await findByText(/target is disabled/)).toBeTruthy();
+  });
+
+  it('rejects blank target add and empty drop-last', async () => {
+    loggedIn();
+    const fetchMock = jest.fn((url: string) => {
+      const u = String(url);
+      if (u.includes('/admin/targets')) {
+        return jsonRes({ targets: [] });
+      }
+      if (u.includes('/admin/imports/runs')) {
+        return jsonRes({ runs: [] });
+      }
+      return jsonRes({});
+    });
+    (global as any).fetch = fetchMock;
+    const { getByText, findByText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    expect(await findByText('Drop last')).toBeTruthy();
+    fireEvent.click(getByText('Drop last'));
+    expect(await findByText(/source is required/)).toBeTruthy();
+    fireEvent.click(getByText('Targets'));
+    fireEvent.click(getByText('Add'));
+    expect(await findByText(/id and kind are required/)).toBeTruthy();
+    const posts = fetchMock.mock.calls.filter((call: unknown[]) => {
+      const init = call[1] as RequestInit | undefined;
+      return init?.method === 'POST';
+    });
+    expect(posts).toEqual([]);
+  });
+
+  it('surfaces invalid mapping JSON', async () => {
+    loggedIn();
+    (global as any).fetch = jest.fn((url: string) => {
+      const u = String(url);
+      if (u.includes('/changeset')) {
+        return jsonRes({
+          run_id: 'r1',
+          changeset: [{ op: 'modify_control', after: { description: 'old' } }],
+        });
+      }
+      if (u.includes('/admin/imports/runs')) {
+        return jsonRes({ runs: [{ id: 'r1', source: 'asvs', staging_status: 'pending_review' }] });
+      }
+      return jsonRes({});
+    });
+    const { getByText, findByText, getByDisplayValue } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    await findByText('asvs');
+    fireEvent.click(getByText('Changeset'));
+    expect(await findByText('Edit mapping')).toBeTruthy();
+    fireEvent.change(getByDisplayValue(/old/), { target: { value: '{not json' } });
+    fireEvent.click(getByText('Save mapping'));
+    expect(await findByText(/Mapping JSON is invalid/)).toBeTruthy();
+  });
+
+  it('surfaces a failed graph load', async () => {
+    loggedIn();
+    (global as any).fetch = jest.fn((url: string) => {
+      const u = String(url);
+      if (u.includes('/changeset/graph')) {
+        return jsonRes({ description: 'graph unavailable' }, 500);
+      }
+      if (u.includes('/admin/imports/runs')) {
+        return jsonRes({ runs: [{ id: 'r1', source: 'asvs', staging_status: 'pending_review' }] });
+      }
+      return jsonRes({});
+    });
+    const { getByText, findByText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    await findByText('asvs');
+    fireEvent.click(getByText('Graph'));
+    expect(await findByText(/graph unavailable/)).toBeTruthy();
+  });
 });
