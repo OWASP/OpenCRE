@@ -115,12 +115,18 @@ describe('Admin', () => {
         });
       }
       if (u.endsWith('/mapping') && init?.method === 'POST') {
-        return jsonRes({ run_id: 'r1', op_index: 0, after: { description: 'new' } });
+        return jsonRes({
+          run_id: 'r1',
+          op_index: 0,
+          field: 'after',
+          after: { description: 'new' },
+          changeset: [{ op: 'modify_control', after: { description: 'new' } }],
+        });
       }
       if (u.includes('/changeset')) {
         return jsonRes({
           run_id: 'r1',
-          changeset: [{ op: 'modify', after: { description: 'old' } }],
+          changeset: [{ op: 'modify_control', after: { description: 'old' } }],
         });
       }
       if (u.includes('/admin/imports/runs')) {
