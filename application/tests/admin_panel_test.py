@@ -41,6 +41,17 @@ class TestAdminPanel(unittest.TestCase):
         self.assertEqual(env["GEMINI_API_KEY"], "secret")
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_pipeline_empty_has_queued_strip(self) -> None:
+        with self.app.test_client() as c:
+            r = c.get("/admin/pipeline")
+            self.assertEqual(r.status_code, 200)
+            body = r.get_json()
+            self.assertEqual(body["import_runs"], [])
+            self.assertEqual(body["latest_strip"][0]["id"], "queued")
+            self.assertEqual(body["latest_strip"][0]["state"], "current")
+            self.assertEqual(body["oie"]["knowledge"], [])
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_targets_crud_and_start_and_drop(self) -> None:
         with self.app.test_client() as c:
             r = c.post(
@@ -67,6 +78,10 @@ class TestAdminPanel(unittest.TestCase):
             pipe = r.get_json()
             self.assertTrue(pipe["import_runs"])
             self.assertTrue(pipe["events"])
+            self.assertTrue(pipe["latest_strip"])
+            self.assertIn("knowledge", pipe["oie"])
+            self.assertEqual(pipe["import_runs"][0]["strip"][1]["id"], "pending_review")
+            self.assertEqual(pipe["import_runs"][0]["strip"][1]["state"], "current")
 
             r = c.post("/admin/imports/drop-last", json={"source": "asvs-src"})
             self.assertEqual(r.status_code, 200)
@@ -118,7 +133,7 @@ class TestAdminPanel(unittest.TestCase):
             "NO_LOGIN": "1",
             "OWASP_AGENT_ENABLED": "1",
             "CRE_ALLOW_IMPORT": "1",
-            "OWASP_AGENT_DB": "/tmp/owasp_agent.sqlite",
+            "OWASP_AGENT_DB": "/tmp/owasp_agent_missing_ccdd.sqlite",
         },
     )
     def test_agent_status(self) -> None:
@@ -130,7 +145,87 @@ class TestAdminPanel(unittest.TestCase):
             self.assertFalse(body["writes_cre_graph"])
             self.assertEqual(body["demo_path"], "/chatbot")
             self.assertTrue(body["db_configured"])
-            self.assertNotIn("db_path", body)
+            self.assertEqual(body["db_path"], "/tmp/owasp_agent_missing_ccdd.sqlite")
+            self.assertFalse(body["db_exists"])
+            self.assertIsNone(body["counts"])
+            self.assertTrue(body["params"])
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_agent_status_counts_env_sqlite_only(self) -> None:
+        import sqlite3
+        import tempfile
+
+        fd, path = tempfile.mkstemp(suffix=".sqlite")
+        os.close(fd)
+        try:
+            con = sqlite3.connect(path)
+            con.execute("CREATE TABLE chapters (id INTEGER)")
+            con.execute("INSERT INTO chapters VALUES (1)")
+            con.commit()
+            con.close()
+            with patch.dict(
+                os.environ,
+                {
+                    "NO_LOGIN": "1",
+                    "CRE_ALLOW_IMPORT": "1",
+                    "OWASP_AGENT_ENABLED": "1",
+                    "OWASP_AGENT_DB": path,
+                },
+            ):
+                with self.app.test_client() as c:
+                    r = c.get("/admin/agent/status")
+                    self.assertEqual(r.status_code, 200)
+                    body = r.get_json()
+                    self.assertEqual(body["db_path"], path)
+                    self.assertTrue(body["db_exists"])
+                    self.assertEqual(body["counts"]["chapters"], 1)
+                    self.assertTrue(body["last_sync"])
+        finally:
+            os.unlink(path)
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_oie_start_defaults_dry_run_and_no_git_sync(self) -> None:
+        class Fake:
+            def to_dict(self) -> dict:
+                return {
+                    "ok": True,
+                    "stages": [
+                        {
+                            "name": "module_a_harvester",
+                            "status": "ok",
+                            "detail": "dry",
+                        }
+                    ],
+                }
+
+        with patch(
+            "application.utils.oie_orchestrator.pipeline.run_oie_pipeline",
+            return_value=Fake(),
+        ) as mock_oie:
+            with self.app.test_client() as c:
+                r = c.post(
+                    "/admin/targets",
+                    json={"id": "repo1", "kind": "oie_repo", "name": "repo1"},
+                )
+                self.assertEqual(r.status_code, 201)
+                r = c.post("/admin/ingest/start", json={"target_id": "repo1"})
+                self.assertEqual(r.status_code, 200)
+                mock_oie.assert_called_once()
+                kwargs = mock_oie.call_args.kwargs
+                self.assertTrue(kwargs["dry_run"])
+                self.assertFalse(kwargs["sync_repos"])
+                pipe = c.get("/admin/pipeline").get_json()
+                stages = {e["stage"] for e in pipe["events"]}
+                self.assertIn("module_a_harvester", stages)
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_config_get_has_restart_instructions(self) -> None:
+        with self.app.test_client() as c:
+            r = c.get("/admin/config")
+            self.assertEqual(r.status_code, 200)
+            body = r.get_json()
+            self.assertFalse(body["writable"])
+            self.assertIn("restart", body["restart_instructions"].lower())
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_config_put_and_get(self) -> None:

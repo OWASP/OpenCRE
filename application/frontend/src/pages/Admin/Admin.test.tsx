@@ -97,4 +97,128 @@ describe('Admin', () => {
     await findByText(/writes CRE graph: false/);
     expect(getByText('Open chat demo').closest('a')?.getAttribute('href')).toBe('/chatbot');
   });
+
+  it('loads changeset graph and mapping editor', async () => {
+    mockUser.mockReturnValue({
+      user: 'u',
+      isLoggedIn: true,
+      loading: false,
+      login: jest.fn(),
+      logout: jest.fn(),
+    });
+    (global as any).fetch = jest.fn((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/changeset/graph')) {
+        return jsonRes({
+          nodes: [{ id: 'n1', label: 'ASVS 1.1', type: 'Standard', status: 'updated' }],
+          edges: [],
+        });
+      }
+      if (u.endsWith('/mapping') && init?.method === 'POST') {
+        return jsonRes({ run_id: 'r1', op_index: 0, after: { description: 'new' } });
+      }
+      if (u.includes('/changeset')) {
+        return jsonRes({
+          run_id: 'r1',
+          changeset: [{ op: 'modify', after: { description: 'old' } }],
+        });
+      }
+      if (u.includes('/admin/imports/runs')) {
+        return jsonRes({ runs: [{ id: 'r1', source: 'asvs', staging_status: 'pending_review' }] });
+      }
+      return jsonRes({});
+    });
+    const { getByText, findByText, getByDisplayValue } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    await findByText('asvs');
+    fireEvent.click(getByText('Graph'));
+    expect(await findByText('ASVS 1.1')).toBeTruthy();
+    fireEvent.click(getByText('Changeset'));
+    expect(await findByText('Edit mapping')).toBeTruthy();
+    fireEvent.change(getByDisplayValue(/old/), { target: { value: '{"description":"new"}' } });
+    fireEvent.click(getByText('Save mapping'));
+    await waitFor(() =>
+      expect((global as any).fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/mapping'),
+        expect.objectContaining({ method: 'POST' })
+      )
+    );
+  });
+
+  it('shows empty pipeline state', async () => {
+    mockUser.mockReturnValue({
+      user: 'u',
+      isLoggedIn: true,
+      loading: false,
+      login: jest.fn(),
+      logout: jest.fn(),
+    });
+    (global as any).fetch = jest.fn((url: string) => {
+      if (String(url).includes('/admin/pipeline')) {
+        return jsonRes({
+          import_runs: [],
+          events: [],
+          latest_strip: [
+            { id: 'queued', label: 'Queued', state: 'current' },
+            { id: 'pending_review', label: 'Review', state: 'idle' },
+          ],
+          oie: { unconsumed: 0, recent: [], knowledge: [] },
+        });
+      }
+      if (String(url).includes('/admin/imports/runs')) {
+        return jsonRes({ runs: [] });
+      }
+      return jsonRes({});
+    });
+    const { getByText, findByText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    fireEvent.click(getByText('Pipeline'));
+    expect(await findByText('No pipeline runs yet.')).toBeTruthy();
+    expect(getByText('Queued')).toBeTruthy();
+  });
+
+  it('shows config restart instructions', async () => {
+    mockUser.mockReturnValue({
+      user: 'u',
+      isLoggedIn: true,
+      loading: false,
+      login: jest.fn(),
+      logout: jest.fn(),
+    });
+    (global as any).fetch = jest.fn((url: string) => {
+      if (String(url).includes('/admin/config')) {
+        return jsonRes({
+          writable: false,
+          restart_instructions: 'HTTP cannot change process env.',
+          config: [
+            {
+              key: 'CRE_ALLOW_IMPORT',
+              value: '1',
+              help_text: 'kill',
+              help_url: 'https://example.test',
+              secret: false,
+            },
+          ],
+        });
+      }
+      if (String(url).includes('/admin/imports/runs')) {
+        return jsonRes({ runs: [] });
+      }
+      return jsonRes({});
+    });
+    const { getByText, findByText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    fireEvent.click(getByText('Config'));
+    expect(await findByText('HTTP cannot change process env.')).toBeTruthy();
+    expect(getByText('CRE_ALLOW_IMPORT')).toBeTruthy();
+  });
 });
