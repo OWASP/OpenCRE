@@ -215,8 +215,11 @@ def append_event(run_id: str, stage: str, status: str, detail: str = "") -> None
 
 
 def invoke_oie_cli(run_id: str) -> Dict[str, Any]:
-    """Run OIE in a child process so the web worker's SQLAlchemy bind is untouched."""
-    cache = os.environ.get("CRE_CACHE_FILE") or os.environ.get("DEV_DATABASE_URL") or ""
+    """Run OIE in a child process so the web worker's SQLAlchemy bind is untouched.
+
+    HTTP start is always isolated (``sqlite://``) so dry-run cannot move harvest
+    checkpoints on the live app DB.
+    """
     script = REPO_ROOT / "scripts" / "run_oie_pipeline.py"
     proc = subprocess.run(
         [
@@ -227,7 +230,7 @@ def invoke_oie_cli(run_id: str) -> Dict[str, Any]:
             "--run_id",
             run_id,
             "--cache_file",
-            cache or "sqlite://",
+            "sqlite://",
         ],
         capture_output=True,
         text=True,
@@ -235,16 +238,18 @@ def invoke_oie_cli(run_id: str) -> Dict[str, Any]:
         check=False,
         cwd=str(REPO_ROOT),
     )
-    out = (proc.stdout or "").strip() or (proc.stderr or "").strip()
+    out = (proc.stdout or "").strip()
     try:
         parsed = json.loads(out)
-        if isinstance(parsed, dict):
+        if isinstance(parsed, dict) and ("stages" in parsed or "run_id" in parsed):
+            parsed["ok"] = bool(parsed.get("ok", proc.returncode == 0))
+            parsed["returncode"] = proc.returncode
             return parsed
     except json.JSONDecodeError:
         pass
     return {
         "ok": proc.returncode == 0,
-        "raw": out[-2000:],
+        "raw": ((proc.stdout or "") + (proc.stderr or ""))[-2000:],
         "returncode": proc.returncode,
     }
 
@@ -287,7 +292,13 @@ def start_ingestion(
         )
         try:
             oie = invoke_oie_cli(run.id)
-            append_event(run.id, "oie", "ok", json.dumps(oie)[:2000])
+            oie_ok = bool(oie.get("ok", oie.get("returncode", 1) == 0))
+            append_event(
+                run.id,
+                "oie",
+                "ok" if oie_ok else "error",
+                json.dumps(oie)[:2000],
+            )
             for stage in oie.get("stages") or []:
                 if not isinstance(stage, dict):
                     continue
