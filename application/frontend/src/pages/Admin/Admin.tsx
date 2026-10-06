@@ -592,7 +592,12 @@ function TargetsTab({ origin }: { origin: string }) {
       setError(null);
       if (typeof body.yaml === 'string') setYamlText(body.yaml);
       if (typeof body.source === 'string') setYamlSource(body.source);
-      setNotice(`Added ${body.added || 0} repos from ${org.trim()} (skipped ${body.skipped || 0})`);
+      const added = Number(body.added || 0);
+      setNotice(
+        added
+          ? `Added source ${body.source_url || org.trim()}. Indexer expands it on ingest.`
+          : `Source ${body.source_url || org.trim()} is already in the yaml`
+      );
     } catch (err) {
       setError(String(err));
     }
@@ -604,9 +609,11 @@ function TargetsTab({ origin }: { origin: string }) {
       {notice && <Message>{notice}</Message>}
       <h3>repos.yaml</h3>
       <p className="admin-help">
-        Save writes the packaged harvester file. Start one-off uses this editor yaml without overwriting that
-        file. Import review source is the optional name, otherwise <code>repos.yaml:&lt;hash&gt;</code>. Start
-        is always dry-run; git sync is off. Yaml is capped at 4MiB so a full org expand still fits.
+        Save writes the packaged harvester file immediately. Add org appends
+        <code>github.com/org/</code> — the indexer expands that later and routes each repo to OpenCRE or the
+        OWASP agent. Start one-off uses this editor yaml without overwriting the packaged file. Import review
+        source is the optional name, otherwise <code>repos.yaml:&lt;hash&gt;</code>. Start is always dry-run;
+        git sync is off.
       </p>
       <p>
         Import review source: <code>{customName.trim() || yamlSource || 'repos.yaml:&lt;hash&gt;'}</code>
