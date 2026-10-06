@@ -151,10 +151,7 @@ def stage_agent_sync(ctx: JobContext) -> StageResult:
 
     target = _agent_index_target(ctx)
     if not ctx.config.agent_db:
-        logger.warning(
-            "OWASP_AGENT_DB is unset: the agent index is written to the app "
-            "database; chat/MCP processes must set OWASP_AGENT_DB to the same URL"
-        )
+        logger.info("Writing agent index to the main app database")
     store = IndexStore(target)
     report = sync_all(
         store=store,

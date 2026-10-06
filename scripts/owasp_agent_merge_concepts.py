@@ -15,7 +15,8 @@ def main() -> int:
     )
     parser.add_argument(
         "--db",
-        default=os.environ.get("OWASP_AGENT_DB", "tmp/owasp_agent.sqlite"),
+        default=None,
+        help="Postgres URL for the meta index (default: DATABASE_URL / DEV_DATABASE_URL)",
     )
     parser.add_argument(
         "--threshold",
