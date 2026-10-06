@@ -639,11 +639,11 @@ function ResourcesTab({ origin }: { origin: string }) {
       {notice && <Message>{notice}</Message>}
       <h3>repos.yaml</h3>
       <p className="admin-help">
-        Save writes the packaged harvester file immediately. Add org appends
-        <code>github.com/org/</code> — the indexer expands that later and routes each repo to OpenCRE or the
-        OWASP agent. Start one-off uses this editor yaml without overwriting the packaged file. Import review
-        source is the optional name, otherwise <code>repos.yaml:&lt;hash&gt;</code>. Start is always dry-run;
-        git sync is off.
+        Save and Add org check each <code>sources</code> URL against GitHub immediately; a missing or
+        private-without-token org/repo is rejected before write. The indexer expands reachable orgs later and
+        routes each repo to OpenCRE or the OWASP agent. Start one-off uses this editor yaml without
+        overwriting the packaged file (same GitHub check). Import review source is the optional name,
+        otherwise <code>repos.yaml:&lt;hash&gt;</code>. Start is always dry-run; git sync is off.
       </p>
       <p>
         Import review source: <code>{customName.trim() || yamlSource || 'repos.yaml:&lt;hash&gt;'}</code>
