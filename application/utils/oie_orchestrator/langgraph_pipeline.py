@@ -31,6 +31,7 @@ class OieState(TypedDict, total=False):
     skip_b: bool
     skip_c: bool
     stop_on_error: bool
+    repos_yaml: Optional[str]
     stage_a: Dict[str, Any]
     stage_b: Dict[str, Any]
     stage_c: Dict[str, Any]
@@ -71,6 +72,7 @@ def _run_a(
             state["run_id"],
             dry_run=bool(state.get("dry_run")),
             sync_repos=bool(state.get("sync_repos", True)),
+            repos_yaml=state.get("repos_yaml"),
         )
         stage = StageResult(
             name="module_a_harvester",
@@ -225,6 +227,7 @@ def run_oie_pipeline_langgraph(
     run_harvester_fn: Optional[Callable[..., Any]] = None,
     run_noise_filter_fn: Optional[Callable[..., Any]] = None,
     run_librarian_queue_fn: Optional[Callable[..., Any]] = None,
+    repos_yaml: Optional[str] = None,
 ) -> OrchestratorResult:
     """Compile a LangGraph ``A → B → C`` and invoke it once."""
     from langgraph.graph import END, START, StateGraph
@@ -253,6 +256,7 @@ def run_oie_pipeline_langgraph(
             "skip_b": skip_b,
             "skip_c": skip_c,
             "stop_on_error": stop_on_error,
+            "repos_yaml": repos_yaml,
             "halt": False,
         }
     )

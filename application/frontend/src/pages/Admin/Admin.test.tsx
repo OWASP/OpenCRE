@@ -387,6 +387,78 @@ describe('Admin', () => {
     expect(queryByText('Edit mapping')).toBeNull();
   });
 
+  it('saves repos.yaml, expands an org, and starts a named one-off', async () => {
+    loggedIn();
+    let savedBody: any;
+    let expandBody: any;
+    let startBody: any;
+    (global as any).fetch = jest.fn((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/expand-org') && init?.method === 'POST') {
+        expandBody = JSON.parse(String(init.body || '{}'));
+        return jsonRes({
+          yaml: 'repositories:\n  - id: owasp-juice\n',
+          added: 1,
+          skipped: 2,
+          source: 'repos.yaml:newhash12ab',
+        });
+      }
+      if (u.includes('/admin/repos.yaml') && init?.method === 'PUT') {
+        savedBody = JSON.parse(String(init.body || '{}'));
+        return jsonRes({
+          yaml: savedBody.yaml,
+          source: 'repos.yaml:savedhash12',
+          saved: true,
+        });
+      }
+      if (u.includes('/admin/repos.yaml')) {
+        return jsonRes({
+          yaml: 'repositories:\n  - id: owasp-asvs\n',
+          source: 'repos.yaml:abc123abc123',
+        });
+      }
+      if (u.includes('/admin/ingest/start') && init?.method === 'POST') {
+        startBody = JSON.parse(String(init.body || '{}'));
+        return jsonRes({
+          run_id: 'r-yaml',
+          source: startBody.name || 'repos.yaml:deadbeefdead',
+          dry_run: true,
+        });
+      }
+      if (u.includes('/admin/targets')) {
+        return jsonRes({ targets: [] });
+      }
+      if (u.includes('/admin/imports/runs')) {
+        return jsonRes({ runs: [] });
+      }
+      return jsonRes({});
+    });
+    const { getByText, getByLabelText, getByPlaceholderText, findByText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    fireEvent.click(getByText('Targets'));
+    expect(await findByText('repos.yaml')).toBeTruthy();
+    fireEvent.change(getByLabelText('repos.yaml'), {
+      target: { value: 'repositories:\n  - id: custom\n' },
+    });
+    fireEvent.click(getByText('Save repos.yaml'));
+    expect(await findByText(/Saved repos.yaml:savedhash12/)).toBeTruthy();
+    expect(savedBody.yaml).toContain('custom');
+    fireEvent.change(getByPlaceholderText('GitHub org'), { target: { value: 'OWASP' } });
+    fireEvent.click(getByText('Add org'));
+    expect(await findByText(/Added 1 repos from OWASP/)).toBeTruthy();
+    expect(expandBody.owner).toBe('OWASP');
+    fireEvent.change(getByPlaceholderText('optional source name'), {
+      target: { value: 'nightly-asvs' },
+    });
+    fireEvent.click(getByText('Start one-off'));
+    expect(await findByText(/Started import source nightly-asvs/)).toBeTruthy();
+    expect(startBody.name).toBe('nightly-asvs');
+    expect(startBody.yaml).toContain('owasp-juice');
+  });
+
   it('surfaces a failed ingest start', async () => {
     loggedIn();
     (global as any).fetch = jest.fn((url: string, init?: RequestInit) => {

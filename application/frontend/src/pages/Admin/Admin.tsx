@@ -416,8 +416,13 @@ function TargetsTab({ origin }: { origin: string }) {
   const [id, setId] = useState('');
   const [kind, setKind] = useState('import_source');
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [yamlText, setYamlText] = useState('');
+  const [yamlSource, setYamlSource] = useState('');
+  const [customName, setCustomName] = useState('');
+  const [org, setOrg] = useState('');
 
-  const load = useCallback(() => {
+  const loadTargets = useCallback(() => {
     let cancelled = false;
     fetch(`${origin}/admin/targets`)
       .then(async (res) => {
@@ -433,7 +438,32 @@ function TargetsTab({ origin }: { origin: string }) {
     };
   }, [origin]);
 
-  useEffect(() => load(), [load]);
+  const loadYaml = useCallback(() => {
+    let cancelled = false;
+    fetch(`${origin}/admin/repos.yaml`)
+      .then(async (res) => {
+        const body = await readJson(res);
+        if (!res.ok) throw new Error(body.description || body.error || res.statusText);
+        if (cancelled) return;
+        if (typeof body.yaml === 'string') setYamlText(body.yaml);
+        if (typeof body.source === 'string') setYamlSource(body.source);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(String(err));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [origin]);
+
+  useEffect(() => {
+    const cancelTargets = loadTargets();
+    const cancelYaml = loadYaml();
+    return () => {
+      cancelTargets();
+      cancelYaml();
+    };
+  }, [loadTargets, loadYaml]);
 
   const add = async () => {
     if (!id.trim()) {
@@ -452,8 +482,9 @@ function TargetsTab({ origin }: { origin: string }) {
         return;
       }
       setError(null);
+      setNotice(null);
       setId('');
-      load();
+      loadTargets();
     } catch (err) {
       setError(String(err));
     }
@@ -464,13 +495,17 @@ function TargetsTab({ origin }: { origin: string }) {
       const res = await fetch(`${origin}/admin/ingest/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target_id: targetId }),
+        body: JSON.stringify({
+          target_id: targetId,
+          name: customName.trim() || undefined,
+        }),
       });
       const body = await readJson(res);
       if (!res.ok) setError(body.description || body.error || res.statusText);
       else {
         setError(null);
-        load();
+        setNotice(`Started import source ${body.source}`);
+        loadTargets();
       }
     } catch (err) {
       setError(String(err));
@@ -488,7 +523,76 @@ function TargetsTab({ origin }: { origin: string }) {
         return;
       }
       setError(null);
-      load();
+      setNotice(null);
+      loadTargets();
+    } catch (err) {
+      setError(String(err));
+    }
+  };
+
+  const saveYaml = async () => {
+    try {
+      const res = await fetch(`${origin}/admin/repos.yaml`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ yaml: yamlText }),
+      });
+      const body = await readJson(res);
+      if (!res.ok) {
+        setError(body.description || body.error || res.statusText);
+        return;
+      }
+      setError(null);
+      setYamlText(body.yaml ?? yamlText);
+      setYamlSource(body.source || '');
+      setNotice(`Saved ${body.source}`);
+    } catch (err) {
+      setError(String(err));
+    }
+  };
+
+  const startOneOff = async () => {
+    try {
+      const res = await fetch(`${origin}/admin/ingest/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          yaml: yamlText,
+          name: customName.trim() || undefined,
+        }),
+      });
+      const body = await readJson(res);
+      if (!res.ok) {
+        setError(body.description || body.error || res.statusText);
+        return;
+      }
+      setError(null);
+      setNotice(`Started import source ${body.source}`);
+    } catch (err) {
+      setError(String(err));
+    }
+  };
+
+  const addOrg = async () => {
+    if (!org.trim()) {
+      setError('GitHub org is required');
+      return;
+    }
+    try {
+      const res = await fetch(`${origin}/admin/repos.yaml/expand-org`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ yaml: yamlText, owner: org.trim() }),
+      });
+      const body = await readJson(res);
+      if (!res.ok) {
+        setError(body.description || body.error || res.statusText);
+        return;
+      }
+      setError(null);
+      if (typeof body.yaml === 'string') setYamlText(body.yaml);
+      if (typeof body.source === 'string') setYamlSource(body.source);
+      setNotice(`Added ${body.added || 0} repos from ${org.trim()} (skipped ${body.skipped || 0})`);
     } catch (err) {
       setError(String(err));
     }
@@ -497,6 +601,39 @@ function TargetsTab({ origin }: { origin: string }) {
   return (
     <div>
       {error && <Message negative>{error}</Message>}
+      {notice && <Message>{notice}</Message>}
+      <h3>repos.yaml</h3>
+      <p className="admin-help">
+        Save writes the packaged harvester file. Start one-off uses this editor yaml without overwriting that
+        file. Import review source is the optional name, otherwise <code>repos.yaml:&lt;hash&gt;</code>. Start
+        is always dry-run; git sync is off.
+      </p>
+      <p>
+        Import review source: <code>{customName.trim() || yamlSource || 'repos.yaml:&lt;hash&gt;'}</code>
+      </p>
+      <p>
+        <input
+          placeholder="optional source name"
+          value={customName}
+          onChange={(e) => setCustomName(e.target.value)}
+        />
+        <input placeholder="GitHub org" value={org} onChange={(e) => setOrg(e.target.value)} />
+        <Button size="mini" onClick={addOrg}>
+          Add org
+        </Button>
+        <Button size="mini" onClick={saveYaml}>
+          Save repos.yaml
+        </Button>
+        <Button size="mini" onClick={startOneOff}>
+          Start one-off
+        </Button>
+      </p>
+      <textarea
+        className="admin-yaml"
+        aria-label="repos.yaml"
+        value={yamlText}
+        onChange={(e) => setYamlText(e.target.value)}
+      />
       <p>
         <input placeholder="id" value={id} onChange={(e) => setId(e.target.value)} />
         <select value={kind} onChange={(e) => setKind(e.target.value)}>
@@ -507,7 +644,6 @@ function TargetsTab({ origin }: { origin: string }) {
           Add
         </Button>
       </p>
-      <p className="admin-help">Start is always dry-run; git sync is off.</p>
       <table className="admin-table">
         <thead>
           <tr>

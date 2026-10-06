@@ -95,6 +95,7 @@ def _stage_module_a(
     dry_run: bool,
     sync_repos: bool,
     run_harvester_fn: Optional[Callable[..., Any]] = None,
+    repos_yaml: Optional[str] = None,
 ) -> StageResult:
     if skip:
         return StageResult(
@@ -116,6 +117,7 @@ def _stage_module_a(
             run_id,
             dry_run=dry_run,
             sync_repos=sync_repos,
+            repos_yaml=repos_yaml,
         )
         return StageResult(
             name="module_a_harvester",
@@ -249,6 +251,7 @@ def run_oie_pipeline(
     run_noise_filter_fn: Optional[Callable[..., Any]] = None,
     run_librarian_queue_fn: Optional[Callable[..., Any]] = None,
     use_langgraph: bool = True,
+    repos_yaml: Optional[str] = None,
 ) -> OrchestratorResult:
     """
     Run A→B→C for one ``pipeline_run_id``.
@@ -274,6 +277,7 @@ def run_oie_pipeline(
                 run_harvester_fn=run_harvester_fn,
                 run_noise_filter_fn=run_noise_filter_fn,
                 run_librarian_queue_fn=run_librarian_queue_fn,
+                repos_yaml=repos_yaml,
             )
         except ImportError:
             logger.warning(
@@ -292,6 +296,7 @@ def run_oie_pipeline(
         dry_run=dry_run,
         sync_repos=sync_repos,
         run_harvester_fn=run_harvester_fn,
+        repos_yaml=repos_yaml,
     )
     result.stages.append(a)
     if stop_on_error and a.status == "error":

@@ -236,6 +236,29 @@ class OieOrchestratorTests(unittest.TestCase):
             ],
         )
 
+    def test_passes_repos_yaml_to_harvester(self) -> None:
+        seen = {}
+
+        def run_a(session, run_id, **kwargs):
+            seen.update(kwargs)
+            summary = Mock()
+            summary.status = "ok"
+            summary.to_json.return_value = '{"status":"ok"}'
+            return summary
+
+        result = run_oie_pipeline(
+            cache_file="sqlite://",
+            pipeline_run_id="run-yaml",
+            dry_run=True,
+            sync_repos=False,
+            skip_b=True,
+            skip_c=True,
+            run_harvester_fn=run_a,
+            repos_yaml="/tmp/custom-repos.yaml",
+        )
+        self.assertEqual(seen.get("repos_yaml"), "/tmp/custom-repos.yaml")
+        self.assertTrue(result.to_dict()["ok"])
+
 
 if __name__ == "__main__":
     unittest.main()
