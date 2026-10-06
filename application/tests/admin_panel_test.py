@@ -104,6 +104,7 @@ class TestAdminPanel(unittest.TestCase):
             self.assertEqual(r.status_code, 200)
             ids = [t["id"] for t in r.get_json()["targets"]]
             self.assertIn("asvs-src", ids)
+            self.assertIn(service.AGENT_RESOURCE_ID, ids)
 
             r = c.post("/admin/ingest/start", json={"target_id": "asvs-src"})
             self.assertEqual(r.status_code, 200)
@@ -154,6 +155,17 @@ class TestAdminPanel(unittest.TestCase):
             )
             self.assertEqual(r.status_code, 400)
             self.assertIn("already exists", (r.get_json() or {}).get("description", ""))
+            r = c.post(
+                "/admin/targets",
+                json={"id": service.AGENT_RESOURCE_ID, "kind": "import_source"},
+            )
+            self.assertEqual(r.status_code, 400)
+            self.assertIn("built-in", (r.get_json() or {}).get("description", ""))
+            r = c.post(
+                "/admin/targets",
+                json={"id": "agent-extra", "kind": "owasp_agent"},
+            )
+            self.assertEqual(r.status_code, 400)
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_ingest_start_rejects_missing_disabled_and_unknown(self) -> None:
@@ -265,7 +277,10 @@ class TestAdminPanel(unittest.TestCase):
                 with self.app.test_client() as c:
                     r = c.get("/admin/targets")
             self.assertEqual(r.status_code, 200)
-            self.assertEqual((r.get_json() or {}).get("targets"), [])
+            targets = (r.get_json() or {}).get("targets") or []
+            self.assertEqual([t["id"] for t in targets], [service.AGENT_RESOURCE_ID])
+            self.assertTrue(targets[0]["built_in"])
+            self.assertEqual(targets[0]["kind"], "owasp_agent")
         finally:
             os.unlink(path)
 
@@ -806,6 +821,86 @@ class TestAdminPanel(unittest.TestCase):
                             json={"target_id": "repo-hash", "name": "custom-oie"},
                         )
                         self.assertEqual(r.get_json()["source"], "custom-oie")
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_built_in_agent_is_a_resource_not_a_crud_row(self) -> None:
+        with patch(
+            "application.utils.admin_panel.service.invoke_oie_cli",
+            return_value={"ok": True, "stages": []},
+        ) as mock_oie:
+            with self.app.test_client() as c:
+                r = c.get("/admin/targets")
+                self.assertEqual(r.status_code, 200)
+                agent = next(
+                    t
+                    for t in r.get_json()["targets"]
+                    if t["id"] == service.AGENT_RESOURCE_ID
+                )
+                self.assertEqual(agent["kind"], "owasp_agent")
+                self.assertTrue(agent["built_in"])
+                self.assertIn("enabled", agent["spec"])
+                self.assertFalse(agent["spec"]["writes_cre_graph"])
+
+                r = c.delete(f"/admin/targets/{service.AGENT_RESOURCE_ID}")
+                self.assertEqual(r.status_code, 400)
+                self.assertIn("built-in", (r.get_json() or {}).get("description", ""))
+
+                leftover = db.IngestionTarget(
+                    id=service.AGENT_RESOURCE_ID,
+                    kind="import_source",
+                    name="ghost",
+                    spec_json="{}",
+                    enabled=True,
+                    created_at=service._now(),
+                )
+                sqla.session.add(leftover)
+                sqla.session.commit()
+                r = c.delete(f"/admin/targets/{service.AGENT_RESOURCE_ID}")
+                self.assertEqual(r.status_code, 200)
+                self.assertIsNone(
+                    sqla.session.query(db.IngestionTarget)
+                    .filter_by(id=service.AGENT_RESOURCE_ID)
+                    .first()
+                )
+                ids = [t["id"] for t in c.get("/admin/targets").get_json()["targets"]]
+                self.assertIn(service.AGENT_RESOURCE_ID, ids)
+
+                r = c.post(
+                    "/admin/ingest/start",
+                    json={"target_id": service.AGENT_RESOURCE_ID},
+                )
+                self.assertEqual(r.status_code, 200)
+                mock_oie.assert_called_once_with(
+                    r.get_json()["run_id"],
+                    repos_yaml=str(service.REPOS_YAML),
+                )
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_yaml_seed_skips_reserved_agent_id(self) -> None:
+        reserved = f"""repositories:
+  - id: {service.AGENT_RESOURCE_ID}
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: ASVS
+"""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "repos.yaml"
+            path.write_text(reserved, encoding="utf-8")
+            with patch.object(service, "REPOS_YAML", path):
+                with self.app.test_client() as c:
+                    r = c.get("/admin/targets")
+                    self.assertEqual(r.status_code, 200)
+                    targets = r.get_json()["targets"]
+                    self.assertEqual(
+                        [t["id"] for t in targets], [service.AGENT_RESOURCE_ID]
+                    )
+                    self.assertTrue(targets[0]["built_in"])
+                    self.assertIsNone(
+                        sqla.session.query(db.IngestionTarget)
+                        .filter_by(id=service.AGENT_RESOURCE_ID)
+                        .first()
+                    )
 
     def test_anonymous_json_gets_401(self) -> None:
         with patch.dict(

@@ -94,8 +94,11 @@ def register_admin_panel_routes(
     @login_required
     @imports_enabled
     def admin_targets_delete(target_id: str) -> Any:
-        if not service.remove_target(target_id):
-            return _err(404, "target not found")
+        try:
+            if not service.remove_target(target_id):
+                return _err(404, "target not found")
+        except ValueError as exc:
+            return _err(400, _exc_message(exc))
         return jsonify({"deleted": target_id})
 
     @bp.route("/admin/repos.yaml", methods=["GET"])

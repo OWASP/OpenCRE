@@ -46,6 +46,9 @@ IMPORT_STRIP = (
 )
 YAML_MAX_BYTES = 4 * 1024 * 1024
 YAML_MAX_LABEL = "4MiB"
+AGENT_RESOURCE_ID = "owasp-agent"
+HARVEST_KINDS = ("oie_repo", "owasp_agent")
+TARGET_KINDS = ("oie_repo", "import_source")
 
 
 def repos_yaml_source_name(custom_name: Optional[str], yaml_text: str) -> str:
@@ -291,6 +294,19 @@ def agent_status() -> Dict[str, Any]:
     }
 
 
+def agent_resource() -> Dict[str, Any]:
+    spec = agent_status()
+    return {
+        "id": AGENT_RESOURCE_ID,
+        "kind": "owasp_agent",
+        "name": "OWASP agent",
+        "spec": spec,
+        "enabled": True,
+        "created_at": None,
+        "built_in": True,
+    }
+
+
 def list_targets() -> List[Dict[str, Any]]:
     seed_targets_from_yaml_if_empty()
     rows = (
@@ -298,7 +314,9 @@ def list_targets() -> List[Dict[str, Any]]:
         .order_by(db.IngestionTarget.name.asc())
         .all()
     )
-    return [_target_dict(t) for t in rows]
+    out = [agent_resource()]
+    out.extend(_target_dict(t) for t in rows if t.id != AGENT_RESOURCE_ID)
+    return out
 
 
 def seed_targets_from_yaml_if_empty() -> None:
@@ -319,7 +337,7 @@ def seed_targets_from_yaml_if_empty() -> None:
             if not isinstance(repo, dict):
                 continue
             rid = str(repo.get("id") or "").strip()
-            if not rid:
+            if not rid or rid == AGENT_RESOURCE_ID:
                 continue
             t = db.IngestionTarget(
                 id=rid,
@@ -344,7 +362,9 @@ def add_target(
     spec: Optional[Dict[str, Any]] = None,
     enabled: bool = True,
 ) -> Dict[str, Any]:
-    if kind not in ("oie_repo", "import_source"):
+    if target_id == AGENT_RESOURCE_ID:
+        raise ValueError("owasp-agent is a built-in resource")
+    if kind not in TARGET_KINDS:
         raise ValueError("kind must be oie_repo or import_source")
     existing = (
         sqla.session.query(db.IngestionTarget)
@@ -372,11 +392,13 @@ def remove_target(target_id: str) -> bool:
         .filter(db.IngestionTarget.id == target_id)
         .first()
     )
-    if not t:
-        return False
-    sqla.session.delete(t)
-    sqla.session.commit()
-    return True
+    if t:
+        sqla.session.delete(t)
+        sqla.session.commit()
+        return True
+    if target_id == AGENT_RESOURCE_ID:
+        raise ValueError("cannot remove built-in resource")
+    return False
 
 
 def _target_dict(t: db.IngestionTarget) -> Dict[str, Any]:
@@ -391,6 +413,7 @@ def _target_dict(t: db.IngestionTarget) -> Dict[str, Any]:
         "spec": spec,
         "enabled": bool(t.enabled),
         "created_at": t.created_at.isoformat() if t.created_at else None,
+        "built_in": False,
     }
 
 
@@ -445,6 +468,12 @@ def invoke_oie_cli(run_id: str, repos_yaml: Optional[str] = None) -> Dict[str, A
     }
 
 
+def _packaged_harvest_source(custom_name: str) -> tuple[str, Optional[str]]:
+    packaged = REPOS_YAML.read_text(encoding="utf-8") if REPOS_YAML.is_file() else ""
+    path = str(REPOS_YAML) if REPOS_YAML.is_file() else None
+    return repos_yaml_source_name(custom_name, packaged), path
+
+
 def start_ingestion(
     *,
     source: str = "",
@@ -453,7 +482,6 @@ def start_ingestion(
     name: Optional[str] = None,
 ) -> Dict[str, Any]:
     custom_name = (name or "").strip()
-    target = None
     do_oie = False
     repos_yaml_path: Optional[str] = None
     tmp_path: Optional[Path] = None
@@ -467,27 +495,24 @@ def start_ingestion(
             repos_yaml_path = str(tmp_path)
             do_oie = True
         elif stripped_target:
-            target = (
-                sqla.session.query(db.IngestionTarget)
-                .filter(db.IngestionTarget.id == stripped_target)
-                .first()
-            )
-            if not target:
-                raise KeyError("target not found")
-            if not target.enabled:
-                raise ValueError("target is disabled")
-            if target.kind == "oie_repo":
+            if stripped_target == AGENT_RESOURCE_ID:
                 do_oie = True
-                packaged = (
-                    REPOS_YAML.read_text(encoding="utf-8")
-                    if REPOS_YAML.is_file()
-                    else ""
-                )
-                source = repos_yaml_source_name(custom_name, packaged)
-                if REPOS_YAML.is_file():
-                    repos_yaml_path = str(REPOS_YAML)
+                source, repos_yaml_path = _packaged_harvest_source(custom_name)
             else:
-                source = custom_name or target.name or target.id
+                target = (
+                    sqla.session.query(db.IngestionTarget)
+                    .filter(db.IngestionTarget.id == stripped_target)
+                    .first()
+                )
+                if not target:
+                    raise KeyError("target not found")
+                if not target.enabled:
+                    raise ValueError("target is disabled")
+                if target.kind in HARVEST_KINDS:
+                    do_oie = True
+                    source, repos_yaml_path = _packaged_harvest_source(custom_name)
+                else:
+                    source = custom_name or target.name or target.id
         else:
             source = custom_name or (source or "").strip()
             if not source:
