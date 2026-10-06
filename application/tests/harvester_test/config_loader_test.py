@@ -99,8 +99,19 @@ class ConfigLoaderTests(unittest.TestCase):
             handle.write("sources:\n  - github.com/OWASP/\n")
             path = handle.name
         config = load_repo_config(path)
-        self.assertEqual(config.sources, ["github.com/OWASP/"])
+        self.assertEqual(config.sources[0].url, "github.com/OWASP/")
         self.assertEqual(config.repositories, [])
+
+    def test_load_sources_with_cron(self) -> None:
+        from tempfile import NamedTemporaryFile
+
+        with NamedTemporaryFile("w", suffix=".yaml", delete=False) as handle:
+            handle.write(
+                "sources:\n  - url: github.com/OWASP/\n    cron: '0 * * * *'\n"
+            )
+            path = handle.name
+        config = load_repo_config(path)
+        self.assertEqual(config.sources[0].cron, "0 * * * *")
 
     def test_load_packaged_repos_yaml(self):
         config_path = (

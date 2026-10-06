@@ -142,13 +142,39 @@ def register_admin_panel_routes(
         if not isinstance(yaml_text, str):
             return _err(400, "yaml must be a string")
         owner = str(body.get("owner") or body.get("org") or "").strip()
+        cron = body.get("cron")
         try:
-            return jsonify(service.expand_github_org_into_yaml(yaml_text, owner))
+            return jsonify(
+                service.expand_github_org_into_yaml(
+                    yaml_text, owner, cron=str(cron) if cron is not None else None
+                )
+            )
         except ValueError as exc:
             return _err(400, _exc_message(exc))
         except Exception as exc:
             logger.exception("expand org failed")
             return _err(500, f"expand org failed: {exc}")
+
+    @bp.route("/admin/repos.yaml/add-repo", methods=["POST"])
+    @login_required
+    @imports_enabled
+    def admin_repos_yaml_add_repo() -> Any:
+        body = request.get_json(silent=True) or {}
+        yaml_text = body.get("yaml")
+        if yaml_text is None:
+            try:
+                yaml_text = service.read_repos_yaml().get("yaml") or ""
+            except FileNotFoundError as exc:
+                return _err(404, _exc_message(exc))
+        if not isinstance(yaml_text, str):
+            return _err(400, "yaml must be a string")
+        try:
+            return jsonify(service.add_repository_to_yaml(yaml_text, body))
+        except ValueError as exc:
+            return _err(400, _exc_message(exc))
+        except Exception as exc:
+            logger.exception("add repo failed")
+            return _err(500, f"add repo failed: {exc}")
 
     @bp.route("/admin/ingest/start", methods=["POST"])
     @login_required
@@ -167,6 +193,7 @@ def register_admin_panel_routes(
                 target_id=str(target_id) if target_id else None,
                 yaml_text=yaml_text if isinstance(yaml_text, str) else None,
                 name=name,
+                packaged=bool(body.get("packaged") or body.get("current")),
             )
         except KeyError as exc:
             return _err(404, _exc_message(exc))
@@ -176,6 +203,16 @@ def register_admin_panel_routes(
             logger.exception("ingest start failed")
             return _err(500, f"ingest start failed: {exc}")
         return jsonify(result)
+
+    @bp.route("/admin/dashboard", methods=["GET"])
+    @login_required
+    @imports_enabled
+    def admin_dashboard() -> Any:
+        try:
+            return jsonify(service.dashboard_payload())
+        except Exception as exc:
+            logger.exception("dashboard failed")
+            return _err(500, f"dashboard failed: {exc}")
 
     @bp.route("/admin/pipeline", methods=["GET"])
     @login_required
@@ -203,6 +240,43 @@ def register_admin_panel_routes(
         except (ValueError, IndexError, TypeError) as exc:
             return _err(400, _exc_message(exc))
         return jsonify(result)
+
+    @bp.route("/admin/imports/runs/<run_id>/links", methods=["GET"])
+    @login_required
+    @imports_enabled
+    def admin_run_links(run_id: str) -> Any:
+        try:
+            return jsonify(service.review_run_links(run_id))
+        except KeyError as exc:
+            return _err(404, _exc_message(exc))
+        except ValueError as exc:
+            return _err(400, _exc_message(exc))
+        except Exception as exc:
+            logger.exception("run links failed")
+            return _err(500, f"run links failed: {exc}")
+
+    @bp.route("/admin/imports/runs/<run_id>/links", methods=["POST"])
+    @login_required
+    @imports_enabled
+    def admin_review_link(run_id: str) -> Any:
+        body = request.get_json(silent=True) or {}
+        if "op_index" not in body or not body.get("action"):
+            return _err(400, "op_index and action are required")
+        try:
+            link_index = body.get("link_index")
+            return jsonify(
+                service.review_link(
+                    run_id,
+                    op_index=int(body["op_index"]),
+                    action=str(body.get("action") or ""),
+                    link_index=int(link_index) if link_index is not None else None,
+                    cre=body.get("cre") if isinstance(body.get("cre"), dict) else None,
+                )
+            )
+        except KeyError as exc:
+            return _err(404, _exc_message(exc))
+        except (ValueError, IndexError, TypeError) as exc:
+            return _err(400, _exc_message(exc))
 
     @bp.route("/admin/imports/drop-last", methods=["POST"])
     @login_required
