@@ -25,6 +25,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from typing import Any, Collection, Dict, List, Optional
 
+import sqlalchemy as sa
 from pydantic import ValidationError
 
 from application.database import db
@@ -60,6 +61,32 @@ class FilerResult:
         out = asdict(self)
         out["graph_changed"] = self.graph_changed
         return out
+
+
+def auto_filed_nodes_without_embeddings(session: Any) -> List[str]:
+    """Ids of auto-filed nodes that have no embedding row yet.
+
+    Derived from the graph rather than from one run's filer result, so a node
+    whose embedding failed (or whose run crashed) is picked up by the next run.
+    """
+    rows = (
+        session.query(db.Node.id, db.Node.tags)
+        .filter(db.Node.tags.like(f"%{AUTO_FILED_TAG}%"))
+        .filter(~sqla_exists_embedding())
+        .order_by(db.Node.id)
+        .all()
+    )
+    return [
+        node_id
+        for node_id, tags in rows
+        if AUTO_FILED_TAG in [t.strip() for t in (tags or "").split(",")]
+    ]
+
+
+def sqla_exists_embedding() -> Any:
+    return (
+        sa.select(db.Embeddings.id).where(db.Embeddings.node_id == db.Node.id).exists()
+    )
 
 
 def standard_name_for_repo(repo: str) -> str:
