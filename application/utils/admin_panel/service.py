@@ -48,7 +48,9 @@ GITHUB_API = "https://api.github.com"
 GITHUB_PAGE_SIZE = 100
 GITHUB_MAX_PAGES = 10
 GITHUB_OWNER_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$")
-YAML_MAX_BYTES = 256 * 1024
+# Large enough for a full GitHub org expand (up to GITHUB_MAX_PAGES * 100 repos).
+YAML_MAX_BYTES = 4 * 1024 * 1024
+YAML_MAX_LABEL = "4MiB"
 ORG_REPO_DEFAULTS: Dict[str, Any] = {
     "paths": {"include": ["**/*.md"], "exclude": []},
     "chunking": {
@@ -82,7 +84,10 @@ def load_repos_mapping(yaml_text: str, *, allow_empty: bool = False) -> Dict[str
     if not isinstance(yaml_text, str):
         raise ValueError("yaml must be a string")
     if len(yaml_text.encode("utf-8")) > YAML_MAX_BYTES:
-        raise ValueError("repos.yaml exceeds 256KiB")
+        raise ValueError(
+            f"repos.yaml exceeds {YAML_MAX_LABEL}; add fewer repositories or "
+            "trim paths/chunking blocks"
+        )
     try:
         data = yaml.safe_load(yaml_text)
     except yaml.YAMLError as exc:
