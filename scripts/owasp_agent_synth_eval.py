@@ -1,23 +1,10 @@
 #!/usr/bin/env python3
-"""Score the OWASP-agent synth suite v2 JSONL against a local index or chat API.
+"""Score the OWASP-agent synth suite v2 JSONL against a local index.
 
 See ``application/utils/owasp_agent/README.md`` for setup.
 
 Exit 0 when ``pass_rate >= OWASP_SYNTH_PASS_RATE`` (default 0.90) and
 ``halluc_invent == 0``. Does not regenerate the suite.
-
-Env:
-  OWASP_SYNTH_SUITE     path to JSONL (default: fixtures/owasp_agent_synth_v2.jsonl)
-  OWASP_SYNTH_OUT       results JSON path
-  OWASP_SYNTH_PASS_RATE pass threshold (default 0.90)
-  OWASP_SYNTH_FULL=1    hit ``/rest/v1/completion`` for ``path=completion`` rows
-  OWASP_PROBE_COMPLETION_URL   completion endpoint
-  OWASP_PROBE_COMPLETION_MODE  http (default) | inprocess
-      inprocess: Flask test_client with NO_LOGIN=1 (for staging docker exec e2e
-      when the public chat API requires OAuth)
-  OWASP_SYNTH_ONLY_IDS  comma-separated ids to run (optional)
-  OWASP_SYNTH_ONLY_CATS comma-separated categories (optional)
-  OWASP_AGENT_DB        agent index URL/path
 """
 
 from __future__ import annotations
@@ -27,7 +14,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 os.environ.setdefault("OWASP_AGENT_ENABLED", "1")
 
@@ -45,19 +32,6 @@ _DEFAULT_OUT = _REPO_ROOT / "tmp" / "owasp_agent_synth_results_v2.json"
 
 def score_one(item: Dict[str, Any], answer: str) -> List[str]:
     fails: List[str] = []
-    # Agent deferred to CRE RAG (correct for some AI Exchange content asks).
-    if answer == "__CRE_FALLTHROUGH__":
-        if item.get("allow_cre_fallthrough") or item.get("cat") == "aix_content":
-            for s in item.get("must_not") or []:
-                # Fallthrough is never the chapters/meetup clarify template.
-                if s.lower() in (
-                    "which city are you in",
-                    "board history, and membership",
-                ):
-                    continue
-            return []
-        fails.append("unexpected_cre_fallthrough")
-        return fails
     low = answer.lower()
     for s in item.get("must") or []:
         if s.lower() not in low:
@@ -83,172 +57,34 @@ def score_one(item: Dict[str, Any], answer: str) -> List[str]:
     return fails
 
 
-def _history(item: Dict[str, Any]) -> Optional[List[Dict[str, str]]]:
-    raw = item.get("history")
-    if not isinstance(raw, list):
-        return None
-    out: List[Dict[str, str]] = []
-    for turn in raw:
-        if not isinstance(turn, dict):
-            continue
-        role = str(turn.get("role") or "").strip().lower()
-        content = str(turn.get("content") or "").strip()
-        if role in ("user", "assistant") and content:
-            out.append({"role": role, "content": content})
-    return out or None
-
-
-def ask_agent(q: str, history: Optional[List[Dict[str, str]]] = None) -> str:
+def ask(q: str, path: str) -> str:
     from application.utils.owasp_agent.index_store import IndexStore
     from application.utils.owasp_agent.router import OwaspAgentRouter
 
-    # Prefer explicit OWASP_AGENT_DB; else let IndexStore use DATABASE_URL /
-    # DEV_DATABASE_URL (staging/prod). Only fall back to local sqlite when no
-    # app DB env is set.
-    override = (os.environ.get("OWASP_AGENT_DB") or "").strip()
-    if override:
-        store = IndexStore(override)
-    elif any(
-        (os.environ.get(k) or "").strip()
-        for k in (
-            "DATABASE_URL",
-            "DEV_DATABASE_URL",
-            "PROD_DATABASE_URL",
-            "SQLALCHEMY_DATABASE_URI",
-        )
-    ):
-        store = IndexStore()
-    else:
-        store = IndexStore(str(_REPO_ROOT / "tmp" / "owasp_agent.sqlite"))
+    store = IndexStore()
     router = OwaspAgentRouter(store=store)
-    resp = router.handle(q, history=history)
-    if resp is None:
-        # CRE fallthrough — mark explicitly so scorers can allow empty agent answers.
-        return "__CRE_FALLTHROUGH__"
-    return str(resp.get("response") or "")
-
-
-def ask_completion_http(q: str, history: Optional[List[Dict[str, str]]] = None) -> str:
-    import urllib.error
+    resp = router.handle(q)
+    if resp is not None:
+        return str(resp.get("response") or "")
+    if path != "completion":
+        return ""
+    data = json.dumps({"prompt": q}).encode()
     import urllib.request
 
-    url = os.environ.get(
-        "OWASP_PROBE_COMPLETION_URL", "http://127.0.0.1:5000/rest/v1/completion"
+    req = urllib.request.Request(
+        os.environ.get(
+            "OWASP_PROBE_COMPLETION_URL", "http://127.0.0.1:5000/rest/v1/completion"
+        ),
+        data=data,
+        headers={"Content-Type": "application/json"},
+        method="POST",
     )
-    body: Dict[str, Any] = {"prompt": q}
-    if history:
-        body["messages"] = list(history) + [{"role": "user", "content": q}]
-    data = json.dumps(body).encode()
-    headers = {"Content-Type": "application/json"}
-    token = (os.environ.get("OWASP_PROBE_BEARER") or "").strip()
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-    cookie = (os.environ.get("OWASP_PROBE_COOKIE") or "").strip()
-    if cookie:
-        headers["Cookie"] = cookie
-    req = urllib.request.Request(url, data=data, headers=headers, method="POST")
     try:
         with urllib.request.urlopen(req, timeout=120) as r:
-            payload = json.loads(r.read().decode())
-        if isinstance(payload, dict) and payload.get("error"):
-            return f"__ERROR__:{payload.get('error')}"
-        return str((payload or {}).get("response") or "")
-    except urllib.error.HTTPError as exc:
-        try:
-            detail = exc.read().decode()[:300]
-        except Exception:  # noqa: BLE001
-            detail = str(exc)
-        return f"__ERROR__:HTTP {exc.code}:{detail}"
+            body = json.loads(r.read().decode())
+        return str(body.get("response") or "")
     except Exception as exc:  # noqa: BLE001
         return f"__ERROR__:{exc}"
-
-
-def ask_completion_inprocess(
-    q: str, history: Optional[List[Dict[str, str]]] = None
-) -> str:
-    """Exercise ``/rest/v1/completion`` via Flask test_client (NO_LOGIN=1).
-
-    Uses production config so staging/prod ``DATABASE_URL`` (agent index + CRE
-    RAG) is the same DB the live chat API uses. ``mode=test`` would point at an
-    empty sqlite and miss embeddings.
-    """
-    os.environ["NO_LOGIN"] = "1"
-    os.environ.setdefault("OWASP_AGENT_ENABLED", "1")
-    # Prefer Postgres URL from the container env for SQLAlchemy (psycopg2 pin).
-    db_url = (
-        (os.environ.get("DATABASE_URL") or "").strip()
-        or (os.environ.get("DEV_DATABASE_URL") or "").strip()
-    )
-    if db_url and not (os.environ.get("SQLALCHEMY_DATABASE_URI") or "").strip():
-        try:
-            from application.utils.postgres_url import (
-                is_postgres_url,
-                sqlalchemy_postgres_url,
-            )
-
-            if is_postgres_url(db_url):
-                db_url = sqlalchemy_postgres_url(db_url)
-        except Exception:  # noqa: BLE001
-            if db_url.startswith("postgres://"):
-                db_url = "postgresql+psycopg2://" + db_url.split("://", 1)[1]
-            elif db_url.startswith("postgresql://"):
-                db_url = "postgresql+psycopg2://" + db_url.split("://", 1)[1]
-        os.environ["SQLALCHEMY_DATABASE_URI"] = db_url
-    from application import create_app
-
-    app = create_app(mode="production")
-    body: Dict[str, Any] = {"prompt": q}
-    if history:
-        body["messages"] = list(history) + [{"role": "user", "content": q}]
-    with app.app_context():
-        with app.test_client() as client:
-            response = client.post(
-                "/rest/v1/completion",
-                json=body,
-                content_type="application/json",
-            )
-    if response.status_code != 200:
-        return f"__ERROR__:HTTP {response.status_code}:{response.data[:300]!r}"
-    payload = json.loads(response.data)
-    if isinstance(payload, dict) and payload.get("error"):
-        return f"__ERROR__:{payload.get('error')}"
-    return str((payload or {}).get("response") or "")
-
-
-def ask(item: Dict[str, Any], *, full: bool) -> str:
-    q = str(item.get("q") or "")
-    path = item.get("path", "agent")
-    history = _history(item)
-    if path != "completion":
-        return ask_agent(q, history=history)
-    # completion path
-    if not full:
-        # Prefer agent answer when present; otherwise skip scoring later.
-        ans = ask_agent(q, history=history)
-        return ans
-    mode = (os.environ.get("OWASP_PROBE_COMPLETION_MODE") or "http").strip().lower()
-    if mode == "inprocess":
-        return ask_completion_inprocess(q, history=history)
-    return ask_completion_http(q, history=history)
-
-
-def _filter_items(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    only_ids = {
-        int(x.strip())
-        for x in (os.environ.get("OWASP_SYNTH_ONLY_IDS") or "").split(",")
-        if x.strip().isdigit()
-    }
-    only_cats = {
-        x.strip().lower()
-        for x in (os.environ.get("OWASP_SYNTH_ONLY_CATS") or "").split(",")
-        if x.strip()
-    }
-    out = items
-    if only_ids:
-        out = [i for i in out if int(i.get("id") or -1) in only_ids]
-    if only_cats:
-        out = [i for i in out if str(i.get("cat") or "").lower() in only_cats]
-    return out
 
 
 def main() -> int:
@@ -261,23 +97,18 @@ def main() -> int:
         print(f"Suite not found: {suite_path}", file=sys.stderr)
         return 2
 
-    items = _filter_items(
-        [
-            json.loads(line)
-            for line in suite_path.read_text().splitlines()
-            if line.strip()
-        ]
-    )
+    items = [
+        json.loads(line) for line in suite_path.read_text().splitlines() if line.strip()
+    ]
     full = os.environ.get("OWASP_SYNTH_FULL", "0") == "1"
     rows: List[Dict[str, Any]] = []
     fail = 0
     halluc = 0
     scored = 0
-    skipped = 0
     for item in items:
         path = item.get("path", "agent")
         if path == "completion" and not full:
-            ans = ask(item, full=False)
+            ans = ask(item["q"], "agent")
             if not ans:
                 rows.append(
                     {
@@ -289,10 +120,9 @@ def main() -> int:
                     }
                 )
                 scored += 1
-                skipped += 1
                 continue
         else:
-            ans = ask(item, full=full)
+            ans = ask(item["q"], path)
         fails = score_one(item, ans)
         ok = not fails
         if not ok:
@@ -300,12 +130,8 @@ def main() -> int:
         if "halluc_invent" in fails:
             halluc += 1
         scored += 1
-        if not ok and len([r for r in rows if not r.get("ok")]) < 60:
-            preview = (ans or "")[:120].replace("\n", " ")
-            print(
-                f"FAIL #{item['id']} {item.get('cat')} {fails} | "
-                f"{item['q'][:80]} || {preview}"
-            )
+        if not ok and len(rows) < 40:
+            print(f"FAIL #{item['id']} {item.get('cat')} {fails} | {item['q'][:80]}")
         rows.append(
             {
                 "id": item["id"],
@@ -313,7 +139,6 @@ def main() -> int:
                 "fails": fails,
                 "cat": item.get("cat"),
                 "q": item.get("q"),
-                "answer_preview": (ans or "")[:240],
             }
         )
 
@@ -321,13 +146,10 @@ def main() -> int:
     summary = {
         "scored": scored,
         "failed": fail,
-        "skipped_completion": skipped,
         "pass_rate": round(pass_rate, 4),
         "halluc_invent": halluc,
         "threshold": threshold,
         "suite": str(suite_path),
-        "full": full,
-        "completion_mode": os.environ.get("OWASP_PROBE_COMPLETION_MODE", "http"),
     }
     out_path.write_text(json.dumps({"summary": summary, "rows": rows}, indent=2))
     print("SUMMARY", json.dumps(summary))
