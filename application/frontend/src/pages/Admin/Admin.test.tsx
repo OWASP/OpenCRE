@@ -77,7 +77,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    expect(getByText('Sign in to use the admin showcase.')).toBeTruthy();
+    expect(getByText('Sign in to continue.')).toBeTruthy();
   });
 
   it('loads import runs and links to MyOpenCRE', async () => {

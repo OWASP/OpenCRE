@@ -45,7 +45,7 @@ export const Admin = () => {
     return (
       <div className="admin-page">
         <SUIHeader as="h1">Admin</SUIHeader>
-        <p>Sign in to use the admin showcase.</p>
+        <p>Sign in to continue.</p>
         <Button primary onClick={login}>
           Login
         </Button>
@@ -87,12 +87,9 @@ export const Admin = () => {
       {tab === 'config' && <ConfigTab origin={origin} />}
       {tab === 'agent' && <AgentTab origin={origin} />}
       {tab === 'myopencre' && (
-        <div>
-          <p>CSV catalogue upload stays on its own URL.</p>
-          <Link className="ui primary button" to="/myopencre">
-            Open MyOpenCRE
-          </Link>
-        </div>
+        <Link className="ui primary button" to="/myopencre">
+          Open MyOpenCRE
+        </Link>
       )}
     </div>
   );
