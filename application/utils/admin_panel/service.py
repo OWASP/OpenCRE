@@ -16,6 +16,7 @@ import subprocess
 import sys
 import tempfile
 import urllib.error
+import urllib.parse
 import urllib.request
 import uuid
 from typing import Any, Dict, List, Optional
@@ -46,6 +47,8 @@ IMPORT_STRIP = (
 GITHUB_API = "https://api.github.com"
 GITHUB_PAGE_SIZE = 100
 GITHUB_MAX_PAGES = 10
+GITHUB_OWNER_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$")
+YAML_MAX_BYTES = 256 * 1024
 ORG_REPO_DEFAULTS: Dict[str, Any] = {
     "paths": {"include": ["**/*.md"], "exclude": []},
     "chunking": {
@@ -76,6 +79,10 @@ def _dump_repos_mapping(data: Dict[str, Any]) -> str:
 
 
 def load_repos_mapping(yaml_text: str, *, allow_empty: bool = False) -> Dict[str, Any]:
+    if not isinstance(yaml_text, str):
+        raise ValueError("yaml must be a string")
+    if len(yaml_text.encode("utf-8")) > YAML_MAX_BYTES:
+        raise ValueError("repos.yaml exceeds 256KiB")
     try:
         data = yaml.safe_load(yaml_text)
     except yaml.YAMLError as exc:
@@ -115,7 +122,19 @@ def write_repos_yaml(yaml_text: str) -> Dict[str, Any]:
         raise ValueError("yaml must be a string")
     load_repos_mapping(yaml_text)
     REPOS_YAML.parent.mkdir(parents=True, exist_ok=True)
-    REPOS_YAML.write_text(yaml_text, encoding="utf-8")
+    fd, tmp_name = tempfile.mkstemp(
+        dir=str(REPOS_YAML.parent), suffix=".yaml", prefix="repos."
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(yaml_text)
+        os.replace(tmp_name, REPOS_YAML)
+    except Exception:
+        try:
+            os.unlink(tmp_name)
+        except OSError:
+            pass
+        raise
     return {
         "yaml": yaml_text,
         "source": repos_yaml_source_name(None, yaml_text),
@@ -149,6 +168,13 @@ def _repo_entry_id(owner: str, repo: str, taken: set[str]) -> str:
     return candidate
 
 
+def _validate_github_owner(owner: str) -> str:
+    owner = (owner or "").strip()
+    if not GITHUB_OWNER_RE.fullmatch(owner):
+        raise ValueError("owner must be a GitHub org or user login")
+    return owner
+
+
 def _github_headers() -> Dict[str, str]:
     headers = {
         "User-Agent": "OpenCRE-admin",
@@ -168,7 +194,7 @@ def _github_list_owner_repos(owner: str) -> List[Dict[str, Any]]:
         found = True
         for page in range(1, GITHUB_MAX_PAGES + 1):
             url = (
-                f"{GITHUB_API}/{kind}/{owner}/repos"
+                f"{GITHUB_API}/{kind}/{urllib.parse.quote(owner, safe='')}/repos"
                 f"?per_page={GITHUB_PAGE_SIZE}&page={page}"
             )
             req = urllib.request.Request(url, headers=headers)
@@ -181,10 +207,10 @@ def _github_list_owner_repos(owner: str) -> List[Dict[str, Any]]:
                     found = False
                     break
                 raise ValueError(f"GitHub API error {exc.code}") from exc
-            except urllib.error.URLError as exc:
-                raise ValueError("GitHub API request failed") from exc
             except json.JSONDecodeError as exc:
                 raise ValueError("GitHub API returned invalid JSON") from exc
+            except (urllib.error.URLError, OSError, ValueError) as exc:
+                raise ValueError("GitHub API request failed") from exc
             if not isinstance(payload, list):
                 raise ValueError("GitHub API returned unexpected payload")
             collected.extend(item for item in payload if isinstance(item, dict))
@@ -198,9 +224,7 @@ def _github_list_owner_repos(owner: str) -> List[Dict[str, Any]]:
 
 
 def expand_github_org_into_yaml(yaml_text: str, owner: str) -> Dict[str, Any]:
-    owner = (owner or "").strip()
-    if not owner or "/" in owner:
-        raise ValueError("owner is required (GitHub org or user login)")
+    owner = _validate_github_owner(owner)
     data = load_repos_mapping(yaml_text, allow_empty=True)
     existing = list(data.get("repositories") or [])
     seen_pairs = {
@@ -222,30 +246,22 @@ def expand_github_org_into_yaml(yaml_text: str, owner: str) -> Dict[str, Any]:
     skipped = 0
     for item in remote:
         repo_name = str(item.get("name") or "").strip()
-        item_owner = (
-            str(
-                (item.get("owner") or {}).get("login")
-                if isinstance(item.get("owner"), dict)
-                else owner
-            ).strip()
-            or owner
-        )
         if not repo_name:
             skipped += 1
             continue
         if item.get("fork") or item.get("archived"):
             skipped += 1
             continue
-        pair = (item_owner.lower(), repo_name.lower())
+        pair = (owner.lower(), repo_name.lower())
         if pair in seen_pairs:
             skipped += 1
             continue
         branch = str(item.get("default_branch") or "main").strip() or "main"
         entry = {
-            "id": _repo_entry_id(item_owner, repo_name, taken_ids),
+            "id": _repo_entry_id(owner, repo_name, taken_ids),
             "type": "github",
             "enabled": True,
-            "owner": item_owner,
+            "owner": owner,
             "repo": repo_name,
             "branch": branch,
             "paths": copy.deepcopy(defaults["paths"]),

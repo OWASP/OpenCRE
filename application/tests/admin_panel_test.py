@@ -721,10 +721,11 @@ class TestAdminPanel(unittest.TestCase):
             def __exit__(self, *args: object) -> None:
                 return None
 
+        packaged_before = service.REPOS_YAML.read_text(encoding="utf-8")
         with patch(
             "application.utils.admin_panel.service.urllib.request.urlopen",
             return_value=_Resp(),
-        ):
+        ) as mock_open:
             with self.app.test_client() as c:
                 r = c.post("/admin/repos.yaml/expand-org", json={"owner": ""})
                 self.assertEqual(r.status_code, 400)
@@ -740,6 +741,13 @@ class TestAdminPanel(unittest.TestCase):
                 self.assertNotIn("forked-tool", body["yaml"])
                 self.assertNotIn("old-repo", body["yaml"])
                 self.assertTrue(body["source"].startswith("repos.yaml:"))
+                req = mock_open.call_args.args[0]
+                self.assertTrue(
+                    req.full_url.startswith("https://api.github.com/orgs/OWASP/repos?")
+                )
+                self.assertEqual(
+                    service.REPOS_YAML.read_text(encoding="utf-8"), packaged_before
+                )
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_expand_org_not_found(self) -> None:
@@ -758,6 +766,34 @@ class TestAdminPanel(unittest.TestCase):
                 )
                 self.assertEqual(r.status_code, 400)
                 self.assertIn("not found", (r.get_json() or {}).get("description", ""))
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_expand_org_rejects_injected_owner(self) -> None:
+        with patch(
+            "application.utils.admin_panel.service.urllib.request.urlopen"
+        ) as mock_open:
+            with self.app.test_client() as c:
+                for owner in ("OWASP?x=1", "OWASP#frag", "..", "OWASP/ASVS", "x\ny"):
+                    r = c.post(
+                        "/admin/repos.yaml/expand-org",
+                        json={"yaml": MINIMAL_REPOS_YAML, "owner": owner},
+                    )
+                    self.assertEqual(r.status_code, 400, owner)
+                    self.assertIn(
+                        "owner must be a GitHub",
+                        (r.get_json() or {}).get("description", ""),
+                    )
+            mock_open.assert_not_called()
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_repos_yaml_rejects_oversized_payload(self) -> None:
+        huge = "a" * (service.YAML_MAX_BYTES + 1)
+        with self.app.test_client() as c:
+            r = c.put("/admin/repos.yaml", json={"yaml": huge})
+            self.assertEqual(r.status_code, 400)
+            self.assertIn("256KiB", (r.get_json() or {}).get("description", ""))
+            r = c.post("/admin/ingest/start", json={"yaml": huge})
+            self.assertEqual(r.status_code, 400)
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_one_off_yaml_uses_custom_name_or_hash_without_overwriting(self) -> None:
@@ -845,4 +881,6 @@ class TestAdminPanel(unittest.TestCase):
                     json={"source": "x"},
                     headers={"Accept": "application/json"},
                 )
+                self.assertEqual(r.status_code, 401)
+                r = c.get("/admin/repos.yaml", headers={"Accept": "application/json"})
                 self.assertEqual(r.status_code, 401)
