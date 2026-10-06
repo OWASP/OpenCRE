@@ -54,6 +54,12 @@ def main() -> int:
         default="",
         help="optional path to repos.yaml for Module A harvester",
     )
+    parser.add_argument(
+        "--max-repos",
+        type=int,
+        default=0,
+        help="cap Module A repositories (0 = no cap)",
+    )
     args = parser.parse_args()
 
     # db_connect (inside each stage) creates + pushes the Flask app context.
@@ -73,6 +79,7 @@ def main() -> int:
         sync_repos=not args.no_sync_repos,
         stop_on_error=not args.continue_on_error,
         repos_yaml=args.repos_yaml or None,
+        max_repos=args.max_repos or None,
     )
     print(result.to_json())
     return 0 if result.to_dict()["ok"] else 1
