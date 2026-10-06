@@ -49,7 +49,7 @@ If you want to develop on OpenCRE or docker is not available in your environment
 ### Command Line
 
 To run outside of Docker you need to install OpenCRE.
-To install this application you need Python 3.11.9, Node.js, Yarn Classic (the repository uses a Yarn v1 lockfile), and `virtualenv`. The Python version is pinned in `.python-version`; the repository does not currently pin a Node.js version.
+To install this application you need Python 3.11.9, Node.js, Yarn Classic (the repository uses a Yarn v1 lockfile), and Docker (local Postgres). `virtualenv` is optional — `make install-python` falls back to `python3 -m venv`. The Python version is pinned in `.python-version`; the repository does not currently pin a Node.js version.
 
 Clone the repository:
 
@@ -57,34 +57,23 @@ Clone the repository:
 git clone https://github.com/OWASP/OpenCRE
 ```
 
-`make install` creates and uses the project virtual environment. Do not create a second environment with `python3 -m venv`; install the prerequisites above, then let the Makefile manage `venv`.
-
-Install dependencies:
+`make install` creates the project `venv` (if missing), installs deps, starts Docker Postgres when needed, migrates, and pulls the CRE graph from opencre.org when the local DB is empty.
 
 ```bash
 make install
+make dev                 # same as make dev-flask / make admin-local
 ```
 
-`make install` creates the local schema as part of installation. Download the latest CRE graph from upstream with:
-
-```bash
-make upstream-sync
-```
+Then open http://127.0.0.1:5000/admin and http://127.0.0.1:5000/explorer. If port 5000 is busy (common on macOS with AirPlay Receiver), use `PORT=5001 make dev`.
 
 For contributors, this is the supported local data bootstrap path. You do
 **not** need access to the internal OpenCRE Google Sheet to work on the
-project.
+project. Optional later: `make owasp-agent-sync`, or Admin → Pipeline for OIE golden-set ingest.
 
 You can precompute local gap-analysis cache after imports with:
 
 ```bash
 make backfill-gap-analysis
-```
-
-To run CRE locally then you can do:
-
-```bash
-make dev-flask
 ```
 
 To run the CLI application, you can run:
