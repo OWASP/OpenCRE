@@ -18,6 +18,7 @@ from sqlalchemy.dialects import postgresql, sqlite
 from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.pool import NullPool
 
+from application.utils.postgres_url import is_postgres_url, sqlalchemy_postgres_url
 from application.utils.owasp_agent.models import (
     BoardCandidate,
     BoardMember,
@@ -110,8 +111,8 @@ def default_db_path() -> str:
 def _engine_url(target: str) -> str:
     if "://" in target:
         raw = target.strip()
-        if raw.lower().startswith("postgres://"):
-            return "postgresql://" + raw.split("://", 1)[1]
+        if is_postgres_url(raw):
+            return sqlalchemy_postgres_url(raw)
         return raw
     return f"sqlite:///{os.path.abspath(target)}"
 

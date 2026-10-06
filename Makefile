@@ -1,6 +1,6 @@
 .ONESHELL:
 
-.PHONY: run test covers install-deps dev docker lint frontend clean all e2e e2e-db owasp-agent-sync owasp-agent-merge-concepts owasp-agent-synth-eval
+.PHONY: run test covers install-deps dev docker lint frontend clean all e2e e2e-db admin-local owasp-agent-sync owasp-agent-merge-concepts owasp-agent-synth-eval
 
 prod-run:
 	gunicorn cre:app --log-file=-
@@ -77,6 +77,11 @@ upstream-sync:
 	. ./venv/bin/activate && python cre.py --upstream_sync
 
 PORT?=5000
+
+# Admin panel against Docker Postgres (no SQLite). Starts cre-postgres when the
+# URL is unreachable, migrates, then runs Flask on PORT (default 5000).
+admin-local:
+	bash ./scripts/run_admin_local.sh --port $(PORT) $(ADMIN_LOCAL_ARGS)
 
 dev-flask:
 	. ./venv/bin/activate && INSECURE_REQUESTS=1 FLASK_APP=`pwd`/cre.py  FLASK_CONFIG=development flask run --port $(PORT)

@@ -803,7 +803,7 @@ class TestIndexStoreDefaults(unittest.TestCase):
 
         self.assertEqual(
             _engine_url("postgres://cre:pw@host/db"),
-            "postgresql://cre:pw@host/db",
+            "postgresql+psycopg2://cre:pw@host/db",
         )
 
     def test_no_sqlite_file_default_when_unset(self) -> None:
