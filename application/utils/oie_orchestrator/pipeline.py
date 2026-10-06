@@ -60,11 +60,8 @@ def _summary_dict(summary: Any) -> Dict[str, Any]:
 def _stage_status_from_summary(summary: Any) -> str:
     """Map module RunSummary.status to orchestrator stage status.
 
-    Module C currently always reports ``degraded: N decided without the safety
-    path`` behind ``NullSafetyGuard`` — that is declared, not a hard failure, so
-    the stage is ``degraded`` (pipeline may continue; Module D must refuse while
-    unevaluated > 0). Other ``degraded`` values (A/B partial runs, C row errors)
-    map to ``error`` so ``stop_on_error`` can halt.
+    ``ok`` and ``degraded`` (partial A/B harvest, Module C safety-path gap)
+    keep the pipeline movable; only unknown/non-ok statuses become ``error``.
     """
     raw = getattr(summary, "status", None)
     if isinstance(summary, dict):
@@ -72,10 +69,8 @@ def _stage_status_from_summary(summary: Any) -> str:
     text = str(raw or "ok")
     if text == "ok":
         return "ok"
-    if text.startswith("degraded") and "without the safety path" in text:
-        # Pure safety-path gap, no errored rows mixed in.
-        if "errored" not in text:
-            return "degraded"
+    if text.startswith("degraded"):
+        return "degraded"
     return "error"
 
 
@@ -87,6 +82,15 @@ def _connect(cache_file: str) -> Any:
     return sqla.session
 
 
+def _harvester_detail(run_id: str, summary: Any) -> str:
+    data = _summary_dict(summary) or {}
+    return (
+        f"run_harvester completed for run_id={run_id!r} "
+        f"status={data.get('status')!r} errors={data.get('errors')} "
+        f"chunks={data.get('chunks_written')} files={data.get('files_retained')}"
+    )
+
+
 def _stage_module_a(
     run_id: str,
     cache_file: str,
@@ -96,6 +100,7 @@ def _stage_module_a(
     sync_repos: bool,
     run_harvester_fn: Optional[Callable[..., Any]] = None,
     repos_yaml: Optional[str] = None,
+    max_repos: Optional[int] = None,
 ) -> StageResult:
     if skip:
         return StageResult(
@@ -112,17 +117,18 @@ def _stage_module_a(
 
     try:
         session = _connect(cache_file)
-        summary = fn(
-            session,
-            run_id,
-            dry_run=dry_run,
-            sync_repos=sync_repos,
-            repos_yaml=repos_yaml,
-        )
+        kwargs: Dict[str, Any] = {
+            "dry_run": dry_run,
+            "sync_repos": sync_repos,
+            "repos_yaml": repos_yaml,
+        }
+        if max_repos is not None:
+            kwargs["max_repos"] = max_repos
+        summary = fn(session, run_id, **kwargs)
         return StageResult(
             name="module_a_harvester",
             status=_stage_status_from_summary(summary),
-            detail=f"run_harvester completed for run_id={run_id!r}",
+            detail=_harvester_detail(run_id, summary),
             summary=_summary_dict(summary),
         )
     except Exception as exc:  # noqa: BLE001
@@ -252,6 +258,7 @@ def run_oie_pipeline(
     run_librarian_queue_fn: Optional[Callable[..., Any]] = None,
     use_langgraph: bool = True,
     repos_yaml: Optional[str] = None,
+    max_repos: Optional[int] = None,
 ) -> OrchestratorResult:
     """
     Run A→B→C for one ``pipeline_run_id``.
@@ -278,6 +285,7 @@ def run_oie_pipeline(
                 run_noise_filter_fn=run_noise_filter_fn,
                 run_librarian_queue_fn=run_librarian_queue_fn,
                 repos_yaml=repos_yaml,
+                max_repos=max_repos,
             )
         except ImportError:
             logger.warning(
@@ -297,6 +305,7 @@ def run_oie_pipeline(
         sync_repos=sync_repos,
         run_harvester_fn=run_harvester_fn,
         repos_yaml=repos_yaml,
+        max_repos=max_repos,
     )
     result.stages.append(a)
     if stop_on_error and a.status == "error":
