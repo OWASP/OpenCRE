@@ -40,9 +40,19 @@ class TestAdminPanel(unittest.TestCase):
         self.assertIn("CRE_NOISE_FILTER_BATCH_SIZE", rejected)
         self.assertEqual(env["GEMINI_API_KEY"], "secret")
         agent_db = next(r for r in rows if r["key"] == "OWASP_AGENT_DB")
-        self.assertIn("Postgres", agent_db["help_text"])
+        self.assertEqual(
+            agent_db["help_text"],
+            "Postgres URL for the OWASP agent index (not the CRE graph).",
+        )
         self.assertNotIn("sqlite", agent_db["help_text"].lower())
-        self.assertNotIn("SQLite", agent_db["help_text"])
+        redacted = config_catalog.present_config(
+            {
+                "OWASP_AGENT_DB": "postgresql://cre:password@127.0.0.1:5432/owasp_agent",
+            }
+        )
+        shown = next(r["value"] for r in redacted if r["key"] == "OWASP_AGENT_DB")
+        self.assertEqual(shown, "postgresql://cre:***@127.0.0.1:5432/owasp_agent")
+        self.assertNotIn("password", shown)
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_pipeline_empty_has_queued_strip(self) -> None:
@@ -178,8 +188,9 @@ class TestAdminPanel(unittest.TestCase):
             self.assertEqual(body["demo_path"], "/chatbot")
             self.assertTrue(body["db_configured"])
             self.assertEqual(
-                body["db_url"], "postgresql://cre:password@127.0.0.1:1/owasp_agent"
+                body["db_url"], "postgresql://cre:***@127.0.0.1:1/owasp_agent"
             )
+            self.assertNotIn("password", str(body))
             self.assertNotIn("db_path", body)
             self.assertFalse(body["db_exists"])
             self.assertIsNone(body["counts"])
@@ -209,14 +220,18 @@ class TestAdminPanel(unittest.TestCase):
                 "OWASP_AGENT_DB": "/tmp/owasp_agent_missing_ccdd.sqlite",
             },
         ):
-            with self.app.test_client() as c:
-                r = c.get("/admin/agent/status")
+            with patch(
+                "application.utils.admin_panel.service.create_engine"
+            ) as mock_engine:
+                with self.app.test_client() as c:
+                    r = c.get("/admin/agent/status")
                 self.assertEqual(r.status_code, 200)
                 body = r.get_json()
                 self.assertFalse(body["db_configured"])
                 self.assertIsNone(body["db_url"])
                 self.assertFalse(body["db_exists"])
                 self.assertIsNone(body["counts"])
+                mock_engine.assert_not_called()
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_agent_status_counts_postgres(self) -> None:
@@ -272,8 +287,9 @@ class TestAdminPanel(unittest.TestCase):
                     body = r.get_json()
                     self.assertEqual(
                         body["db_url"],
-                        "postgres://cre:password@127.0.0.1:5432/owasp_agent",
+                        "postgres://cre:***@127.0.0.1:5432/owasp_agent",
                     )
+                    self.assertNotIn("password", str(body))
                     self.assertTrue(body["db_exists"])
                     self.assertEqual(body["counts"]["chapters"], 1)
                     self.assertIsNone(body["last_sync"])
