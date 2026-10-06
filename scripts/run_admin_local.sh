@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
-# run_admin_local — start Flask admin against Docker Postgres (no SQLite).
+# run_admin_local — Docker Postgres + migrate + upstream CRE graph + Flask.
+#
+# Invoked by `make install` (--migrate-only), `make dev` / `make dev-flask`
+# / `make admin-local`. Not a separate product path.
 #
 # If DEV_DATABASE_URL / PG_URL is unset or unreachable, starts cre-postgres
-# via `make docker-postgres`, sets the URL, migrates, then runs Flask.
+# via `make docker-postgres`, sets the URL, migrates, upstream-syncs when the
+# CRE graph is empty, then runs Flask (unless --migrate-only).
 #
-#   ./scripts/run_admin_local.sh
+#   make install
+#   make dev                 # or: PORT=5001 make dev  (macOS AirPlay uses 5000)
 #   ./scripts/run_admin_local.sh --migrate-only
-#   PG_URL=postgresql://cre:password@127.0.0.1:5432/cre ./scripts/run_admin_local.sh
 #
 # Env:
 #   PG_URL / DEV_DATABASE_URL   Postgres URL (default: make docker-postgres URL)
@@ -213,6 +217,21 @@ ensure_upstream_graph() {
   log "upstream CRE sync finished"
 }
 
+port_free() {
+  PYTHONPATH="${ROOT}" python - "${PORT}" <<'PY'
+import socket, sys
+port = int(sys.argv[1])
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+try:
+    s.bind(("127.0.0.1", port))
+except OSError:
+    raise SystemExit(1)
+finally:
+    s.close()
+raise SystemExit(0)
+PY
+}
+
 run_flask() {
   ensure_venv
   export FLASK_APP="${ROOT}/cre.py"
@@ -228,7 +247,11 @@ run_flask() {
   export INSECURE_REQUESTS="${INSECURE_REQUESTS:-1}"
   export OWASP_AGENT_ENABLED="${OWASP_AGENT_ENABLED:-1}"
   unset OWASP_AGENT_DB || true
+  if ! port_free; then
+    die "port ${PORT} already in use (macOS AirPlay often takes 5000). Try: PORT=5001 make dev"
+  fi
   log "Flask http://127.0.0.1:${PORT}/admin  DEV_DATABASE_URL=$(redact_url "${PG_URL}")"
+  log "Explorer http://127.0.0.1:${PORT}/explorer"
   exec flask run --host 127.0.0.1 --port "${PORT}"
 }
 
