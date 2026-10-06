@@ -675,6 +675,22 @@ class TestAdminPanel(unittest.TestCase):
                 service.invoke_oie_cli("run-1")
         self.assertIn("Postgres", str(ctx.exception))
 
+    def test_invoke_oie_cli_rejects_explicit_sqlite_env(self) -> None:
+        from application.utils.admin_panel import service
+
+        with patch.dict(
+            os.environ,
+            {
+                "FLASK_CONFIG": "development",
+                "DEV_DATABASE_URL": "sqlite:////tmp/admin.sqlite",
+            },
+            clear=False,
+        ):
+            os.environ.pop("DATABASE_URL", None)
+            with self.assertRaises(RuntimeError) as ctx:
+                service.invoke_oie_cli("run-1")
+        self.assertIn("Postgres", str(ctx.exception))
+
     def test_invoke_oie_cli_passes_repos_yaml(self) -> None:
         proc = type(
             "P",
