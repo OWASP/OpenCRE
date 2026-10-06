@@ -127,7 +127,7 @@ class SelectionTests(unittest.TestCase):
         sel = select_repositories(cfg.repositories, self.store, now=NOW)
         self.assertEqual([r.repo for r in sel.selected], ["std"])
 
-    def test_harvestable_kinds_exclude_only_chapters(self) -> None:
+    def test_harvestable_kinds_exclude_chapter_and_event(self) -> None:
         cfg = _repos(
             _entry("std", kind="standard"),
             _entry("proj", kind="project"),
@@ -138,9 +138,7 @@ class SelectionTests(unittest.TestCase):
         sel = select_repositories(
             cfg.repositories, self.store, kinds=HARVESTABLE_KINDS, now=NOW
         )
-        self.assertEqual(
-            [r.repo for r in sel.selected], ["std", "proj", "other", "evt"]
-        )
+        self.assertEqual([r.repo for r in sel.selected], ["std", "proj", "other"])
 
     def test_explicit_kinds_filter(self) -> None:
         cfg = _repos(_entry("std", kind="standard"), _entry("proj", kind="project"))

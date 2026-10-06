@@ -431,6 +431,43 @@ repositories:
         self.assertEqual(harvest.summary["deferred"], 1)
         self.assertEqual(harvest.summary["repository_ids"], ["owasp-p1", "owasp-p2"])
 
+    def _event_repos(self):
+        self.repos.write_text(
+            self.repos.read_text().replace(
+                "repositories:",
+                "  event:\n"
+                "    type: github\n"
+                "    owner: OWASP\n"
+                "    branch: main\n"
+                "    paths: {include: [index.md]}\n"
+                "    chunking: {strategy: markdown_heading, max_tokens: 1000}\n"
+                "    polling: {mode: full, interval_minutes: 1440}\n"
+                "repositories:\n  - {id: owasp-e1, kind: event, repo: www-event-1}",
+            )
+        )
+
+    def _harvested(self, **cfg):
+        visited = []
+
+        def fake(*, repo_cfg, **_):
+            visited.append(repo_cfg.id)
+            return 1
+
+        with patch.object(harvest_pipeline, "_harvest_repository", fake):
+            self.run_job(
+                overrides={"agent_sync": _ok("agent_sync")},
+                config=SchedulerConfig(repos_yaml=str(self.repos), **cfg),
+            )
+        return visited
+
+    def test_event_repos_are_not_harvested_by_default(self) -> None:
+        self._event_repos()
+        self.assertNotIn("owasp-e1", self._harvested())
+
+    def test_event_repos_are_harvested_when_opted_in(self) -> None:
+        self._event_repos()
+        self.assertIn("owasp-e1", self._harvested(harvest_events=True))
+
     def _agent_sync(self, agent_db):
         from application.utils.owasp_agent import index_store
         from application.utils.owasp_agent import sync as agent_sync
@@ -483,6 +520,14 @@ repositories:
 
 
 class SchedulerConfigEnvTest(unittest.TestCase):
+    def test_event_harvest_defaults_off_and_is_opt_in(self) -> None:
+        with patch.dict("os.environ", {}, clear=False) as env:
+            env.pop("OIE_HARVEST_EVENTS", None)
+            self.assertFalse(SchedulerConfig.from_env().harvest_events)
+        for on in ("1", "true", "ON", "yes"):
+            with patch.dict("os.environ", {"OIE_HARVEST_EVENTS": on}):
+                self.assertTrue(SchedulerConfig.from_env().harvest_events)
+
     def test_embedding_filed_nodes_defaults_on_and_has_a_kill_switch(self) -> None:
         with patch.dict("os.environ", {}, clear=False) as env:
             env.pop("OIE_EMBED_FILED_NODES", None)
