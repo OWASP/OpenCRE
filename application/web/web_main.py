@@ -1727,6 +1727,7 @@ def get_capabilities() -> Any:
         {
             "myopencre": is_myopencre_enabled(),
             "login": is_login_enabled(),
+            "admin": is_login_enabled() and is_cre_import_allowed(),
         }
     )
 
@@ -1735,27 +1736,25 @@ def get_capabilities() -> Any:
 @login_required
 @admin_imports_enabled_required
 def admin_imports_rerun() -> Any:
-    # A placeholder for triggering an actual import.
-    # In a real system, this would enqueue a background job.
-    source = request.json.get("source")
-    if not source:
-        return abort(400, "source is required")
+    body = request.get_json(silent=True) or {}
+    source = (body.get("source") or "").strip()
+    target_id = body.get("target_id")
+    if not source and not target_id:
+        abort(400, description="source is required")
+    from application.utils.admin_panel import service
 
-    database = db.Node_collection().with_graph()
     try:
-        run = db.create_import_run(source=source, version="re-run")
-    except Exception:
-        run = None
-
-    # Simulate basic empty changes so we don't break the UI.
-    from application.utils import import_diff
-
-    db.persist_staged_change_set(
-        run_id=run.id if run else "test-id",
-        changeset_json=import_diff.change_set_to_json([]),
-    )
-
-    return jsonify({"status": "success", "run_id": run.id if run else "test-id"})
+        result = service.start_ingestion(
+            source=source or str(target_id),
+            target_id=str(target_id) if target_id else None,
+            run_oie=False,
+            dry_run=True,
+        )
+    except KeyError as exc:
+        abort(404, description=str(exc))
+    except ValueError as exc:
+        abort(400, description=str(exc))
+    return jsonify({"status": "success", "run_id": result["run_id"], **result})
 
 
 @app.route("/rest/v1/cre_csv_import", methods=["POST"])
@@ -1931,6 +1930,11 @@ def delete_user_mcp_grant() -> Any:
 #         res = [doc.todict() for doc in documents]
 #         return jsonify({"data": res, "page": page, "total_pages": total_pages})
 #     abort(404)
+
+
+from application.web.admin_panel_routes import register_admin_panel_routes
+
+register_admin_panel_routes(app, login_required, admin_imports_enabled_required)
 
 
 if __name__ == "__main__":
