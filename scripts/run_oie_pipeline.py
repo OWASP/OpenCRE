@@ -6,6 +6,13 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from pathlib import Path
+
+# `python /abs/scripts/run_oie_pipeline.py` puts scripts/ on sys.path[0], not
+# the repo root. Admin and other subprocess callers must still find `application`.
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 
 def main() -> int:

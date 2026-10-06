@@ -590,6 +590,16 @@ def append_event(run_id: str, stage: str, status: str, detail: str = "") -> None
     sqla.session.commit()
 
 
+def _subprocess_env() -> Dict[str, str]:
+    """Ensure the repo root is on PYTHONPATH for `python /abs/scripts/*.py`."""
+    env = os.environ.copy()
+    root = str(REPO_ROOT)
+    parts = [p for p in env.get("PYTHONPATH", "").split(os.pathsep) if p]
+    if root not in parts:
+        env["PYTHONPATH"] = os.pathsep.join([root, *parts]) if parts else root
+    return env
+
+
 def invoke_oie_cli(run_id: str, repos_yaml: Optional[str] = None) -> Dict[str, Any]:
     script = REPO_ROOT / "scripts" / "run_oie_pipeline.py"
     argv = [
@@ -611,6 +621,7 @@ def invoke_oie_cli(run_id: str, repos_yaml: Optional[str] = None) -> Dict[str, A
         timeout=120,
         check=False,
         cwd=str(REPO_ROOT),
+        env=_subprocess_env(),
     )
     out = (proc.stdout or "").strip()
     try:
