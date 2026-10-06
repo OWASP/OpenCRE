@@ -148,7 +148,12 @@ def _raise_if_inaccessible(url: str, canonical: str) -> None:
 def probe_github_sources(raw_sources: List[Any]) -> None:
     seen: set[str] = set()
     for raw in raw_sources or []:
-        text = str(raw).strip() if raw is not None else ""
+        if isinstance(raw, dict):
+            text = str(raw.get("url") or "").strip()
+        elif hasattr(raw, "url"):
+            text = str(getattr(raw, "url") or "").strip()
+        else:
+            text = str(raw).strip() if raw is not None else ""
         if not text:
             continue
         source = parse_github_source(text)
