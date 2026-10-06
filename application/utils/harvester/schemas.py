@@ -197,10 +197,14 @@ class ReposFile(BaseModel):
             "(an explicit entry value wins), so org-wide files stay compact."
         ),
     )
+    sources: list[str] = Field(
+        default_factory=list,
+        description="GitHub org or repo URLs (github.com/OWASP/). "
+        "Orgs are expanded by the indexer, not at save time.",
+    )
     repositories: list[RepositoryConfig] = Field(
-        ...,
-        min_length=1,
-        description="List of repositories configured for ingestion.",
+        default_factory=list,
+        description="OpenCRE harvest overrides (paths/chunking). Optional when sources is set.",
     )
 
     @model_validator(mode="before")
@@ -219,3 +223,9 @@ class ReposFile(BaseModel):
                 entry = {**(defaults.get(kind) or {}), **entry}
             merged.append(entry)
         return {**data, "repositories": merged}
+
+    @model_validator(mode="after")
+    def sources_or_repositories(self) -> "ReposFile":
+        if not self.sources and not self.repositories:
+            raise ValueError("sources or repositories is required")
+        return self

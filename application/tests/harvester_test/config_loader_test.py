@@ -92,6 +92,16 @@ class ConfigLoaderTests(unittest.TestCase):
         with self.assertRaisesRegex(ConfigLoaderError, "overlap_tokens"):
             load_repo_config(config_path)
 
+    def test_load_sources_only_config(self):
+        from tempfile import NamedTemporaryFile
+
+        with NamedTemporaryFile("w", suffix=".yaml", delete=False) as handle:
+            handle.write("sources:\n  - github.com/OWASP/\n")
+            path = handle.name
+        config = load_repo_config(path)
+        self.assertEqual(config.sources, ["github.com/OWASP/"])
+        self.assertEqual(config.repositories, [])
+
     def test_load_packaged_repos_yaml(self):
         config_path = (
             Path(__file__).resolve().parents[2] / "utils" / "harvester" / "repos.yaml"

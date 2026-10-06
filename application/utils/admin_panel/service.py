@@ -5,19 +5,14 @@ from cre_logging import get_logger
 logger = get_logger(__name__)
 
 from datetime import datetime, timezone
-import copy
 import hashlib
 import importlib.util
 import json
 import os
 from pathlib import Path
-import re
 import subprocess
 import sys
 import tempfile
-import urllib.error
-import urllib.parse
-import urllib.request
 import uuid
 from typing import Any, Dict, List, Optional
 
@@ -30,6 +25,11 @@ from application.database import db
 from application.feature_flags import TRUE_VALUES
 from application.utils import import_diff
 from application.utils.admin_panel import config_catalog
+from application.utils.harvester.github_sources import parse_github_source
+from application.utils.harvester.repos_validator import (
+    RepositoryValidationError,
+    validate_repositories,
+)
 from application.utils.harvester.schemas import ReposFile
 
 REPOS_YAML = Path(__file__).resolve().parents[1] / "harvester" / "repos.yaml"
@@ -44,22 +44,8 @@ IMPORT_STRIP = (
     ("accepted", "Accepted"),
     ("applied", "Applied"),
 )
-GITHUB_API = "https://api.github.com"
-GITHUB_PAGE_SIZE = 100
-GITHUB_MAX_PAGES = 10
-GITHUB_OWNER_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$")
-# Large enough for a full GitHub org expand (up to GITHUB_MAX_PAGES * 100 repos).
 YAML_MAX_BYTES = 4 * 1024 * 1024
 YAML_MAX_LABEL = "4MiB"
-ORG_REPO_DEFAULTS: Dict[str, Any] = {
-    "paths": {"include": ["**/*.md"], "exclude": []},
-    "chunking": {
-        "strategy": "markdown_heading",
-        "max_tokens": 1200,
-        "overlap_tokens": 100,
-    },
-    "polling": {"mode": "incremental", "interval_minutes": 60},
-}
 
 
 def repos_yaml_source_name(custom_name: Optional[str], yaml_text: str) -> str:
@@ -102,11 +88,21 @@ def load_repos_mapping(yaml_text: str, *, allow_empty: bool = False) -> Dict[str
         repos = data["repositories"]
     if not isinstance(repos, list):
         raise ValueError("repositories must be a list")
-    if repos or not allow_empty:
+    sources = data.get("sources")
+    if sources is None:
+        data["sources"] = []
+        sources = data["sources"]
+    if sources and not isinstance(sources, list):
+        raise ValueError("sources must be a list")
+    if repos or sources or not allow_empty:
         try:
-            ReposFile.model_validate(data)
+            parsed = ReposFile.model_validate(data)
         except ValidationError as exc:
             raise ValueError(f"invalid repos.yaml: {exc}") from exc
+        try:
+            validate_repositories(parsed)
+        except RepositoryValidationError as exc:
+            raise ValueError(str(exc)) from exc
     return data
 
 
@@ -148,146 +144,35 @@ def write_repos_yaml(yaml_text: str) -> Dict[str, Any]:
     }
 
 
-def _org_repo_defaults(existing: List[Any]) -> Dict[str, Any]:
-    defaults = copy.deepcopy(ORG_REPO_DEFAULTS)
-    for row in existing:
-        if not isinstance(row, dict):
-            continue
-        for key in ("paths", "chunking", "polling"):
-            if isinstance(row.get(key), dict):
-                defaults[key] = copy.deepcopy(row[key])
-        break
-    return defaults
-
-
-def _repo_entry_id(owner: str, repo: str, taken: set[str]) -> str:
-    base = re.sub(r"[^a-z0-9]+", "-", f"{owner}-{repo}".lower()).strip("-")
-    if not base:
-        base = "repo"
-    candidate = base
-    n = 2
-    while candidate in taken:
-        candidate = f"{base}-{n}"
-        n += 1
-    taken.add(candidate)
-    return candidate
-
-
-def _validate_github_owner(owner: str) -> str:
-    owner = (owner or "").strip()
-    if not GITHUB_OWNER_RE.fullmatch(owner):
-        raise ValueError("owner must be a GitHub org or user login")
-    return owner
-
-
-def _github_headers() -> Dict[str, str]:
-    headers = {
-        "User-Agent": "OpenCRE-admin",
-        "Accept": "application/vnd.github+json",
+def add_github_source_to_yaml(yaml_text: str, owner: str) -> Dict[str, Any]:
+    parsed = parse_github_source(owner)
+    data = load_repos_mapping(yaml_text, allow_empty=True)
+    sources = [
+        str(item).strip() for item in (data.get("sources") or []) if str(item).strip()
+    ]
+    existing = {parse_github_source(item).canonical.casefold() for item in sources}
+    added = 0
+    if parsed.canonical.casefold() not in existing:
+        sources.append(parsed.canonical)
+        added = 1
+    ordered: Dict[str, Any] = {"sources": sources}
+    repos = data.get("repositories") or []
+    if repos:
+        ordered["repositories"] = repos
+    text = _dump_repos_mapping(ordered)
+    load_repos_mapping(text)
+    return {
+        "yaml": text,
+        "owner": parsed.owner,
+        "source_url": parsed.canonical,
+        "added": added,
+        "skipped": 0 if added else 1,
+        "source": repos_yaml_source_name(None, text),
     }
-    token = (os.getenv("GITHUB_TOKEN") or os.getenv("GH_TOKEN") or "").strip()
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-    return headers
-
-
-def _github_list_owner_repos(owner: str) -> List[Dict[str, Any]]:
-    headers = _github_headers()
-    last_404 = False
-    for kind in ("orgs", "users"):
-        collected: List[Dict[str, Any]] = []
-        found = True
-        for page in range(1, GITHUB_MAX_PAGES + 1):
-            url = (
-                f"{GITHUB_API}/{kind}/{urllib.parse.quote(owner, safe='')}/repos"
-                f"?per_page={GITHUB_PAGE_SIZE}&page={page}"
-            )
-            req = urllib.request.Request(url, headers=headers)
-            try:
-                with urllib.request.urlopen(req, timeout=20) as resp:
-                    payload = json.loads(resp.read().decode("utf-8"))
-            except urllib.error.HTTPError as exc:
-                if exc.code == 404:
-                    last_404 = True
-                    found = False
-                    break
-                raise ValueError(f"GitHub API error {exc.code}") from exc
-            except json.JSONDecodeError as exc:
-                raise ValueError("GitHub API returned invalid JSON") from exc
-            except (urllib.error.URLError, OSError, ValueError) as exc:
-                raise ValueError("GitHub API request failed") from exc
-            if not isinstance(payload, list):
-                raise ValueError("GitHub API returned unexpected payload")
-            collected.extend(item for item in payload if isinstance(item, dict))
-            if len(payload) < GITHUB_PAGE_SIZE:
-                break
-        if found:
-            return collected
-    if last_404:
-        raise ValueError(f"GitHub owner not found: {owner}")
-    return []
 
 
 def expand_github_org_into_yaml(yaml_text: str, owner: str) -> Dict[str, Any]:
-    owner = _validate_github_owner(owner)
-    data = load_repos_mapping(yaml_text, allow_empty=True)
-    existing = list(data.get("repositories") or [])
-    seen_pairs = {
-        (
-            str(row.get("owner") or "").strip().lower(),
-            str(row.get("repo") or "").strip().lower(),
-        )
-        for row in existing
-        if isinstance(row, dict)
-    }
-    taken_ids = {
-        str(row.get("id") or "").strip()
-        for row in existing
-        if isinstance(row, dict) and str(row.get("id") or "").strip()
-    }
-    defaults = _org_repo_defaults(existing)
-    remote = _github_list_owner_repos(owner)
-    added = 0
-    skipped = 0
-    for item in remote:
-        repo_name = str(item.get("name") or "").strip()
-        if not repo_name:
-            skipped += 1
-            continue
-        if item.get("fork") or item.get("archived"):
-            skipped += 1
-            continue
-        pair = (owner.lower(), repo_name.lower())
-        if pair in seen_pairs:
-            skipped += 1
-            continue
-        branch = str(item.get("default_branch") or "main").strip() or "main"
-        entry = {
-            "id": _repo_entry_id(owner, repo_name, taken_ids),
-            "type": "github",
-            "enabled": True,
-            "owner": owner,
-            "repo": repo_name,
-            "branch": branch,
-            "paths": copy.deepcopy(defaults["paths"]),
-            "chunking": copy.deepcopy(defaults["chunking"]),
-            "polling": copy.deepcopy(defaults["polling"]),
-        }
-        existing.append(entry)
-        seen_pairs.add(pair)
-        added += 1
-    data["repositories"] = existing
-    if not existing:
-        raise ValueError("no repositories to add after expanding owner")
-    load_repos_mapping(_dump_repos_mapping(data))
-    text = _dump_repos_mapping(data)
-    return {
-        "yaml": text,
-        "owner": owner,
-        "added": added,
-        "skipped": skipped,
-        "source": repos_yaml_source_name(None, text),
-    }
+    return add_github_source_to_yaml(yaml_text, owner)
 
 
 def _write_temp_repos_yaml(yaml_text: str) -> Path:

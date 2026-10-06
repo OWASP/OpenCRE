@@ -397,9 +397,10 @@ describe('Admin', () => {
       if (u.includes('/expand-org') && init?.method === 'POST') {
         expandBody = JSON.parse(String(init.body || '{}'));
         return jsonRes({
-          yaml: 'repositories:\n  - id: owasp-juice\n',
+          yaml: 'sources:\n  - github.com/OWASP/\n',
           added: 1,
-          skipped: 2,
+          skipped: 0,
+          source_url: 'github.com/OWASP/',
           source: 'repos.yaml:newhash12ab',
         });
       }
@@ -448,7 +449,7 @@ describe('Admin', () => {
     expect(savedBody.yaml).toContain('custom');
     fireEvent.change(getByPlaceholderText('GitHub org'), { target: { value: 'OWASP' } });
     fireEvent.click(getByText('Add org'));
-    expect(await findByText(/Added 1 repos from OWASP/)).toBeTruthy();
+    expect(await findByText(/Added source github.com\/OWASP/)).toBeTruthy();
     expect(expandBody.owner).toBe('OWASP');
     fireEvent.change(getByPlaceholderText('optional source name'), {
       target: { value: 'nightly-asvs' },
@@ -456,7 +457,7 @@ describe('Admin', () => {
     fireEvent.click(getByText('Start one-off'));
     expect(await findByText(/Started import source nightly-asvs/)).toBeTruthy();
     expect(startBody.name).toBe('nightly-asvs');
-    expect(startBody.yaml).toContain('owasp-juice');
+    expect(startBody.yaml).toContain('github.com/OWASP/');
   });
 
   it('surfaces a failed ingest start', async () => {
