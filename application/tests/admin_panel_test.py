@@ -791,7 +791,10 @@ class TestAdminPanel(unittest.TestCase):
         with self.app.test_client() as c:
             r = c.put("/admin/repos.yaml", json={"yaml": huge})
             self.assertEqual(r.status_code, 400)
-            self.assertIn("256KiB", (r.get_json() or {}).get("description", ""))
+            self.assertIn(
+                service.YAML_MAX_LABEL,
+                (r.get_json() or {}).get("description", ""),
+            )
             r = c.post("/admin/ingest/start", json={"yaml": huge})
             self.assertEqual(r.status_code, 400)
 
