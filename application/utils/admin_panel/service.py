@@ -111,14 +111,18 @@ def agent_status() -> Dict[str, Any]:
         params.append(
             {
                 "key": key,
-                "value": os.getenv(key),
+                "value": (
+                    config_catalog.redact_postgres_url(os.getenv(key) or "")
+                    if key == "OWASP_AGENT_DB" and os.getenv(key)
+                    else os.getenv(key)
+                ),
                 "help_text": spec.help_text,
                 "help_url": spec.help_url,
             }
         )
     return {
         "enabled": enabled,
-        "db_url": db_url,
+        "db_url": config_catalog.redact_postgres_url(db_url) if db_url else None,
         "db_configured": bool(db_url),
         "db_exists": stats["db_exists"],
         "counts": stats["counts"],
