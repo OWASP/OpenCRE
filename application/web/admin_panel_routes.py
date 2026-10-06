@@ -98,6 +98,55 @@ def register_admin_panel_routes(
             return _err(404, "target not found")
         return jsonify({"deleted": target_id})
 
+    @bp.route("/admin/repos.yaml", methods=["GET"])
+    @login_required
+    @imports_enabled
+    def admin_repos_yaml_get() -> Any:
+        try:
+            return jsonify(service.read_repos_yaml())
+        except FileNotFoundError as exc:
+            return _err(404, _exc_message(exc))
+        except ValueError as exc:
+            return _err(400, _exc_message(exc))
+        except Exception as exc:
+            logger.exception("repos.yaml get failed")
+            return _err(500, f"repos.yaml get failed: {exc}")
+
+    @bp.route("/admin/repos.yaml", methods=["PUT"])
+    @login_required
+    @imports_enabled
+    def admin_repos_yaml_put() -> Any:
+        body = request.get_json(silent=True) or {}
+        yaml_text = body.get("yaml")
+        if not isinstance(yaml_text, str):
+            return _err(400, "yaml string required")
+        try:
+            return jsonify(service.write_repos_yaml(yaml_text))
+        except ValueError as exc:
+            return _err(400, _exc_message(exc))
+        except Exception as exc:
+            logger.exception("repos.yaml save failed")
+            return _err(500, f"repos.yaml save failed: {exc}")
+
+    @bp.route("/admin/repos.yaml/expand-org", methods=["POST"])
+    @login_required
+    @imports_enabled
+    def admin_repos_yaml_expand_org() -> Any:
+        body = request.get_json(silent=True) or {}
+        yaml_text = body.get("yaml")
+        if yaml_text is None:
+            yaml_text = ""
+        if not isinstance(yaml_text, str):
+            return _err(400, "yaml must be a string")
+        owner = str(body.get("owner") or body.get("org") or "").strip()
+        try:
+            return jsonify(service.expand_github_org_into_yaml(yaml_text, owner))
+        except ValueError as exc:
+            return _err(400, _exc_message(exc))
+        except Exception as exc:
+            logger.exception("expand org failed")
+            return _err(500, f"expand org failed: {exc}")
+
     @bp.route("/admin/ingest/start", methods=["POST"])
     @login_required
     @imports_enabled
@@ -105,10 +154,16 @@ def register_admin_panel_routes(
         body = request.get_json(silent=True) or {}
         source = str(body.get("source") or "").strip()
         target_id = body.get("target_id")
+        yaml_text = body.get("yaml")
+        if yaml_text is not None and not isinstance(yaml_text, str):
+            return _err(400, "yaml must be a string")
+        name = str(body.get("name") or "").strip() or None
         try:
             result = service.start_ingestion(
                 source=source or (str(target_id) if target_id else ""),
                 target_id=str(target_id) if target_id else None,
+                yaml_text=yaml_text if isinstance(yaml_text, str) else None,
+                name=name,
             )
         except KeyError as exc:
             return _err(404, _exc_message(exc))
