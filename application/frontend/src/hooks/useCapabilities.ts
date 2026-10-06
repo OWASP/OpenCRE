@@ -5,11 +5,13 @@ import { useEnvironment } from './useEnvironment';
 export type Capabilities = {
   myopencre: boolean;
   login: boolean;
+  admin?: boolean;
 };
 
 const DEFAULT_CAPABILITIES: Capabilities = {
   myopencre: false,
   login: false,
+  admin: false,
 };
 
 export const useCapabilities = () => {
@@ -26,6 +28,7 @@ export const useCapabilities = () => {
         setCapabilities({
           myopencre: Boolean(data?.myopencre),
           login: Boolean(data?.login),
+          admin: Boolean(data?.admin),
         })
       )
       .catch(() => setCapabilities(DEFAULT_CAPABILITIES))
