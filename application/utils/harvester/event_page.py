@@ -16,21 +16,17 @@ from urllib.parse import urlparse
 
 import yaml
 
+# Page content is untrusted repo text, so every scan below is linear: delimiters
+# are located with ``str.find`` or bounded regexes, never unbounded ``.*?`` that
+# can rescan to the end of the page from each unmatched opener.
+MAX_PAGE_CHARS = 300_000
 _FRONT_MATTER = re.compile(r"\A\s*---[ \t]*\n(.*?)\n---[ \t]*(?:\n|\Z)", re.DOTALL)
-_JSON_LD = re.compile(
-    r"<script\b[^>]*type\s*=\s*[\"']application/ld\+json[\"'][^>]*>(.*?)</script\s*>",
-    re.DOTALL | re.IGNORECASE,
-)
-_OTHER_SCRIPT_OR_STYLE = re.compile(
-    r"<(script|style)\b[^>]*>.*?</\1\s*>", re.DOTALL | re.IGNORECASE
-)
-_HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
-_LIQUID_BLOCK = re.compile(
-    r"\{%-?\s*(for|if|unless|case|capture)\b.*?%\}.*?\{%-?\s*end\1\s*-?%\}",
-    re.DOTALL,
-)
-_LIQUID_TAG = re.compile(r"\{%.*?%\}", re.DOTALL)
-_LIQUID_OUTPUT = re.compile(r"\{\{.*?\}\}", re.DOTALL)
+_SCRIPT_OR_STYLE_OPEN = re.compile(r"<(script|style)\b([^>]{0,500})>", re.IGNORECASE)
+_LD_JSON_ATTR = re.compile(r"type\s*=\s*[\"']application/ld\+json[\"']", re.IGNORECASE)
+_LIQUID_TAG = re.compile(r"\{%-?((?:(?!%\}).){0,300})%\}", re.DOTALL)
+_LIQUID_OUTPUT = re.compile(r"\{\{(?:(?!\}\}).){0,300}\}\}", re.DOTALL)
+_LIQUID_BLOCK_OPEN = re.compile(r"\s*-?\s*(for|if|unless|case|capture)\b")
+_LIQUID_BLOCK_CLOSE = re.compile(r"\s*-?\s*end(for|if|unless|case|capture)\s*-?\s*\Z")
 _BLANK_RUNS = re.compile(r"\n{3,}")
 
 
@@ -115,33 +111,95 @@ def _header(event: Dict[str, Any], fallback_title: Optional[str]) -> str:
     return "\n\n".join(lines)
 
 
+def _strip_delimited(text: str, open_: str, close: str) -> str:
+    """Remove ``open_ ... close`` spans; an unterminated opener is left alone."""
+    out: List[str] = []
+    pos = 0
+    while True:
+        i = text.find(open_, pos)
+        if i < 0:
+            break
+        j = text.find(close, i + len(open_))
+        if j < 0:
+            break
+        out.append(text[pos:i])
+        pos = j + len(close)
+    out.append(text[pos:])
+    return "".join(out)
+
+
+def _strip_liquid_blocks(text: str) -> str:
+    """Drop whole ``{% if/for/... %}...{% end... %}`` blocks (outermost), in one pass."""
+    spans: List[tuple[int, int]] = []
+    stack: List[tuple[str, int]] = []
+    for match in _LIQUID_TAG.finditer(text):
+        body = match.group(1)
+        opened = _LIQUID_BLOCK_OPEN.match(body)
+        closed = _LIQUID_BLOCK_CLOSE.match(body)
+        if opened:
+            stack.append((opened.group(1), match.start()))
+        elif closed:
+            names = [name for name, _ in stack]
+            if closed.group(1) in names:
+                depth = len(names) - 1 - names[::-1].index(closed.group(1))
+                start = stack[depth][1]
+                del stack[depth:]
+                if not stack:
+                    spans.append((start, match.end()))
+    out: List[str] = []
+    pos = 0
+    for start, end in spans:
+        out.append(text[pos:start])
+        pos = end
+    out.append(text[pos:])
+    return "".join(out)
+
+
 def _strip_templating(text: str) -> str:
-    text = _OTHER_SCRIPT_OR_STYLE.sub("", text)
-    text = _HTML_COMMENT.sub("", text)
-    previous = None
-    while previous != text:
-        previous = text
-        text = _LIQUID_BLOCK.sub("", text)
+    text = _strip_delimited(text, "<!--", "-->")
+    text = _strip_liquid_blocks(text)
     text = _LIQUID_TAG.sub("", text)
-    text = _LIQUID_OUTPUT.sub("", text)
-    return text
+    return _LIQUID_OUTPUT.sub("", text)
+
+
+def _extract_scripts(text: str, events: List[Dict[str, Any]]) -> str:
+    """Remove ``<script>``/``<style>`` blocks, collecting schema.org Event JSON-LD."""
+    out: List[str] = []
+    lowered = text.lower()
+    pos = 0
+    scan = 0
+    while True:
+        match = _SCRIPT_OR_STYLE_OPEN.search(text, scan)
+        if not match:
+            break
+        name = match.group(1).lower()
+        close = lowered.find(f"</{name}", match.end())
+        if close < 0:
+            scan = match.end()
+            continue
+        end = lowered.find(">", close)
+        if end < 0:
+            break
+        if name == "script" and _LD_JSON_ATTR.search(match.group(2)):
+            try:
+                # Hand-written JSON-LD often has raw newlines inside strings.
+                events.extend(
+                    _event_objects(json.loads(text[match.end() : close], strict=False))
+                )
+            except ValueError:
+                pass
+        out.append(text[pos : match.start()])
+        pos = scan = end + 1
+    out.append(text[pos:])
+    return "".join(out)
 
 
 def prepare_event_page(text: str) -> str:
     """Return clean markdown for an event page, or ``""`` if it has no content."""
-    title, body = _front_matter_title(text)
+    title, body = _front_matter_title(text[:MAX_PAGE_CHARS])
 
     events: List[Dict[str, Any]] = []
-
-    def collect(match: "re.Match[str]") -> str:
-        try:
-            # Hand-written JSON-LD often has raw newlines inside strings.
-            events.extend(_event_objects(json.loads(match.group(1), strict=False)))
-        except ValueError:
-            pass
-        return ""
-
-    body = _JSON_LD.sub(collect, body)
+    body = _extract_scripts(body, events)
     body = _BLANK_RUNS.sub("\n\n", _strip_templating(body)).strip()
 
     header = ""

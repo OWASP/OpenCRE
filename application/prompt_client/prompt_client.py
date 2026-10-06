@@ -345,7 +345,7 @@ class in_memory_embeddings:
                 logger.info(f"loading page {url}")
                 page.goto(url)
                 text = page.locator("body").inner_text()
-                return text
+                return clean_embedding_text(url, text)
             except requests.exceptions.RequestException as e:
                 logger.error(
                     f"Error fetching content for URL: {url} - {str(e)} (attempt {attempts}/9)"
