@@ -215,11 +215,6 @@ def append_event(run_id: str, stage: str, status: str, detail: str = "") -> None
 
 
 def invoke_oie_cli(run_id: str) -> Dict[str, Any]:
-    """Run OIE in a child process so the web worker's SQLAlchemy bind is untouched.
-
-    HTTP start is always isolated (``sqlite://``) so dry-run cannot move harvest
-    checkpoints on the live app DB.
-    """
     script = REPO_ROOT / "scripts" / "run_oie_pipeline.py"
     proc = subprocess.run(
         [
@@ -475,13 +470,9 @@ def drop_last_ingestion(source: str) -> Dict[str, Any]:
     return {"run_id": run.id, "staging_status": "discarded"}
 
 
-def config_get() -> List[Dict[str, Any]]:
-    return config_catalog.present_config(os.environ)
-
-
 def config_payload() -> Dict[str, Any]:
     return {
-        "config": config_get(),
+        "config": config_catalog.present_config(os.environ),
         "writable": False,
         "restart_instructions": RESTART_INSTRUCTIONS,
     }
@@ -492,7 +483,7 @@ def config_put(updates: Dict[str, Optional[str]]) -> Dict[str, Any]:
     return {
         "applied": applied,
         "rejected": rejected,
-        "config": config_get(),
+        "config": config_catalog.present_config(os.environ),
         "needs_restart": True,
         "note": RESTART_INSTRUCTIONS,
     }

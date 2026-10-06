@@ -112,8 +112,6 @@ def present_config(environ: Mapping[str, str]) -> List[Dict[str, Any]]:
 
 
 def apply_updates(
-    environ: MutableMapping[str, str], updates: Mapping[str, Optional[str]]
+    _environ: MutableMapping[str, str], updates: Mapping[str, Optional[str]]
 ) -> tuple[list[str], list[str]]:
-    """Runtime env is read-only over HTTP; every key is rejected."""
-    del environ
     return [], list(updates.keys())
