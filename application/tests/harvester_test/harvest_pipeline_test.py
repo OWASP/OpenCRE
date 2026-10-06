@@ -177,6 +177,43 @@ class DocumentChunkPipelineIntegrationTests(unittest.TestCase):
 
 
 class OieOrchestratorTests(unittest.TestCase):
+    def test_result_exposes_flags_engine_and_graph_path(self) -> None:
+        def ok_summary(*args, **kwargs):
+            summary = Mock()
+            summary.status = "ok"
+            summary.to_json.return_value = (
+                '{"status":"ok","chunks_written":0,"repositories":1,'
+                '"files_seen":0,"files_retained":0,"documents_emitted":0,'
+                '"repository_ids":["owasp-asvs"]}'
+            )
+            return summary
+
+        result = run_oie_pipeline(
+            cache_file="sqlite://",
+            pipeline_run_id="run-trace",
+            dry_run=True,
+            sync_repos=False,
+            skip_b=True,
+            skip_c=True,
+            max_repos=1,
+            run_harvester_fn=ok_summary,
+            run_noise_filter_fn=ok_summary,
+            run_librarian_queue_fn=lambda *a, **k: {"status": "ok"},
+            use_langgraph=False,
+        )
+        payload = result.to_dict()
+        self.assertEqual(payload["engine"], "sequential")
+        self.assertTrue(payload["flags"]["skip_b"])
+        self.assertTrue(payload["flags"]["skip_c"])
+        self.assertEqual(payload["flags"]["max_repos"], 1)
+        self.assertIn("module_a_harvester", payload["graph_path"])
+        visited = {v["name"]: v for v in payload["visited"]}
+        self.assertTrue(visited["module_a_harvester"]["invoked"])
+        self.assertFalse(visited["module_b_noise_filter"]["invoked"])
+        self.assertIn("skip_b=True", visited["module_b_noise_filter"]["detail"])
+        self.assertIn("not invoked", visited["module_b_noise_filter"]["detail"])
+        self.assertIn("already at HEAD", visited["module_a_harvester"]["detail"])
+
     def test_sequences_a_b_c_and_stops_on_a_error(self) -> None:
         a_calls = []
 

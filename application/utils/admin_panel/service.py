@@ -719,6 +719,18 @@ def _record_oie_result(run_id: str, oie: Dict[str, Any]) -> None:
         "ok" if oie_ok else "error",
         json.dumps(oie)[:2000],
     )
+    # Compact trace so Pipeline UI can show flags/path without parsing the blob.
+    trace = {
+        "engine": oie.get("engine"),
+        "flags": oie.get("flags"),
+        "graph_path": oie.get("graph_path"),
+        "visited": oie.get("visited"),
+        "ok": oie_ok,
+    }
+    if any(trace.values()):
+        append_event(
+            run_id, "oie_trace", "ok" if oie_ok else "error", json.dumps(trace)[:2000]
+        )
     for stage in oie.get("stages") or []:
         if not isinstance(stage, dict):
             continue
@@ -842,14 +854,38 @@ def start_ingestion(
         auto_b, auto_c = _default_skip_bc()
         eff_skip_b = auto_b if skip_b is None else skip_b
         eff_skip_c = auto_c if skip_c is None else skip_c
+        skip_reason = (
+            "admin_default_skip_bc"
+            if skip_b is None and skip_c is None and eff_skip_b and eff_skip_c
+            else "client_flags" if skip_b is not None or skip_c is not None else "none"
+        )
         append_event(
             run.id,
             "oie",
             "started",
-            (
-                f"dry_run={dry_run} sync_repos={sync_repos} max_repos={max_repos} "
-                f"skip_b={eff_skip_b} skip_c={eff_skip_c}"
-            ),
+            json.dumps(
+                {
+                    "dry_run": dry_run,
+                    "sync_repos": sync_repos,
+                    "max_repos": max_repos,
+                    "skip_b": eff_skip_b,
+                    "skip_c": eff_skip_c,
+                    "skip_reason": skip_reason,
+                    "repos_yaml": repos_yaml_path,
+                    "wait": wait,
+                    "graph_path": [
+                        "START",
+                        "module_a_harvester",
+                        "module_b_noise_filter",
+                        "module_c_librarian",
+                        "END",
+                    ],
+                    "note": (
+                        "B/C skipped by admin default unless skip_b/skip_c=false; "
+                        "Module A may write 0 chunks when checkpoints are already at HEAD."
+                    ),
+                }
+            )[:2000],
         )
         testing = (
             bool(has_app_context() and current_app.config.get("TESTING"))

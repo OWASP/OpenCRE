@@ -16,6 +16,7 @@ from application.utils.oie_orchestrator.pipeline import (
     StageResult,
     _connect,
     _harvester_detail,
+    _skip_stage_detail,
     _stage_status_from_summary,
     _summary_dict,
 )
@@ -58,7 +59,7 @@ def _run_a(
         stage = StageResult(
             name="module_a_harvester",
             status="skipped",
-            detail="skip_a=True; harvester not invoked",
+            detail=_skip_stage_detail("skip_a", "harvester"),
         )
         return {"stage_a": _stage_to_dict(stage)}
 
@@ -114,7 +115,7 @@ def _run_b(
                 StageResult(
                     name="module_b_noise_filter",
                     status="skipped",
-                    detail="skip_b=True; noise filter not invoked",
+                    detail=_skip_stage_detail("skip_b", "noise filter"),
                 )
             )
         }
@@ -163,7 +164,7 @@ def _run_c(
                 StageResult(
                     name="module_c_librarian",
                     status="skipped",
-                    detail="skip_c=True; librarian not invoked",
+                    detail=_skip_stage_detail("skip_c", "librarian"),
                 )
             )
         }
@@ -267,7 +268,25 @@ def run_oie_pipeline_langgraph(
         }
     )
 
-    result = OrchestratorResult(run_id=run_id, dry_run=dry_run)
+    result = OrchestratorResult(
+        run_id=run_id,
+        dry_run=dry_run,
+        engine="langgraph",
+        sync_repos=sync_repos,
+        skip_a=skip_a,
+        skip_b=skip_b,
+        skip_c=skip_c,
+        stop_on_error=stop_on_error,
+        max_repos=max_repos,
+        repos_yaml=repos_yaml,
+        graph_path=[
+            "START",
+            "module_a",
+            "module_b",
+            "module_c",
+            "END",
+        ],
+    )
     for key in ("stage_a", "stage_b", "stage_c"):
         raw = final.get(key)
         if not raw:

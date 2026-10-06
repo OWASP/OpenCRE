@@ -720,9 +720,16 @@ function PipelineTab({ origin }: { origin: string }) {
         ))}
       </ol>
       <h3>Stage logs</h3>
+      <p className="admin-help">
+        Look for <code>oie</code>/<code>started</code> (flags + skip_reason) and{' '}
+        <code>oie_trace</code> (engine, graph_path, visited). Skipped B/C means the run
+        passed <code>skip_b/skip_c</code> (admin default). Module A with chunks=0 usually
+        means harvester checkpoints were already at HEAD (no file diffs).
+      </p>
       <table className="admin-table">
         <thead>
           <tr>
+            <th>Run</th>
             <th>Stage</th>
             <th>Status</th>
             <th>Detail</th>
@@ -731,9 +738,10 @@ function PipelineTab({ origin }: { origin: string }) {
         <tbody>
           {(data.events || []).map((e: any) => (
             <tr key={e.id}>
+              <td title={e.run_id}>{(e.run_id || '').slice(0, 8)}</td>
               <td>{e.stage}</td>
               <td>{e.status}</td>
-              <td>{e.detail}</td>
+              <td style={{ whiteSpace: 'pre-wrap', maxWidth: '48rem' }}>{e.detail}</td>
             </tr>
           ))}
         </tbody>

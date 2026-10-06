@@ -36,11 +36,50 @@ class OrchestratorResult:
     run_id: str
     dry_run: bool
     stages: List[StageResult] = field(default_factory=list)
+    engine: str = "sequential"  # langgraph | sequential
+    sync_repos: bool = True
+    skip_a: bool = False
+    skip_b: bool = False
+    skip_c: bool = False
+    stop_on_error: bool = True
+    max_repos: Optional[int] = None
+    repos_yaml: Optional[str] = None
+    graph_path: List[str] = field(
+        default_factory=lambda: [
+            "START",
+            "module_a_harvester",
+            "module_b_noise_filter",
+            "module_c_librarian",
+            "END",
+        ]
+    )
 
     def to_dict(self) -> Dict[str, Any]:
+        visited = [
+            {
+                "name": s.name,
+                "status": s.status,
+                "invoked": s.status not in ("skipped",),
+                "detail": s.detail,
+            }
+            for s in self.stages
+        ]
         return {
             "run_id": self.run_id,
             "dry_run": self.dry_run,
+            "engine": self.engine,
+            "flags": {
+                "dry_run": self.dry_run,
+                "sync_repos": self.sync_repos,
+                "skip_a": self.skip_a,
+                "skip_b": self.skip_b,
+                "skip_c": self.skip_c,
+                "stop_on_error": self.stop_on_error,
+                "max_repos": self.max_repos,
+                "repos_yaml": self.repos_yaml,
+            },
+            "graph_path": list(self.graph_path),
+            "visited": visited,
             "stages": [asdict(s) for s in self.stages],
             "ok": all(s.status in ("ok", "skipped", "degraded") for s in self.stages),
         }
@@ -87,13 +126,47 @@ def _connect(cache_file: str) -> Any:
     return sqla.session
 
 
+def _skip_stage_detail(flag: str, module: str) -> str:
+    """Explain why a stage was not invoked (flags are explicit at call time)."""
+    return (
+        f"{flag}=True; {module} not invoked. "
+        "Caller passed this skip flag (admin ingest defaults skip_b/skip_c "
+        "unless the client sets them false)."
+    )
+
+
 def _harvester_detail(run_id: str, summary: Any) -> str:
     data = _summary_dict(summary) or {}
-    return (
+    base = (
         f"run_harvester completed for run_id={run_id!r} "
         f"status={data.get('status')!r} errors={data.get('errors')} "
-        f"chunks={data.get('chunks_written')} files={data.get('files_retained')}"
+        f"chunks={data.get('chunks_written')} files={data.get('files_retained')} "
+        f"repos={data.get('repository_ids') or data.get('repositories')}"
     )
+    reasons: List[str] = []
+    chunks = data.get("chunks_written") or 0
+    repos = data.get("repositories") or 0
+    if repos and not chunks:
+        files_seen = data.get("files_seen") or 0
+        retained = data.get("files_retained") or 0
+        emitted = data.get("documents_emitted") or 0
+        if files_seen == 0:
+            reasons.append(
+                "no file diffs since harvester_checkpoint (repos already at HEAD)"
+            )
+        elif retained == 0:
+            reasons.append("files seen but none matched include/exclude globs")
+        elif emitted == 0:
+            reasons.append("documents unchanged vs artifact registry (deduped)")
+        else:
+            reasons.append("chunking produced no writable records")
+    if data.get("skipped_not_due"):
+        reasons.append(f"skipped_not_due={data.get('skipped_not_due')}")
+    if data.get("deferred"):
+        reasons.append(f"deferred={data.get('deferred')}")
+    if not reasons:
+        return base
+    return base + " | " + "; ".join(reasons)
 
 
 def _stage_module_a(
@@ -111,7 +184,7 @@ def _stage_module_a(
         return StageResult(
             name="module_a_harvester",
             status="skipped",
-            detail="skip_a=True; harvester not invoked",
+            detail=_skip_stage_detail("skip_a", "harvester"),
         )
 
     fn = run_harvester_fn
@@ -157,7 +230,7 @@ def _stage_module_b(
         return StageResult(
             name="module_b_noise_filter",
             status="skipped",
-            detail="skip_b=True; noise filter not invoked",
+            detail=_skip_stage_detail("skip_b", "noise filter"),
         )
 
     fn = run_noise_filter_fn
@@ -196,7 +269,7 @@ def _stage_module_c(
         return StageResult(
             name="module_c_librarian",
             status="skipped",
-            detail="skip_c=True; librarian not invoked",
+            detail=_skip_stage_detail("skip_c", "librarian"),
         )
 
     try:
@@ -300,7 +373,18 @@ def run_oie_pipeline(
     run_id = (pipeline_run_id or "").strip() or (
         datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     )
-    result = OrchestratorResult(run_id=run_id, dry_run=dry_run)
+    result = OrchestratorResult(
+        run_id=run_id,
+        dry_run=dry_run,
+        engine="sequential",
+        sync_repos=sync_repos,
+        skip_a=skip_a,
+        skip_b=skip_b,
+        skip_c=skip_c,
+        stop_on_error=stop_on_error,
+        max_repos=max_repos,
+        repos_yaml=repos_yaml,
+    )
 
     a = _stage_module_a(
         run_id,
