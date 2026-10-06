@@ -150,15 +150,24 @@ function ImportsTab({ origin }: { origin: string }) {
   };
 
   const openRun = async (runId: string) => {
-    const res = await fetch(`${origin}/admin/imports/runs/${runId}/changeset`);
-    const body = await readJson(res);
-    setDetail(body);
-    setGraph(null);
-    const next: Record<number, string> = {};
-    (body.changeset || []).forEach((op: any, i: number) => {
-      next[i] = JSON.stringify(op.after || op.document || {}, null, 2);
-    });
-    setDrafts(next);
+    setError(null);
+    try {
+      const res = await fetch(`${origin}/admin/imports/runs/${runId}/changeset`);
+      const body = await readJson(res);
+      if (!res.ok) {
+        setError(body.description || body.error || res.statusText);
+        return;
+      }
+      setDetail(body);
+      setGraph(null);
+      const next: Record<number, string> = {};
+      (body.changeset || []).forEach((op: any, i: number) => {
+        next[i] = JSON.stringify(op.after || op.document || {}, null, 2);
+      });
+      setDrafts(next);
+    } catch (err) {
+      setError(String(err));
+    }
   };
 
   const openGraph = async (runId: string) => {
@@ -417,6 +426,7 @@ function TargetsTab({ origin }: { origin: string }) {
       setError(body.description || body.error || res.statusText);
       return;
     }
+    setError(null);
     setId('');
     load();
   };
@@ -429,7 +439,10 @@ function TargetsTab({ origin }: { origin: string }) {
     });
     const body = await readJson(res);
     if (!res.ok) setError(body.description || body.error || res.statusText);
-    else load();
+    else {
+      setError(null);
+      load();
+    }
   };
 
   const del = async (targetId: string) => {
@@ -441,6 +454,7 @@ function TargetsTab({ origin }: { origin: string }) {
       setError(body.description || body.error || res.statusText);
       return;
     }
+    setError(null);
     load();
   };
 
