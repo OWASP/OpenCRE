@@ -5,6 +5,8 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import subprocess
+import sys
 import uuid
 from typing import Any, Dict, List, Optional
 
@@ -17,6 +19,7 @@ from application.utils import import_diff
 from application.utils.admin_panel import config_catalog
 
 REPOS_YAML = Path(__file__).resolve().parents[1] / "harvester" / "repos.yaml"
+REPO_ROOT = Path(__file__).resolve().parents[3]
 RESTART_INSTRUCTIONS = (
     "HTTP cannot change process env. Set keys in .env or Heroku config vars, "
     "then restart the process."
@@ -211,6 +214,41 @@ def append_event(run_id: str, stage: str, status: str, detail: str = "") -> None
     sqla.session.commit()
 
 
+def invoke_oie_cli(run_id: str) -> Dict[str, Any]:
+    """Run OIE in a child process so the web worker's SQLAlchemy bind is untouched."""
+    cache = os.environ.get("CRE_CACHE_FILE") or os.environ.get("DEV_DATABASE_URL") or ""
+    script = REPO_ROOT / "scripts" / "run_oie_pipeline.py"
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--dry-run",
+            "--no-sync-repos",
+            "--run_id",
+            run_id,
+            "--cache_file",
+            cache or "sqlite://",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+        cwd=str(REPO_ROOT),
+    )
+    out = (proc.stdout or "").strip() or (proc.stderr or "").strip()
+    try:
+        parsed = json.loads(out)
+        if isinstance(parsed, dict):
+            return parsed
+    except json.JSONDecodeError:
+        pass
+    return {
+        "ok": proc.returncode == 0,
+        "raw": out[-2000:],
+        "returncode": proc.returncode,
+    }
+
+
 def start_ingestion(
     *,
     source: str,
@@ -248,21 +286,7 @@ def start_ingestion(
             "dry_run=True sync_repos=False",
         )
         try:
-            from application.utils.oie_orchestrator.pipeline import run_oie_pipeline
-
-            cache = os.environ.get("CRE_CACHE_FILE") or os.environ.get(
-                "DEV_DATABASE_URL", ""
-            )
-            result = run_oie_pipeline(
-                cache_file=cache,
-                pipeline_run_id=run.id,
-                dry_run=True,
-                sync_repos=False,
-                stop_on_error=True,
-            )
-            oie = (
-                result.to_dict() if hasattr(result, "to_dict") else {"raw": str(result)}
-            )
+            oie = invoke_oie_cli(run.id)
             append_event(run.id, "oie", "ok", json.dumps(oie)[:2000])
             for stage in oie.get("stages") or []:
                 if not isinstance(stage, dict):

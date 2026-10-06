@@ -223,8 +223,8 @@ class TestAdminPanel(unittest.TestCase):
                 }
 
         with patch(
-            "application.utils.oie_orchestrator.pipeline.run_oie_pipeline",
-            return_value=Fake(),
+            "application.utils.admin_panel.service.invoke_oie_cli",
+            return_value=Fake().to_dict(),
         ) as mock_oie:
             with self.app.test_client() as c:
                 r = c.post(
@@ -234,10 +234,7 @@ class TestAdminPanel(unittest.TestCase):
                 self.assertEqual(r.status_code, 201)
                 r = c.post("/admin/ingest/start", json={"target_id": "repo1"})
                 self.assertEqual(r.status_code, 200)
-                mock_oie.assert_called_once()
-                kwargs = mock_oie.call_args.kwargs
-                self.assertTrue(kwargs["dry_run"])
-                self.assertFalse(kwargs["sync_repos"])
+                mock_oie.assert_called_once_with(r.get_json()["run_id"])
                 pipe = c.get("/admin/pipeline").get_json()
                 stages = {e["stage"] for e in pipe["events"]}
                 self.assertIn("module_a_harvester", stages)
@@ -252,9 +249,7 @@ class TestAdminPanel(unittest.TestCase):
                     },
                 )
                 self.assertEqual(r.status_code, 200)
-                kwargs2 = mock_oie.call_args.kwargs
-                self.assertTrue(kwargs2["dry_run"])
-                self.assertFalse(kwargs2["sync_repos"])
+                mock_oie.assert_called_with(r.get_json()["run_id"])
 
             with self.app.test_client() as c:
                 c.post(
@@ -297,6 +292,22 @@ class TestAdminPanel(unittest.TestCase):
             r = c.post("/admin/imports/rerun", json={"source": "rerun-src"})
             self.assertEqual(r.status_code, 200)
             self.assertTrue(r.get_json()["run_id"])
+
+    def test_invoke_oie_cli_is_dry_run_child_process(self) -> None:
+        from application.utils.admin_panel import service
+
+        proc = type(
+            "P", (), {"stdout": '{"ok": true}', "stderr": "", "returncode": 0}
+        )()
+        with patch(
+            "application.utils.admin_panel.service.subprocess.run", return_value=proc
+        ) as mock_run:
+            out = service.invoke_oie_cli("run-1")
+        self.assertEqual(out["ok"], True)
+        argv = mock_run.call_args.args[0]
+        self.assertIn("--dry-run", argv)
+        self.assertIn("--no-sync-repos", argv)
+        self.assertTrue(str(argv[1]).endswith("run_oie_pipeline.py"))
 
     def test_anonymous_json_gets_401(self) -> None:
         with patch.dict(
