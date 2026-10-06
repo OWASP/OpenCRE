@@ -1712,9 +1712,6 @@ def admin_imports_rerun() -> Any:
         result = service.start_ingestion(
             source=source or str(target_id),
             target_id=str(target_id) if target_id else None,
-            run_oie=body.get("run_oie"),
-            dry_run=service.as_bool(body.get("dry_run"), True),
-            sync_repos=service.as_bool(body.get("sync_repos"), False),
         )
     except KeyError as exc:
         abort(404, description=str(exc))

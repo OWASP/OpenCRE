@@ -33,14 +33,6 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def as_bool(val: Any, default: bool) -> bool:
-    if val is None:
-        return default
-    if isinstance(val, bool):
-        return val
-    return str(val).strip().lower() in TRUE_VALUES
-
-
 def _agent_db_stats(db_path: Optional[str]) -> Dict[str, Any]:
     out: Dict[str, Any] = {"db_exists": False, "counts": None, "last_sync": None}
     if not db_path:
@@ -229,8 +221,9 @@ def start_ingestion(
 ) -> Dict[str, Any]:
     if not source:
         raise ValueError("source is required")
-    if run_oie is not None and not isinstance(run_oie, bool):
-        run_oie = as_bool(run_oie, False)
+    _ = (run_oie, dry_run, sync_repos)
+    dry_run = True
+    sync_repos = False
     target = None
     if target_id:
         target = (
@@ -243,9 +236,7 @@ def start_ingestion(
         if not target.enabled:
             raise ValueError("target is disabled")
         source = target.name or target.id
-        if run_oie is None:
-            run_oie = target.kind == "oie_repo"
-    do_oie = bool(run_oie)
+    do_oie = bool(target and target.kind == "oie_repo")
 
     run = db.create_import_run(source=source, version="admin-start")
     db.persist_staged_change_set(
@@ -406,6 +397,8 @@ def pipeline_snapshot() -> Dict[str, Any]:
 def edit_staged_mapping(
     run_id: str, op_index: int, after: Dict[str, Any]
 ) -> Dict[str, Any]:
+    if not isinstance(after, dict):
+        raise ValueError("after must be an object")
     cs = db.get_staged_change_set(run_id=run_id)
     if not cs:
         raise KeyError("no staged change set")
@@ -417,9 +410,24 @@ def edit_staged_mapping(
     op = ops[op_index]
     if not isinstance(op, dict):
         raise ValueError("invalid op")
-    op["after"] = after
+    kind = str(op.get("op") or "")
+    if kind in ("add_control", "remove_control"):
+        op["document"] = after
+        field = "document"
+    elif kind == "modify_control":
+        op["after"] = after
+        field = "after"
+    else:
+        raise ValueError("unsupported op type")
     db.update_staged_change_set(run_id=run_id, changeset_json=json.dumps(ops))
-    return {"run_id": run_id, "op_index": op_index, "after": after}
+    return {
+        "run_id": run_id,
+        "op_index": op_index,
+        "field": field,
+        field: after,
+        "changeset": ops,
+        "staging_status": cs.staging_status,
+    }
 
 
 def drop_last_ingestion(source: str) -> Dict[str, Any]:

@@ -376,8 +376,6 @@ function TargetsTab({ origin }: { origin: string }) {
   const [targets, setTargets] = useState<any[]>([]);
   const [id, setId] = useState('');
   const [kind, setKind] = useState('import_source');
-  const [dryRun, setDryRun] = useState(true);
-  const [syncRepos, setSyncRepos] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
@@ -412,16 +410,11 @@ function TargetsTab({ origin }: { origin: string }) {
     load();
   };
 
-  const start = async (targetId: string, targetKind: string) => {
+  const start = async (targetId: string) => {
     const res = await fetch(`${origin}/admin/ingest/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        target_id: targetId,
-        dry_run: dryRun,
-        sync_repos: syncRepos,
-        run_oie: targetKind === 'oie_repo',
-      }),
+      body: JSON.stringify({ target_id: targetId }),
     });
     const body = await readJson(res);
     if (!res.ok) setError(body.description || body.error || res.statusText);
@@ -446,16 +439,7 @@ function TargetsTab({ origin }: { origin: string }) {
           Add
         </Button>
       </p>
-      <p>
-        <label>
-          <input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} /> dry-run
-          (default)
-        </label>{' '}
-        <label>
-          <input type="checkbox" checked={syncRepos} onChange={(e) => setSyncRepos(e.target.checked)} /> sync
-          repos
-        </label>
-      </p>
+      <p className="admin-help">Start is always dry-run; git sync is off.</p>
       <table className="admin-table">
         <thead>
           <tr>
@@ -470,7 +454,7 @@ function TargetsTab({ origin }: { origin: string }) {
               <td>{t.id}</td>
               <td>{t.kind}</td>
               <td>
-                <Button size="mini" onClick={() => start(t.id, t.kind)}>
+                <Button size="mini" onClick={() => start(t.id)}>
                   Start now
                 </Button>
                 <Button size="mini" onClick={() => del(t.id)}>
