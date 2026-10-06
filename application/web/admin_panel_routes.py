@@ -198,8 +198,8 @@ def register_admin_panel_routes(
                 max_repos = int(body["max_repos"])
             except (TypeError, ValueError):
                 return _err(400, "max_repos must be an integer")
-            if max_repos < 0:
-                return _err(400, "max_repos must be >= 0")
+            if max_repos < 1:
+                return _err(400, "max_repos must be >= 1")
         else:
             max_repos = service.DEFAULT_OIE_MAX_REPOS
         try:
