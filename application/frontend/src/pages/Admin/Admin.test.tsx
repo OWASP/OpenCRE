@@ -1,4 +1,4 @@
-import { fireEvent, render, waitFor } from '@testing-library/react';
+import { fireEvent, render, waitFor, within } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -23,6 +23,27 @@ function jsonRes(body: unknown, status = 200) {
     text: () => Promise.resolve(JSON.stringify(body)),
     json: () => Promise.resolve(body),
   });
+}
+
+function agentResource(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'owasp-agent',
+    kind: 'owasp_agent',
+    name: 'OWASP agent',
+    built_in: true,
+    spec: {
+      enabled: true,
+      writes_cre_graph: false,
+      demo_path: '/chatbot',
+      help_url: 'https://example.test',
+      counts: { chapters: 2 },
+      db_url: 'postgresql://cre:***@127.0.0.1:5432/owasp_agent',
+      db_configured: true,
+      package_present: false,
+      ...((overrides.spec as Record<string, unknown>) || {}),
+    },
+    ...overrides,
+  };
 }
 
 function loggedIn() {
@@ -98,34 +119,32 @@ describe('Admin', () => {
     expect(getByText('Open MyOpenCRE').closest('a')?.getAttribute('href')).toBe('/myopencre');
   });
 
-  it('loads agent status on the agent tab', async () => {
+  it('loads agent status on the resources tab', async () => {
     loggedIn();
     (global as any).fetch = jest.fn((url: string) => {
-      if (String(url).includes('/admin/agent/status')) {
-        return jsonRes({
-          enabled: true,
-          writes_cre_graph: false,
-          demo_path: '/chatbot',
-          help_url: 'https://example.test',
-          counts: { chapters: 2 },
-          db_url: 'postgresql://cre:***@127.0.0.1:5432/owasp_agent',
-        });
+      if (String(url).includes('/admin/targets')) {
+        return jsonRes({ targets: [agentResource()] });
+      }
+      if (String(url).includes('/admin/repos.yaml')) {
+        return jsonRes({ yaml: 'sources: []\n', source: 'repos.yaml:abc123abc123' });
       }
       if (String(url).includes('/admin/imports/runs')) {
         return jsonRes({ runs: [] });
       }
       return jsonRes({});
     });
-    const { getByText, findByText } = render(
+    const { getByText, findByText, queryByRole, queryByText } = render(
       <MemoryRouter>
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('OWASP agent'));
+    fireEvent.click(getByText('Resources'));
     await findByText(/writes CRE graph: false/);
     expect(getByText(/DB URL:/)).toBeTruthy();
     expect(getByText(/postgresql:\/\/cre:\*\*\*@127.0.0.1:5432\/owasp_agent/)).toBeTruthy();
     expect(getByText('Open chat demo').closest('a')?.getAttribute('href')).toBe('/chatbot');
+    expect(queryByRole('button', { name: 'OWASP agent' })).toBeNull();
+    expect(queryByText('Remove')).toBeNull();
   });
 
   it('loads changeset graph and mapping editor', async () => {
@@ -243,15 +262,26 @@ describe('Admin', () => {
   it('shows agent disabled when the flag is off', async () => {
     loggedIn();
     (global as any).fetch = jest.fn((url: string) => {
-      if (String(url).includes('/admin/agent/status')) {
+      if (String(url).includes('/admin/targets')) {
         return jsonRes({
-          enabled: false,
-          writes_cre_graph: false,
-          demo_path: '/chatbot',
-          help_url: 'https://example.test',
-          db_url: null,
-          counts: null,
+          targets: [
+            agentResource({
+              spec: {
+                enabled: false,
+                writes_cre_graph: false,
+                demo_path: '/chatbot',
+                help_url: 'https://example.test',
+                db_url: null,
+                counts: null,
+                db_configured: false,
+                package_present: false,
+              },
+            }),
+          ],
         });
+      }
+      if (String(url).includes('/admin/repos.yaml')) {
+        return jsonRes({ yaml: 'sources: []\n', source: 'repos.yaml:abc123abc123' });
       }
       if (String(url).includes('/admin/imports/runs')) {
         return jsonRes({ runs: [] });
@@ -263,7 +293,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('OWASP agent'));
+    fireEvent.click(getByText('Resources'));
     expect(await findByText(/Enabled: false/)).toBeTruthy();
   });
 
@@ -346,7 +376,9 @@ describe('Admin', () => {
         return jsonRes({ description: 'target not found' }, 404);
       }
       if (u.includes('/admin/targets')) {
-        return jsonRes({ targets: [{ id: 'asvs-src', kind: 'import_source' }] });
+        return jsonRes({
+          targets: [agentResource(), { id: 'asvs-src', kind: 'import_source' }],
+        });
       }
       if (u.includes('/admin/imports/runs')) {
         return jsonRes({ runs: [] });
@@ -358,7 +390,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Targets'));
+    fireEvent.click(getByText('Resources'));
     await findByText('asvs-src');
     fireEvent.click(getByText('Remove'));
     expect(await findByText(/target not found/)).toBeTruthy();
@@ -439,7 +471,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Targets'));
+    fireEvent.click(getByText('Resources'));
     expect(await findByText('repos.yaml')).toBeTruthy();
     fireEvent.change(getByLabelText('repos.yaml'), {
       target: { value: 'repositories:\n  - id: custom\n' },
@@ -468,7 +500,9 @@ describe('Admin', () => {
         return jsonRes({ description: 'target is disabled' }, 400);
       }
       if (u.includes('/admin/targets')) {
-        return jsonRes({ targets: [{ id: 'off-src', kind: 'import_source' }] });
+        return jsonRes({
+          targets: [agentResource(), { id: 'off-src', kind: 'import_source' }],
+        });
       }
       if (u.includes('/admin/imports/runs')) {
         return jsonRes({ runs: [] });
@@ -480,9 +514,9 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Targets'));
+    fireEvent.click(getByText('Resources'));
     await findByText('off-src');
-    fireEvent.click(getByText('Start now'));
+    fireEvent.click(within(getByText('off-src').closest('tr') as HTMLElement).getByText('Start now'));
     expect(await findByText(/target is disabled/)).toBeTruthy();
   });
 
@@ -507,7 +541,7 @@ describe('Admin', () => {
     expect(await findByText('Drop last')).toBeTruthy();
     fireEvent.click(getByText('Drop last'));
     expect(await findByText(/source is required/)).toBeTruthy();
-    fireEvent.click(getByText('Targets'));
+    fireEvent.click(getByText('Resources'));
     fireEvent.click(getByText('Add'));
     expect(await findByText(/id and kind are required/)).toBeTruthy();
     const posts = fetchMock.mock.calls.filter((call: unknown[]) => {

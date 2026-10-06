@@ -7,7 +7,7 @@ import { Button, Message, Header as SUIHeader } from 'semantic-ui-react';
 import { useCapabilities, useEnvironment } from '../../hooks';
 import { useUser } from '../../hooks/useUser';
 
-type Tab = 'imports' | 'pipeline' | 'targets' | 'config' | 'agent' | 'myopencre';
+type Tab = 'imports' | 'pipeline' | 'targets' | 'config' | 'myopencre';
 
 function adminOrigin(apiUrl: string): string {
   if (apiUrl.startsWith('http')) {
@@ -70,9 +70,8 @@ export const Admin = () => {
           [
             ['imports', 'Import review'],
             ['pipeline', 'Pipeline'],
-            ['targets', 'Targets'],
+            ['targets', 'Resources'],
             ['config', 'Config'],
-            ['agent', 'OWASP agent'],
             ['myopencre', 'MyOpenCRE'],
           ] as [Tab, string][]
         ).map(([id, label]) => (
@@ -83,9 +82,8 @@ export const Admin = () => {
       </div>
       {tab === 'imports' && <ImportsTab origin={origin} />}
       {tab === 'pipeline' && <PipelineTab origin={origin} />}
-      {tab === 'targets' && <TargetsTab origin={origin} />}
+      {tab === 'targets' && <ResourcesTab origin={origin} />}
       {tab === 'config' && <ConfigTab origin={origin} />}
-      {tab === 'agent' && <AgentTab origin={origin} />}
       {tab === 'myopencre' && (
         <Link className="ui primary button" to="/myopencre">
           Open MyOpenCRE
@@ -411,7 +409,39 @@ function PipelineTab({ origin }: { origin: string }) {
   );
 }
 
-function TargetsTab({ origin }: { origin: string }) {
+function AgentResourceDetail({ spec }: { spec: any }) {
+  if (!spec) return null;
+  return (
+    <div>
+      <p>
+        Enabled: {String(spec.enabled)} · package: {String(spec.package_present)} · writes CRE graph:{' '}
+        {String(spec.writes_cre_graph)}
+      </p>
+      <p>Agent DB configured: {String(spec.db_configured)}</p>
+      <p>DB URL: {spec.db_url || '—'}</p>
+      <p>Last sync: {spec.last_sync || '—'}</p>
+      <p>Counts: {spec.counts ? JSON.stringify(spec.counts) : '—'}</p>
+      {(spec.params || []).map((p: any) => (
+        <p key={p.key} className="admin-help" title={p.help_text}>
+          {p.key}={p.value || '—'}{' '}
+          <a href={p.help_url} target="_blank" rel="noreferrer">
+            docs
+          </a>
+        </p>
+      ))}
+      <p className="admin-help">
+        <a href={spec.help_url} target="_blank" rel="noreferrer">
+          Agent README
+        </a>
+      </p>
+      <Link className="ui mini button" to={spec.demo_path || '/chatbot'}>
+        Open chat demo
+      </Link>
+    </div>
+  );
+}
+
+function ResourcesTab({ origin }: { origin: string }) {
   const [targets, setTargets] = useState<any[]>([]);
   const [id, setId] = useState('');
   const [kind, setKind] = useState('import_source');
@@ -656,6 +686,7 @@ function TargetsTab({ origin }: { origin: string }) {
           <tr>
             <th>Id</th>
             <th>Kind</th>
+            <th>Detail</th>
             <th></th>
           </tr>
         </thead>
@@ -664,13 +695,16 @@ function TargetsTab({ origin }: { origin: string }) {
             <tr key={t.id}>
               <td>{t.id}</td>
               <td>{t.kind}</td>
+              <td>{t.kind === 'owasp_agent' ? <AgentResourceDetail spec={t.spec} /> : t.name || '—'}</td>
               <td>
                 <Button size="mini" onClick={() => start(t.id)}>
                   Start now
                 </Button>
-                <Button size="mini" onClick={() => del(t.id)}>
-                  Remove
-                </Button>
+                {!t.built_in && t.kind !== 'owasp_agent' && t.id !== 'owasp-agent' && (
+                  <Button size="mini" onClick={() => del(t.id)}>
+                    Remove
+                  </Button>
+                )}
               </td>
             </tr>
           ))}
@@ -748,56 +782,6 @@ function ConfigTab({ origin }: { origin: string }) {
           ))}
         </tbody>
       </table>
-    </div>
-  );
-}
-
-function AgentTab({ origin }: { origin: string }) {
-  const [status, setStatus] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`${origin}/admin/agent/status`)
-      .then(async (res) => {
-        const body = await readJson(res);
-        if (!res.ok) throw new Error(body.description || body.error || res.statusText);
-        if (!cancelled) setStatus(body);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(String(err));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [origin]);
-  if (error) return <Message negative>{error}</Message>;
-  if (!status) return <p>Loading agent…</p>;
-  return (
-    <div>
-      <p>
-        Enabled: {String(status.enabled)} · package: {String(status.package_present)} · writes CRE graph:{' '}
-        {String(status.writes_cre_graph)}
-      </p>
-      <p>Agent DB configured: {String(status.db_configured)}</p>
-      <p>DB URL: {status.db_url || '—'}</p>
-      <p>Last sync: {status.last_sync || '—'}</p>
-      <p>Counts: {status.counts ? JSON.stringify(status.counts) : '—'}</p>
-      {(status.params || []).map((p: any) => (
-        <p key={p.key} className="admin-help" title={p.help_text}>
-          {p.key}={p.value || '—'}{' '}
-          <a href={p.help_url} target="_blank" rel="noreferrer">
-            docs
-          </a>
-        </p>
-      ))}
-      <p className="admin-help">
-        <a href={status.help_url} target="_blank" rel="noreferrer">
-          Agent README
-        </a>
-      </p>
-      <Link className="ui primary button" to={status.demo_path || '/chatbot'}>
-        Open chat demo
-      </Link>
     </div>
   );
 }
