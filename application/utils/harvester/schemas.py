@@ -24,12 +24,14 @@ def validate_cron_line(value: Optional[str]) -> Optional[str]:
     return text
 
 
-# What an OWASP org repo is for. ``standard``/``project``/``other``/``event``
-# feed the knowledge-graph expansion path (harvest -> filter -> Librarian; event
-# pages are cleaned by ``event_page`` first); ``chapter`` repos only feed the
-# OWASP agent's metadata index.
+# What an OWASP org repo is for. ``standard``/``project``/``other`` feed the
+# knowledge-graph expansion path (harvest -> filter -> Librarian). ``chapter``
+# repos only feed the OWASP agent's metadata index. ``event`` pages are metadata
+# too, so harvesting them into the expansion path is opt-in
+# (``OPTIONAL_HARVEST_KINDS``; cleaned by ``event_page`` first).
 RepoKind = Literal["standard", "project", "chapter", "event", "other"]
-HARVESTABLE_KINDS: tuple[str, ...] = ("standard", "project", "other", "event")
+HARVESTABLE_KINDS: tuple[str, ...] = ("standard", "project", "other")
+OPTIONAL_HARVEST_KINDS: tuple[str, ...] = ("event",)
 # What a harvest run visits when the caller names no kinds: the curated standards
 # only, as before repos.yaml covered the whole org. Scheduled runs ask for
 # HARVESTABLE_KINDS explicitly.

@@ -13,7 +13,10 @@ from unittest.mock import patch
 from application import create_app, sqla
 from application.database import db
 from application.utils.harvester import pipeline as harvest_pipeline
-from application.utils.harvester.schemas import HARVESTABLE_KINDS
+from application.utils.harvester.schemas import (
+    HARVESTABLE_KINDS,
+    OPTIONAL_HARVEST_KINDS,
+)
 
 HEAD = "abc1234def5678"
 FIXTURE = Path(__file__).parent / "fixtures" / "event_index.md.txt"
@@ -91,14 +94,15 @@ class HarvestEventTests(unittest.TestCase):
             "run-1",
             repos_yaml=self.yaml,
             sync_repos=False,
-            kinds=HARVESTABLE_KINDS,
+            kinds=HARVESTABLE_KINDS + OPTIONAL_HARVEST_KINDS,
         )
 
     def _texts(self):
         return [row.payload["text"] for row in sqla.session.query(db.HarvestInput)]
 
-    def test_events_are_harvestable(self) -> None:
-        self.assertIn("event", HARVESTABLE_KINDS)
+    def test_events_are_opt_in(self) -> None:
+        self.assertNotIn("event", HARVESTABLE_KINDS)
+        self.assertIn("event", OPTIONAL_HARVEST_KINDS)
 
     def test_event_page_is_parsed_before_chunking(self) -> None:
         summary = self._run({"index.md": FIXTURE.read_text(encoding="utf-8")})
