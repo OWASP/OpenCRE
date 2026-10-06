@@ -76,19 +76,31 @@ _concept_merge_audit = sa.Table(
 )
 
 
+def app_db_url_and_key() -> tuple[Optional[str], Optional[str]]:
+    """URL + env key Flask would use for this process (no sqlite fallback)."""
+    flask_cfg = (
+        (os.environ.get("FLASK_CONFIG") or os.environ.get("FLASK_ENV") or "development")
+        .strip()
+        .lower()
+    )
+    if flask_cfg in ("production", "prod"):
+        keys = ("DATABASE_URL", "PROD_DATABASE_URL", "SQLALCHEMY_DATABASE_URI")
+    else:
+        keys = ("DEV_DATABASE_URL", "DATABASE_URL", "SQLALCHEMY_DATABASE_URI")
+    for key in keys:
+        raw = (os.environ.get(key) or "").strip()
+        if raw:
+            return raw, key
+    return None, None
+
+
 def default_db_path() -> str:
     override = (os.environ.get("OWASP_AGENT_DB") or "").strip()
     if override:
         return override
-    for key in (
-        "DATABASE_URL",
-        "DEV_DATABASE_URL",
-        "PROD_DATABASE_URL",
-        "SQLALCHEMY_DATABASE_URI",
-    ):
-        raw = (os.environ.get(key) or "").strip()
-        if raw:
-            return raw
+    raw, _key = app_db_url_and_key()
+    if raw:
+        return raw
     raise RuntimeError(
         "OWASP agent index needs DATABASE_URL (or DEV_DATABASE_URL); "
         "no separate agent database"
@@ -97,7 +109,10 @@ def default_db_path() -> str:
 
 def _engine_url(target: str) -> str:
     if "://" in target:
-        return target
+        raw = target.strip()
+        if raw.lower().startswith("postgres://"):
+            return "postgresql://" + raw.split("://", 1)[1]
+        return raw
     return f"sqlite:///{os.path.abspath(target)}"
 
 

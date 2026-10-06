@@ -18,7 +18,11 @@ from application.utils.owasp_agent.github_crawler import (
     GitHubCrawler,
     parse_board_history_yaml,
 )
-from application.utils.owasp_agent.index_store import IndexStore, default_db_path
+from application.utils.owasp_agent.index_store import (
+    IndexStore,
+    app_db_url_and_key,
+    default_db_path,
+)
 from application.utils.owasp_agent.models import Chapter, Event, Project
 from application.utils.owasp_agent.queries import MetaQueries
 from application.utils.owasp_agent.router import (
@@ -751,13 +755,56 @@ class TestIndexStoreDefaults(unittest.TestCase):
                 "DEV_DATABASE_URL",
                 "PROD_DATABASE_URL",
                 "SQLALCHEMY_DATABASE_URI",
+                "FLASK_CONFIG",
             }
         }
         env["DATABASE_URL"] = "postgresql://cre:pw@127.0.0.1:5432/cre"
+        env["FLASK_CONFIG"] = "development"
         with patch.dict(os.environ, env, clear=True):
             self.assertEqual(
                 default_db_path(), "postgresql://cre:pw@127.0.0.1:5432/cre"
             )
+
+    def test_dev_url_wins_in_development_when_both_set(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "FLASK_CONFIG": "development",
+                "DEV_DATABASE_URL": "postgresql://dev/db",
+                "DATABASE_URL": "postgresql://prod/db",
+            },
+        ):
+            os.environ.pop("OWASP_AGENT_DB", None)
+            self.assertEqual(default_db_path(), "postgresql://dev/db")
+            self.assertEqual(app_db_url_and_key()[1], "DEV_DATABASE_URL")
+
+    def test_prod_url_ignored_outside_production(self) -> None:
+        env = {
+            k: v
+            for k, v in os.environ.items()
+            if k
+            not in {
+                "OWASP_AGENT_DB",
+                "DATABASE_URL",
+                "DEV_DATABASE_URL",
+                "PROD_DATABASE_URL",
+                "SQLALCHEMY_DATABASE_URI",
+                "FLASK_CONFIG",
+            }
+        }
+        env["PROD_DATABASE_URL"] = "postgresql://prod-only/db"
+        env["FLASK_CONFIG"] = "development"
+        with patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(RuntimeError):
+                default_db_path()
+
+    def test_engine_url_rewrites_postgres_scheme(self) -> None:
+        from application.utils.owasp_agent.index_store import _engine_url
+
+        self.assertEqual(
+            _engine_url("postgres://cre:pw@host/db"),
+            "postgresql://cre:pw@host/db",
+        )
 
     def test_no_sqlite_file_default_when_unset(self) -> None:
         drop = {

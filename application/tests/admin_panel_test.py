@@ -641,7 +641,12 @@ class TestAdminPanel(unittest.TestCase):
         self.assertTrue(str(argv[1]).endswith("run_oie_pipeline.py"))
         self.assertNotIn("--repos_yaml", argv)
         env = mock_run.call_args.kwargs["env"]
-        self.assertIn(str(service.REPO_ROOT), env["PYTHONPATH"].split(os.pathsep))
+        path_parts = env["PYTHONPATH"].split(os.pathsep)
+        self.assertEqual(path_parts[0], str(service.REPO_ROOT))
+        prior = os.environ.get("PYTHONPATH", "")
+        for part in prior.split(os.pathsep):
+            if part:
+                self.assertIn(part, path_parts)
 
     def test_invoke_oie_cli_passes_repos_yaml(self) -> None:
         proc = type(

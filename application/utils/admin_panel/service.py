@@ -35,6 +35,7 @@ from application.utils.harvester.repos_validator import (
     validate_repositories,
 )
 from application.utils.harvester.schemas import ReposFile, validate_cron_line
+from application.utils.owasp_agent.index_store import app_db_url_and_key
 
 REPOS_YAML = Path(__file__).resolve().parents[1] / "harvester" / "repos.yaml"
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -342,16 +343,7 @@ def _normalize_postgres_url(value: str) -> str:
 
 def _main_db_url() -> tuple[Optional[str], Optional[str]]:
     """Return (raw_url, env_key) for the app's main database."""
-    for key in (
-        "DATABASE_URL",
-        "DEV_DATABASE_URL",
-        "PROD_DATABASE_URL",
-        "SQLALCHEMY_DATABASE_URI",
-    ):
-        raw = (os.getenv(key) or "").strip()
-        if raw:
-            return raw, key
-    return None, None
+    return app_db_url_and_key()
 
 
 def _agent_db_stats(db_url: Optional[str]) -> Dict[str, Any]:
