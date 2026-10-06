@@ -98,6 +98,26 @@ class IncrementalPipelineTests(unittest.TestCase):
                 last_processed_commit="   ",
             )
 
+    def test_skips_invalid_documents_without_aborting(self) -> None:
+        store = Mock()
+        pipeline = IncrementalPipeline(
+            checkpoint_store=store,
+            owner="OWASP",
+            repository_name="Top10",
+            repository_id="owasp-top10",
+        )
+        bad = self.make_document("")  # empty text fails DocumentValidator
+        good = self.make_document("hello world")
+        emitted = pipeline.process(
+            "OWASP/ASVS",
+            "run1",
+            [bad, good],
+            last_processed_commit="abc1234",
+        )
+        self.assertEqual(len(emitted), 1)
+        self.assertEqual(emitted[0].text, "hello world")
+        store.save.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()
