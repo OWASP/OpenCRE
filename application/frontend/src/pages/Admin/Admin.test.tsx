@@ -291,6 +291,15 @@ describe('Admin', () => {
       if (u.endsWith('/accept') || u.endsWith('/discard') || u.includes('apply?dry_run')) {
         return jsonRes({ run_id: 'r1', staging_status: 'ok' });
       }
+      if (u.includes('/impact')) {
+        return jsonRes({
+          run_id: 'r1',
+          operation_count: 1,
+          impacted_standard_names: [],
+          impacted_cre_external_ids: [],
+          warnings: ['Skipped 1 operation(s) with empty standard keys'],
+        });
+      }
       if (u.includes('/admin/imports/runs')) {
         return jsonRes({ runs: [{ id: 'r1', source: 'asvs', staging_status: 'pending_review' }] });
       }
@@ -302,6 +311,14 @@ describe('Admin', () => {
       </MemoryRouter>
     );
     await findByText('asvs');
+    fireEvent.click(getByText('Impact'));
+    await waitFor(() =>
+      expect((global as any).fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/impact'),
+        expect.objectContaining({ method: 'GET' })
+      )
+    );
+    expect(await findByText(/empty standard keys/)).toBeTruthy();
     fireEvent.click(getByText('Discard'));
     await waitFor(() =>
       expect((global as any).fetch).toHaveBeenCalledWith(

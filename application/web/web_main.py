@@ -1234,8 +1234,20 @@ def admin_import_run_impact(run_id: str) -> Any:
     r = db.get_import_run(run_id=run_id)
     if not r:
         abort(404, description="Import run not found")
-    database = db.Node_collection().with_graph()
-    return jsonify(import_impact.impact_summary_for_run(run_id, database))
+    logger.info("Impact requested run_id=%s source=%s", run_id, r.source)
+    try:
+        database = db.Node_collection().with_graph()
+        summary = import_impact.impact_summary_for_run(run_id, database)
+    except Exception as e:
+        logger.exception("Impact failed run_id=%s", run_id)
+        return jsonify({"description": f"Impact failed: {e}", "run_id": run_id}), 400
+    logger.info(
+        "Impact ok run_id=%s operation_count=%s warnings=%s",
+        run_id,
+        summary.get("operation_count"),
+        summary.get("warnings"),
+    )
+    return jsonify(summary)
 
 
 @app.route("/admin/imports/runs/<run_id>/apply", methods=["POST"])
