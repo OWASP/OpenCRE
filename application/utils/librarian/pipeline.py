@@ -223,6 +223,16 @@ class LibrarianPipeline:
         use_focus_query: bool = False,
         pref_inject: bool = True,
         prefer_audit: bool = True,
+        parent_index: Optional[Any] = None,
+        leaf_drilldown: bool = False,
+        leaf_drilldown_resources: Sequence[str] = (),
+        leaf_drilldown_force_resources: Sequence[str] = (),
+        leaf_drilldown_min_children: int = 3,
+        leaf_drilldown_min_sections: int = 20,
+        leaf_drilldown_keep_hub: bool = False,
+        leaf_drilldown_hub_first: bool = False,
+        shortlist_judge_max_picks: int = 3,
+        margin_gamma: Optional[float] = None,
     ) -> None:
         self._source = source
         self._retriever = retriever
@@ -242,6 +252,21 @@ class LibrarianPipeline:
         self._use_focus_query = use_focus_query
         self._pref_inject = pref_inject
         self._prefer_audit = prefer_audit
+        self._parent_index = parent_index
+        self._leaf_drilldown = leaf_drilldown
+        self._leaf_drilldown_resources = tuple(leaf_drilldown_resources or ())
+        self._leaf_drilldown_force_resources = tuple(
+            leaf_drilldown_force_resources or ()
+        )
+        self._leaf_drilldown_min_children = max(1, int(leaf_drilldown_min_children))
+        self._leaf_drilldown_min_sections = max(0, int(leaf_drilldown_min_sections))
+        self._leaf_drilldown_keep_hub = bool(leaf_drilldown_keep_hub)
+        self._leaf_drilldown_hub_first = bool(leaf_drilldown_hub_first)
+        self._shortlist_judge_max_picks = max(1, min(5, int(shortlist_judge_max_picks)))
+        self._margin_gamma: Optional[float] = (
+            float(margin_gamma) if margin_gamma is not None else None
+        )
+        self._resource_family_counts: Mapping[str, int] = {}
         # Emit-time grounding: prefer an injected registry; otherwise build from
         # membership (+ cre_id_map for canonicalisation). None membership keeps
         # hermetic stubs passthrough until they opt in.
@@ -253,6 +278,133 @@ class LibrarianPipeline:
             )
         else:
             self._cre_registry = CreRegistry.disabled()
+
+    def _apply_leaf_drilldown(
+        self,
+        cre_ids: Sequence[str],
+        query: str,
+        *,
+        artifact_id: str = "",
+        section_text: str = "",
+    ) -> list:
+        """Promote Contains children over hubs when the child scores higher."""
+        if not self._leaf_drilldown or not self._parent_index or not cre_ids:
+            return list(cre_ids)
+        from application.utils.librarian.leaf_drilldown import (
+            apply_leaf_drilldown,
+            resource_allows_leaf_drilldown,
+            resource_family_key,
+            resource_is_fine_grained,
+        )
+
+        family = resource_family_key(artifact_id)
+        family_count = int(self._resource_family_counts.get(family, 0))
+        force_length = bool(self._leaf_drilldown_force_resources) and (
+            resource_allows_leaf_drilldown(
+                artifact_id=artifact_id,
+                text=section_text,
+                allowed=self._leaf_drilldown_force_resources,
+            )
+        )
+        if not force_length and not resource_is_fine_grained(
+            family_count, self._leaf_drilldown_min_sections
+        ):
+            return list(cre_ids)
+
+        if not resource_allows_leaf_drilldown(
+            artifact_id=artifact_id,
+            text=section_text,
+            allowed=self._leaf_drilldown_resources,
+        ):
+            return list(cre_ids)
+
+        reranker = self._reranker
+        cre_texts = getattr(reranker, "_cre_texts", None)
+        score_fn = getattr(reranker, "_score_fn", None)
+        if not cre_texts or score_fn is None:
+            return list(cre_ids)
+        try:
+            return apply_leaf_drilldown(
+                cre_ids,
+                query,
+                parent_index=self._parent_index,
+                cre_texts=cre_texts,
+                score_fn=score_fn,
+                min_children=self._leaf_drilldown_min_children,
+                hub_first=self._leaf_drilldown_hub_first,
+                keep_hub_in_top2=self._leaf_drilldown_keep_hub,
+            )
+        except Exception:
+            logger.warning(
+                "leaf drill-down failed; keeping pre-drill ranking",
+                exc_info=True,
+            )
+            return list(cre_ids)
+
+    def _sync_audit_after_drilldown(
+        self, audit: RetrievalAudit, cre_ids: Sequence[str]
+    ) -> RetrievalAudit:
+        """Mirror drilled ``cre_ids`` into ``audit.reranked``.
+
+        Eval scorers (B2 / full-pipeline) read ``retrieval.reranked``, not only
+        ``suggested_links``. Without this sync, leaf drill-down changes the
+        decide() shortlist but scoring still sees the pre-drill hubs.
+        """
+        if not cre_ids:
+            return audit
+        from application.utils.librarian.schemas import CreCandidate
+
+        by_id: dict = {}
+        for cand in list(audit.reranked or []) + list(audit.candidates or []):
+            cid = getattr(cand, "cre_id", None)
+            if cid and cid not in by_id:
+                by_id[cid] = cand
+        new_reranked = []
+        seen = set()
+        for cid in cre_ids:
+            if not cid or cid in seen:
+                continue
+            seen.add(cid)
+            existing = by_id.get(cid)
+            if existing is not None:
+                new_reranked.append(existing)
+            else:
+                # Drilled leaf may be outside the C.1 shortlist.
+                new_reranked.append(CreCandidate(cre_id=cid, score_vector=0.0))
+        for cand in audit.reranked or []:
+            cid = getattr(cand, "cre_id", None)
+            if cid and cid not in seen:
+                seen.add(cid)
+                new_reranked.append(cand)
+        return audit.model_copy(update={"reranked": new_reranked})
+
+    def _prefetch_query_embeddings(self, batch_items: Sequence[Any]) -> None:
+        """Embed this batch's retrieval strings once, before the per-row loop.
+
+        No-op for stub retrievers and when ``CRE_LIBRARIAN_EMBED_BATCH=0``.
+        A prefetch failure leaves per-call embedding in place.
+        """
+        from application.utils.librarian.embed_batch import (
+            prefetch_retriever_embeddings,
+            texts_for_retrieval,
+        )
+
+        texts: List[str] = []
+        for raw in batch_items:
+            try:
+                section = section_from_queue_row(raw)
+            except SectionValidationError:
+                continue
+            texts.extend(texts_for_retrieval(section.text))
+        if not texts:
+            return
+        try:
+            prefetch_retriever_embeddings(self._retriever, texts)
+        except Exception:  # noqa: BLE001
+            logger.warning(
+                "librarian query embed prefetch failed; continuing per call",
+                exc_info=True,
+            )
 
     def _map_cre_ids(self, external_ids: Sequence[str]) -> tuple:
         return tuple(self._cre_id_map.get(cid, cid) for cid in external_ids)
@@ -271,7 +423,27 @@ class LibrarianPipeline:
         source_labels: Dict[str, str] = {}
         linked = review = skipped = errored = total = 0
         safety_unevaluated = 0
-        for item in self._source.items():
+        # Materialize once so we can census resource families for the grain gate
+        # without consuming a one-shot DB cursor twice.
+        batch_items = list(self._source.items())
+        if self._leaf_drilldown:
+            from application.utils.librarian.leaf_drilldown import (
+                count_resource_families,
+            )
+
+            arts: List[str] = []
+            for raw in batch_items:
+                if isinstance(raw, dict):
+                    arts.append(str(raw.get("artifact_id") or ""))
+                else:
+                    arts.append(str(getattr(raw, "artifact_id", "") or ""))
+            self._resource_family_counts = count_resource_families(arts)
+        else:
+            self._resource_family_counts = {}
+
+        self._prefetch_query_embeddings(batch_items)
+
+        for item in batch_items:
             total += 1
             row_id = _row_id(item)
             label = _source_label(item)
@@ -387,7 +559,7 @@ class LibrarianPipeline:
                                     }
                                 )
 
-                        # Lever C: grounded shortlist judge (Gemini) — pick top-2
+                        # Lever C: grounded shortlist judge — pick up to max_picks
                         # from the retrieval allowlist only; fail open on errors.
                         focus = (
                             focus_query_text(section.text)
@@ -405,6 +577,7 @@ class LibrarianPipeline:
 
                             if judge_enabled():
                                 judge_query = focus or section.text
+                                judge_cap = self._shortlist_judge_max_picks
                                 judged = judge_shortlist(
                                     judge_query,
                                     candidates_from_audit(retrieved),
@@ -412,10 +585,14 @@ class LibrarianPipeline:
                                     cache=ShortlistJudgeCache(
                                         disk_dir=default_cache_dir()
                                     ),
+                                    max_picks=judge_cap,
                                 )
                                 if judged:
                                     preferred = prefer_ids_first(
-                                        judged, preferred, limit=12, lead=2
+                                        judged,
+                                        preferred,
+                                        limit=12,
+                                        lead=judge_cap,
                                     )
                                     retrieved = retrieved.model_copy(
                                         update={
@@ -427,18 +604,32 @@ class LibrarianPipeline:
 
                         def _decide_from_audit(query_text: str):
                             ranked_audit = self._reranker.rerank(query_text, retrieved)
+                            # Relative margin cutoff after C.2 (promoted γ=0.85).
+                            if self._margin_gamma is not None:
+                                from application.utils.librarian.margin_cutoff import (
+                                    apply_margin_gamma,
+                                )
+
+                                filtered = apply_margin_gamma(
+                                    ranked_audit.reranked or [],
+                                    gamma=self._margin_gamma,
+                                )
+                                ranked_audit = ranked_audit.model_copy(
+                                    update={"reranked": filtered}
+                                )
                             # Confidence stays on CE logits (fitted T); prefer may
-                            # inject into reranked so focus/CE top-2 sees winners.
+                            # inject into reranked so focus/CE lead window sees winners.
                             ce_logits = [
                                 float(c.score_rerank)
                                 for c in ranked_audit.reranked
                                 if c.score_rerank is not None
                             ]
+                            lead_n = self._shortlist_judge_max_picks
                             if self._prefer_audit:
                                 ranked_audit = prefer_audit_ids(
                                     ranked_audit,
                                     preferred,
-                                    lead=2,
+                                    lead=lead_n,
                                     inject_missing=True,
                                 )
                             ranked_ids = vector_rerank_union_ids(ranked_audit)
@@ -470,6 +661,20 @@ class LibrarianPipeline:
                             audit, cre_ids, confidence = _decide_from_audit(
                                 section.text
                             )
+
+                        query_for_drill = focus or section.text
+                        pre_drill = list(cre_ids)
+                        cre_ids = self._apply_leaf_drilldown(
+                            cre_ids,
+                            query_for_drill,
+                            artifact_id=section.artifact_id,
+                            section_text=section.text,
+                        )
+                        # Only rewrite audit.reranked when drill mutated the
+                        # shortlist — otherwise coarse arms (deny path) keep
+                        # pre-drill scored preds bit-identical.
+                        if list(cre_ids) != pre_drill:
+                            audit = self._sync_audit_after_drilldown(audit, cre_ids)
 
                         result = decide(
                             confidence,
