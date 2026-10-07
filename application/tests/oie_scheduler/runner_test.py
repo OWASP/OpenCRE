@@ -195,6 +195,7 @@ class ExpansionStagesTest(SchedulerTestBase):
         self.ga_calls = []
 
     def _expansion(self, **cfg):
+        cfg.setdefault("filing_enabled", True)
         overrides = {
             "noise_filter": _ok("noise_filter"),
             "librarian": _ok("librarian"),
