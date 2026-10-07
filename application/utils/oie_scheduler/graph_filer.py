@@ -51,6 +51,7 @@ class FilerResult:
     links_added: int = 0
     links_already_present: int = 0
     standards: List[str] = field(default_factory=list)
+    refused_safety_unevaluated: int = 0
 
     @property
     def graph_changed(self) -> bool:
@@ -102,15 +103,26 @@ def file_linked_decisions(
     dry_run: bool = False,
     skip_repos: Optional[Collection[str]] = None,
     now: Optional[datetime] = None,
+    refuse_if_safety_unevaluated: int = 0,
 ) -> FilerResult:
     """File every unconsumed ``linked`` decision whose confidence clears ``floor``.
 
     ``skip_repos`` are source repos (``OWASP/ASVS``) whose standards already have
     a dedicated importer; filing chunk-level nodes under them would duplicate it.
+
+    ``refuse_if_safety_unevaluated``: when > 0, do not file anything (Module C
+    reported an unevaluated safety path for this run).
     """
     result = FilerResult(enabled=enabled, dry_run=dry_run, floor=floor)
     if not enabled:
         logger.info("graph filing disabled (kill switch); decisions left unconsumed")
+        return result
+    if refuse_if_safety_unevaluated > 0:
+        logger.warning(
+            "graph filing refused: safety_unevaluated=%s",
+            refuse_if_safety_unevaluated,
+        )
+        result.refused_safety_unevaluated = int(refuse_if_safety_unevaluated)
         return result
 
     session = collection.session
