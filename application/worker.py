@@ -1,11 +1,11 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from rq import Worker, Queue
-import logging
 import os
 from application.utils import redis
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 DEFAULT_LISTEN = ["high", "default", "low", "ga"]
 

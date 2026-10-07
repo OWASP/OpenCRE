@@ -1,7 +1,9 @@
-from pprint import pprint
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import csv
 import io
-import logging
 from copy import deepcopy
 from typing import Any, Dict, List, Optional, Set
 import os
@@ -9,10 +11,6 @@ import yaml
 from application.database import db
 from application.defs import cre_defs as defs
 from enum import Enum
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-logging.basicConfig()
 
 
 class GspreadAuth(Enum):

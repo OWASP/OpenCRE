@@ -6,6 +6,10 @@ that feeds the main spreadsheet import should produce those column names.
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from typing import Any, Dict, List
 
 

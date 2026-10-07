@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from abc import ABC, abstractmethod
 from pathlib import Path
 

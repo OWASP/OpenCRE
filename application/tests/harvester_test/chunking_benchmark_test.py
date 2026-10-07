@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import os
 import time
 import unittest
@@ -37,11 +41,11 @@ class ChunkingBenchmarkTests(unittest.TestCase):
             )
         )
 
-        print(
-            f"\nChunking benchmark: "
-            f"{len(chunks)} chunks, "
-            f"{elapsed:.3f}s, "
-            f"input={len(text)} chars"
+        logger.info(
+            "Chunking benchmark: %s chunks, %.3fs, input=%s chars",
+            len(chunks),
+            elapsed,
+            len(text),
         )
 
 

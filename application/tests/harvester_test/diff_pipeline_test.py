@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import os
 import subprocess
 import time
@@ -64,7 +68,7 @@ class DiffPipelineBenchmark(unittest.TestCase):
         normalizer.normalize(blocks)
         elapsed = time.perf_counter() - start
 
-        print(f"\nPipeline took {elapsed:.3f}s")
+        logger.info("Pipeline took %.3fs", elapsed)
         self.assertLess(elapsed, 5)
 
 

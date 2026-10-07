@@ -1,4 +1,7 @@
-import logging
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import os
 import tempfile
 import json
@@ -17,10 +20,6 @@ from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,
     ParseResult,
 )
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class CWE(ParserInterface):

@@ -6,6 +6,10 @@ the project's db_test.py pattern. No migration needed.
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
 import unittest
 

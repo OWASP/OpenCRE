@@ -4,6 +4,10 @@ Table-driven over every (confidence, candidates, flag) combination the rule can
 see, plus reason-code precedence and the input guards. No key, DB, or model.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import dataclasses
 import math
 import unittest

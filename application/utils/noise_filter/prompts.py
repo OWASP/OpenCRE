@@ -15,6 +15,10 @@ learns the bias from worked examples, not only the instruction.
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
 
 SYSTEM_PROMPT = """You are classifying chunks of OWASP repository content for a \

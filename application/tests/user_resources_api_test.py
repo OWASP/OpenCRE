@@ -4,6 +4,10 @@ GET/PUT /rest/v1/user/resources, gated by login_required + is_login_enabled.
 Flag-off returns a safe default; authenticated users read/write their selection.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
 import os
 import unittest

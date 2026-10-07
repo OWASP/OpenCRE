@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from .artifact_id import generate_artifact_id
 from .heading_extractor import HeadingExtractor
 from .models import (

@@ -1,5 +1,9 @@
 """Hermetic tests for C.4 envelope emitter (Week 6b). No key, DB, or model."""
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import unittest
 from datetime import datetime, timezone
 

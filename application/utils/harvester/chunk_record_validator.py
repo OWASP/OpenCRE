@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from application.utils.noise_filter.schemas import ChangeRecord
 
 from .models import IngestChunkRecord

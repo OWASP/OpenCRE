@@ -13,6 +13,10 @@ Coverage groups:
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import textwrap
 import unittest
 from pathlib import Path

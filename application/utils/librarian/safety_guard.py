@@ -19,13 +19,14 @@ queue row without the safety path is recoverable — the envelope is still on
 disk. Committing a link into a graph other tools read as truth is not.
 """
 
-import logging
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from dataclasses import dataclass
 from typing import Protocol
 
 from application.utils.librarian.section_validator import Section
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)

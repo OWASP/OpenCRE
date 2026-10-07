@@ -6,6 +6,10 @@ This module does not enumerate OpenAPI to decide which tools exist.
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import copy
 import os
 from functools import lru_cache

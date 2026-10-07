@@ -6,6 +6,10 @@ row Module D can filter, a replay does not duplicate it, and the envelope that
 lands is the same RFC document ``JsonlEnvelopeSink`` would have written.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
 import unittest
 from datetime import datetime, timezone

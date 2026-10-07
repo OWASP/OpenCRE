@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from .config_loader import (
     ConfigLoaderError,
     load_repo_config,

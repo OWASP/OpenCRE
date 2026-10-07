@@ -1,6 +1,9 @@
 # script to parse secure headers md files find the links to opencre.org and add the page to CRE
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from typing import List
-import logging
 import os
 import re
 from urllib.parse import urlparse, parse_qs
@@ -15,9 +18,6 @@ from application.utils.external_project_parsers.base_parser_defs import (
 )
 from application.prompt_client import prompt_client as prompt_client
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 # GENERIC Markdown file parser
 

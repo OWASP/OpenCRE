@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from pydantic import ValidationError
 from application.utils.librarian.section_validator import _DEFAULT_LANGUAGE
 from application.defs.cheatsheet_defs import CheatsheetRecord

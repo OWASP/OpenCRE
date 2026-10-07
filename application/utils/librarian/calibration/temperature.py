@@ -30,6 +30,10 @@ artifact the W6 decision engine loads to turn a reranked shortlist into the
 confidence it thresholds on.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from dataclasses import dataclass
 from typing import List, Sequence, Tuple
 

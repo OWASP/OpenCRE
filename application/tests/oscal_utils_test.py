@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
 from typing import Any, Dict, List, Tuple
 import unittest

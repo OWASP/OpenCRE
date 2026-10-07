@@ -15,6 +15,10 @@ DB-backed registry of real ``cre.external_id`` values arrives with the
 retriever (W3).
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import re
 from dataclasses import dataclass
 from enum import Enum

@@ -24,6 +24,10 @@ the more important thing for a human to see; you cannot link nothing, so the emp
 shortlist dominates everything.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import math
 from dataclasses import dataclass
 from typing import Optional, Sequence, Tuple

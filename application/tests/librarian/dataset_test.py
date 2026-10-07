@@ -5,6 +5,10 @@ the DB-driven derivation is covered by ``scripts/build_golden_dataset.py``'s
 own ``--check`` mode, which the determinism test invokes when the DB is present.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
 import os
 import subprocess

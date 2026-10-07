@@ -14,6 +14,10 @@ retry policy.
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import os
 from dataclasses import dataclass
 

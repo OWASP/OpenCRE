@@ -1,5 +1,9 @@
 """Chat/import similarity prefers pgvector when the DB reports it ready."""
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import unittest
 from typing import Any, Callable, Dict, List, Tuple
 from unittest.mock import MagicMock, patch

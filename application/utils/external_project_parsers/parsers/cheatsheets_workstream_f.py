@@ -6,7 +6,7 @@ artifacts (``suggestions.json`` -> reviewer edits -> ``approved.json``) and,
 in a later checkpoint, the conversion of approved suggestions into the import
 pipeline's ``ParseResult``.
 
-Checkpoints implemented here (F1 + F2 + F3 + F4):
+Checkpoints implemented here (F1 + F2 + F3 + F4 + F5):
 
 * F1 -- the data contract: :data:`SUGGESTIONS_SCHEMA` (JSON Schema) plus the
   :class:`CandidateCRE` / :class:`MappingSuggestion` dataclasses.
@@ -28,15 +28,12 @@ Checkpoints implemented here (F1 + F2 + F3 + F4):
       ``defs.Standard`` and are intentionally not persisted.
 * F4 -- the ``validate`` / ``generate`` / ``convert`` CLI (:func:`main`,
   :func:`build_arg_parser`) over the F1-F3 functions. ``convert`` resolves CREs
-  through a live ``Node_collection`` obtained via :func:`_open_cache` and stops
-  at printing the resulting ``ParseResult`` summary (including skipped unknown
-  CRE ids).
-
-Deliberately NOT in this module yet:
-
-* F5 -- wiring ``convert``'s ``ParseResult`` into the live import/register flow
-  (the real import path + DB registration). ``convert`` deliberately does not
-  register anything into the graph in F4.
+  through a live ``Node_collection`` obtained via :func:`_open_cache`.
+* F5 -- wiring ``convert`` into the live import/register flow: with ``--import``
+  it registers the approved subset via the canonical
+  ``cre_main.register_standard`` path (one call per results group, mirroring
+  ``base_parser.BaseParser.register_resource``), fail-fast on a group failure.
+  Without ``--import`` ``convert`` stays review-only (summary, no writes).
 
 The advisory fields ``score``, ``confidence``, ``reason`` (per candidate) and
 ``cheatsheet_id`` / ``category`` (per item) exist so a human reviewer can triage
@@ -51,13 +48,16 @@ requirements.txt.
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import argparse
 import dataclasses
 import json
-import logging
 import sys
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, cast
 
 import jsonschema
 
@@ -68,7 +68,6 @@ from application.utils.external_project_parsers.base_parser_defs import ParseRes
 if TYPE_CHECKING:
     from application.database import db
 
-logger = logging.getLogger(__name__)
 
 # --- valid values -----------------------------------------------------------
 
@@ -371,20 +370,24 @@ def _cmd_validate(args: argparse.Namespace) -> int:
     try:
         doc = _load_json_doc(args.suggestions)
     except FileNotFoundError:
-        print(f"file not found: {args.suggestions}", file=sys.stderr)
+        logger.error("file not found: %s", args.suggestions)
         return _EXIT_USAGE
     except json.JSONDecodeError as exc:
-        print(f"invalid JSON in {args.suggestions}: {exc}", file=sys.stderr)
+        logger.error("invalid JSON in %s: %s", args.suggestions, exc)
         return _EXIT_USAGE
 
     try:
         _validate(doc)
     except SuggestionSchemaError as exc:
-        print(str(exc), file=sys.stderr)
+        logger.error("%s", exc)
         return _EXIT_ERROR
 
     count = len(doc) if isinstance(doc, list) else 0
-    print(f"OK: {args.suggestions} is a valid suggestions document ({count} items)")
+    logger.info(
+        "OK: %s is a valid suggestions document (%s items)",
+        args.suggestions,
+        count,
+    )
     return _EXIT_OK
 
 
@@ -398,10 +401,10 @@ def _cmd_generate(args: argparse.Namespace) -> int:
     try:
         doc = _load_json_doc(args.infile)
     except FileNotFoundError:
-        print(f"file not found: {args.infile}", file=sys.stderr)
+        logger.error("file not found: %s", args.infile)
         return _EXIT_USAGE
     except json.JSONDecodeError as exc:
-        print(f"invalid JSON in {args.infile}: {exc}", file=sys.stderr)
+        logger.error("invalid JSON in %s: %s", args.infile, exc)
         return _EXIT_USAGE
 
     try:
@@ -409,32 +412,35 @@ def _cmd_generate(args: argparse.Namespace) -> int:
         suggestions = [_parse_suggestion(raw) for raw in doc]
         write_suggestions_json(args.outfile, suggestions)
     except SuggestionSchemaError as exc:
-        print(str(exc), file=sys.stderr)
+        logger.error("%s", exc)
         return _EXIT_ERROR
     except OSError as exc:
-        print(f"cannot write {args.outfile}: {exc}", file=sys.stderr)
+        logger.error("cannot write %s: %s", args.outfile, exc)
         return _EXIT_USAGE
 
-    print(f"wrote {len(suggestions)} suggestions to {args.outfile}")
+    logger.info("wrote %s suggestions to %s", len(suggestions), args.outfile)
     return _EXIT_OK
 
 
 def _cmd_convert(args: argparse.Namespace) -> int:
     """Convert approved suggestions to a ParseResult and print a summary.
 
-    NOTE: this stops at the in-memory ``ParseResult`` summary. Wiring it into the
-    live import/register flow (DB registration) is F5, a separate PR.
+    Review-only by default (no writes). With ``--import`` the approved subset is
+    registered into the graph via the canonical ``cre_main.register_standard``
+    path -- mirroring ``base_parser.BaseParser.register_resource`` -- one call per
+    results group, fail-fast (a failing group aborts the rest with a non-zero
+    exit).
     """
     try:
         approved = load_approved_suggestions(args.approved)
     except FileNotFoundError:
-        print(f"file not found: {args.approved}", file=sys.stderr)
+        logger.error("file not found: %s", args.approved)
         return _EXIT_USAGE
     except json.JSONDecodeError as exc:
-        print(f"invalid JSON in {args.approved}: {exc}", file=sys.stderr)
+        logger.error("invalid JSON in %s: %s", args.approved, exc)
         return _EXIT_USAGE
     except SuggestionSchemaError as exc:
-        print(str(exc), file=sys.stderr)
+        logger.error("%s", exc)
         return _EXIT_ERROR
 
     cache = _open_cache(args.db)
@@ -458,14 +464,60 @@ def _cmd_convert(args: argparse.Namespace) -> int:
     skipped = sorted({cid for cid in all_candidate_ids if cid not in resolved})
     total_links = sum(len(standard.links) for standard in standards)
 
-    print(f"approved suggestions:   {len(approved)}")
-    print(f"standards produced:     {len(standards)}")
-    print(f"total CRE links:        {total_links}")
-    print("skipped unknown CREs:   " + (", ".join(skipped) if skipped else "(none)"))
-    print(
-        "note: nothing was registered into the graph; live import/registration "
-        "is F5 (follow-up PR)."
+    logger.info(
+        "approved suggestions=%s standards produced=%s total CRE links=%s skipped unknown CREs=%s",
+        len(approved),
+        len(standards),
+        total_links,
+        ", ".join(skipped) if skipped else "(none)",
     )
+
+    if not args.do_import:
+        logger.info(
+            "review-only (no --import); nothing was registered into the graph. "
+            "Re-run with --import to register the approved subset."
+        )
+        return _EXIT_OK
+
+    return _register_parse_result(result, cache, args.db)
+
+
+def _register_parse_result(
+    result: ParseResult,
+    cache: "db.Node_collection",
+    db_uri: Optional[str],
+) -> int:
+    """Register a ParseResult via ``cre_main.register_standard`` (Option A).
+
+    One call per results group, mirroring ``base_parser.register_resource``.
+    Fail-fast: a group that raises aborts the remaining groups and returns a
+    non-zero exit code.
+    """
+    from application.cmd import cre_main
+
+    registered = 0
+    for name, documents in (result.results or {}).items():
+        if not documents:
+            continue
+        try:
+            cre_main.register_standard(
+                standard_entries=cast("List[defs.Standard]", documents),
+                collection=cache,
+                db_connection_str=db_uri or "",
+                calculate_gap_analysis=result.calculate_gap_analysis,
+                generate_embeddings=result.calculate_embeddings,
+            )
+        except Exception as exc:  # fail-fast: abort remaining groups
+            logger.error(
+                "registration failed for %r after %s group(s): %s",
+                name,
+                registered,
+                exc,
+            )
+            return _EXIT_ERROR
+        registered += 1
+
+    logger.info("registered %s standard group(s) into the graph.", registered)
     return _EXIT_OK
 
 
@@ -497,8 +549,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     c = sub.add_parser(
         "convert",
         help=(
-            "convert approved suggestions to a ParseResult and print a summary; "
-            "does NOT register into the graph (that is F5)"
+            "convert approved suggestions to a ParseResult; review-only by "
+            "default, or register the approved subset with --import"
         ),
     )
     c.add_argument("approved", help="path to the approved suggestions document")
@@ -506,6 +558,17 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--db",
         default=None,
         help="database URI passed to cre_main.db_connect for CRE resolution",
+    )
+    c.add_argument(
+        "--import",
+        "-y",
+        "--yes",
+        dest="do_import",
+        action="store_true",
+        help=(
+            "register the approved subset into the graph (WRITES to the DB); "
+            "default is review-only (summary, no writes)"
+        ),
     )
     c.set_defaults(func=_cmd_convert)
 

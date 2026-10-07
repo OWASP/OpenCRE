@@ -16,11 +16,13 @@ of ids passed in (a concurrent run got there first, or the id no longer exists).
 The caller owns the transaction, matching ``run_noise_filter`` on B's side.
 """
 
-import logging
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from datetime import datetime, timezone
 from typing import Any, Iterable, List, Sequence
 
-logger = logging.getLogger(__name__)
 
 # Postgres has a bind-parameter ceiling and a huge IN (...) plans badly, so the
 # id list is stamped in chunks rather than one statement.

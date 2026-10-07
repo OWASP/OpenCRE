@@ -20,7 +20,10 @@ What it does report, as of W8, is a ``RowOutcome`` per row, which is what lets
 a session. Graph writes remain out (W8b).
 """
 
-import logging
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -40,7 +43,6 @@ from application.utils.librarian.section_validator import (
     section_from_queue_row,
 )
 
-logger = logging.getLogger(__name__)
 
 Envelope = Union[LinkProposal, ReviewItem]
 

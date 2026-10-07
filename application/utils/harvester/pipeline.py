@@ -6,8 +6,11 @@ Shape mirrors Module B's ``run_noise_filter``:
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
-import logging
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,7 +29,6 @@ from application.utils.harvester.models import DiffBlock, Document
 from application.utils.harvester.repos_validator import validate_repositories
 from application.utils.harvester.schemas import RepositoryConfig
 
-logger = logging.getLogger(__name__)
 
 DEFAULT_REPOS_YAML = Path(__file__).with_name("repos.yaml")
 

@@ -23,6 +23,10 @@ Future: if Module A starts emitting `content_hash`, set the config flag
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import hashlib
 import re
 import unicodedata

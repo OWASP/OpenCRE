@@ -9,6 +9,10 @@ The real CRE vector hub arrives W3; W1 models the hub as (cre_id, text) reps so
 the methodology and its test exist before any accuracy number is claimed.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import re
 from dataclasses import dataclass
 from typing import Iterable, List

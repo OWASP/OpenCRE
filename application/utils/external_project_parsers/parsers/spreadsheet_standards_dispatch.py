@@ -1,5 +1,9 @@
 """Aggregate spreadsheet-derived standards: one module per family, same master sheet."""
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from typing import Dict, List, Tuple
 
 from application.defs import cre_defs as defs

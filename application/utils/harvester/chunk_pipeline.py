@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from .chunk_record_builder import ChunkRecordBuilder
 from .chunk_record_validator import ChunkRecordValidator
 from .chunker import DocumentChunker

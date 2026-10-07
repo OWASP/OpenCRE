@@ -6,8 +6,11 @@ base URL, HTTP method, or arbitrary paths.
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
-import logging
 import os
 import re
 from dataclasses import dataclass
@@ -22,7 +25,6 @@ from application.defs import cre_defs as defs
 from application.mcp.catalog import ToolSpec, get_tool
 from application.mcp.openapi_loader import operation_input_schema
 
-logger = logging.getLogger(__name__)
 
 DEFAULT_BASE_URL = "http://127.0.0.1:5000"
 DEFAULT_TIMEOUT_SECONDS = 30.0

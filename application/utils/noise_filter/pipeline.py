@@ -14,8 +14,11 @@ a low-confidence verdict -- the row waits `pending` and is retried instead.
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
-import logging
 from dataclasses import asdict, dataclass
 from typing import Optional
 
@@ -32,8 +35,6 @@ from application.utils.noise_filter.queue_writer import write_verdicts
 from application.utils.noise_filter.regex_filter import RegexFilter
 from application.utils.noise_filter.sanitize import sanitize_text
 from application.utils.noise_filter.schemas import ChangeRecord, ClassifyResult
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass

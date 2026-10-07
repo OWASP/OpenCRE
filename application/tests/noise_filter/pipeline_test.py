@@ -6,6 +6,10 @@ classifier injected into run_noise_filter, so no real API calls.
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import unittest
 
 from application import create_app, sqla

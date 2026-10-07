@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from python_markdown_maker import Table, links
 from application.defs import cre_defs as defs
 from typing import List

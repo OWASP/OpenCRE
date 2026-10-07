@@ -9,6 +9,10 @@ connected: a queue row becomes an envelope, a finished row gets retired, an
 errored row does not, and a second run is a no-op rather than a re-run.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import unittest
 from datetime import datetime, timezone
 

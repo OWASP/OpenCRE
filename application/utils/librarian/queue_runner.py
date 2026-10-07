@@ -38,8 +38,11 @@ That count is carried into the summary rather than left to look like a clean
 result, and W8b's graph writer must refuse to run while it is non-zero.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
-import logging
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Any, Optional
@@ -50,8 +53,6 @@ from application.utils.librarian.factory import LibrarianComponents
 from application.utils.librarian.knowledge_source import DbKnowledgeSource
 from application.utils.librarian.pipeline import LibrarianPipeline, RunResult
 from application.utils.librarian.queue_consumer import mark_consumed
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass

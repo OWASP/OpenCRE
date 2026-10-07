@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
-import logging
 from typing import Any, Dict, Optional
 
 import mcp.types as types
@@ -19,7 +22,6 @@ from application.mcp.rest_client import (
     RestResponseError,
 )
 
-logger = logging.getLogger(__name__)
 
 SERVER_NAME = "opencre"
 SERVER_VERSION = "0.1.0"

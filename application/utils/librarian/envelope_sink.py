@@ -17,14 +17,16 @@ The graph / review-queue writers (W8b) become further implementations of the
 same protocol, so the consumption rule does not have to change when they land.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
-import logging
 import os
 from typing import Any, List, Mapping, Optional, Protocol, Sequence, Union
 
 from application.utils.librarian.schemas import LinkProposal, ReviewItem
 
-logger = logging.getLogger(__name__)
 
 Envelope = Union[LinkProposal, ReviewItem]
 

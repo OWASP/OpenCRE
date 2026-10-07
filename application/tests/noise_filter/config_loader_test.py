@@ -8,6 +8,10 @@ fast on bad settings).
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import os
 import unittest
 from unittest.mock import patch

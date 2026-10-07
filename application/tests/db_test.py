@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import networkx as nx
 from application.utils.gap_analysis import make_resources_key, make_subresources_key
 import string
@@ -9,7 +13,6 @@ from unittest import mock
 from unittest.mock import patch
 import uuid
 from copy import copy, deepcopy
-from pprint import pprint
 from typing import Any, Dict, List, Union
 from flask import json as flask_json
 
@@ -316,6 +319,25 @@ class TestDB(unittest.TestCase):
         with open(os.path.join(loc, crename), "r") as f:
             doc = yaml.safe_load(f)
             self.assertCountEqual(cre, doc)
+
+    def test_export_filenames_are_safe(self) -> None:
+        loc = tempfile.mkdtemp()
+        collection = db.Node_collection().with_graph()
+        collection.add_node(
+            defs.Standard(
+                name="A01:2021",
+                section="Broken Access Control",
+                sectionID="A01:2021",
+                hyperlink="https://example.com/a01",
+            )
+        )
+        collection.export(loc)
+        reserved = set('<>:"/\\|?*')
+        for name in os.listdir(loc):
+            self.assertFalse(
+                reserved & set(name),
+                f"exported filename contains a reserved character: {name}",
+            )
 
     def test_StandardFromDB(self) -> None:
         expected = defs.Standard(
@@ -789,6 +811,40 @@ class TestDB(unittest.TestCase):
         result = self.collection.get_cre_by_db_id(self.dbcre.id)
         self.assertIsNone(result)
         get_cres_mock.assert_called_once_with(external_id=self.dbcre.external_id)
+
+    def test_get_all_nodes_and_cres_does_not_use_per_id_lookups(self) -> None:
+        with patch.object(self.collection, "get_cre_by_db_id") as per_cre:
+            with patch.object(self.collection, "get_nodes") as per_node:
+                docs = self.collection._Node_collection__get_all_nodes_and_cres()
+        per_cre.assert_not_called()
+        per_node.assert_not_called()
+        self.assertGreaterEqual(len(docs), 4)  # 2 CREs + BarStand + Unlinked
+
+    def test_get_all_nodes_and_cres_cres_only_skips_nodes(self) -> None:
+        docs = self.collection._Node_collection__get_all_nodes_and_cres(cres_only=True)
+        self.assertTrue(all(d.doctype == defs.Credoctypes.CRE for d in docs))
+        self.assertCountEqual(["CREname", "GroupName"], [d.name for d in docs])
+        cre = next(d for d in docs if d.name == "CREname")
+        self.assertTrue(
+            any(
+                link.document.name == "BarStand"
+                for link in cre.links
+                if link.document.doctype != defs.Credoctypes.CRE
+            )
+        )
+
+    def test_get_all_nodes_and_cres_hydrates_same_as_per_id(self) -> None:
+        batch = self.collection._Node_collection__get_all_nodes_and_cres()
+        batch_cres = {d.id: d for d in batch if d.doctype == defs.Credoctypes.CRE}
+        for db_id in [row[0] for row in self.collection.session.query(db.CRE.id).all()]:
+            per_id = self.collection.get_cre_by_db_id(db_id)
+            self.assertIsNotNone(per_id)
+            self.assertEqual(per_id.todict(), batch_cres[per_id.id].todict())
+        batch_nodes = [d for d in batch if d.doctype != defs.Credoctypes.CRE]
+        self.assertTrue(any(n.name == "BarStand" for n in batch_nodes))
+        self.assertTrue(any(n.name == "Unlinked" for n in batch_nodes))
+        bar = next(n for n in batch_nodes if n.name == "BarStand")
+        self.assertTrue(any(link.document.name == "CREname" for link in bar.links))
 
     def test_get_standards(self) -> None:
         """Given: a Standard 'S1' that links to cres
@@ -2505,6 +2561,31 @@ class TestDB(unittest.TestCase):
         self.assertCountEqual(
             ["BarStand", "Unlinked", "sa", "sb", "sc", "sd"],
             self.collection.standards(),
+        )
+
+    def test_delete_gapanalysis_results_for_deletes_and_logs_count(self):
+        node_name = "BarStand"
+        key_1 = f"cache-{node_name}-1"
+        key_2 = f"cache-{node_name}-2"
+        unrelated_key = "cache-unrelated"
+        material = '{"result": {"111-111": {"paths": {}}}}'
+
+        # Insert rows directly: add_gap_analysis_result skips empty primary payloads.
+        for key in (key_1, key_2, unrelated_key):
+            self.collection.session.add(
+                db.GapAnalysisResults(cache_key=key, ga_object=material)
+            )
+        self.collection.session.commit()
+
+        with patch.object(db.logger, "info") as logger_info:
+            deleted = self.collection.delete_gapanalysis_results_for(node_name)
+
+        self.assertEqual(2, len(deleted))
+        self.assertFalse(self.collection.gap_analysis_exists(key_1))
+        self.assertFalse(self.collection.gap_analysis_exists(key_2))
+        self.assertTrue(self.collection.gap_analysis_exists(unrelated_key))
+        logger_info.assert_any_call(
+            "deleted %s gap analysis result objects for node %s", 2, node_name
         )
 
     def test_all_cres_with_pagination_with_single_digit_cre_ids(self):

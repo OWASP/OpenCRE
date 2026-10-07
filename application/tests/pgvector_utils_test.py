@@ -1,5 +1,9 @@
 """Tests for pgvector embedding helpers (dim gate, literal, backfill SQL)."""
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import os
 import unittest
 from unittest.mock import MagicMock

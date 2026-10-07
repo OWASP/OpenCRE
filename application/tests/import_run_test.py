@@ -1,5 +1,9 @@
 """Tests for import run metadata (Step 6)."""
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
 import unittest
 from datetime import datetime, timezone

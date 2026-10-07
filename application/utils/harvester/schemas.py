@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from typing import Literal
 from pydantic import BaseModel, Field, ConfigDict, model_validator
 

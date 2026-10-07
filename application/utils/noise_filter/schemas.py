@@ -13,6 +13,10 @@ docs/gsoc_2026_module_b/module_a_contract.schema.json -- generate via
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from typing import Annotated, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator

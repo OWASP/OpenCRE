@@ -25,6 +25,10 @@ C.1 deliberately left empty), populating ``score_rerank`` and re-ordering, while
 leaving ``candidates[]`` untouched so the pre-rerank shortlist stays auditable.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from typing import Callable, List, Mapping, Sequence, Tuple
 
 from application.utils.librarian.schemas import RetrievalAudit

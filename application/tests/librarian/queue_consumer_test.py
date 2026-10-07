@@ -7,6 +7,10 @@ restraint: stamp exactly the rows asked for, never re-stamp one that is already
 consumed, and never delete anything.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import unittest
 from datetime import datetime, timezone
 

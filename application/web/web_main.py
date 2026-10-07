@@ -1,10 +1,13 @@
 # type: ignore
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 # silence mypy for the routes file
 import csv
 from functools import wraps
 import json
-import logging
 import os
 import io
 import pathlib
@@ -54,6 +57,30 @@ ITEMS_PER_PAGE = 20
 MAX_ITEMS_PER_PAGE = 100
 OPENCRE_STANDARD_NAME = gap_analysis.OPENCRE_STANDARD_NAME
 
+
+def _llm_error_status_code(err: BaseException) -> int | None:
+    """Best-effort extraction of an HTTP-like status code from provider errors."""
+    for attr in ("status", "status_code", "http_status", "code"):
+        value = getattr(err, attr, None)
+        if isinstance(value, int) and 400 <= value <= 599:
+            return value
+
+    if isinstance(getattr(err, "args", None), tuple) and err.args:
+        nested = err.args[0]
+        if isinstance(nested, dict):
+            for key in ("code", "status_code"):
+                value = nested.get(key)
+                if isinstance(value, int) and 400 <= value <= 599:
+                    return value
+            nested_error = nested.get("error")
+            if isinstance(nested_error, dict):
+                for key in ("code", "status_code"):
+                    value = nested_error.get(key)
+                    if isinstance(value, int) and 400 <= value <= 599:
+                        return value
+    return None
+
+
 app = Blueprint(
     "web",
     __name__,
@@ -61,10 +88,6 @@ app = Blueprint(
         os.path.dirname(os.path.realpath(__file__)), "../frontend/www"
     ),
 )
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def _ga_timeout_seconds() -> int:
@@ -1227,9 +1250,10 @@ def chat_cre() -> Any:
                 ),
                 503,
             )
+        status_code = _llm_error_status_code(e) or 500
         return (
             jsonify({"error": f"AI Service Error: {str(e)}"}),
-            500,
+            status_code,
         )
     return jsonify(response)
 

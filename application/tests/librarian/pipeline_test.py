@@ -3,6 +3,10 @@
 Every stage is a trivial stub — no DB, embedding model, or cross-encoder.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import unittest
 from datetime import datetime, timezone
 

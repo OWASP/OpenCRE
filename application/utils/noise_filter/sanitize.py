@@ -31,6 +31,10 @@ transformations are guards, not state changes).
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import html
 import re
 import unicodedata

@@ -1,5 +1,7 @@
-from pprint import pprint
-import logging
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import os
 from typing import Dict, Any, List, Optional
 from application.database import db
@@ -13,9 +15,6 @@ from application.utils.external_project_parsers.base_parser_defs import (
     ParseResult,
 )
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 _DEFAULT_PCI_DSS_CRE_SIMILARITY_THRESHOLDS = (0.55, 0.45, 0.35)
 _DEFAULT_PCI_BRIDGE_STANDARDS = ("NIST 800-53 v5", "ISO 27001", "ASVS", "CWE")
