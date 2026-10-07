@@ -263,6 +263,70 @@ describe('Admin', () => {
     expect(getByText('CRE_ALLOW_IMPORT')).toBeTruthy();
   });
 
+  it('toggles Module C.1 graph filing from Config', async () => {
+    loggedIn();
+    (global as any).fetch = jest.fn((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/admin/config') && init?.method === 'PUT') {
+        return jsonRes({
+          applied: ['OIE_GRAPH_FILING_ENABLED'],
+          rejected: [],
+          config: [
+            {
+              key: 'OIE_GRAPH_FILING_ENABLED',
+              value: '1',
+              writable: true,
+              help_text: 'Module C.1',
+              help_url: '#',
+              secret: false,
+            },
+          ],
+        });
+      }
+      if (u.includes('/admin/config')) {
+        return jsonRes({
+          writable: true,
+          config: [
+            {
+              key: 'OIE_GRAPH_FILING_ENABLED',
+              value: '0',
+              writable: true,
+              help_text: 'Module C.1',
+              help_url: '#',
+              secret: false,
+            },
+          ],
+        });
+      }
+      if (u.includes('/admin/repos.yaml')) {
+        return jsonRes({ yaml: 'sources: []\n', source: 'repos.yaml:abc' });
+      }
+      if (u.includes('/admin/agent/status')) {
+        return jsonRes({ enabled: true, db_url: null, counts: {} });
+      }
+      return jsonRes({});
+    });
+    const { getByText, findByText, findByRole } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    fireEvent.click(getByText('Config'));
+    expect(await findByText(/C\.1 auto-file high-confidence links \(off/)).toBeTruthy();
+    const toggle = await findByRole('checkbox');
+    fireEvent.click(toggle);
+    await waitFor(() =>
+      expect((global as any).fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/admin/config'),
+        expect.objectContaining({
+          method: 'PUT',
+          body: JSON.stringify({ updates: { OIE_GRAPH_FILING_ENABLED: '1' } }),
+        })
+      )
+    );
+    expect(await findByText(/C\.1 auto-filing on/)).toBeTruthy();
+  });
+
   it('runs golden-set harvest and OWASP agent sync from Config', async () => {
     loggedIn();
     (global as any).fetch = jest.fn((url: string, init?: RequestInit) => {
@@ -270,7 +334,7 @@ describe('Admin', () => {
       if (u.includes('/admin/config') && (!init || init.method === 'GET' || !init.method)) {
         return jsonRes({
           restart_instructions: 'HTTP cannot change process env.',
-          config: [],
+          config: [{ key: 'OIE_GRAPH_FILING_ENABLED', value: '0', writable: true }],
         });
       }
       if (u.includes('/admin/repos.yaml')) {
