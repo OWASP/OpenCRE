@@ -1,8 +1,9 @@
 """Tests for the C.0.5 deterministic explicit-CRE fast path.
 
 Covers extraction (pattern boundaries, ordering, dedup) and resolution
-(the fail-safe rule: only a single known reference auto-links; unknown or
-conflicting references must fall through to review).
+(the fail-safe rule: only a single known bare reference auto-links; unknown or
+conflicting bare references must fall through to review; known OpenCRE URL
+citations are authoritative and auto-link all).
 """
 
 from cre_logging import get_logger
@@ -15,6 +16,7 @@ from application.utils.librarian.explicit_link_resolver import (
     Resolution,
     ResolutionOutcome,
     extract_cre_refs,
+    extract_opencre_url_cre_ids,
     resolve,
 )
 
@@ -24,7 +26,7 @@ KNOWN = {"027-555", "123-456", "764-507"}
 class ExtractCreRefsTest(unittest.TestCase):
     def test_extraction_table(self) -> None:
         cases = [
-            ("plain reference", "Per CRE 027-555, verify passwords.", ["027-555"]),
+            ("plain reference", "Per CRE 027-555, hash passwords.", ["027-555"]),
             (
                 "inside an opencre url",
                 "See https://opencre.org/cre/123-456 for details.",
@@ -46,9 +48,18 @@ class ExtractCreRefsTest(unittest.TestCase):
                 self.assertEqual(extract_cre_refs(text), expected)
 
 
+class ExtractOpencreUrlTest(unittest.TestCase):
+    def test_url_ids_only(self) -> None:
+        text = (
+            "See https://opencre.org/cre/123-456 and bare 027-555; "
+            "also https://www.opencre.org/cre/764-507."
+        )
+        self.assertEqual(extract_opencre_url_cre_ids(text), ["123-456", "764-507"])
+
+
 class ResolveTest(unittest.TestCase):
     def test_single_known_reference_resolves(self) -> None:
-        resolution = resolve("Per CRE 027-555, verify passwords.", KNOWN)
+        resolution = resolve("Per CRE 027-555, hash passwords.", KNOWN)
         self.assertEqual(
             resolution,
             Resolution(ResolutionOutcome.resolved, ("027-555",), ()),
@@ -80,6 +91,29 @@ class ResolveTest(unittest.TestCase):
     def test_repeated_single_reference_still_resolves(self) -> None:
         resolution = resolve("027-555 is cited twice: 027-555.", KNOWN)
         self.assertEqual(resolution.outcome, ResolutionOutcome.resolved)
+        self.assertEqual(resolution.cre_ids, ("027-555",))
+
+    def test_authoritative_opencre_urls_auto_link_all_known(self) -> None:
+        text = (
+            "Linked: https://opencre.org/cre/123-456 and "
+            "https://opencre.org/cre/027-555."
+        )
+        resolution = resolve(text, KNOWN)
+        self.assertEqual(resolution.outcome, ResolutionOutcome.authoritative)
+        self.assertEqual(resolution.cre_ids, ("123-456", "027-555"))
+
+    def test_authoritative_partial_unknown_does_not_auto_link(self) -> None:
+        text = "https://opencre.org/cre/123-456 and " "https://opencre.org/cre/999-999"
+        resolution = resolve(text, KNOWN)
+        self.assertEqual(resolution.outcome, ResolutionOutcome.unknown_reference)
+        self.assertEqual(resolution.cre_ids, ("123-456",))
+        self.assertEqual(resolution.unknown_refs, ("999-999",))
+
+    def test_url_path_wins_over_bare_conflicting_ids(self) -> None:
+        """When markdown already links to OpenCRE, emit those — ignore bare noise."""
+        text = "See https://opencre.org/cre/027-555. Also mentions 123-456."
+        resolution = resolve(text, KNOWN)
+        self.assertEqual(resolution.outcome, ResolutionOutcome.authoritative)
         self.assertEqual(resolution.cre_ids, ("027-555",))
 
 

@@ -22,6 +22,9 @@ explained after the fact.
 | **C.-1** | `schemas.py`, `config_loader.py` | RFC contracts, config, the read-only mirror of B's `knowledge_queue` row |
 | **C.0** | `section_validator.py` | Input boundary — validates and adapts a queue row into an internal `Section` without re-normalizing text |
 | **C.0.5** | `explicit_link_resolver.py` | Deterministic path: a chunk that cites a CRE id resolves with no ML at all |
+| **C.0.4** | `problem_class.py` + `oie_taxonomy.py` | Section-ID / phrases from Node `document_metadata.oie`; CRE prior from CRE `oie`. **Prerequisite:** deterministic base `oie` must already be on Nodes/CREs (`make oie-tag-base`); `build_components` hard-fails with populate instructions if missing |
+| **C.0.4b** | `edition_remap.py` | If low results **and** a predecessor edition of the same standard exists → LLM (cached) section remap → inherit Links |
+| **C.0.6** | `cre_prior.py`, `prior_caged_retriever.py` | Graph/family prior; cage C.1 candidates to that checklist |
 | **C.1** | `candidate_retriever.py` | Embedding retrieval over the CRE hub — produces a shortlist |
 | **C.2** | `cross_encoder.py` | Cross-encoder reranker — re-sorts that shortlist |
 | **C.3** | `calibration/temperature.py` | Temperature scaling — turns a rerank logit into an honest probability, gated at ECE < 0.10 |
@@ -37,7 +40,7 @@ Supporting the live path:
 | `queue_consumer.py` | Stamps `consumed_at` back on B's queue. Idempotent; never deletes |
 | `queue_runner.py` | The live entry point: drain → decide → persist → retire |
 | `factory.py` | Builds the live C.1/C.2/C.3 components from config + the OpenCRE database |
-| `safety_guard.py` | The blocking-flag seam `decide()` accepts. Ships as `NullSafetyGuard` |
+| `safety_guard.py` | C.4 seam (`NullSafetyGuard` hermetic). Live: `llm_safety_guard.py` |
 | `hub_firewall.py` | TRACT hub firewall — strips candidates that leak the answer during evaluation |
 
 ## The two rules that matter
@@ -96,12 +99,40 @@ than degrade on a dialect that cannot honour the lock, because an unlocked batch
 handed to a caller who asked for a locked one fails far from the cause. See the
 [B → C contract](../../../docs/gsoc_2026_module_b/module_c_contract.md#consumption-semantics).
 
+## Dual retrieval knobs
+
+ID merge fence is always on. Most knobs stay env-gated for #1088 A/B; CRE
+summary + dual index ship **on** as a pair (set either to `0` to disable).
+
+| Env | Default | Effect |
+|---|---|---|
+| `CRE_LIBRARIAN_STANDARD_RETRIEVAL` | off | Union CRE cosine with Standard cosine → `cre_node_links` → CRE |
+| `CRE_LIBRARIAN_STANDARD_RETRIEVAL_FAMILIES` | all | Comma-separated `Node.name` allowlist (e.g. `PCI DSS,ISO 27001`) |
+| `CRE_LIBRARIAN_CRE_TEXT_ENRICH` | off | C.2 pair `description` += linked Standard `embeddings_content` (junk skipped, ~1.8k chars, no re-embed) |
+| `CRE_LIBRARIAN_CRE_SUMMARY` | **on** | LLM-summarize each CRE from name/description + linked Standard/Tool *prose* (junk skipped); inject as C.2 `cre_texts`. Optional in-memory C.1 vectors for eval only — never writes `CRE.description` or Postgres `embeddings`. Cache: `CRE_LIBRARIAN_CRE_SUMMARY_CACHE` (default `tmp/oie_cre_summaries`). REST/UI still hide these blurbs. |
+| `CRE_LIBRARIAN_DUAL_INDEX` | **on** | C.1 dual pools: Section/Section-ID (header) vs CRE **names**; body vs **summaries**. Requires `CRE_SUMMARY` (and summary vectors); without summaries falls back to single name/hub pool. |
+| `CRE_EMBED_CRE_LINKED_TITLES` | off | Rebuild CRE `embeddings_content` with that linked prose (~12k chars), then re-embed |
+| `CRE_LIBRARIAN_PRIOR_CAGE` | on | Wrap C.1 in `PriorCagedRetriever` (`(_tier, score)`). Off = Lawrence unconstrained cosine |
+| `CRE_LIBRARIAN_FOCUS_QUERY` | off | First CE pass on stripped `focus_query_text`. Off = full narrative body |
+| `CRE_LIBRARIAN_PREF_INJECT` | on | Lever 4: inject preferred CRE ids onto the CE shortlist |
+| `CRE_LIBRARIAN_PREFER_AUDIT_IDS` | on | Reorder reranked ids so preferred CREs lead |
+| `CRE_LIBRARIAN_HYBRID_BETA` | 0 | Title-overlap weight in small cages (restore 3.0 for name-heavy mix) |
+| `CRE_LIBRARIAN_HYBRID_GAMMA` | 0.70 | Cross-encoder weight in small cages (restore 0.15 for name-heavy mix) |
+
+```bash
+python scripts/audit_standard_embeddings.py --sqlite standards_cache.sqlite
+```
+
 ## Running it
 
 See [the runbook](../../../docs/gsoc_2026_module_c/runbook.md) for setup, live
 runs, and troubleshooting. The short version:
 
 ```bash
+# After hub sync: seed Node/CRE document_metadata.oie (fill-if-missing).
+# setup_oie.sh runs this automatically; otherwise:
+make oie-tag-base CACHE_FILE=postgresql://cre:password@127.0.0.1:5432/cre_prodclone
+
 # hermetic regression harness — no DB, no key, no model
 python scripts/evaluate_librarian.py \
     --dataset application/tests/librarian/fixtures/golden_dataset.json
@@ -152,5 +183,4 @@ Column-by-column spec: [the C → D contract](../../../docs/gsoc_2026_module_c/m
   guard reporting `evaluated=False`.** Retiring a queue row without the safety
   path is recoverable; committing a wrong link into a graph other tools read as
   truth is not.
-- **The SafetyGuard detector.** The seam is wired; the out-of-distribution
-  scoring, conformal prediction, and update detection behind it are future work.
+- **Richer SafetyGuard detectors.** LLM judge ships as `LlmSafetyGuard`; conformal / OOD scoring remains future work.

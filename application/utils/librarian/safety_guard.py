@@ -5,13 +5,10 @@ caller ever passed them, so ``ADVERSARIAL_FLAG`` and ``UPDATE_AMBIGUOUS`` could
 not fire from the pipeline — flagged on #991, and called out there as something
 that must be wired before any write-back. This module is that wiring.
 
-What is **not** here is a detector. The real guard (out-of-distribution scoring,
-conformal prediction, update detection) is later work. So the seam ships with
-``NullSafetyGuard``, which evaluates nothing and says so: its verdict carries
-``evaluated=False``, the pipeline counts those rows, and the runner reports the
-count. That distinction is the whole point — W5's review turned on a gate that
-skipped and still reported success, and an unevaluated safety path that looks
-identical to a clean one is the same failure wearing a different hat.
+Live factory builds wire ``LlmSafetyGuard`` (see ``llm_safety_guard.py``).
+Hermetic tests and the kill-switch keep ``NullSafetyGuard``, which evaluates
+nothing and says so (``evaluated=False``). That distinction matters: an
+unevaluated path must never look identical to a clean check.
 
 The rule this establishes for W8b: **a writer that commits links into the graph
 must refuse to run behind a guard that reports ``evaluated=False``.** Retiring a
