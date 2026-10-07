@@ -1,10 +1,11 @@
-"""OIE orchestrator — A → B → C for one ``pipeline_run_id``.
+"""OIE orchestrator — A → B → C → C.1 for one ``pipeline_run_id``.
 
 Production sequencing: run each stage, wait for process/library return,
 then start the next. Modules communicate only through DB tables:
 
   A writes ``harvest_input`` → B writes ``knowledge_queue`` → C writes
-  ``decision_queue`` / stamps ``consumed_at``.
+  ``decision_queue`` → C.1 files high-confidence ``linked`` rows into the
+  CRE graph (``Automatically linked to`` / ``oie-auto-filed``).
 """
 
 from __future__ import annotations
@@ -16,12 +17,15 @@ logger = get_logger(__name__)
 import json
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Set
+
+
+STAGE_C1_NAME = "module_c1_graph_filer"
 
 
 @dataclass
 class StageResult:
-    """Outcome of one orchestrator stage (module A, B, or C)."""
+    """Outcome of one orchestrator stage (module A, B, C, or C.1)."""
 
     name: str
     status: str  # ok | skipped | error
@@ -31,7 +35,7 @@ class StageResult:
 
 @dataclass
 class OrchestratorResult:
-    """Full A→B→C run summary (JSON-serializable)."""
+    """Full A→B→C→C.1 run summary (JSON-serializable)."""
 
     run_id: str
     dry_run: bool
@@ -41,6 +45,7 @@ class OrchestratorResult:
     skip_a: bool = False
     skip_b: bool = False
     skip_c: bool = False
+    skip_c1: bool = False
     stop_on_error: bool = True
     max_repos: Optional[int] = None
     repos_yaml: Optional[str] = None
@@ -50,6 +55,7 @@ class OrchestratorResult:
             "module_a_harvester",
             "module_b_noise_filter",
             "module_c_librarian",
+            STAGE_C1_NAME,
             "END",
         ]
     )
@@ -74,6 +80,7 @@ class OrchestratorResult:
                 "skip_a": self.skip_a,
                 "skip_b": self.skip_b,
                 "skip_c": self.skip_c,
+                "skip_c1": self.skip_c1,
                 "stop_on_error": self.stop_on_error,
                 "max_repos": self.max_repos,
                 "repos_yaml": self.repos_yaml,
@@ -130,8 +137,8 @@ def _skip_stage_detail(flag: str, module: str) -> str:
     """Explain why a stage was not invoked (flags are explicit at call time)."""
     return (
         f"{flag}=True; {module} not invoked. "
-        "Caller passed this skip flag (admin ingest runs B and C unless "
-        "skip_b/skip_c are set true)."
+        "Caller passed this skip flag (admin ingest runs B, C, and C.1 unless "
+        "skip_b/skip_c/skip_c1 are set true)."
     )
 
 
@@ -321,6 +328,95 @@ def _stage_module_c(
         )
 
 
+def _standard_repos_to_skip(repos_yaml: Optional[str]) -> Set[str]:
+    """Repos that already have importers — do not file chunk-level nodes under them."""
+    from pathlib import Path
+
+    from application.utils.harvester.config_loader import load_repo_config
+    from application.utils.harvester.pipeline import DEFAULT_REPOS_YAML
+    from application.utils.oie_scheduler.jobs import SchedulerConfig
+
+    cfg = SchedulerConfig.from_env()
+    path = Path(repos_yaml or cfg.repos_yaml or DEFAULT_REPOS_YAML)
+    repos = load_repo_config(path)
+    return {f"{r.owner}/{r.repo}" for r in repos.repositories if r.kind == "standard"}
+
+
+def _stage_module_c1(
+    cache_file: str,
+    *,
+    skip: bool,
+    dry_run: bool,
+    repos_yaml: Optional[str] = None,
+    run_file_graph_fn: Optional[Callable[..., Any]] = None,
+) -> StageResult:
+    """Module C.1 — file Librarian ``linked`` decisions into the CRE graph."""
+    if skip:
+        return StageResult(
+            name=STAGE_C1_NAME,
+            status="skipped",
+            detail=_skip_stage_detail("skip_c1", "graph filer"),
+        )
+
+    try:
+        if run_file_graph_fn is not None:
+            summary = run_file_graph_fn(dry_run=dry_run)
+            if hasattr(summary, "to_dict"):
+                payload = summary.to_dict()
+            elif isinstance(summary, dict):
+                payload = summary
+            else:
+                payload = _summary_dict(summary)
+            enabled = payload.get("enabled", True)
+            if not enabled:
+                return StageResult(
+                    name=STAGE_C1_NAME,
+                    status="skipped",
+                    detail="kill switch off (OIE_GRAPH_FILING_ENABLED)",
+                    summary=payload,
+                )
+            return StageResult(
+                name=STAGE_C1_NAME,
+                status="ok",
+                detail="graph filer completed",
+                summary=payload,
+            )
+
+        from application.cmd.cre_main import db_connect
+        from application.utils.oie_scheduler import graph_filer
+        from application.utils.oie_scheduler.jobs import SchedulerConfig
+
+        cfg = SchedulerConfig.from_env()
+        if not cfg.filing_enabled:
+            return StageResult(
+                name=STAGE_C1_NAME,
+                status="skipped",
+                detail="kill switch off (OIE_GRAPH_FILING_ENABLED)",
+                summary={"enabled": False},
+            )
+        database = db_connect(path=cache_file)
+        filer = graph_filer.file_linked_decisions(
+            database,
+            floor=cfg.file_floor,
+            enabled=True,
+            dry_run=dry_run,
+            skip_repos=_standard_repos_to_skip(repos_yaml),
+        )
+        return StageResult(
+            name=STAGE_C1_NAME,
+            status="ok",
+            detail="graph filer completed",
+            summary=filer.to_dict(),
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Module C.1 stage failed")
+        return StageResult(
+            name=STAGE_C1_NAME,
+            status="error",
+            detail=f"graph filer failed: {exc}",
+        )
+
+
 def run_oie_pipeline(
     *,
     cache_file: str,
@@ -328,18 +424,20 @@ def run_oie_pipeline(
     skip_a: bool = False,
     skip_b: bool = False,
     skip_c: bool = False,
+    skip_c1: bool = False,
     dry_run: bool = False,
     sync_repos: bool = True,
     stop_on_error: bool = True,
     run_harvester_fn: Optional[Callable[..., Any]] = None,
     run_noise_filter_fn: Optional[Callable[..., Any]] = None,
     run_librarian_queue_fn: Optional[Callable[..., Any]] = None,
+    run_file_graph_fn: Optional[Callable[..., Any]] = None,
     use_langgraph: bool = True,
     repos_yaml: Optional[str] = None,
     max_repos: Optional[int] = None,
 ) -> OrchestratorResult:
     """
-    Run A→B→C for one ``pipeline_run_id``.
+    Run A→B→C→C.1 for one ``pipeline_run_id``.
 
     Default path uses LangGraph (``langgraph_pipeline``). Set
     ``use_langgraph=False`` for the legacy sequential stages (tests/smoke).
@@ -356,12 +454,14 @@ def run_oie_pipeline(
                 skip_a=skip_a,
                 skip_b=skip_b,
                 skip_c=skip_c,
+                skip_c1=skip_c1,
                 dry_run=dry_run,
                 sync_repos=sync_repos,
                 stop_on_error=stop_on_error,
                 run_harvester_fn=run_harvester_fn,
                 run_noise_filter_fn=run_noise_filter_fn,
                 run_librarian_queue_fn=run_librarian_queue_fn,
+                run_file_graph_fn=run_file_graph_fn,
                 repos_yaml=repos_yaml,
                 max_repos=max_repos,
             )
@@ -381,6 +481,7 @@ def run_oie_pipeline(
         skip_a=skip_a,
         skip_b=skip_b,
         skip_c=skip_c,
+        skip_c1=skip_c1,
         stop_on_error=stop_on_error,
         max_repos=max_repos,
         repos_yaml=repos_yaml,
@@ -419,6 +520,17 @@ def run_oie_pipeline(
         run_librarian_queue_fn=run_librarian_queue_fn,
     )
     result.stages.append(c)
+    if stop_on_error and c.status == "error":
+        return result
+
+    c1 = _stage_module_c1(
+        cache_file,
+        skip=skip_c1,
+        dry_run=dry_run,
+        repos_yaml=repos_yaml,
+        run_file_graph_fn=run_file_graph_fn,
+    )
+    result.stages.append(c1)
     return result
 
 

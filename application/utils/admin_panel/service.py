@@ -751,6 +751,7 @@ def _default_skip_bc() -> tuple[bool, bool]:
     """Admin ingest runs Module B and C unless the client opts out.
 
     Pass ``skip_b=True`` / ``skip_c=True`` to skip the noise filter or librarian.
+    Module C.1 (graph filer) is skipped only when ``skip_c1`` is true.
     """
     return False, False
 
@@ -772,9 +773,10 @@ def invoke_oie_cli(
     continue_on_error: bool = True,
     skip_b: Optional[bool] = None,
     skip_c: Optional[bool] = None,
+    skip_c1: Optional[bool] = None,
     timeout: Optional[int] = None,
 ) -> Dict[str, Any]:
-    """Run Module A→B→C via the CLI against the app Postgres URL.
+    """Run Module A→B→C→C.1 via the CLI against the app Postgres URL.
 
     Defaults are live (sync + persist) so admin ingest is end-to-end. Pass
     ``dry_run=True`` / ``sync_repos=False`` only for hermetic probes.
@@ -787,6 +789,8 @@ def invoke_oie_cli(
             skip_b = auto_b
         if skip_c is None:
             skip_c = auto_c
+    if skip_c1 is None:
+        skip_c1 = False
     argv = [
         sys.executable,
         str(script),
@@ -805,6 +809,8 @@ def invoke_oie_cli(
         argv.append("--skip-b")
     if skip_c:
         argv.append("--skip-c")
+    if skip_c1:
+        argv.append("--skip-c1")
     if max_repos is not None and max_repos > 0:
         argv.extend(["--max-repos", str(int(max_repos))])
     if repos_yaml:
@@ -835,6 +841,7 @@ def invoke_oie_cli(
             parsed["returncode"] = proc.returncode
             parsed["skip_b"] = bool(skip_b)
             parsed["skip_c"] = bool(skip_c)
+            parsed["skip_c1"] = bool(skip_c1)
             return parsed
     except json.JSONDecodeError:
         pass
@@ -844,6 +851,7 @@ def invoke_oie_cli(
         "returncode": proc.returncode,
         "skip_b": bool(skip_b),
         "skip_c": bool(skip_c),
+        "skip_c1": bool(skip_c1),
     }
 
 
@@ -1006,6 +1014,7 @@ def start_ingestion(
                     "max_repos": max_repos,
                     "skip_b": eff_skip_b,
                     "skip_c": eff_skip_c,
+                    "skip_c1": False,
                     "skip_reason": skip_reason,
                     "repos_yaml": repos_yaml_path,
                     "wait": wait,
@@ -1014,10 +1023,12 @@ def start_ingestion(
                         "module_a_harvester",
                         "module_b_noise_filter",
                         "module_c_librarian",
+                        "module_c1_graph_filer",
                         "END",
                     ],
                     "note": (
-                        "Admin default runs Module B and C; pass skip_b/skip_c true to opt out. "
+                        "Admin default runs Module B, C, and C.1 (graph filer); "
+                        "pass skip_b/skip_c/skip_c1 true to opt out. "
                         "Module A may write 0 chunks when checkpoints are already at HEAD."
                     ),
                 }

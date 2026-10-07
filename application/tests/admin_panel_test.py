@@ -752,9 +752,11 @@ class TestAdminPanel(unittest.TestCase):
         self.assertIn("--max-repos", argv)
         self.assertNotIn("--skip-b", argv)
         self.assertNotIn("--skip-c", argv)
+        self.assertNotIn("--skip-c1", argv)
         skip_argv = mock_skip.call_args.args[0]
         self.assertIn("--skip-b", skip_argv)
         self.assertIn("--skip-c", skip_argv)
+        self.assertNotIn("--skip-c1", skip_argv)
         self.assertNotIn("sqlite://", argv)
         self.assertIn("postgresql+psycopg2://cre:password@127.0.0.1:5432/cre", argv)
         self.assertTrue(str(argv[1]).endswith("run_oie_pipeline.py"))
