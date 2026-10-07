@@ -67,6 +67,9 @@ class TestAdminPanel(unittest.TestCase):
         self.assertFalse(any(r["key"] == "OWASP_AGENT_DB" for r in rows))
         agent_flag = next(r for r in rows if r["key"] == "OWASP_AGENT_ENABLED")
         self.assertIn("main app Postgres", agent_flag["help_text"])
+        filing = next(r for r in rows if r["key"] == "OIE_GRAPH_FILING_ENABLED")
+        self.assertTrue(filing["writable"])
+        self.assertIn("decision_queue", filing["help_text"])
         redacted = config_catalog.present_config(
             {
                 "DEV_DATABASE_URL": "postgresql://cre:password@127.0.0.1:5432/opencre",
@@ -75,6 +78,25 @@ class TestAdminPanel(unittest.TestCase):
         shown = next(r["value"] for r in redacted if r["key"] == "DEV_DATABASE_URL")
         self.assertEqual(shown, "postgresql://cre:***@127.0.0.1:5432/opencre")
         self.assertNotIn("password", shown)
+
+    def test_config_can_toggle_graph_filing(self) -> None:
+        env: dict = {}
+        applied, rejected = config_catalog.apply_updates(
+            env, {"OIE_GRAPH_FILING_ENABLED": "true"}
+        )
+        self.assertEqual(applied, ["OIE_GRAPH_FILING_ENABLED"])
+        self.assertEqual(rejected, [])
+        self.assertEqual(env["OIE_GRAPH_FILING_ENABLED"], "1")
+        applied, rejected = config_catalog.apply_updates(
+            env, {"OIE_GRAPH_FILING_ENABLED": "off"}
+        )
+        self.assertEqual(applied, ["OIE_GRAPH_FILING_ENABLED"])
+        self.assertEqual(env["OIE_GRAPH_FILING_ENABLED"], "0")
+        applied, rejected = config_catalog.apply_updates(
+            env, {"OIE_GRAPH_FILING_ENABLED": "maybe"}
+        )
+        self.assertEqual(applied, [])
+        self.assertIn("OIE_GRAPH_FILING_ENABLED", rejected)
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_pipeline_empty_has_queued_strip(self) -> None:
