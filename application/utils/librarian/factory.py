@@ -70,8 +70,7 @@ class LibrarianComponents:
     leaf_drilldown_hub_first: bool = False
     umbrella_promote_cap: int = 8
     shortlist_judge_max_picks: int = 3
-    margin_gamma: Optional[float] = None>>>>>>> 7208db90 (feat(librarian): promote d1-winner combo defaults (judge+cap8+top_k=3))
-
+    margin_gamma: Optional[float] = None
 
 def build_scaler(config: Optional[LibrarianConfig] = None) -> Scaler:
     """The C.3 calibrator at the configured temperature.
@@ -354,7 +353,7 @@ parent_index=parent_index,
         leaf_drilldown_hub_first=config.leaf_drilldown_hub_first,
         umbrella_promote_cap=config.umbrella_promote_cap,
         shortlist_judge_max_picks=config.shortlist_judge_max_picks,
-        margin_gamma=config.margin_gamma,>>>>>>> 7208db90 (feat(librarian): promote d1-winner combo defaults (judge+cap8+top_k=3))
+        margin_gamma=config.margin_gamma,
     )
 
 
