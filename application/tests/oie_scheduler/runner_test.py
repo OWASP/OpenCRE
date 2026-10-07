@@ -37,6 +37,7 @@ ALL_OK = {
     "librarian": _ok("librarian"),
     "file_graph": _ok("file_graph"),
     "gap_analysis": _ok("gap_analysis"),
+    "embed_nodes": _ok("embed_nodes"),
 }
 
 
@@ -193,8 +194,12 @@ class ExpansionStagesTest(SchedulerTestBase):
         )
         sqla.session.commit()
         self.ga_calls = []
+        self.embed_calls = []
 
-    def _expansion(self, **cfg):
+    def _embed(self, collection, node_ids):
+        self.embed_calls.append(list(node_ids))
+
+    def _expansion(self, now=NOW, **cfg):
         overrides = {
             "noise_filter": _ok("noise_filter"),
             "librarian": _ok("librarian"),
@@ -203,10 +208,11 @@ class ExpansionStagesTest(SchedulerTestBase):
             self.collection,
             "cre_expansion",
             cache_file="db-url",
-            now=NOW,
+            now=now,
             config=SchedulerConfig(**cfg),
             overrides=overrides,
             ga_fn=self.ga_calls.append,
+            embed_fn=self._embed,
         )
 
     def test_filing_edges_triggers_gap_analysis_once(self) -> None:
@@ -233,6 +239,7 @@ class ExpansionStagesTest(SchedulerTestBase):
                 "librarian": _ok("librarian"),
             },
             ga_fn=self.ga_calls.append,
+            embed_fn=self._embed,
         )
         by_name = {s.name: s for s in out.stages}
         self.assertEqual(by_name["gap_analysis"].status, "skipped")
@@ -245,6 +252,81 @@ class ExpansionStagesTest(SchedulerTestBase):
         self.assertEqual(by_name["gap_analysis"].status, "skipped")
         self.assertEqual(self.ga_calls, [])
         self.assertIsNone(sqla.session.query(db.DecisionQueueItem).one().consumed_at)
+
+    def _filed_node_id(self):
+        return sqla.session.query(db.Node).one().id
+
+    def test_filed_nodes_are_embedded(self) -> None:
+        out = self._expansion()
+        by_name = {s.name: s for s in out.stages}
+        self.assertEqual(by_name["embed_nodes"].status, "ok")
+        self.assertEqual(by_name["embed_nodes"].summary["pending"], 1)
+        self.assertEqual(self.embed_calls, [[self._filed_node_id()]])
+
+    def test_embeds_after_gap_analysis_so_it_cannot_delay_it(self) -> None:
+        out = self._expansion()
+        names = [s.name for s in out.stages]
+        self.assertLess(names.index("gap_analysis"), names.index("embed_nodes"))
+
+    def test_node_that_already_has_an_embedding_is_left_alone(self) -> None:
+        self._expansion()
+        self.embed_calls.clear()
+        sqla.session.add(
+            db.Embeddings(
+                doc_type="Standard",
+                node_id=self._filed_node_id(),
+                embedding_vec="[0.1,0.2]",
+            )
+        )
+        sqla.session.commit()
+        out = self._expansion(now=NOW + timedelta(days=1))
+        by_name = {s.name: s for s in out.stages}
+        self.assertEqual(by_name["embed_nodes"].status, "skipped")
+        self.assertEqual(self.embed_calls, [])
+
+    def test_curated_nodes_are_never_embedded_by_the_job(self) -> None:
+        sqla.session.add(db.Node(name="ASVS", section="V1", ntype="Standard", tags=""))
+        sqla.session.commit()
+        self._expansion()
+        self.assertEqual(len(self.embed_calls), 1)
+        self.assertEqual(len(self.embed_calls[0]), 1)
+
+    def test_embedding_can_be_switched_off(self) -> None:
+        out = self._expansion(embed_filed_nodes=False)
+        by_name = {s.name: s for s in out.stages}
+        self.assertEqual(by_name["embed_nodes"].status, "skipped")
+        self.assertEqual(self.embed_calls, [])
+
+    def test_embedding_failure_degrades_the_job_but_keeps_the_graph_edges(
+        self,
+    ) -> None:
+        def boom(collection, node_ids):
+            raise RuntimeError("no LLM credentials")
+
+        out = run_job(
+            self.collection,
+            "cre_expansion",
+            cache_file="db-url",
+            now=NOW,
+            config=SchedulerConfig(),
+            overrides={
+                "noise_filter": _ok("noise_filter"),
+                "librarian": _ok("librarian"),
+            },
+            ga_fn=self.ga_calls.append,
+            embed_fn=boom,
+        )
+        by_name = {s.name: s for s in out.stages}
+        self.assertEqual(by_name["embed_nodes"].status, "degraded")
+        self.assertIn("no LLM credentials", by_name["embed_nodes"].detail)
+        self.assertEqual(by_name["file_graph"].summary["links_added"], 1)
+        self.assertEqual(out.status, "degraded")
+
+    def test_nothing_filed_means_nothing_to_embed(self) -> None:
+        out = self._expansion(filing_enabled=False)
+        by_name = {s.name: s for s in out.stages}
+        self.assertEqual(by_name["embed_nodes"].status, "skipped")
+        self.assertEqual(self.embed_calls, [])
 
     def test_high_floor_drops_the_link_and_skips_gap_analysis(self) -> None:
         out = self._expansion(file_floor=0.99)
@@ -349,6 +431,43 @@ repositories:
         self.assertEqual(harvest.summary["deferred"], 1)
         self.assertEqual(harvest.summary["repository_ids"], ["owasp-p1", "owasp-p2"])
 
+    def _event_repos(self):
+        self.repos.write_text(
+            self.repos.read_text().replace(
+                "repositories:",
+                "  event:\n"
+                "    type: github\n"
+                "    owner: OWASP\n"
+                "    branch: main\n"
+                "    paths: {include: [index.md]}\n"
+                "    chunking: {strategy: markdown_heading, max_tokens: 1000}\n"
+                "    polling: {mode: full, interval_minutes: 1440}\n"
+                "repositories:\n  - {id: owasp-e1, kind: event, repo: www-event-1}",
+            )
+        )
+
+    def _harvested(self, **cfg):
+        visited = []
+
+        def fake(*, repo_cfg, **_):
+            visited.append(repo_cfg.id)
+            return 1
+
+        with patch.object(harvest_pipeline, "_harvest_repository", fake):
+            self.run_job(
+                overrides={"agent_sync": _ok("agent_sync")},
+                config=SchedulerConfig(repos_yaml=str(self.repos), **cfg),
+            )
+        return visited
+
+    def test_event_repos_are_not_harvested_by_default(self) -> None:
+        self._event_repos()
+        self.assertNotIn("owasp-e1", self._harvested())
+
+    def test_event_repos_are_harvested_when_opted_in(self) -> None:
+        self._event_repos()
+        self.assertIn("owasp-e1", self._harvested(harvest_events=True))
+
     def _agent_sync(self, agent_db):
         from application.utils.owasp_agent import index_store
         from application.utils.owasp_agent import sync as agent_sync
@@ -398,6 +517,24 @@ repositories:
         harvest = {s.name: s for s in out.stages}["harvest"]
         self.assertEqual(harvest.status, "degraded")
         self.assertEqual(out.status, "degraded")
+
+
+class SchedulerConfigEnvTest(unittest.TestCase):
+    def test_event_harvest_defaults_off_and_is_opt_in(self) -> None:
+        with patch.dict("os.environ", {}, clear=False) as env:
+            env.pop("OIE_HARVEST_EVENTS", None)
+            self.assertFalse(SchedulerConfig.from_env().harvest_events)
+        for on in ("1", "true", "ON", "yes"):
+            with patch.dict("os.environ", {"OIE_HARVEST_EVENTS": on}):
+                self.assertTrue(SchedulerConfig.from_env().harvest_events)
+
+    def test_embedding_filed_nodes_defaults_on_and_has_a_kill_switch(self) -> None:
+        with patch.dict("os.environ", {}, clear=False) as env:
+            env.pop("OIE_EMBED_FILED_NODES", None)
+            self.assertTrue(SchedulerConfig.from_env().embed_filed_nodes)
+        for off in ("0", "false", "OFF", "no"):
+            with patch.dict("os.environ", {"OIE_EMBED_FILED_NODES": off}):
+                self.assertFalse(SchedulerConfig.from_env().embed_filed_nodes)
 
 
 class HealthTest(SchedulerTestBase):

@@ -47,6 +47,8 @@ class SchedulerConfig:
     file_floor: float = 0.9
     # Default off: Module C decisions stay for review until an operator enables filing.
     filing_enabled: bool = False
+    harvest_events: bool = False
+    embed_filed_nodes: bool = True
     repos_yaml: Optional[str] = None
     agent_db: Optional[str] = None
 
@@ -63,6 +65,10 @@ class SchedulerConfig:
             metadata_max_repos=int(os.getenv("OIE_METADATA_MAX_REPOS", "50")),
             file_floor=floor,
             filing_enabled=raw_filing in ("1", "true", "yes", "on"),
+            harvest_events=os.getenv("OIE_HARVEST_EVENTS", "0").strip().lower()
+            in ("1", "true", "yes", "on"),
+            embed_filed_nodes=os.getenv("OIE_EMBED_FILED_NODES", "1").strip().lower()
+            not in ("0", "false", "no", "off"),
             repos_yaml=os.getenv("OIE_REPOS_YAML") or None,
             agent_db=os.getenv("OWASP_AGENT_DB") or None,
         )
@@ -99,6 +105,7 @@ class JobContext:
     config: SchedulerConfig = field(default_factory=SchedulerConfig)
     overrides: Dict[str, StageFn] = field(default_factory=dict)
     ga_fn: Optional[Callable[[str], None]] = None
+    embed_fn: Optional[Callable[[Any, List[str]], None]] = None
     #: Results one stage hands to a later one (e.g. the filer's graph change).
     state: Dict[str, Any] = field(default_factory=dict)
 
@@ -192,14 +199,20 @@ def stage_agent_sync(ctx: JobContext) -> StageResult:
 
 def stage_harvest(ctx: JobContext) -> StageResult:
     from application.utils.harvester.pipeline import run_harvester
-    from application.utils.harvester.schemas import HARVESTABLE_KINDS
+    from application.utils.harvester.schemas import (
+        HARVESTABLE_KINDS,
+        OPTIONAL_HARVEST_KINDS,
+    )
 
+    kinds = HARVESTABLE_KINDS
+    if ctx.config.harvest_events:
+        kinds = HARVESTABLE_KINDS + OPTIONAL_HARVEST_KINDS
     summary = run_harvester(
         ctx.session,
         ctx.run_id,
         repos_yaml=ctx.config.repos_yaml,
         dry_run=ctx.dry_run,
-        kinds=HARVESTABLE_KINDS,
+        kinds=kinds,
         only_due=True,
         max_repos=ctx.config.harvest_max_repos,
         now=ctx.now,
@@ -335,6 +348,46 @@ def stage_gap_analysis(ctx: JobContext) -> StageResult:
     )
 
 
+def _default_embed(collection: Any, node_ids: List[str]) -> None:
+    from application.prompt_client import prompt_client
+
+    embeddings = prompt_client.PromptHandler(database=collection).embeddings_instance
+    embeddings.setup_playwright()
+    try:
+        embeddings.generate_embeddings(collection, node_ids)
+    finally:
+        embeddings.teardown_playwright()
+
+
+def stage_embed_nodes(ctx: JobContext) -> StageResult:
+    """Embed auto-filed nodes so similarity search and chat can see them.
+
+    A failure here (no LLM credentials, provider outage) degrades the job but
+    leaves the filed nodes and edges in place; the next run retries because the
+    pending set is derived from the graph, not from this run.
+    """
+    if not ctx.config.embed_filed_nodes:
+        return StageResult("embed_nodes", "skipped", "OIE_EMBED_FILED_NODES is off")
+    if ctx.dry_run:
+        return StageResult("embed_nodes", "skipped", "dry run")
+    pending = graph_filer.auto_filed_nodes_without_embeddings(ctx.session)
+    if not pending:
+        return StageResult("embed_nodes", "skipped", "no filed nodes need embeddings")
+    summary = {"pending": len(pending)}
+    try:
+        (ctx.embed_fn or _default_embed)(ctx.collection, pending)
+    except Exception as exc:  # noqa: BLE001 -- provider/credential failures vary
+        ctx.session.rollback()
+        logger.exception("embedding filed nodes failed")
+        return StageResult(
+            "embed_nodes", "degraded", f"{type(exc).__name__}: {exc}", summary
+        )
+    summary["embedded"] = len(pending) - len(
+        graph_filer.auto_filed_nodes_without_embeddings(ctx.session)
+    )
+    return StageResult("embed_nodes", "ok", "", summary)
+
+
 def run_stage(name: str, fn: StageFn, ctx: JobContext) -> StageResult:
     """Run one stage, turning an exception into an ``error`` result."""
     started = time.monotonic()
@@ -364,12 +417,13 @@ JOBS: Dict[str, JobSpec] = {
     "cre_expansion": JobSpec(
         name="cre_expansion",
         interval_minutes=1440,
-        description="Noise filter, Librarian, graph filing and gap analysis",
+        description="Noise filter, Librarian, graph filing, gap analysis and embeddings",
         stages=(
             ("noise_filter", stage_noise_filter),
             ("librarian", stage_librarian),
             ("file_graph", stage_file_graph),
             ("gap_analysis", stage_gap_analysis),
+            ("embed_nodes", stage_embed_nodes),
         ),
     ),
 }
