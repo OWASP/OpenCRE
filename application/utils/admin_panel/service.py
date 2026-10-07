@@ -748,11 +748,11 @@ ADMIN_OIE_YAML_DIR = REPO_ROOT / "tmp" / "admin_oie"
 
 
 def _default_skip_bc() -> tuple[bool, bool]:
-    """Admin ingest skips B/C unless the client opts in (``skip_b``/``skip_c`` false).
+    """Admin ingest runs Module B and C unless the client opts out.
 
-    LLM keys alone must not fire expensive Module B/C from a casual New click.
+    Pass ``skip_b=True`` / ``skip_c=True`` to skip the noise filter or librarian.
     """
-    return True, True
+    return False, False
 
 
 def _write_run_repos_yaml(run_id: str, yaml_text: str) -> Path:
@@ -816,7 +816,8 @@ def invoke_oie_cli(
         elif skip_b and skip_c:
             timeout = 600
         else:
-            timeout = 1800
+            # Clone + LLM for the golden set (and later the org) exceeds 30 minutes.
+            timeout = 24 * 60 * 60
     proc = subprocess.run(
         argv,
         capture_output=True,
@@ -1016,7 +1017,7 @@ def start_ingestion(
                         "END",
                     ],
                     "note": (
-                        "B/C skipped by admin default unless skip_b/skip_c=false; "
+                        "Admin default runs Module B and C; pass skip_b/skip_c true to opt out. "
                         "Module A may write 0 chunks when checkpoints are already at HEAD."
                     ),
                 }
