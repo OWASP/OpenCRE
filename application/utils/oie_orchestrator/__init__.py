@@ -1,4 +1,4 @@
-"""OIE A→B→C orchestrator package."""
+"""OIE A→B→C→C.1 orchestrator package."""
 
 from cre_logging import get_logger
 

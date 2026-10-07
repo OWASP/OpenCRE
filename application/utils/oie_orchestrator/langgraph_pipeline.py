@@ -1,4 +1,4 @@
-"""LangGraph + LlamaIndex-backed OIE orchestrator (A → B → C).
+"""LangGraph + LlamaIndex-backed OIE orchestrator (A → B → C → C.1).
 
 LangGraph owns stage sequencing. LlamaIndex/Docling live under Module A's
 ``strategy: docling`` chunk path. Existing module entrypoints and DB queue
@@ -12,11 +12,13 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Dict, Optional, TypedDict
 
 from application.utils.oie_orchestrator.pipeline import (
+    STAGE_C1_NAME,
     OrchestratorResult,
     StageResult,
     _connect,
     _harvester_detail,
     _skip_stage_detail,
+    _stage_module_c1,
     _stage_status_from_summary,
     _summary_dict,
 )
@@ -32,12 +34,14 @@ class OieState(TypedDict, total=False):
     skip_a: bool
     skip_b: bool
     skip_c: bool
+    skip_c1: bool
     stop_on_error: bool
     repos_yaml: Optional[str]
     max_repos: Optional[int]
     stage_a: Dict[str, Any]
     stage_b: Dict[str, Any]
     stage_c: Dict[str, Any]
+    stage_c1: Dict[str, Any]
     halt: bool
 
 
@@ -216,7 +220,31 @@ def _run_c(
             status="error",
             detail=f"run_librarian_queue failed: {exc}",
         )
-    return {"stage_c": _stage_to_dict(stage)}
+    halt = bool(state.get("stop_on_error", True)) and stage.status == "error"
+    return {"stage_c": _stage_to_dict(stage), "halt": halt}
+
+
+def _run_c1(
+    state: OieState, run_file_graph_fn: Optional[Callable[..., Any]]
+) -> Dict[str, Any]:
+    if state.get("halt"):
+        return {
+            "stage_c1": _stage_to_dict(
+                StageResult(
+                    name=STAGE_C1_NAME,
+                    status="skipped",
+                    detail="halted after earlier stage error",
+                )
+            )
+        }
+    stage = _stage_module_c1(
+        state["cache_file"],
+        skip=bool(state.get("skip_c1")),
+        dry_run=bool(state.get("dry_run")),
+        repos_yaml=state.get("repos_yaml"),
+        run_file_graph_fn=run_file_graph_fn,
+    )
+    return {"stage_c1": _stage_to_dict(stage)}
 
 
 def run_oie_pipeline_langgraph(
@@ -226,16 +254,18 @@ def run_oie_pipeline_langgraph(
     skip_a: bool = False,
     skip_b: bool = False,
     skip_c: bool = False,
+    skip_c1: bool = False,
     dry_run: bool = False,
     sync_repos: bool = True,
     stop_on_error: bool = True,
     run_harvester_fn: Optional[Callable[..., Any]] = None,
     run_noise_filter_fn: Optional[Callable[..., Any]] = None,
     run_librarian_queue_fn: Optional[Callable[..., Any]] = None,
+    run_file_graph_fn: Optional[Callable[..., Any]] = None,
     repos_yaml: Optional[str] = None,
     max_repos: Optional[int] = None,
 ) -> OrchestratorResult:
-    """Compile a LangGraph ``A → B → C`` and invoke it once."""
+    """Compile a LangGraph ``A → B → C → C.1`` and invoke it once."""
     from langgraph.graph import END, START, StateGraph
 
     run_id = (pipeline_run_id or "").strip() or (
@@ -246,10 +276,12 @@ def run_oie_pipeline_langgraph(
     graph.add_node("module_a", lambda s: _run_a(s, run_harvester_fn))
     graph.add_node("module_b", lambda s: _run_b(s, run_noise_filter_fn))
     graph.add_node("module_c", lambda s: _run_c(s, run_librarian_queue_fn))
+    graph.add_node("module_c1", lambda s: _run_c1(s, run_file_graph_fn))
     graph.add_edge(START, "module_a")
     graph.add_edge("module_a", "module_b")
     graph.add_edge("module_b", "module_c")
-    graph.add_edge("module_c", END)
+    graph.add_edge("module_c", "module_c1")
+    graph.add_edge("module_c1", END)
     app = graph.compile()
 
     final = app.invoke(
@@ -261,6 +293,7 @@ def run_oie_pipeline_langgraph(
             "skip_a": skip_a,
             "skip_b": skip_b,
             "skip_c": skip_c,
+            "skip_c1": skip_c1,
             "stop_on_error": stop_on_error,
             "repos_yaml": repos_yaml,
             "max_repos": max_repos,
@@ -276,6 +309,7 @@ def run_oie_pipeline_langgraph(
         skip_a=skip_a,
         skip_b=skip_b,
         skip_c=skip_c,
+        skip_c1=skip_c1,
         stop_on_error=stop_on_error,
         max_repos=max_repos,
         repos_yaml=repos_yaml,
@@ -284,10 +318,11 @@ def run_oie_pipeline_langgraph(
             "module_a",
             "module_b",
             "module_c",
+            "module_c1",
             "END",
         ],
     )
-    for key in ("stage_a", "stage_b", "stage_c"):
+    for key in ("stage_a", "stage_b", "stage_c", "stage_c1"):
         raw = final.get(key)
         if not raw:
             continue

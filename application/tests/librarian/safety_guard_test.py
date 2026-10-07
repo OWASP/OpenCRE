@@ -140,12 +140,15 @@ class PipelineSafetyWiringTest(unittest.TestCase):
         self.assertEqual(result.stats.linked, 1)
         self.assertEqual(result.stats.safety_unevaluated, 0)
 
-    def test_default_guard_links_but_records_the_gap(self) -> None:
-        """Without a guard the row still links — but the run says the safety
-        path did not run for it, rather than reporting a clean check."""
+    def test_default_guard_forces_review_and_records_the_gap(self) -> None:
+        """Unevaluated safety must not auto-link (fail closed for C.1 filing)."""
         result = _run()
-        self.assertEqual(result.stats.linked, 1)
+        self.assertEqual(result.stats.linked, 0)
+        self.assertEqual(result.stats.review, 1)
         self.assertEqual(result.stats.safety_unevaluated, 1)
+        envelope = result.envelopes[0]
+        self.assertIsInstance(envelope, ReviewItem)
+        self.assertEqual(envelope.reason_code, ReasonCode.safety_unevaluated)
 
 
 if __name__ == "__main__":
