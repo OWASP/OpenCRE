@@ -248,14 +248,38 @@ def run_oie_pipeline(
     run_harvester_fn: Optional[Callable[..., Any]] = None,
     run_noise_filter_fn: Optional[Callable[..., Any]] = None,
     run_librarian_queue_fn: Optional[Callable[..., Any]] = None,
+    use_langgraph: bool = True,
 ) -> OrchestratorResult:
     """
     Run A→B→C for one ``pipeline_run_id``.
 
-    Defaults run all stages for real (not dry-run). Inject callables in tests.
-    When ``stop_on_error`` is True (default), later stages are skipped after
-    an earlier stage returns ``error``.
+    Default path uses LangGraph (``langgraph_pipeline``). Set
+    ``use_langgraph=False`` for the legacy sequential stages (tests/smoke).
     """
+    if use_langgraph:
+        try:
+            from application.utils.oie_orchestrator.langgraph_pipeline import (
+                run_oie_pipeline_langgraph,
+            )
+
+            return run_oie_pipeline_langgraph(
+                cache_file=cache_file,
+                pipeline_run_id=pipeline_run_id,
+                skip_a=skip_a,
+                skip_b=skip_b,
+                skip_c=skip_c,
+                dry_run=dry_run,
+                sync_repos=sync_repos,
+                stop_on_error=stop_on_error,
+                run_harvester_fn=run_harvester_fn,
+                run_noise_filter_fn=run_noise_filter_fn,
+                run_librarian_queue_fn=run_librarian_queue_fn,
+            )
+        except ImportError:
+            logger.warning(
+                "langgraph not installed; falling back to sequential orchestrator"
+            )
+
     run_id = (pipeline_run_id or "").strip() or (
         datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     )
