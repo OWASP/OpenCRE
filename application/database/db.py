@@ -289,6 +289,28 @@ class AdminPipelineEvent(BaseModel):  # type: ignore
     __table_args__ = (sqla.Index("ix_admin_pipeline_event_run", "run_id"),)
 
 
+class AdminRuntimeSetting(BaseModel):  # type: ignore
+    """Durable admin toggles (e.g. OIE_GRAPH_FILING_ENABLED) shared by all workers."""
+
+    __tablename__ = "admin_runtime_setting"
+    key = sqla.Column(sqla.String, primary_key=True)
+    value = sqla.Column(sqla.String, nullable=False)
+    updated_at = sqla.Column(sqla.DateTime, nullable=False)
+    updated_by = sqla.Column(sqla.String, nullable=True)
+
+
+class AdminRuntimeSettingAudit(BaseModel):  # type: ignore
+    __tablename__ = "admin_runtime_setting_audit"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    key = sqla.Column(sqla.String, nullable=False)
+    old_value = sqla.Column(sqla.String, nullable=True)
+    new_value = sqla.Column(sqla.String, nullable=False)
+    actor = sqla.Column(sqla.String, nullable=True)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+
+    __table_args__ = (sqla.Index("ix_admin_runtime_setting_audit_key", "key"),)
+
+
 class User(BaseModel):  # type: ignore
     """Persisted account identity for OIDC login (issue #586, RFC #876 TODO 1).
 
