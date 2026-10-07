@@ -52,6 +52,8 @@ class LibrarianComponents:
     cre_prior: Optional[Any] = None
     #: Grounded shortlist judge LLM (system, user) -> text. None disables lever C.
     shortlist_llm_fn: Optional[Callable[[str, str], str]] = None
+    #: C.4 safety guard (None → pipeline keeps NullSafetyGuard).
+    safety_guard: Optional[Any] = None
 
 
 def build_scaler(config: Optional[LibrarianConfig] = None) -> Scaler:
@@ -299,6 +301,22 @@ def build_components(
             "shortlist judge LLM unavailable; lever C disabled", exc_info=True
         )
 
+    safety_guard = None
+    try:
+        from application.utils.librarian.llm_safety_guard import (
+            LlmSafetyGuard,
+            default_safety_litellm_fn,
+            safety_guard_enabled,
+        )
+
+        if safety_guard_enabled():
+            safety_guard = LlmSafetyGuard(llm_fn=default_safety_litellm_fn())
+    except Exception:  # noqa: BLE001
+        logger.warning(
+            "LLM safety guard unavailable; NullSafetyGuard remains",
+            exc_info=True,
+        )
+
     return LibrarianComponents(
         retriever=retriever,
         reranker=reranker,
@@ -308,6 +326,7 @@ def build_components(
         cre_membership=cre_membership,
         cre_prior=cre_prior,
         shortlist_llm_fn=shortlist_llm,
+        safety_guard=safety_guard,
     )
 
 

@@ -30,8 +30,8 @@ Scope so far:
              consumed_at write-back, the component factory the orchestrator
              builds C from, and the safety seam wired into decide().
 
-Not built yet: the SafetyGuard detector itself (the seam ships with
-NullSafetyGuard, which evaluates nothing and says so), and the graph / review
+SafetyGuard live path: `LlmSafetyGuard`. Hermetic default remains
+NullSafetyGuard. Not built yet: the graph / review
 writers — W8b. C still commits no links.
 
 Vendored RFC JSON schemas live under ``_rfc_schemas/``. They are pinned to

@@ -208,6 +208,7 @@ def run_librarian_queue(
         use_focus_query=config.focus_query,
         pref_inject=config.pref_inject,
         prefer_audit=config.prefer_audit_ids,
+        safety_guard=getattr(components, "safety_guard", None),
     )
 
     # A locked run must not leave its claim outstanding. `FOR UPDATE SKIP LOCKED`
@@ -231,9 +232,9 @@ def run_librarian_queue(
         if summary.safety_unevaluated:
             logger.warning(
                 "librarian run %s: %d of %d rows were decided without the safety "
-                "path (no SafetyGuard implementation yet), so ADVERSARIAL_FLAG and "
-                "UPDATE_AMBIGUOUS could not fire. Their clean verdicts are defaults, "
-                "not findings.",
+                "path (guard unevaluated — LLM failure or NullSafetyGuard), so "
+                "ADVERSARIAL_FLAG and UPDATE_AMBIGUOUS could not fire. Their clean "
+                "verdicts are defaults, not findings.",
                 pipeline_run_id,
                 summary.safety_unevaluated,
                 summary.read,

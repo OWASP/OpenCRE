@@ -40,7 +40,7 @@ Supporting the live path:
 | `queue_consumer.py` | Stamps `consumed_at` back on B's queue. Idempotent; never deletes |
 | `queue_runner.py` | The live entry point: drain → decide → persist → retire |
 | `factory.py` | Builds the live C.1/C.2/C.3 components from config + the OpenCRE database |
-| `safety_guard.py` | The blocking-flag seam `decide()` accepts. Ships as `NullSafetyGuard` |
+| `safety_guard.py` | C.4 seam (`NullSafetyGuard` hermetic). Live: `llm_safety_guard.py` |
 | `hub_firewall.py` | TRACT hub firewall — strips candidates that leak the answer during evaluation |
 
 ## The two rules that matter
@@ -183,5 +183,4 @@ Column-by-column spec: [the C → D contract](../../../docs/gsoc_2026_module_c/m
   guard reporting `evaluated=False`.** Retiring a queue row without the safety
   path is recoverable; committing a wrong link into a graph other tools read as
   truth is not.
-- **The SafetyGuard detector.** The seam is wired; the out-of-distribution
-  scoring, conformal prediction, and update detection behind it are future work.
+- **Richer SafetyGuard detectors.** LLM judge ships as `LlmSafetyGuard`; conformal / OOD scoring remains future work.
