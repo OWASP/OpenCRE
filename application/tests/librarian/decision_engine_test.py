@@ -59,10 +59,10 @@ class DecideTest(unittest.TestCase):
         self.assertEqual(r.decision, Decision.review)
         self.assertEqual(r.reason_code, ReasonCode.update_ambiguous)
 
-    def test_precedence_no_candidates_beats_everything(self):
-        # empty shortlist + a flag + high confidence -> still NO_CANDIDATES.
+    def test_precedence_adversarial_beats_empty_shortlist(self):
+        # Safety flags must surface even when retrieval yielded nothing.
         r = decide(0.99, (), threshold=TAU, adversarial=True, update_ambiguous=True)
-        self.assertEqual(r.reason_code, ReasonCode.no_candidates)
+        self.assertEqual(r.reason_code, ReasonCode.adversarial_flag)
 
     def test_precedence_adversarial_beats_below_threshold(self):
         r = decide(0.10, CANDS, threshold=TAU, adversarial=True)

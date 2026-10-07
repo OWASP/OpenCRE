@@ -299,7 +299,7 @@ class LibrarianPipeline:
                         self._map_cre_ids(resolution.cre_ids),
                         None,
                     )
-                    verdict_evaluated = True
+                    verdict_evaluated = False
                 elif resolution.outcome in (
                     ResolutionOutcome.unknown_reference,
                     ResolutionOutcome.conflicting_references,
@@ -312,7 +312,7 @@ class LibrarianPipeline:
                         else ReasonCode.below_threshold
                     )
                     result = DecisionResult(Decision.review, 1.0, mapped, reason)
-                    verdict_evaluated = True
+                    verdict_evaluated = False
                 else:
                     audit = self._retriever.retrieve(section.text)
                     from application.utils.librarian.control_name_seed import (
@@ -342,7 +342,7 @@ class LibrarianPipeline:
                             ReasonCode.cre_gap,
                             gap_proposal=gap,
                         )
-                        verdict_evaluated = True
+                        verdict_evaluated = False
                     else:
                         from application.utils.librarian.control_name_seed import (
                             prefer_audit_ids,
@@ -471,16 +471,25 @@ class LibrarianPipeline:
                                 section.text
                             )
 
-                        verdict = self._safety_guard.evaluate(section)
                         result = decide(
                             confidence,
                             cre_ids,
                             threshold=self._threshold,
+                        )
+                        verdict_evaluated = False
+
+                # C.4 safety on every path (including explicit-id / CRE_GAP exits).
+                verdict = self._safety_guard.evaluate(section)
+                if verdict.evaluated:
+                    verdict_evaluated = True
+                    if verdict.adversarial or verdict.update_ambiguous:
+                        result = decide(
+                            result.confidence,
+                            result.cre_ids,
+                            threshold=self._threshold,
                             adversarial=verdict.adversarial,
                             update_ambiguous=verdict.update_ambiguous,
                         )
-                        verdict_evaluated = verdict.evaluated
-
                 if not verdict_evaluated:
                     safety_unevaluated += 1
                 result = ground_decision(result, self._cre_registry)
