@@ -662,8 +662,6 @@ class LibrarianPipeline:
                                 section.text
                             )
 
-<<<<<<< HEAD
-=======
                         query_for_drill = focus or section.text
                         pre_drill = list(cre_ids)
                         cre_ids = self._apply_leaf_drilldown(
@@ -678,8 +676,6 @@ class LibrarianPipeline:
                         if list(cre_ids) != pre_drill:
                             audit = self._sync_audit_after_drilldown(audit, cre_ids)
 
-                        verdict = self._safety_guard.evaluate(section)
->>>>>>> 7208db90 (feat(librarian): promote d1-winner combo defaults (judge+cap8+top_k=3))
                         result = decide(
                             confidence,
                             cre_ids,
