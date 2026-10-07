@@ -632,8 +632,8 @@ class TestAdminPanel(unittest.TestCase):
                     dry_run=False,
                     sync_repos=True,
                     max_repos=service.DEFAULT_OIE_MAX_REPOS,
-                    skip_b=True,
-                    skip_c=True,
+                    skip_b=False,
+                    skip_c=False,
                 )
                 pipe = c.get("/admin/pipeline").get_json()
                 stages = {e["stage"] for e in pipe["events"]}
@@ -655,8 +655,8 @@ class TestAdminPanel(unittest.TestCase):
                     dry_run=True,
                     sync_repos=False,
                     max_repos=2,
-                    skip_b=True,
-                    skip_c=True,
+                    skip_b=False,
+                    skip_c=False,
                 )
 
                 r = c.post(
@@ -740,13 +740,21 @@ class TestAdminPanel(unittest.TestCase):
                 return_value=proc,
             ) as mock_run:
                 out = service.invoke_oie_cli("run-1")
+            with patch(
+                "application.utils.admin_panel.service.subprocess.run",
+                return_value=proc,
+            ) as mock_skip:
+                service.invoke_oie_cli("run-1", skip_b=True, skip_c=True)
         self.assertEqual(out["ok"], True)
         argv = mock_run.call_args.args[0]
         self.assertNotIn("--dry-run", argv)
         self.assertNotIn("--no-sync-repos", argv)
         self.assertIn("--max-repos", argv)
-        self.assertIn("--skip-b", argv)
-        self.assertIn("--skip-c", argv)
+        self.assertNotIn("--skip-b", argv)
+        self.assertNotIn("--skip-c", argv)
+        skip_argv = mock_skip.call_args.args[0]
+        self.assertIn("--skip-b", skip_argv)
+        self.assertIn("--skip-c", skip_argv)
         self.assertNotIn("sqlite://", argv)
         self.assertIn("postgresql+psycopg2://cre:password@127.0.0.1:5432/cre", argv)
         self.assertTrue(str(argv[1]).endswith("run_oie_pipeline.py"))
@@ -1422,8 +1430,8 @@ class TestAdminPanel(unittest.TestCase):
                     dry_run=False,
                     sync_repos=True,
                     max_repos=service.DEFAULT_OIE_MAX_REPOS,
-                    skip_b=True,
-                    skip_c=True,
+                    skip_b=False,
+                    skip_c=False,
                 )
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})

@@ -310,7 +310,7 @@ describe('Admin', () => {
         expect.stringContaining('/admin/ingest/start'),
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ packaged: true }),
+          body: JSON.stringify({ packaged: true, max_repos: 50 }),
         })
       )
     );

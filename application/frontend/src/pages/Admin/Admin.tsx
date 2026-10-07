@@ -713,9 +713,9 @@ function PipelineTab({ origin }: { origin: string }) {
       <h3>Stage logs</h3>
       <p className="admin-help">
         Look for <code>oie</code>/<code>started</code> (flags + skip_reason) and <code>oie_trace</code>{' '}
-        (engine, graph_path, visited). Skipped B/C means the run passed <code>skip_b/skip_c</code> (admin
-        default). Module A with chunks=0 usually means harvester checkpoints were already at HEAD (no file
-        diffs).
+        (engine, graph_path, visited). The admin default runs Module B and Module C. Skipped B/C means
+        the run passed <code>skip_b</code>/<code>skip_c</code> true. Module A with chunks=0 usually means
+        harvester checkpoints were already at HEAD (no file diffs).
       </p>
       <table className="admin-table">
         <thead>
@@ -857,7 +857,7 @@ function ConfigTab({ origin }: { origin: string }) {
       const res = await fetch(`${origin}/admin/ingest/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ packaged: true }),
+        body: JSON.stringify({ packaged: true, max_repos: 50 }),
       });
       const body = await readJson(res);
       if (!res.ok) {
@@ -1019,8 +1019,9 @@ function ConfigTab({ origin }: { origin: string }) {
       <h3>End-to-end bootstrap</h3>
       <p className="admin-help">
         CRE explorer graph comes from upstream at <code>make install</code> / <code>make dev</code> (skip with{' '}
-        <code>SKIP_UPSTREAM_SYNC=1</code>). Use these buttons to run the golden-set OIE harvest and OWASP
-        agent metadata sync yourself — progress shows under Pipeline.
+        <code>SKIP_UPSTREAM_SYNC=1</code>). Run golden-set harvest runs Modules A, B, and C on the packaged
+        list (pass <code>skip_b</code>/<code>skip_c</code> true to opt out). OWASP agent sync is separate —
+        progress shows under Pipeline.
       </p>
       <p>
         OWASP agent: enabled={String(agent?.enabled ?? '…')} · db={agent?.db_url || '—'}

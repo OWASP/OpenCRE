@@ -130,8 +130,8 @@ def _skip_stage_detail(flag: str, module: str) -> str:
     """Explain why a stage was not invoked (flags are explicit at call time)."""
     return (
         f"{flag}=True; {module} not invoked. "
-        "Caller passed this skip flag (admin ingest defaults skip_b/skip_c "
-        "unless the client sets them false)."
+        "Caller passed this skip flag (admin ingest runs B and C unless "
+        "skip_b/skip_c are set true)."
     )
 
 
