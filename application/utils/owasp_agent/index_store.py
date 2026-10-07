@@ -1,8 +1,8 @@
-"""Local OWASP metadata index (separate from the CRE graph).
+"""Local OWASP metadata index (tables alongside the CRE graph).
 
-Backed by SQLAlchemy Core so the same code runs on Postgres (the real target,
-``OWASP_AGENT_DB`` set to a ``postgresql://`` URL) and on a throwaway SQLite
-file (tests and quick local poking, ``OWASP_AGENT_DB`` set to a path).
+Backed by SQLAlchemy Core on the main app Postgres
+(``DATABASE_URL`` / ``DEV_DATABASE_URL``). Tests may pass a SQLite path or set
+``OWASP_AGENT_DB`` as an override.
 """
 
 from __future__ import annotations
@@ -18,6 +18,11 @@ from sqlalchemy.dialects import postgresql, sqlite
 from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.pool import NullPool
 
+from application.utils.postgres_url import (
+    is_postgres_url,
+    main_db_env_keys,
+    sqlalchemy_postgres_url,
+)
 from application.utils.owasp_agent.models import (
     BoardCandidate,
     BoardMember,
@@ -76,16 +81,37 @@ _concept_merge_audit = sa.Table(
 )
 
 
+def app_db_url_and_key() -> tuple[Optional[str], Optional[str]]:
+    """URL + env key Flask would use for this process (no sqlite fallback)."""
+    flask_cfg = (
+        os.environ.get("FLASK_CONFIG") or os.environ.get("FLASK_ENV") or "development"
+    )
+    for key in main_db_env_keys(flask_cfg):
+        raw = (os.environ.get(key) or "").strip()
+        if raw:
+            return raw, key
+    return None, None
+
+
 def default_db_path() -> str:
-    return os.environ.get(
-        "OWASP_AGENT_DB",
-        os.path.join(os.getcwd(), "tmp", "owasp_agent.sqlite"),
+    override = (os.environ.get("OWASP_AGENT_DB") or "").strip()
+    if override:
+        return override
+    raw, _key = app_db_url_and_key()
+    if raw:
+        return raw
+    raise RuntimeError(
+        "OWASP agent index needs DATABASE_URL (or DEV_DATABASE_URL); "
+        "no separate agent database"
     )
 
 
 def _engine_url(target: str) -> str:
     if "://" in target:
-        return target
+        raw = target.strip()
+        if is_postgres_url(raw):
+            return sqlalchemy_postgres_url(raw)
+        return raw
     return f"sqlite:///{os.path.abspath(target)}"
 
 

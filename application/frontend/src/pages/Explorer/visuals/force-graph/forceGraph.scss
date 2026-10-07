@@ -104,6 +104,11 @@
   box-shadow: 0 0 0 1px rgba(196, 181, 253, 0.28);
 }
 
+.graph-chip--auto-linked.ui.checkbox input:checked ~ label {
+  border-color: rgba(251, 113, 133, 0.85);
+  box-shadow: 0 0 0 1px rgba(251, 113, 133, 0.35);
+}
+
 .graph-select.ui.selection.dropdown {
   min-width: 220px;
   border-radius: 10px;
@@ -209,6 +214,14 @@
 
 .legend-swatch--linked {
   background: rgba(196, 181, 253, 0.88);
+}
+
+.legend-swatch--auto-linked {
+  background: rgba(251, 113, 133, 0.9);
+}
+
+.legend-swatch--auto-filed {
+  background: #fb7185;
 }
 
 .explorer-full-load-progress {

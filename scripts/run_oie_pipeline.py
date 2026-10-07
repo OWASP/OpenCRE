@@ -1,16 +1,23 @@
 #!/usr/bin/env python3
-"""Run the OIE A→B→C pipeline for one pipeline_run_id."""
+"""Run the OIE A→B→C→C.1 pipeline for one pipeline_run_id."""
 
 from __future__ import annotations
 
 import argparse
 import os
 import sys
+from pathlib import Path
+
+# `python /abs/scripts/run_oie_pipeline.py` puts scripts/ on sys.path[0], not
+# the repo root. Admin and other subprocess callers must still find `application`.
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Orchestrate Module A → B → C for one pipeline_run_id"
+        description="Orchestrate Module A → B → C → C.1 for one pipeline_run_id"
     )
     parser.add_argument(
         "--cache_file",
@@ -28,6 +35,11 @@ def main() -> int:
     parser.add_argument("--skip-b", action="store_true")
     parser.add_argument("--skip-c", action="store_true")
     parser.add_argument(
+        "--skip-c1",
+        action="store_true",
+        help="skip Module C.1 graph filing (Automatically linked to)",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="run stages without persisting queue writes where supported",
@@ -41,6 +53,17 @@ def main() -> int:
         "--continue-on-error",
         action="store_true",
         help="run later stages even if an earlier stage errors",
+    )
+    parser.add_argument(
+        "--repos_yaml",
+        default="",
+        help="optional path to repos.yaml for Module A harvester",
+    )
+    parser.add_argument(
+        "--max-repos",
+        type=int,
+        default=0,
+        help="cap Module A repositories (0 = no cap)",
     )
     args = parser.parse_args()
 
@@ -57,9 +80,12 @@ def main() -> int:
         skip_a=args.skip_a,
         skip_b=args.skip_b,
         skip_c=args.skip_c,
+        skip_c1=args.skip_c1,
         dry_run=args.dry_run,
         sync_repos=not args.no_sync_repos,
         stop_on_error=not args.continue_on_error,
+        repos_yaml=args.repos_yaml or None,
+        max_repos=args.max_repos or None,
     )
     print(result.to_json())
     return 0 if result.to_dict()["ok"] else 1

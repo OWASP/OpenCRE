@@ -71,7 +71,13 @@ class IncrementalPipeline:
                     f"does not match process repository {repository!r}"
                 )
             if not self._validator.validate(document):
-                raise ValueError(f"document failed validation: {document.artifact_id}")
+                # Empty / locale stubs must not abort the whole repository harvest.
+                logger.warning(
+                    "skipping invalid document %s in %s",
+                    document.artifact_id,
+                    repository,
+                )
+                continue
 
             status = self._deduplicator.process(document)
             metrics.record(status)

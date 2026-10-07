@@ -61,10 +61,7 @@ def ask(q: str, path: str) -> str:
     from application.utils.owasp_agent.index_store import IndexStore
     from application.utils.owasp_agent.router import OwaspAgentRouter
 
-    store = IndexStore(
-        os.environ.get("OWASP_AGENT_DB")
-        or str(_REPO_ROOT / "tmp" / "owasp_agent.sqlite")
-    )
+    store = IndexStore()
     router = OwaspAgentRouter(store=store)
     resp = router.handle(q)
     if resp is not None:

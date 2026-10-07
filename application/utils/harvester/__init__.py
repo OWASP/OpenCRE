@@ -44,6 +44,8 @@ from .incremental_pipeline import IncrementalPipeline
 from .deduplication_metrics import DeduplicationMetrics
 from .chunker import ChunkInfo, DocumentChunker
 from .chunk_pipeline import DocumentChunkPipeline
+from .github_sources import GithubSource, parse_github_source
+from .source_resolver import HarvestPlan, resolve_sources
 from .pipeline import RunSummary, run_harvester
 
 __all__ = [
@@ -78,6 +80,10 @@ __all__ = [
     "ReposFile",
     "RunSummary",
     "load_repo_config",
+    "GithubSource",
+    "HarvestPlan",
+    "parse_github_source",
+    "resolve_sources",
     "run_harvester",
     "validate_repositories",
 ]

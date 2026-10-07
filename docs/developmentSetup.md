@@ -169,13 +169,14 @@ First, start the required services (Redis and Neo4j) with:
 
 `make start-containers`
 
-You can run the backend with `make dev-flask`. At the time of writing the backend URL is `http://localhost:5000` by default.
+You can run the backend with `make dev` (alias: `make dev-flask`). That starts Docker Postgres if needed, migrates, upstream-syncs an empty CRE graph, then serves Flask. Default URL: `http://localhost:5000` (use `PORT=5001 make dev` if 5000 is taken).
 
 You can run the frontend with `yarn start`. This should open a browser tab at the application's front page and also automatically reload the page whenever changes are detected. At the time of writing the frontend URL is `http://localhost:9001` by default.
 
 ## Troubleshooting
 
-- **`virtualenv: command not found`:** install the `virtualenv` prerequisite, then rerun `make install`. Do not create a separate `venv` with a different tool.
+- **`virtualenv: command not found`:** optional — `make install-python` falls back to `python3 -m venv`. Or `brew install virtualenv` / `pip install virtualenv`.
+- **`Address already in use` / port 5000:** macOS AirPlay Receiver often binds 5000. Use `PORT=5001 make dev`.
 - **`make e2e` fails before the tests start:** make sure the local services are running and run `make e2e-db` first to seed the fixture database.
 - **Docker command not found:** use the Docker alternative from the main [README](../README.md), or install Docker before following that path.
 - **Database confusion:** the default local contributor path uses SQLite. Only add local PostgreSQL when you are testing the production-style database path.
