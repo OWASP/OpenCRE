@@ -2,7 +2,7 @@ import './Admin.scss';
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Form, Message, Modal, Header as SUIHeader } from 'semantic-ui-react';
+import { Button, Checkbox, Form, Message, Modal, Header as SUIHeader } from 'semantic-ui-react';
 
 import { useCapabilities, useEnvironment } from '../../hooks';
 import { useUser } from '../../hooks/useUser';
@@ -792,6 +792,8 @@ function ConfigTab({ origin }: { origin: string }) {
   const [form, setForm] = useState<RepoForm>(emptyRepo());
   const [agent, setAgent] = useState<any>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [filingEnabled, setFilingEnabled] = useState(false);
+  const [filingBusy, setFilingBusy] = useState(false);
 
   const loadYaml = useCallback(() => {
     let cancelled = false;
@@ -838,6 +840,11 @@ function ConfigTab({ origin }: { origin: string }) {
         if (cancelled) return;
         setRows(body.config || []);
         setInstructions(body.restart_instructions || '');
+        const filing = (body.config || []).find(
+          (row: { key?: string; value?: string | null }) => row.key === 'OIE_GRAPH_FILING_ENABLED'
+        );
+        const raw = String(filing?.value ?? '0').toLowerCase();
+        setFilingEnabled(['1', 'true', 'yes', 'on'].includes(raw));
       })
       .catch(() => {
         if (!cancelled) setMsg('failed to load config');
@@ -848,6 +855,37 @@ function ConfigTab({ origin }: { origin: string }) {
       cancelled = true;
     };
   }, [origin, loadYaml, loadAgent]);
+
+  const setGraphFiling = async (enabled: boolean) => {
+    setError(null);
+    setNotice(null);
+    setFilingBusy(true);
+    try {
+      const res = await fetch(`${origin}/admin/config`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          updates: { OIE_GRAPH_FILING_ENABLED: enabled ? '1' : '0' },
+        }),
+      });
+      const body = await readJson(res);
+      if (!res.ok) {
+        setError(body.description || body.error || res.statusText);
+        return;
+      }
+      setFilingEnabled(enabled);
+      if (Array.isArray(body.config)) setRows(body.config);
+      setNotice(
+        enabled
+          ? 'C.1 auto-filing on — high-confidence linked decisions will be added to the graph'
+          : 'C.1 auto-filing off — Module C results stay in decision_queue for review'
+      );
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setFilingBusy(false);
+    }
+  };
 
   const runGoldenHarvest = async () => {
     setError(null);
@@ -1019,9 +1057,22 @@ function ConfigTab({ origin }: { origin: string }) {
       <h3>End-to-end bootstrap</h3>
       <p className="admin-help">
         CRE explorer graph comes from upstream at <code>make install</code> / <code>make dev</code> (skip with{' '}
-        <code>SKIP_UPSTREAM_SYNC=1</code>). Run golden-set harvest runs Modules A, B, C, and C.1 (graph
-        filer) on the packaged list (pass <code>skip_b</code>/<code>skip_c</code>/<code>skip_c1</code> true
-        to opt out). OWASP agent sync is separate — progress shows under Pipeline.
+        <code>SKIP_UPSTREAM_SYNC=1</code>). Golden-set harvest runs A → B → C → C.1. C.1 only auto-files
+        high-confidence links when the toggle below is on (default off — review{' '}
+        <code>decision_queue</code> first). OWASP agent sync is separate — progress shows under Pipeline.
+      </p>
+      <p>
+        <Checkbox
+          toggle
+          label={
+            filingEnabled
+              ? 'C.1 auto-file high-confidence links (on)'
+              : 'C.1 auto-file high-confidence links (off — review first)'
+          }
+          checked={filingEnabled}
+          disabled={filingBusy}
+          onChange={(_e, data) => setGraphFiling(Boolean(data.checked))}
+        />
       </p>
       <p>
         OWASP agent: enabled={String(agent?.enabled ?? '…')} · db={agent?.db_url || '—'}

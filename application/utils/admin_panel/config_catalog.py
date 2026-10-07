@@ -21,11 +21,33 @@ class ConfigKey:
     help_text: str
     help_url: str
     secret: bool = False
+    #: When True, PUT /admin/config may set this key on the running process env.
+    writable: bool = False
+
+
+def _normalize_bool_env(value: Optional[str]) -> Optional[str]:
+    """Return ``1`` / ``0`` for truthy/falsey strings, else None."""
+    if value is None:
+        return "0"
+    text = str(value).strip().lower()
+    if text in ("1", "true", "yes", "on"):
+        return "1"
+    if text in ("0", "false", "no", "off", ""):
+        return "0"
+    return None
 
 
 CATALOG: Dict[str, ConfigKey] = {
     k.key: k
     for k in (
+        ConfigKey(
+            "OIE_GRAPH_FILING_ENABLED",
+            "Module C.1: when on, auto-add high-confidence Librarian links "
+            "(Automatically linked to). Default off — linked/review rows stay "
+            "in decision_queue for review.",
+            DOCS_LIBRARIAN,
+            writable=True,
+        ),
         ConfigKey(
             "CRE_ALLOW_IMPORT",
             "Kill switch for import/admin APIs. Set in process env, not HTTP.",
@@ -196,12 +218,30 @@ def present_config(environ: Mapping[str, str]) -> List[Dict[str, Any]]:
                 "help_text": spec.help_text if spec else "Declared in .env.example.",
                 "help_url": spec.help_url if spec else DOCS_ENV,
                 "secret": secret,
+                "writable": bool(spec.writable) if spec else False,
             }
         )
     return rows
 
 
 def apply_updates(
-    _environ: MutableMapping[str, str], updates: Mapping[str, Optional[str]]
+    environ: MutableMapping[str, str], updates: Mapping[str, Optional[str]]
 ) -> tuple[list[str], list[str]]:
-    return [], list(updates.keys())
+    """Apply allowlisted writable keys to ``environ`` (process-local)."""
+    applied: List[str] = []
+    rejected: List[str] = []
+    for key, value in updates.items():
+        spec = CATALOG.get(key)
+        if spec is None or not spec.writable or spec.secret:
+            rejected.append(key)
+            continue
+        if key == "OIE_GRAPH_FILING_ENABLED":
+            normalized = _normalize_bool_env(value)
+            if normalized is None:
+                rejected.append(key)
+                continue
+            environ[key] = normalized
+            applied.append(key)
+            continue
+        rejected.append(key)
+    return applied, rejected

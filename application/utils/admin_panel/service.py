@@ -1027,8 +1027,10 @@ def start_ingestion(
                         "END",
                     ],
                     "note": (
-                        "Admin default runs Module B, C, and C.1 (graph filer); "
-                        "pass skip_b/skip_c/skip_c1 true to opt out. "
+                        "Admin default runs Module B, C, and C.1; "
+                        "C.1 only auto-files when OIE_GRAPH_FILING_ENABLED=1 "
+                        "(Config toggle; default off — review decision_queue first). "
+                        "Pass skip_b/skip_c/skip_c1 true to opt out of stages. "
                         "Module A may write 0 chunks when checkpoints are already at HEAD."
                     ),
                 }
@@ -1409,19 +1411,24 @@ def dashboard_payload() -> Dict[str, Any]:
 
 
 def config_payload() -> Dict[str, Any]:
+    rows = config_catalog.present_config(os.environ)
     return {
-        "config": config_catalog.present_config(os.environ),
-        "writable": False,
+        "config": rows,
+        "writable": any(bool(r.get("writable")) for r in rows),
         "restart_instructions": RESTART_INSTRUCTIONS,
     }
 
 
 def config_put(updates: Dict[str, Optional[str]]) -> Dict[str, Any]:
     applied, rejected = config_catalog.apply_updates(os.environ, updates)
+    # Filing flag is read from env on each C.1 run — no process restart required.
+    needs_restart = bool(applied) and any(
+        key != "OIE_GRAPH_FILING_ENABLED" for key in applied
+    )
     return {
         "applied": applied,
         "rejected": rejected,
         "config": config_catalog.present_config(os.environ),
-        "needs_restart": True,
-        "note": RESTART_INSTRUCTIONS,
+        "needs_restart": needs_restart,
+        "note": RESTART_INSTRUCTIONS if needs_restart else None,
     }
