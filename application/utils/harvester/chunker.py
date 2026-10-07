@@ -15,6 +15,8 @@ class DocumentChunker:
     Strategies:
     - ``markdown_heading``: one chunk per heading section (plus preamble),
       then size-split oversized sections.
+    - ``docling``: LlamaIndex DoclingReader + DoclingNodeParser (HybridChunker
+      fallback) — structure/table-aware; preferred for ASVS-style MD and later PDF/DOCX.
     - ``fixed_size``: sliding windows by approximate token budget.
     - ``html_readability``: treated as fixed_size until a dedicated parser exists.
     """
@@ -34,6 +36,15 @@ class DocumentChunker:
             return self._fixed_size(text, max_tokens=1200, overlap_tokens=100)
 
         strategy = config.strategy
+        if strategy == "docling":
+            from application.utils.harvester.docling_chunker import chunk_with_docling
+
+            name = "document.md"
+            if document is not None and document.locator and document.locator.path:
+                name = document.locator.path
+            return chunk_with_docling(
+                text, document=document, config=config, source_name=name
+            )
         if strategy == "markdown_heading" and document is not None:
             return self._markdown_heading(text, document, config)
         return self._fixed_size(
