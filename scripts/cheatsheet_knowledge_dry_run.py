@@ -70,9 +70,12 @@ class StubScaler:
 
 
 def build_knowledge_queue():
-    """Extract every fixture into a CheatsheetRecord and write the queue JSONL."""
+    """Extract every cheat sheet fixture, build its CheatsheetRecord, and
+    write the batch as one knowledge_queue JSONL file.
+    """
 
     records = []
+    extraction_failures = 0
 
     for markdown, source_path in load_fixtures(FIXTURES_DIR):
         filename = os.path.basename(source_path)
@@ -97,7 +100,8 @@ def build_knowledge_queue():
             print("Record       : extracted successfully")
 
         except Exception as exc:
-            print(f"❌ extraction failed: {exc}")
+            extraction_failures += 1
+            print(f"❌ extraction failed, skipping this fixture: {exc}")
             continue
 
     if not records:
@@ -117,7 +121,7 @@ def build_knowledge_queue():
     print(f"Queue rows   : {len(items)}")
     print(f"Output       : {KNOWLEDGE_QUEUE_PATH}")
 
-    return records, items
+    return records, items, extraction_failures
 
 
 def main():
@@ -129,14 +133,14 @@ def main():
     print("  • real CheatSheetRecord extraction")
     print("  • real CheatsheetRecord -> knowledge_queue mapping")
     print("  • real JSONL -> FixtureKnowledgeSource boundary")
-    print("  • real LibrarianPipeline")
-    print("  • real C.0 -> C.4 pipeline")
+    print("  • real Librarian C.0 -> C.4 pipeline")
     print("  • controlled local embeddings")
     print("  • existing CrossEncoder reranking")
     print("  • deterministic C.3 confidence")
     print()
 
-    build_knowledge_queue()
+    _, items, extraction_failures = build_knowledge_queue()
+    written_count = len(items)
 
     print("\n" + "=" * 72)
     print("RUNNING LIBRARIAN C.0-C.4")
@@ -175,11 +179,28 @@ def main():
         print("  locator.kind:", envelope.knowledge.locator.kind)
         print("  locator.url :", envelope.knowledge.locator.url)
 
+    # FixtureKnowledgeSource silently drops a line it can't parse as
+    # KnowledgeQueueItem (logs a warning, keeps going) -- result.stats.total
+    # only counts rows the pipeline actually saw, so a dropped-at-read row
+    # would otherwise vanish uncounted by every check above.
+    dropped_before_pipeline = written_count - result.stats.total
+    pipeline_failures = result.stats.skipped + result.stats.errored
+    had_failures = (
+        extraction_failures > 0 or pipeline_failures > 0 or dropped_before_pipeline > 0
+    )
+
     print("\n" + "=" * 72)
-    print("✅ DRY-RUN COMPLETED")
+    if had_failures:
+        print("⚠️  DRY-RUN COMPLETED WITH FAILURES")
+        print(f"   extraction failures      : {extraction_failures}")
+        print(f"   dropped before pipeline  : {dropped_before_pipeline}")
+        print(f"   skipped at C.0           : {result.stats.skipped}")
+        print(f"   errored mid-pipeline     : {result.stats.errored}")
+    else:
+        print("✅ DRY-RUN COMPLETED")
     print("=" * 72)
 
-    return 0
+    return 1 if had_failures else 0
 
 
 if __name__ == "__main__":
