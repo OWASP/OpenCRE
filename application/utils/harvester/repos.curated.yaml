@@ -60,3 +60,401 @@ repositories:
     polling:
       mode: incremental
       interval_minutes: 120
+
+  - id: owasp-wstg
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: wstg
+    branch: master
+    paths:
+      include:
+        - "document/**/*.md"
+      exclude:
+        - "**/archive/**"
+        - "**/.github/**"
+        - "**/node_modules/**"
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1000
+      overlap_tokens: 100
+      merge_profile: narrative
+    polling:
+      mode: incremental
+      interval_minutes: 1440
+
+  - id: owasp-samm
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: SAMM
+    branch: master
+    paths:
+      include:
+        - "**/*.md"
+      exclude:
+        - "**/archive/**"
+        - "**/.github/**"
+        - "**/node_modules/**"
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1000
+      overlap_tokens: 100
+      merge_profile: narrative
+    polling:
+      mode: incremental
+      interval_minutes: 1440
+
+  - id: owasp-top10
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: Top10
+    branch: master
+    paths:
+      include:
+        - "**/*.md"
+      exclude:
+        - "**/archive/**"
+        - "**/.github/**"
+        - "**/node_modules/**"
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1000
+      overlap_tokens: 100
+      merge_profile: narrative
+    polling:
+      mode: incremental
+      interval_minutes: 1440
+
+  - id: owasp-api-security
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: API-Security
+    branch: master
+    paths:
+      include:
+        - "**/*.md"
+      exclude:
+        - "**/archive/**"
+        - "**/.github/**"
+        - "**/node_modules/**"
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1000
+      overlap_tokens: 100
+      merge_profile: narrative
+    polling:
+      mode: incremental
+      interval_minutes: 1440
+
+  - id: owasp-mastg
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: mastg
+    branch: master
+    paths:
+      include:
+        - "Document/**/*.md"
+        - "document/**/*.md"
+        - "**/*.md"
+      exclude:
+        - "**/archive/**"
+        - "**/.github/**"
+        - "**/node_modules/**"
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1000
+      overlap_tokens: 100
+      merge_profile: narrative
+    polling:
+      mode: incremental
+      interval_minutes: 1440
+
+  - id: owasp-masvs
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: masvs
+    branch: master
+    paths:
+      include:
+        - "**/*.md"
+      exclude:
+        - "**/archive/**"
+        - "**/.github/**"
+        - "**/node_modules/**"
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1000
+      overlap_tokens: 100
+      merge_profile: narrative
+    polling:
+      mode: incremental
+      interval_minutes: 1440
+
+  - id: owasp-llm-top10
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: www-project-top-10-for-large-language-model-applications
+    branch: main
+    paths:
+      include:
+        - "**/*.md"
+      exclude:
+        - "**/archive/**"
+        - "**/.github/**"
+        - "**/node_modules/**"
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1000
+      overlap_tokens: 100
+      merge_profile: narrative
+    polling:
+      mode: incremental
+      interval_minutes: 1440
+
+  - id: owasp-proactive-controls
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: www-project-proactive-controls
+    branch: main
+    paths:
+      include:
+        - "**/*.md"
+      exclude:
+        - "**/archive/**"
+        - "**/.github/**"
+        - "**/node_modules/**"
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1000
+      overlap_tokens: 100
+      merge_profile: narrative
+    polling:
+      mode: incremental
+      interval_minutes: 1440
+
+  - id: owasp-ai-testing-guide
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: www-project-ai-testing-guide
+    branch: main
+    paths:
+      include:
+        - "**/*.md"
+      exclude:
+        - "**/archive/**"
+        - "**/.github/**"
+        - "**/node_modules/**"
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1000
+      overlap_tokens: 100
+      merge_profile: narrative
+    polling:
+      mode: incremental
+      interval_minutes: 1440
+
+  - id: owasp-ai-security-and-privacy-guide
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: www-project-ai-security-and-privacy-guide
+    branch: main
+    paths:
+      include:
+        - "**/*.md"
+      exclude:
+        - "**/archive/**"
+        - "**/.github/**"
+        - "**/node_modules/**"
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1000
+      overlap_tokens: 100
+      merge_profile: narrative
+    polling:
+      mode: incremental
+      interval_minutes: 1440
+
+  - id: owasp-www-devsecops-guideline
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: www-project-devsecops-guideline
+    branch: main
+    paths:
+      include:
+        - "**/*.md"
+      exclude:
+        - "**/archive/**"
+        - "**/.github/**"
+        - "**/node_modules/**"
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1000
+      overlap_tokens: 100
+      merge_profile: narrative
+    polling:
+      mode: incremental
+      interval_minutes: 1440
+
+  - id: owasp-secure-coding-practices
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: secure-coding-practices-quick-reference-guide
+    branch: master
+    paths:
+      include:
+        - "**/*.md"
+      exclude:
+        - "**/archive/**"
+        - "**/.github/**"
+        - "**/node_modules/**"
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1000
+      overlap_tokens: 100
+      merge_profile: narrative
+    polling:
+      mode: incremental
+      interval_minutes: 1440
+
+  - id: owasp-devsecopsguideline
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: DevSecOpsGuideline
+    branch: main
+    paths:
+      include:
+        - "**/*.md"
+      exclude:
+        - "**/archive/**"
+        - "**/.github/**"
+        - "**/node_modules/**"
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1000
+      overlap_tokens: 100
+      merge_profile: narrative
+    polling:
+      mode: incremental
+      interval_minutes: 1440
+
+  - id: owasp-mcp-security-testing-guide
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: MCP-Security-Testing-Guide
+    branch: main
+    paths:
+      include:
+        - "**/*.md"
+      exclude:
+        - "**/archive/**"
+        - "**/.github/**"
+        - "**/node_modules/**"
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1000
+      overlap_tokens: 100
+      merge_profile: narrative
+    polling:
+      mode: incremental
+      interval_minutes: 1440
+
+  - id: owasp-scvs
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: Software-Component-Verification-Standard
+    branch: main
+    paths:
+      include:
+        - "**/*.md"
+      exclude:
+        - "**/archive/**"
+        - "**/.github/**"
+        - "**/node_modules/**"
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1000
+      overlap_tokens: 100
+      merge_profile: narrative
+    polling:
+      mode: incremental
+      interval_minutes: 1440
+
+  - id: owasp-isvs
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: IoT-Security-Verification-Standard-ISVS
+    branch: master
+    paths:
+      include:
+        - "**/*.md"
+      exclude:
+        - "**/archive/**"
+        - "**/.github/**"
+        - "**/node_modules/**"
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1000
+      overlap_tokens: 100
+      merge_profile: narrative
+    polling:
+      mode: incremental
+      interval_minutes: 1440
+
+  - id: owasp-cornucopia
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: cornucopia
+    branch: master
+    paths:
+      include:
+        - "**/*.md"
+      exclude:
+        - "**/archive/**"
+        - "**/.github/**"
+        - "**/node_modules/**"
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1000
+      overlap_tokens: 100
+      merge_profile: narrative
+    polling:
+      mode: incremental
+      interval_minutes: 1440
+
+  - id: owasp-kubernetes-top-ten
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: www-project-kubernetes-top-ten
+    branch: main
+    paths:
+      include:
+        - "**/*.md"
+      exclude:
+        - "**/archive/**"
+        - "**/.github/**"
+        - "**/node_modules/**"
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1000
+      overlap_tokens: 100
+      merge_profile: narrative
+    polling:
+      mode: incremental
+      interval_minutes: 1440
