@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the OIE A→B→C pipeline for one pipeline_run_id."""
+"""Run the OIE A→B→C→C.1 pipeline for one pipeline_run_id."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ if str(_REPO_ROOT) not in sys.path:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Orchestrate Module A → B → C for one pipeline_run_id"
+        description="Orchestrate Module A → B → C → C.1 for one pipeline_run_id"
     )
     parser.add_argument(
         "--cache_file",
@@ -34,6 +34,11 @@ def main() -> int:
     parser.add_argument("--skip-a", action="store_true")
     parser.add_argument("--skip-b", action="store_true")
     parser.add_argument("--skip-c", action="store_true")
+    parser.add_argument(
+        "--skip-c1",
+        action="store_true",
+        help="skip Module C.1 graph filing (Automatically linked to)",
+    )
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -75,6 +80,7 @@ def main() -> int:
         skip_a=args.skip_a,
         skip_b=args.skip_b,
         skip_c=args.skip_c,
+        skip_c1=args.skip_c1,
         dry_run=args.dry_run,
         sync_repos=not args.no_sync_repos,
         stop_on_error=not args.continue_on_error,
