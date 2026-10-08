@@ -898,8 +898,14 @@ def before_request():
 @app.after_request
 def add_header(response):
     # Per-user endpoints must never be shared-cached; no-store wins over the
-    # default max-age for them (this hook runs after the view).
-    if request.path == "/rest/v1/user/resources":
+    # default max-age for them (this hook runs after the view). Covers the
+    # resource selection AND the identity endpoint (returns the user's email)
+    # plus its deprecated alias.
+    if request.path in (
+        "/rest/v1/user/resources",
+        "/rest/v1/auth/user",
+        "/rest/v1/user",
+    ):
         response.cache_control.no_store = True
         return response
     response.cache_control.max_age = 300
