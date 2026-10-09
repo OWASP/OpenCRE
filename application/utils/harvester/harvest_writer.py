@@ -44,6 +44,8 @@ def write_harvest_input(
             HarvestInput(
                 pipeline_run_id=pipeline_run_id,
                 status="pending",
+                artifact_id=record.artifact_id,
+                source_repo=record.source_repo or None,
                 payload=payload,
             )
         )

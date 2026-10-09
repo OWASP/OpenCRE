@@ -269,6 +269,34 @@ def register_admin_panel_routes(
             logger.exception("pipeline snapshot failed")
             return _err(500, f"pipeline failed: {exc}")
 
+    @bp.route("/admin/oie/rq/status", methods=["GET"])
+    @login_required
+    @imports_enabled
+    def admin_oie_rq_status() -> Any:
+        """RQ depths + recent oie:* jobs (import-dashboard style)."""
+        try:
+            from application.utils.rq_dashboard_snapshot import (
+                oie_rq_status,
+                oie_run_queue_counts,
+            )
+
+            limit = max(1, min(int(request.args.get("limit") or 40), 200))
+            body = oie_rq_status(limit=limit)
+            run_id = (request.args.get("run_id") or "").strip()
+            if run_id:
+                from application.database import db as cre_db
+
+                body["run"] = {
+                    "run_id": run_id,
+                    "counts": oie_run_queue_counts(
+                        cre_db.Node_collection().session, run_id
+                    ),
+                }
+            return jsonify(body)
+        except Exception as exc:
+            logger.exception("oie rq status failed")
+            return _err(500, f"oie rq status failed: {exc}")
+
     @bp.route("/admin/imports/runs/<run_id>/mapping", methods=["POST"])
     @login_required
     @imports_enabled
