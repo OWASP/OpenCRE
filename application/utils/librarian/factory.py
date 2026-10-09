@@ -71,6 +71,8 @@ class LibrarianComponents:
     umbrella_promote_cap: int = 8
     shortlist_judge_max_picks: int = 3
     margin_gamma: Optional[float] = None
+    #: Hub→leaf C.1 cage (default off; see CRE_LIBRARIAN_HUB_LEAF_CAGE).
+    hub_leaf_cage: bool = False
 
 
 def build_scaler(config: Optional[LibrarianConfig] = None) -> Scaler:
@@ -294,6 +296,24 @@ def build_components(
             neighbor_transfer=neighbor_transfer,
         )
 
+    if config.hub_leaf_cage and parent_index is not None:
+        from application.utils.librarian.hub_leaf_cage import HubLeafCageRetriever
+
+        retriever = HubLeafCageRetriever(
+            retriever,
+            parent_index,
+            top_hubs=config.hub_leaf_cage_top_hubs,
+            enabled=True,
+        )
+        logger.info(
+            "hub-leaf cage enabled (top_hubs=%s)",
+            config.hub_leaf_cage_top_hubs,
+        )
+    elif config.hub_leaf_cage and parent_index is None:
+        logger.warning(
+            "CRE_LIBRARIAN_HUB_LEAF_CAGE=1 but parent_index unavailable; skipping"
+        )
+
     if config.standard_retrieval:
         retriever = _maybe_wrap_standard_hop(
             retriever,
@@ -355,6 +375,7 @@ def build_components(
         umbrella_promote_cap=config.umbrella_promote_cap,
         shortlist_judge_max_picks=config.shortlist_judge_max_picks,
         margin_gamma=config.margin_gamma,
+        hub_leaf_cage=config.hub_leaf_cage,
     )
 
 
