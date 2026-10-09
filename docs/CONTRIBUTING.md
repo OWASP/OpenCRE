@@ -226,3 +226,38 @@ Then in a separate terminal
 <pre>cd application/frontend</pre>
 and finally start the frontend in a debug session:
 <pre>yarn start</pre>
+
+## Setting Up for AI/ML Development
+
+If you are working on the AI mapping or RAG chatbot components:
+
+```bash
+pip install sentence-transformers
+pip install neo4j
+pip install openai
+```
+
+### Running the Mapping Pipeline Locally
+```bash
+export NEO4J_URI=bolt://localhost:7687
+export NEO4J_USER=neo4j
+export NEO4J_PASSWORD=your_password
+python manage.py import_cre --help
+```
+### Running the Mapping Pipeline Locally
+```bash
+# Set environment variables
+export NEO4J_URI=bolt://localhost:7687
+export NEO4J_USER=neo4j
+export NEO4J_PASSWORD=your_password
+
+# Run the CRE importer
+python manage.py import_cre --help
+```
+### Understanding the Knowledge Graph
+The OpenCRE graph consists of:
+- **CRE nodes**: Common Requirements Enumeration entries
+- **Standard nodes**: External standards (OWASP Top 10, NIST, CWE etc.)
+- **Links**: Relationships between CREs and standards (LINKED_TO, CONTAINS, RELATED)
+
+Use Neo4j Browser at http://localhost:7474 to explore the graph visually.
