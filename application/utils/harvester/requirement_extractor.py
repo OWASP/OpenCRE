@@ -1,8 +1,9 @@
-"""Optional requirement matcher / extractor for Module A.
+"""Requirement matcher / extractor for Module A.
 
-When enabled (``ChunkingConfig.requirement_extract``), documents that look like
-control catalogs (ASVS-style tables, NIST/ISO ids) are split into one chunk per
-requirement. Narrative docs (cheat sheets, prose) are left alone under ``auto``.
+``ChunkingConfig.requirement_extract`` defaults to ``auto``: documents that look
+like control catalogs (ASVS-style tables, NIST/ISO ids) are split into one chunk
+per requirement. Narrative docs (cheat sheets, prose) are left alone under
+``auto``. Set ``off`` / ``on`` explicitly to force behavior.
 
 This is separate from A.2 ``merge_profile=requirements`` (merge fence). Extraction
 produces requirement-grain *inputs*; the merger only avoids gluing different ids.
@@ -133,14 +134,15 @@ def should_extract_requirements(
     mode: str,
 ) -> bool:
     """Resolve ``off`` / ``auto`` / ``on`` against document text."""
-    m = (mode or "off").strip().lower()
+    # Empty / unknown → auto (same default as ChunkingConfig).
+    m = (mode or "auto").strip().lower()
     if m in ("0", "false", "no", "off", "none"):
         return False
     if m in ("1", "true", "yes", "on", "always"):
         return True
     if m == "auto":
         return requirements_needed(text)
-    return False
+    return requirements_needed(text)
 
 
 def _segments_from_table_rows(body: str) -> List[RequirementSegment]:

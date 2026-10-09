@@ -90,13 +90,15 @@ and *says so* — its verdict carries `evaluated=False`, the pipeline counts tho
 rows, and the runner reports the count. An unevaluated safety path must never
 look identical to a clean one.
 
-**One consumer per run.** The queue read selects on `consumed_at IS NULL` and
-the stamp lands only after the batch is persisted, so the claim is not atomic
-with the read. A single C consumer per `pipeline_run_id` is what makes that safe,
-and the orchestrator guarantees it. `lock_rows=True` (Postgres only) is the
-opt-in that makes concurrent consumers claim disjoint batches; it refuses rather
-than degrade on a dialect that cannot honour the lock, because an unlocked batch
-handed to a caller who asked for a locked one fails far from the cause. See the
+**One consumer per run by default; RQ fans out by document.** The queue read
+selects on `consumed_at IS NULL` and the stamp lands only after the batch is
+persisted, so the claim is not atomic with the read. Serial orchestrator runs
+one C consumer per `pipeline_run_id`. With `--rq` / `CRE_OIE_RQ=1`, each RQ job
+scopes to one `artifact_id` (disjoint Docling documents) on the import `oie`
+queue — see `application/utils/oie_rq/` and `docs/oie/full-pipeline.md`.
+`lock_rows=True` (Postgres only) remains the opt-in for concurrent consumers on
+the **same** artifact/run; it refuses rather than degrade on a dialect that
+cannot honour the lock. See the
 [B → C contract](../../../docs/gsoc_2026_module_b/module_c_contract.md#consumption-semantics).
 
 ## Dual retrieval knobs
