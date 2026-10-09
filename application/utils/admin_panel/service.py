@@ -379,13 +379,21 @@ def _agent_db_stats(db_url: Optional[str]) -> Dict[str, Any]:
                 ).fetchall()
             ]
             counts: Dict[str, int] = {}
-            for name in names[:20]:
+            for name in names:
                 if not name.replace("_", "").isalnum():
                     continue
                 counts[name] = int(
                     conn.execute(text(f'SELECT COUNT(*) FROM "{name}"')).scalar() or 0
                 )
             out["counts"] = counts
+            if "meta_entity" in names:
+                last = conn.execute(
+                    text("SELECT MAX(fetched_at) FROM meta_entity")
+                ).scalar()
+                if last is not None:
+                    out["last_sync"] = (
+                        last.isoformat() if hasattr(last, "isoformat") else str(last)
+                    )
     except Exception:
         logger.warning("main app Postgres probe failed")
         return {"db_exists": False, "counts": None, "last_sync": None}
@@ -463,6 +471,141 @@ def agent_resource() -> Dict[str, Any]:
         "enabled": True,
         "created_at": None,
         "built_in": True,
+    }
+
+
+def _run_agent_sync_job(
+    run_id: str,
+    *,
+    skip_nest: bool,
+    skip_github: bool,
+    auto_concepts: bool,
+) -> Dict[str, Any]:
+    from application.utils.owasp_agent.concepts import auto_concepts_from_index
+    from application.utils.owasp_agent.index_store import IndexStore
+    from application.utils.owasp_agent.sync import sync_all
+
+    store = IndexStore()
+    report = sync_all(
+        store=store,
+        skip_nest=skip_nest,
+        skip_github=skip_github,
+    )
+    concept_actions: List[Dict[str, str]] = []
+    if auto_concepts and (report.nest_ok or report.github_ok):
+        concept_actions = [
+            {"action": a.action, "key": a.concept_key, "detail": a.detail}
+            for a in auto_concepts_from_index(store)
+        ]
+    summary = report.to_dict()
+    summary["concepts"] = len(concept_actions)
+    summary["skip_nest"] = skip_nest
+    summary["skip_github"] = skip_github
+    if not (report.nest_ok or report.github_ok):
+        status = "error"
+    elif report.errors:
+        status = "degraded"
+    else:
+        status = "ok"
+    detail = json.dumps(summary)[:2000]
+    append_event(run_id, "agent_sync", status, detail)
+    if status != "error":
+        cs = db.get_staged_change_set(run_id=run_id)
+        if cs is not None:
+            cs.staging_status = "accepted"
+            sqla.session.commit()
+    return {"status": status, "sync": summary, "concepts": concept_actions}
+
+
+def start_agent_sync(
+    *,
+    skip_nest: Optional[bool] = None,
+    skip_github: bool = False,
+    auto_concepts: bool = True,
+    wait: Optional[bool] = None,
+) -> Dict[str, Any]:
+    """Sync Nest/GitHub OWASP metadata into the main Postgres agent index.
+
+    Creates an import run so progress shows under Admin → Pipeline. Skips Nest
+    by default when ``NEST_API_KEY`` is unset (GitHub-only sync still runs).
+    """
+    raw_db, _db_env_key = _main_db_url()
+    if not raw_db or not is_postgres_url(raw_db):
+        raise ValueError(
+            "OWASP agent sync needs a Postgres main DB "
+            "(set DEV_DATABASE_URL / DATABASE_URL)"
+        )
+    if skip_nest is None:
+        skip_nest = not bool((os.getenv("NEST_API_KEY") or "").strip())
+
+    run = db.create_import_run(source="owasp-agent-sync", version="admin-agent-sync")
+    db.persist_staged_change_set(
+        run_id=run.id,
+        changeset_json=import_diff.change_set_to_json([]),
+        staging_status="pending_review",
+    )
+    append_event(
+        run.id,
+        "queued",
+        "ok",
+        json.dumps(
+            {
+                "skip_nest": skip_nest,
+                "skip_github": skip_github,
+                "auto_concepts": auto_concepts,
+            }
+        )[:2000],
+    )
+    append_event(run.id, "agent_sync", "started", "Nest/GitHub metadata sync")
+
+    testing = (
+        bool(has_app_context() and current_app.config.get("TESTING"))
+        or (os.getenv("ADMIN_AGENT_SYNC") or "").strip().lower() in TRUE_VALUES
+    )
+    run_sync = testing if wait is None else bool(wait)
+    job_kwargs = dict(
+        skip_nest=bool(skip_nest),
+        skip_github=bool(skip_github),
+        auto_concepts=bool(auto_concepts),
+    )
+    sync_result: Optional[Dict[str, Any]] = None
+    async_job = False
+    if run_sync:
+        try:
+            sync_result = _run_agent_sync_job(run.id, **job_kwargs)
+        except Exception as exc:
+            logger.exception("agent sync failed")
+            append_event(run.id, "agent_sync", "error", str(exc)[:2000])
+            raise
+    else:
+        app = current_app._get_current_object()
+        run_id = run.id
+
+        def _worker() -> None:
+            with app.app_context():
+                try:
+                    _run_agent_sync_job(run_id, **job_kwargs)
+                except Exception as exc:
+                    logger.exception("async agent sync failed")
+                    try:
+                        append_event(run_id, "agent_sync", "error", str(exc)[:2000])
+                    except Exception:
+                        logger.exception("failed to record agent sync error event")
+
+        threading.Thread(
+            target=_worker, daemon=True, name=f"admin-agent-{run.id}"
+        ).start()
+        async_job = True
+        sync_result = {"async": True, "started": True}
+
+    return {
+        "run_id": run.id,
+        "source": "owasp-agent-sync",
+        "async": async_job,
+        "skip_nest": bool(skip_nest),
+        "skip_github": bool(skip_github),
+        "auto_concepts": bool(auto_concepts),
+        "result": sync_result,
     }
 
 
@@ -604,23 +747,13 @@ DEFAULT_OIE_MAX_REPOS = 5
 ADMIN_OIE_YAML_DIR = REPO_ROOT / "tmp" / "admin_oie"
 
 
-def _llm_keys_present() -> bool:
-    for key in (
-        "GEMINI_API_KEY",
-        "GOOGLE_API_KEY",
-        "OPENAI_API_KEY",
-        "VERTEX_PROJECT",
-    ):
-        if (os.getenv(key) or "").strip():
-            return True
-    return False
-
-
 def _default_skip_bc() -> tuple[bool, bool]:
-    """Skip Module B/C when no LLM credentials are configured."""
-    if _llm_keys_present():
-        return False, False
-    return True, True
+    """Admin ingest runs Module B and C unless the client opts out.
+
+    Pass ``skip_b=True`` / ``skip_c=True`` to skip the noise filter or librarian.
+    Module C.1 (graph filer) is skipped only when ``skip_c1`` is true.
+    """
+    return False, False
 
 
 def _write_run_repos_yaml(run_id: str, yaml_text: str) -> Path:
@@ -640,12 +773,15 @@ def invoke_oie_cli(
     continue_on_error: bool = True,
     skip_b: Optional[bool] = None,
     skip_c: Optional[bool] = None,
+    skip_c1: Optional[bool] = None,
+    use_rq: Optional[bool] = None,
     timeout: Optional[int] = None,
 ) -> Dict[str, Any]:
-    """Run Module A→B→C via the CLI against the app Postgres URL.
+    """Run Module A→B→C→C.1 via the CLI against the app Postgres URL.
 
     Defaults are live (sync + persist) so admin ingest is end-to-end. Pass
     ``dry_run=True`` / ``sync_repos=False`` only for hermetic probes.
+    ``use_rq`` / ``CRE_OIE_RQ=1`` fans out on the import RQ ``oie`` queue.
     """
     script = REPO_ROOT / "scripts" / "run_oie_pipeline.py"
     cache_file = _oie_cache_file()
@@ -655,6 +791,10 @@ def invoke_oie_cli(
             skip_b = auto_b
         if skip_c is None:
             skip_c = auto_c
+    if skip_c1 is None:
+        skip_c1 = False
+    if use_rq is None:
+        use_rq = os.environ.get("CRE_OIE_RQ", "").strip() in ("1", "true", "yes")
     argv = [
         sys.executable,
         str(script),
@@ -673,6 +813,10 @@ def invoke_oie_cli(
         argv.append("--skip-b")
     if skip_c:
         argv.append("--skip-c")
+    if skip_c1:
+        argv.append("--skip-c1")
+    if use_rq:
+        argv.append("--rq")
     if max_repos is not None and max_repos > 0:
         argv.extend(["--max-repos", str(int(max_repos))])
     if repos_yaml:
@@ -684,7 +828,8 @@ def invoke_oie_cli(
         elif skip_b and skip_c:
             timeout = 600
         else:
-            timeout = 1800
+            # Clone + LLM for the golden set (and later the org) exceeds 30 minutes.
+            timeout = 24 * 60 * 60
     proc = subprocess.run(
         argv,
         capture_output=True,
@@ -702,6 +847,7 @@ def invoke_oie_cli(
             parsed["returncode"] = proc.returncode
             parsed["skip_b"] = bool(skip_b)
             parsed["skip_c"] = bool(skip_c)
+            parsed["skip_c1"] = bool(skip_c1)
             return parsed
     except json.JSONDecodeError:
         pass
@@ -711,6 +857,7 @@ def invoke_oie_cli(
         "returncode": proc.returncode,
         "skip_b": bool(skip_b),
         "skip_c": bool(skip_c),
+        "skip_c1": bool(skip_c1),
     }
 
 
@@ -722,6 +869,18 @@ def _record_oie_result(run_id: str, oie: Dict[str, Any]) -> None:
         "ok" if oie_ok else "error",
         json.dumps(oie)[:2000],
     )
+    # Compact trace so Pipeline UI can show flags/path without parsing the blob.
+    trace = {
+        "engine": oie.get("engine"),
+        "flags": oie.get("flags"),
+        "graph_path": oie.get("graph_path"),
+        "visited": oie.get("visited"),
+        "ok": oie_ok,
+    }
+    if any(trace.values()):
+        append_event(
+            run_id, "oie_trace", "ok" if oie_ok else "error", json.dumps(trace)[:2000]
+        )
     for stage in oie.get("stages") or []:
         if not isinstance(stage, dict):
             continue
@@ -845,14 +1004,43 @@ def start_ingestion(
         auto_b, auto_c = _default_skip_bc()
         eff_skip_b = auto_b if skip_b is None else skip_b
         eff_skip_c = auto_c if skip_c is None else skip_c
+        skip_reason = (
+            "admin_default_skip_bc"
+            if skip_b is None and skip_c is None and eff_skip_b and eff_skip_c
+            else "client_flags" if skip_b is not None or skip_c is not None else "none"
+        )
         append_event(
             run.id,
             "oie",
             "started",
-            (
-                f"dry_run={dry_run} sync_repos={sync_repos} max_repos={max_repos} "
-                f"skip_b={eff_skip_b} skip_c={eff_skip_c}"
-            ),
+            json.dumps(
+                {
+                    "dry_run": dry_run,
+                    "sync_repos": sync_repos,
+                    "max_repos": max_repos,
+                    "skip_b": eff_skip_b,
+                    "skip_c": eff_skip_c,
+                    "skip_c1": False,
+                    "skip_reason": skip_reason,
+                    "repos_yaml": repos_yaml_path,
+                    "wait": wait,
+                    "graph_path": [
+                        "START",
+                        "module_a_harvester",
+                        "module_b_noise_filter",
+                        "module_c_librarian",
+                        "module_c1_graph_filer",
+                        "END",
+                    ],
+                    "note": (
+                        "Admin default runs Module B, C, and C.1; "
+                        "C.1 only auto-files when OIE_GRAPH_FILING_ENABLED=1 "
+                        "(Config toggle; default off — review decision_queue first). "
+                        "Pass skip_b/skip_c/skip_c1 true to opt out of stages. "
+                        "Module A may write 0 chunks when checkpoints are already at HEAD."
+                    ),
+                }
+            )[:2000],
         )
         testing = (
             bool(has_app_context() and current_app.config.get("TESTING"))
@@ -1229,19 +1417,38 @@ def dashboard_payload() -> Dict[str, Any]:
 
 
 def config_payload() -> Dict[str, Any]:
+    from application.utils.admin_panel import runtime_settings
+
+    runtime_settings.hydrate_environ_from_db(os.environ)
+    rows = config_catalog.present_config(os.environ)
     return {
-        "config": config_catalog.present_config(os.environ),
-        "writable": False,
+        "config": rows,
+        "writable": any(bool(r.get("writable")) for r in rows),
         "restart_instructions": RESTART_INSTRUCTIONS,
     }
 
 
 def config_put(updates: Dict[str, Optional[str]]) -> Dict[str, Any]:
+    from flask import g, session
+
+    from application.utils.admin_panel import runtime_settings
+
     applied, rejected = config_catalog.apply_updates(os.environ, updates)
+    actor = session.get("email") or getattr(g, "api_key_email", None)
+    if "OIE_GRAPH_FILING_ENABLED" in applied:
+        runtime_settings.set_setting(
+            runtime_settings.FILING_KEY,
+            os.environ.get("OIE_GRAPH_FILING_ENABLED", "0"),
+            actor=str(actor) if actor else None,
+        )
+    # Filing flag is durable in DB + mirrored to env — no process restart required.
+    needs_restart = bool(applied) and any(
+        key != "OIE_GRAPH_FILING_ENABLED" for key in applied
+    )
     return {
         "applied": applied,
         "rejected": rejected,
         "config": config_catalog.present_config(os.environ),
-        "needs_restart": True,
-        "note": RESTART_INSTRUCTIONS,
+        "needs_restart": needs_restart,
+        "note": RESTART_INSTRUCTIONS if needs_restart else None,
     }

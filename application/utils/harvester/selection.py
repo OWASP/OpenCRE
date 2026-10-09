@@ -36,6 +36,7 @@ def select_repositories(
     kinds: Optional[Collection[str]] = None,
     only_due: bool = False,
     max_repos: Optional[int] = None,
+    repo_ids: Optional[Collection[str]] = None,
     now: Optional[datetime] = None,
 ) -> Selection:
     """Pick the repositories to harvest, never-harvested first, then stalest.
@@ -45,14 +46,19 @@ def select_repositories(
     repository whose checkpoint is younger than its ``polling.interval_minutes``.
     ``max_repos`` caps the batch; the remainder is counted as ``deferred`` and
     is picked up on a later tick, since its checkpoint stays stale.
+    ``repo_ids`` (when set) restricts to those repository config ids — used by
+    OIE RQ to run one Module A job per repo.
     """
     wanted = set(kinds) if kinds is not None else set(DEFAULT_HARVEST_KINDS)
+    id_filter = set(repo_ids) if repo_ids is not None else None
     current = _as_utc(now) if now else datetime.now(timezone.utc)
 
     # (never harvested?, checkpoint time, original order)
     candidates: list[tuple[bool, datetime, int, RepositoryConfig]] = []
     skipped = 0
     for index, repo in enumerate(repositories):
+        if id_filter is not None and repo.id not in id_filter:
+            continue
         if not repo.enabled or repo.kind not in wanted:
             continue
         checkpoint = checkpoint_store.load(repo.id)
