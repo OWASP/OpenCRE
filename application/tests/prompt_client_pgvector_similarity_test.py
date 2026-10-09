@@ -153,6 +153,36 @@ class PaginatedSimilarityFallbackTest(unittest.TestCase):
         self.assertEqual(result, ("only-cre", 1.0))
         self.assertEqual(database.get_embeddings_by_doc_type_paginated.call_count, 1)
 
+    def test_node_paginated_skips_empty_final_page(self) -> None:
+        # The final page's embeddings all failed to parse and came back
+        # empty (e.g. malformed stored vectors). Must not crash
+        # cosine_similarity with a feature-count mismatch; the real match
+        # found on an earlier page must still be returned.
+        pages = {
+            1: {"target-node": self.MATCHING_VECTOR},
+            2: {},
+        }
+        handler, database = self._make_handler(can_use_pgvector=False, pages=pages)
+
+        result = handler.get_id_of_most_similar_node_paginated(
+            self.QUERY_EMBEDDING, similarity_threshold=0.5
+        )
+
+        self.assertEqual(result, ("target-node", 1.0))
+
+    def test_cre_paginated_skips_empty_final_page(self) -> None:
+        pages = {
+            1: {"target-cre": self.MATCHING_VECTOR},
+            2: {},
+        }
+        handler, database = self._make_handler(can_use_pgvector=False, pages=pages)
+
+        result = handler.get_id_of_most_similar_cre_paginated(
+            self.QUERY_EMBEDDING, similarity_threshold=0.5
+        )
+
+        self.assertEqual(result, ("target-cre", 1.0))
+
 
 class FindMostSimilarEmbeddingIdResilienceTest(unittest.TestCase):
     def test_query_error_returns_no_match(self) -> None:
