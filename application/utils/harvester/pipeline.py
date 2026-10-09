@@ -68,12 +68,13 @@ def run_harvester(
     kinds: Optional[Collection[str]] = None,
     only_due: bool = False,
     max_repos: Optional[int] = None,
+    repo_ids: Optional[Collection[str]] = None,
     now: Optional[datetime] = None,
 ) -> RunSummary:
     """
     Harvest configured repositories and stage chunks in ``harvest_input``.
 
-    ``kinds`` / ``only_due`` / ``max_repos`` narrow the batch (see
+    ``kinds`` / ``only_due`` / ``max_repos`` / ``repo_ids`` narrow the batch (see
     ``harvester.selection``); the defaults visit every enabled ``standard`` repo.
     ``sources`` org URLs are expanded here (indexer time) when present.
 
@@ -112,6 +113,7 @@ def run_harvester(
         kinds=kinds,
         only_due=only_due,
         max_repos=max_repos,
+        repo_ids=repo_ids,
         now=now,
     )
     summary.skipped_not_due = selection.skipped_not_due

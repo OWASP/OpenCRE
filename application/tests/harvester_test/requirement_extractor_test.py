@@ -11,6 +11,7 @@ from application.utils.harvester.requirement_extractor import (
     requirements_needed,
     should_extract_requirements,
 )
+from application.utils.harvester.schemas import ChunkingConfig
 
 _ASVS_SNIPPET = """\
 # V1 Encoding and Sanitization
@@ -36,6 +37,12 @@ There are no Verify that requirement tables here.
 
 
 class RequirementExtractorTests(unittest.TestCase):
+    def test_chunking_config_defaults_requirement_extract_auto(self) -> None:
+        cfg = ChunkingConfig(
+            strategy="markdown_heading", max_tokens=100, overlap_tokens=10
+        )
+        self.assertEqual(cfg.requirement_extract, "auto")
+
     def test_normalize_asvs_id(self) -> None:
         self.assertEqual(normalize_asvs_id("1.1.2"), "V1.1.2")
         self.assertEqual(normalize_asvs_id("v1.1.2"), "V1.1.2")
@@ -53,6 +60,10 @@ class RequirementExtractorTests(unittest.TestCase):
         self.assertTrue(should_extract_requirements(_ASVS_SNIPPET, mode="on"))
         self.assertTrue(should_extract_requirements(_ASVS_SNIPPET, mode="auto"))
         self.assertFalse(should_extract_requirements(_NARRATIVE, mode="auto"))
+        # Missing / empty mode follows ChunkingConfig default (auto).
+        self.assertTrue(should_extract_requirements(_ASVS_SNIPPET, mode=""))
+        self.assertTrue(should_extract_requirements(_ASVS_SNIPPET, mode="auto"))
+        self.assertFalse(should_extract_requirements(_NARRATIVE, mode=""))
 
     def test_extract_table_segments(self) -> None:
         segs = extract_requirement_segments(_ASVS_SNIPPET)

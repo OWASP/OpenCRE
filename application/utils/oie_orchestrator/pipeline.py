@@ -433,15 +433,35 @@ def run_oie_pipeline(
     run_librarian_queue_fn: Optional[Callable[..., Any]] = None,
     run_file_graph_fn: Optional[Callable[..., Any]] = None,
     use_langgraph: bool = True,
+    use_rq: bool = False,
     repos_yaml: Optional[str] = None,
     max_repos: Optional[int] = None,
+    wait_rq: bool = True,
 ) -> OrchestratorResult:
     """
     Run A→B→C→C.1 for one ``pipeline_run_id``.
 
     Default path uses LangGraph (``langgraph_pipeline``). Set
     ``use_langgraph=False`` for the legacy sequential stages (tests/smoke).
+    ``use_rq=True`` fans out via the import RQ ``oie`` queue (one A job per
+    repo, then B/C per artifact); serial/LangGraph stay the default.
     """
+    if use_rq:
+        return _run_oie_pipeline_rq(
+            cache_file=cache_file,
+            pipeline_run_id=pipeline_run_id,
+            skip_a=skip_a,
+            skip_b=skip_b,
+            skip_c=skip_c,
+            skip_c1=skip_c1,
+            dry_run=dry_run,
+            sync_repos=sync_repos,
+            repos_yaml=repos_yaml,
+            max_repos=max_repos,
+            wait_rq=wait_rq,
+            run_file_graph_fn=run_file_graph_fn,
+        )
+
     if use_langgraph:
         try:
             from application.utils.oie_orchestrator.langgraph_pipeline import (
@@ -522,6 +542,213 @@ def run_oie_pipeline(
     result.stages.append(c)
     if stop_on_error and c.status == "error":
         return result
+
+    c1 = _stage_module_c1(
+        cache_file,
+        skip=skip_c1,
+        dry_run=dry_run,
+        repos_yaml=repos_yaml,
+        run_file_graph_fn=run_file_graph_fn,
+    )
+    result.stages.append(c1)
+    return result
+
+
+def _run_oie_pipeline_rq(
+    *,
+    cache_file: str,
+    pipeline_run_id: Optional[str],
+    skip_a: bool,
+    skip_b: bool,
+    skip_c: bool,
+    skip_c1: bool,
+    dry_run: bool,
+    sync_repos: bool,
+    repos_yaml: Optional[str],
+    max_repos: Optional[int],
+    wait_rq: bool,
+    run_file_graph_fn: Optional[Callable[..., Any]],
+) -> OrchestratorResult:
+    """Enqueue A jobs on RQ; B/C chain from workers; optional C.1 after idle."""
+    from application.utils.oie_rq.fanout import (
+        enqueue_oie_batch,
+        wait_for_oie_queue_idle,
+    )
+
+    run_id = (pipeline_run_id or "").strip() or (
+        datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    )
+    result = OrchestratorResult(
+        run_id=run_id,
+        dry_run=dry_run,
+        engine="rq",
+        sync_repos=sync_repos,
+        skip_a=skip_a,
+        skip_b=skip_b,
+        skip_c=skip_c,
+        skip_c1=skip_c1,
+        stop_on_error=True,
+        max_repos=max_repos,
+        repos_yaml=repos_yaml,
+        graph_path=[
+            "START",
+            "module_a_harvester_rq",
+            "module_b_noise_filter_rq",
+            "module_c_librarian_rq",
+            STAGE_C1_NAME,
+            "END",
+        ],
+    )
+
+    if skip_a and skip_b and skip_c:
+        result.stages.append(
+            StageResult(
+                name="module_a_harvester_rq",
+                status="skipped",
+                detail="skip_a/b/c all set; nothing to enqueue",
+            )
+        )
+    elif skip_a:
+        # Resume from existing harvest_input / knowledge_queue without re-harvest.
+        try:
+            from application.cmd.cre_main import db_connect
+            from application.database.db import HarvestInput
+            from application.utils.oie_rq.fanout import (
+                enqueue_b_jobs_for_artifacts,
+                enqueue_c_job,
+            )
+
+            session = db_connect(path=cache_file).session
+            if not skip_b:
+                arts = sorted(
+                    {
+                        str(r[0])
+                        for r in session.query(HarvestInput.artifact_id)
+                        .filter_by(pipeline_run_id=run_id, status="pending")
+                        .distinct()
+                        .all()
+                        if r[0]
+                    }
+                )
+                b_ids = enqueue_b_jobs_for_artifacts(
+                    pipeline_run_id=run_id,
+                    artifact_ids=arts,
+                    db_connection_str=cache_file,
+                    dry_run=dry_run,
+                    skip_c=skip_c,
+                )
+                result.stages.append(
+                    StageResult(
+                        name="module_b_noise_filter_rq",
+                        status="ok",
+                        detail=f"enqueued {len(b_ids)} B job(s) (skip_a)",
+                        summary={"b_job_ids": b_ids, "artifacts": arts},
+                    )
+                )
+            elif not skip_c:
+                from application.database.db import KnowledgeQueueItem
+
+                arts = sorted(
+                    {
+                        str(r[0])
+                        for r in session.query(KnowledgeQueueItem.artifact_id)
+                        .filter(
+                            KnowledgeQueueItem.pipeline_run_id == run_id,
+                            KnowledgeQueueItem.consumed_at.is_(None),
+                        )
+                        .distinct()
+                        .all()
+                        if r[0]
+                    }
+                )
+                c_ids = [
+                    enqueue_c_job(
+                        pipeline_run_id=run_id,
+                        artifact_id=a,
+                        db_connection_str=cache_file,
+                        dry_run=dry_run,
+                    )
+                    for a in arts
+                ]
+                result.stages.append(
+                    StageResult(
+                        name="module_c_librarian_rq",
+                        status="ok",
+                        detail=f"enqueued {len(c_ids)} C job(s) (skip_a/b)",
+                        summary={"c_job_ids": c_ids, "artifacts": arts},
+                    )
+                )
+            if wait_rq and (not skip_b or not skip_c):
+                idle = wait_for_oie_queue_idle()
+                result.stages.append(
+                    StageResult(
+                        name="oie_rq_drain",
+                        status="ok",
+                        detail="OIE RQ queue idle",
+                        summary=idle,
+                    )
+                )
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("OIE RQ resume (skip_a) failed")
+            result.stages.append(
+                StageResult(
+                    name="module_b_noise_filter_rq",
+                    status="error",
+                    detail=f"OIE RQ resume failed: {exc}",
+                )
+            )
+            return result
+    else:
+        try:
+            # max_repos: take first N enabled standard ids from yaml selection.
+            repo_ids = None
+            if max_repos is not None and max_repos > 0:
+                from application.utils.oie_rq.fanout import _load_repo_entries
+
+                entries = _load_repo_entries(repos_yaml, repo_ids=None)
+                repo_ids = [e.id for e in entries[: int(max_repos)]]
+            enq = enqueue_oie_batch(
+                pipeline_run_id=run_id,
+                db_connection_str=cache_file,
+                repos_yaml=repos_yaml,
+                repo_ids=repo_ids,
+                sync_repos=sync_repos,
+                dry_run=dry_run,
+                skip_b=skip_b,
+                skip_c=skip_c,
+                wait=False,
+            )
+            result.stages.append(
+                StageResult(
+                    name="module_a_harvester_rq",
+                    status="ok",
+                    detail=(
+                        f"enqueued {len(enq.a_job_ids)} A job(s) on oie queue "
+                        f"for run_id={run_id!r}"
+                    ),
+                    summary=enq.to_dict(),
+                )
+            )
+            if wait_rq:
+                idle = wait_for_oie_queue_idle()
+                result.stages.append(
+                    StageResult(
+                        name="oie_rq_drain",
+                        status="ok",
+                        detail="OIE RQ queue idle after A→B→C fan-out",
+                        summary=idle,
+                    )
+                )
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("OIE RQ fan-out failed")
+            result.stages.append(
+                StageResult(
+                    name="module_a_harvester_rq",
+                    status="error",
+                    detail=f"OIE RQ fan-out failed: {exc}",
+                )
+            )
+            return result
 
     c1 = _stage_module_c1(
         cache_file,

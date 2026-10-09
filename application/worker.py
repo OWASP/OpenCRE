@@ -7,7 +7,7 @@ import os
 from application.utils import redis
 
 
-DEFAULT_LISTEN = ["high", "default", "low", "ga"]
+DEFAULT_LISTEN = ["high", "default", "low", "ga", "oie"]
 
 
 def _listen_queues() -> list[str]:

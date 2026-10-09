@@ -65,6 +65,16 @@ def main() -> int:
         default=0,
         help="cap Module A repositories (0 = no cap)",
     )
+    parser.add_argument(
+        "--rq",
+        action="store_true",
+        help="fan-out A/B/C via RQ queue 'oie' (requires workers: make start-oie-workers, default 10)",
+    )
+    parser.add_argument(
+        "--no-wait-rq",
+        action="store_true",
+        help="with --rq, enqueue A jobs and return without waiting for queue idle",
+    )
     args = parser.parse_args()
 
     # db_connect (inside each stage) creates + pushes the Flask app context.
@@ -74,6 +84,11 @@ def main() -> int:
 
     from application.utils.oie_orchestrator import run_oie_pipeline
 
+    use_rq = bool(args.rq) or os.environ.get("CRE_OIE_RQ", "").strip() in (
+        "1",
+        "true",
+        "yes",
+    )
     result = run_oie_pipeline(
         cache_file=args.cache_file,
         pipeline_run_id=args.run_id or None,
@@ -86,6 +101,8 @@ def main() -> int:
         stop_on_error=not args.continue_on_error,
         repos_yaml=args.repos_yaml or None,
         max_repos=args.max_repos or None,
+        use_rq=use_rq,
+        wait_rq=not args.no_wait_rq,
     )
     print(result.to_json())
     return 0 if result.to_dict()["ok"] else 1

@@ -774,12 +774,14 @@ def invoke_oie_cli(
     skip_b: Optional[bool] = None,
     skip_c: Optional[bool] = None,
     skip_c1: Optional[bool] = None,
+    use_rq: Optional[bool] = None,
     timeout: Optional[int] = None,
 ) -> Dict[str, Any]:
     """Run Module A→B→C→C.1 via the CLI against the app Postgres URL.
 
     Defaults are live (sync + persist) so admin ingest is end-to-end. Pass
     ``dry_run=True`` / ``sync_repos=False`` only for hermetic probes.
+    ``use_rq`` / ``CRE_OIE_RQ=1`` fans out on the import RQ ``oie`` queue.
     """
     script = REPO_ROOT / "scripts" / "run_oie_pipeline.py"
     cache_file = _oie_cache_file()
@@ -791,6 +793,8 @@ def invoke_oie_cli(
             skip_c = auto_c
     if skip_c1 is None:
         skip_c1 = False
+    if use_rq is None:
+        use_rq = os.environ.get("CRE_OIE_RQ", "").strip() in ("1", "true", "yes")
     argv = [
         sys.executable,
         str(script),
@@ -811,6 +815,8 @@ def invoke_oie_cli(
         argv.append("--skip-c")
     if skip_c1:
         argv.append("--skip-c1")
+    if use_rq:
+        argv.append("--rq")
     if max_repos is not None and max_repos > 0:
         argv.extend(["--max-repos", str(int(max_repos))])
     if repos_yaml:

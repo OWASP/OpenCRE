@@ -471,7 +471,16 @@ def run_pipeline(
     pipeline = DocumentChunkPipeline(chunking=chunking)
 
     def run_harvester(
-        session: Any, rid: str, *, dry_run: bool = False, sync_repos: bool = True
+        session: Any,
+        rid: str,
+        *,
+        dry_run: bool = False,
+        sync_repos: bool = True,
+        # LangGraph always forwards orchestrator kwargs; B2 sources are local
+        # fixtures, so repos_yaml / max_repos are intentionally unused.
+        repos_yaml: Any = None,
+        max_repos: Any = None,
+        **_kwargs: Any,
     ):
         summary = RunSummary(run_id=rid, dry_run=dry_run, repositories=0)
         all_records = []

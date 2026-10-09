@@ -101,8 +101,8 @@ def decide(
     top1 = tuple(candidate_cre_ids[:1])
     top2 = tuple(candidate_cre_ids[:2])
 
-    if not candidate_cre_ids:
-        return DecisionResult(Decision.review, confidence, (), ReasonCode.no_candidates)
+    # Safety flags beat empty shortlists: a poison chunk that also yields no
+    # usable CRE ids must still surface ADVERSARIAL_FLAG / UPDATE_AMBIGUOUS.
     if adversarial:
         return DecisionResult(
             Decision.review, confidence, top2, ReasonCode.adversarial_flag
@@ -111,6 +111,8 @@ def decide(
         return DecisionResult(
             Decision.review, confidence, top2, ReasonCode.update_ambiguous
         )
+    if not candidate_cre_ids:
+        return DecisionResult(Decision.review, confidence, (), ReasonCode.no_candidates)
     if confidence < threshold:
         return DecisionResult(
             Decision.review, confidence, top2, ReasonCode.below_threshold

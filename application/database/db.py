@@ -453,6 +453,10 @@ class HarvestInput(BaseModel):  # type: ignore
     status = sqla.Column(
         sqla.String, nullable=False, default="pending"
     )  # pending | processed | error
+    # Denormalized from payload for OIE RQ per-document B jobs (fan-out by
+    # artifact_id). Kept in sync by harvest_writer; payload remains the contract.
+    artifact_id = sqla.Column(sqla.String, nullable=False, default="")
+    source_repo = sqla.Column(sqla.String, nullable=True)
     # A's ChangeRecord (contract v0.3). JSONB on Postgres, JSON on SQLite
     # (dev/CI/tests); Module B parses it with schemas.ChangeRecord directly.
     payload = sqla.Column(sqla.JSON().with_variant(JSONB, "postgresql"), nullable=False)
@@ -461,6 +465,12 @@ class HarvestInput(BaseModel):  # type: ignore
     )
     __table_args__ = (
         sqla.Index("ix_harvest_input_run_status", "pipeline_run_id", "status"),
+        sqla.Index(
+            "ix_harvest_input_run_status_artifact",
+            "pipeline_run_id",
+            "status",
+            "artifact_id",
+        ),
     )
 
 

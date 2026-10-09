@@ -436,7 +436,12 @@ class HealthTest(SchedulerTestBase):
 
     def test_queue_depths_count_backlog(self) -> None:
         sqla.session.add(
-            db.HarvestInput(pipeline_run_id="r", status="pending", payload={"a": 1})
+            db.HarvestInput(
+                pipeline_run_id="r",
+                status="pending",
+                artifact_id="",
+                payload={"a": 1},
+            )
         )
         sqla.session.commit()
         self.assertEqual(health.queue_depths(sqla.session)["harvest_input_pending"], 1)
