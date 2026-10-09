@@ -9,9 +9,11 @@ from application import worker
 
 
 class TestWorkerQueues(unittest.TestCase):
-    def test_default_queues_include_ga(self) -> None:
+    def test_default_queues_include_ga_not_oie(self) -> None:
         os.environ.pop("CRE_WORKER_QUEUES", None)
-        self.assertEqual(worker._listen_queues(), ["high", "default", "low", "ga"])
+        queues = worker._listen_queues()
+        self.assertEqual(queues, ["high", "default", "low", "ga"])
+        self.assertNotIn("oie", queues)
 
     def test_env_configured_queues(self) -> None:
         os.environ["CRE_WORKER_QUEUES"] = "ga,default"

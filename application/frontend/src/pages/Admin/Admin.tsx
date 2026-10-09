@@ -7,7 +7,7 @@ import { Button, Checkbox, Form, Message, Modal, Header as SUIHeader } from 'sem
 import { useCapabilities, useEnvironment } from '../../hooks';
 import { useUser } from '../../hooks/useUser';
 
-type Tab = 'dashboard' | 'config' | 'pipeline' | 'graph' | 'myopencre';
+type Tab = 'dashboard' | 'config' | 'pipeline' | 'oie' | 'graph' | 'myopencre';
 
 type RepoForm = {
   id: string;
@@ -130,6 +130,7 @@ export const Admin = () => {
             ['dashboard', 'Dashboard'],
             ['config', 'Config'],
             ['pipeline', 'Pipeline'],
+            ['oie', 'OIE queue'],
             ['graph', 'Graph management'],
             ['myopencre', 'MyOpenCRE'],
           ] as [Tab, string][]
@@ -142,6 +143,7 @@ export const Admin = () => {
       {tab === 'dashboard' && <DashboardTab origin={origin} onOpenJobs={() => setTab('pipeline')} />}
       {tab === 'config' && <ConfigTab origin={origin} />}
       {tab === 'pipeline' && <PipelineTab origin={origin} />}
+      {tab === 'oie' && <OieQueueTab origin={origin} />}
       {tab === 'graph' && <GraphManagementTab origin={origin} />}
       {tab === 'myopencre' && (
         <Link className="ui primary button" to="/myopencre">
@@ -604,6 +606,131 @@ function GraphManagementTab({ origin }: { origin: string }) {
   );
 }
 
+function OieQueueTab({ origin }: { origin: string }) {
+  const [data, setData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [runId, setRunId] = useState('');
+
+  const load = useCallback(() => {
+    let cancelled = false;
+    const q = runId.trim() ? `?run_id=${encodeURIComponent(runId.trim())}` : '';
+    fetch(`${origin}/admin/oie/rq/status${q}`)
+      .then(async (res) => {
+        const body = await readJson(res);
+        if (!res.ok) throw new Error(apiError(body, res));
+        if (!cancelled) {
+          setData(body);
+          setError(null);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) setError(String(err));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [origin, runId]);
+
+  useEffect(() => {
+    const cancel = load();
+    const t = window.setInterval(() => load(), 5000);
+    return () => {
+      cancel();
+      window.clearInterval(t);
+    };
+  }, [load]);
+
+  const queues = data?.queues || {};
+  const oie = data?.oie || {};
+  const jobTable = (rows: any[] | undefined) => (
+    <table className="admin-table">
+      <thead>
+        <tr>
+          <th>description</th>
+          <th>status</th>
+          <th>job id</th>
+        </tr>
+      </thead>
+      <tbody>
+        {(rows || []).length ? (
+          rows!.map((r) => (
+            <tr key={r.job_id}>
+              <td className="mono">{r.description}</td>
+              <td>{r.status}</td>
+              <td className="mono">{r.job_id}</td>
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan={3}>—</td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  );
+
+  return (
+    <div>
+      <p className="admin-help">
+        Import-style RQ monitor for the <code>oie</code> queue (auto-refresh 5s). Workers:{' '}
+        <code>make start-oie-workers</code> (default 10) or <code>CRE_OIE_WORKER_COUNT</code> via import-all.
+      </p>
+      <Form onSubmit={(e) => e.preventDefault()}>
+        <Form.Input
+          label="pipeline_run_id (optional DB counts)"
+          value={runId}
+          onChange={(_, { value }) => setRunId(String(value || ''))}
+          placeholder="uncapped-safety-…"
+        />
+        <Button type="button" onClick={() => load()}>
+          Refresh
+        </Button>
+      </Form>
+      {error && <Message negative>{error}</Message>}
+      {data && (
+        <>
+          <p className="admin-help">
+            Updated: {data.timestamp} · queue <code>{data.oie_queue_name}</code>
+          </p>
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>queue</th>
+                <th>queued</th>
+                <th>started</th>
+                <th>failed</th>
+                <th>finished</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.keys(queues).map((qn) => (
+                <tr key={qn}>
+                  <td>
+                    <code>{qn}</code>
+                  </td>
+                  <td>{queues[qn]?.queued}</td>
+                  <td>{queues[qn]?.started}</td>
+                  <td>{queues[qn]?.failed}</td>
+                  <td>{queues[qn]?.finished}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {data.run && <pre className="admin-pre">{JSON.stringify(data.run, null, 2)}</pre>}
+          <h3>Started</h3>
+          {jobTable(oie.started)}
+          <h3>Queued</h3>
+          {jobTable(oie.queued)}
+          <h3>Failed</h3>
+          {jobTable(oie.failed)}
+          <h3>Recent finished</h3>
+          {jobTable(oie.finished)}
+        </>
+      )}
+    </div>
+  );
+}
+
 function PipelineTab({ origin }: { origin: string }) {
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -714,8 +841,8 @@ function PipelineTab({ origin }: { origin: string }) {
       <p className="admin-help">
         Look for <code>oie</code>/<code>started</code> (flags + skip_reason) and <code>oie_trace</code>{' '}
         (engine, graph_path, visited). The admin default runs Module B, C, and C.1 (graph filer). Skipped
-        stages mean the run passed the matching <code>skip_*</code> flag true. Module A with chunks=0
-        usually means harvester checkpoints were already at HEAD (no file diffs).
+        stages mean the run passed the matching <code>skip_*</code> flag true. Module A with chunks=0 usually
+        means harvester checkpoints were already at HEAD (no file diffs).
       </p>
       <table className="admin-table">
         <thead>
@@ -1058,8 +1185,8 @@ function ConfigTab({ origin }: { origin: string }) {
       <p className="admin-help">
         CRE explorer graph comes from upstream at <code>make install</code> / <code>make dev</code> (skip with{' '}
         <code>SKIP_UPSTREAM_SYNC=1</code>). Golden-set harvest runs A → B → C → C.1. C.1 only auto-files
-        high-confidence links when the toggle below is on (default off — review{' '}
-        <code>decision_queue</code> first). OWASP agent sync is separate — progress shows under Pipeline.
+        high-confidence links when the toggle below is on (default off — review <code>decision_queue</code>{' '}
+        first). OWASP agent sync is separate — progress shows under Pipeline.
       </p>
       <p>
         <Checkbox

@@ -484,7 +484,7 @@ USE_POSTGRES=0
 RUN_COUNT="${RUN_COUNT:-1}"
 IMPORT_CACHE_FILE="standards_cache.sqlite"
 
-# Partition GA vs import workers (must run before Postgres gate so expanded RUN_COUNT still uses PG).
+# Partition GA / OIE / import workers (must run before Postgres gate so expanded RUN_COUNT still uses PG).
 GA_WORKER_COUNT="${CRE_GA_WORKER_COUNT:-}"
 if [[ -z "${GA_WORKER_COUNT}" ]]; then
     if [[ "${RUN_COUNT}" -gt 1 ]]; then
@@ -496,6 +496,8 @@ if [[ -z "${GA_WORKER_COUNT}" ]]; then
         GA_WORKER_COUNT=0
     fi
 fi
+# Default 10 OIE RQ workers (A/B/C fan-out). Set CRE_OIE_WORKER_COUNT=0 to skip.
+OIE_WORKER_COUNT="${CRE_OIE_WORKER_COUNT:-10}"
 if [[ -n "${CRE_GA_WORKER_COUNT:-}" && "${GA_WORKER_COUNT}" -gt "${RUN_COUNT}" ]]; then
     default_ga=$(( RUN_COUNT / 3 ))
     if [[ "${default_ga}" -lt 1 && "${RUN_COUNT}" -gt 1 ]]; then
@@ -512,8 +514,26 @@ if [[ -n "${CRE_GA_WORKER_COUNT:-}" && "${GA_WORKER_COUNT}" -gt "${RUN_COUNT}" ]
     RUN_COUNT=$(( GA_WORKER_COUNT + import_slots ))
     log "Expanded RUN_COUNT from ${prev_run} to ${RUN_COUNT} (CRE_GA_WORKER_COUNT=${GA_WORKER_COUNT}, ${import_slots} import worker(s))"
 fi
+if [[ "${OIE_WORKER_COUNT}" -gt 0 ]]; then
+    reserved=$(( GA_WORKER_COUNT + OIE_WORKER_COUNT ))
+    if [[ "${reserved}" -gt "${RUN_COUNT}" ]]; then
+        prev_run=${RUN_COUNT}
+        import_slots=$(( RUN_COUNT - GA_WORKER_COUNT ))
+        if [[ "${import_slots}" -lt 1 ]]; then
+            import_slots=1
+        fi
+        RUN_COUNT=$(( GA_WORKER_COUNT + OIE_WORKER_COUNT + import_slots ))
+        log "Expanded RUN_COUNT from ${prev_run} to ${RUN_COUNT} (CRE_OIE_WORKER_COUNT=${OIE_WORKER_COUNT}, ga=${GA_WORKER_COUNT}, import=${import_slots})"
+    fi
+fi
 if [[ "${GA_WORKER_COUNT}" -gt "${RUN_COUNT}" ]]; then
     GA_WORKER_COUNT="${RUN_COUNT}"
+fi
+if [[ $((GA_WORKER_COUNT + OIE_WORKER_COUNT)) -gt "${RUN_COUNT}" ]]; then
+    OIE_WORKER_COUNT=$(( RUN_COUNT - GA_WORKER_COUNT ))
+    if [[ "${OIE_WORKER_COUNT}" -lt 0 ]]; then
+        OIE_WORKER_COUNT=0
+    fi
 fi
 
 if [[ "${RUN_COUNT}" -gt 1 ]]; then
@@ -530,8 +550,9 @@ make docker-redis
 make docker-neo4j
 wait_for_neo4j
 
+IMPORT_WORKER_COUNT=$(( RUN_COUNT - GA_WORKER_COUNT - OIE_WORKER_COUNT ))
 log "Starting $RUN_COUNT worker(s)"
-log "Worker queue partition: ga_workers=${GA_WORKER_COUNT}, import_workers=$((RUN_COUNT-GA_WORKER_COUNT))"
+log "Worker queue partition: ga_workers=${GA_WORKER_COUNT}, oie_workers=${OIE_WORKER_COUNT}, import_workers=${IMPORT_WORKER_COUNT}"
 # Subshells inherit ERR/set -e; SIGTERM during shutdown makes ``make`` exit != 0 and
 # would spam "[import-all] FAILED at line …" unless we disable ERR inside each worker.
 for i in $(seq 1 "$RUN_COUNT"); do
@@ -541,6 +562,13 @@ for i in $(seq 1 "$RUN_COUNT"); do
         trap - ERR 2>/dev/null || true
         rm -f "worker-$i.log"
         CRE_WORKER_QUEUES="ga" make start-worker &> "worker-$i.log"
+    ) &
+ elif [[ "${i}" -le $((GA_WORKER_COUNT + OIE_WORKER_COUNT)) ]]; then
+    (
+        set +e
+        trap - ERR 2>/dev/null || true
+        rm -f "worker-$i.log"
+        CRE_WORKER_QUEUES="oie" make start-worker &> "worker-$i.log"
     ) &
  else
     (

@@ -71,7 +71,9 @@ def default_safety_litellm_fn(model: Optional[str] = None) -> LlmFn:
         "CRE_LIBRARIAN_SAFETY_GUARD_MODEL",
         os.environ.get(
             "CRE_LIBRARIAN_SHORTLIST_JUDGE_MODEL",
-            os.environ.get("CRE_NOISE_FILTER_LLM_MODEL", "gemini/gemini-2.5-flash-lite"),
+            os.environ.get(
+                "CRE_NOISE_FILTER_LLM_MODEL", "gemini/gemini-2.5-flash-lite"
+            ),
         ),
     )
     return system_user_fn(model_name, temperature=0.0)

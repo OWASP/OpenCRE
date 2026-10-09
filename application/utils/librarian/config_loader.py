@@ -100,6 +100,9 @@ class LibrarianConfig:
     shortlist_judge_max_picks: int = 3
     #: Relative CE shortlist cutoff after C.2 (None = off).
     margin_gamma: Optional[float] = None
+    #: Hub→leaf Contains cage on C.1 (default off — A/B via env).
+    hub_leaf_cage: bool = False
+    hub_leaf_cage_top_hubs: int = 3
 
 
 def _env_leaf_drilldown_resources() -> tuple[str, ...]:
@@ -176,6 +179,9 @@ def load_config() -> LibrarianConfig:
         os.getenv("CRE_LIBRARIAN_SHORTLIST_JUDGE_MAX_PICKS", "3")
     )
     margin_gamma = _env_optional_margin_gamma("CRE_LIBRARIAN_MARGIN_GAMMA")
+    # Default off: high-risk cage; turn on to A/B leaf recall under hub parents.
+    hub_leaf_cage = _env_bool("CRE_LIBRARIAN_HUB_LEAF_CAGE", False)
+    hub_leaf_cage_top_hubs = int(os.getenv("CRE_LIBRARIAN_HUB_LEAF_CAGE_TOP_HUBS", "3"))
 
     if retriever_backend not in _RETRIEVER_BACKENDS:
         raise ValueError(
@@ -257,6 +263,11 @@ def load_config() -> LibrarianConfig:
             "CRE_LIBRARIAN_MARGIN_GAMMA must be finite and > 0 when set, "
             f"got {margin_gamma}"
         )
+    if hub_leaf_cage_top_hubs < 1:
+        raise ValueError(
+            "CRE_LIBRARIAN_HUB_LEAF_CAGE_TOP_HUBS must be >= 1, "
+            f"got {hub_leaf_cage_top_hubs}"
+        )
 
     # Mirror promote cap into the process env so ParentIndex._promote_cap sees it
     # without plumbing the index through every call site.
@@ -298,4 +309,6 @@ def load_config() -> LibrarianConfig:
         umbrella_promote_cap=umbrella_promote_cap,
         shortlist_judge_max_picks=shortlist_judge_max_picks,
         margin_gamma=margin_gamma,
+        hub_leaf_cage=hub_leaf_cage,
+        hub_leaf_cage_top_hubs=hub_leaf_cage_top_hubs,
     )

@@ -41,7 +41,7 @@ class FullPipelineKeyGuessTest(unittest.TestCase):
             text="### V1.1.2\nVerify that...",
             repo="OWASP/ASVS",
         )
-        self.assertIn("asvs::V1.1.2", keys)
+        self.assertEqual(keys, {"asvs::V1.1.2"})
 
     def test_asvs_prefers_explicit_single_section_id(self) -> None:
         """Outer heading soup must not dilute a clean extractor Section-ID."""
@@ -61,6 +61,24 @@ class FullPipelineKeyGuessTest(unittest.TestCase):
             repo="OWASP/ASVS",
         )
         self.assertEqual(keys, {"asvs::V1.1.2"})
+
+    def test_asvs_singleton_refuses_multi_sid_soup(self) -> None:
+        keys = _fp._guess_keys_for_decision(
+            path="5.0/en/0x10-V1-Encoding-and-Sanitization.md",
+            text="### V1.1.1\n### V1.1.2\nVerify that...",
+            repo="OWASP/ASVS",
+            singleton_asvs=True,
+        )
+        self.assertEqual(keys, set())
+
+    def test_asvs_legacy_soup_when_singleton_off(self) -> None:
+        keys = _fp._guess_keys_for_decision(
+            path="5.0/en/0x10-V1-Encoding-and-Sanitization.md",
+            text="### V1.1.1\n### V1.1.2\nVerify that...",
+            repo="OWASP/ASVS",
+            singleton_asvs=False,
+        )
+        self.assertEqual(keys, {"asvs::V1.1.1", "asvs::V1.1.2"})
 
     def test_aisvs_from_filename(self) -> None:
         keys = _fp._guess_keys_for_decision(

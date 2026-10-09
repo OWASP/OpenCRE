@@ -52,6 +52,8 @@ class TestConfigLoaderDefaults(unittest.TestCase):
         self.assertEqual(cfg.umbrella_promote_cap, 8)
         self.assertEqual(cfg.shortlist_judge_max_picks, 3)
         self.assertIsNone(cfg.margin_gamma)
+        self.assertFalse(cfg.hub_leaf_cage)
+        self.assertEqual(cfg.hub_leaf_cage_top_hubs, 3)
 
     def test_config_is_frozen(self):
         with mock.patch.dict(os.environ, {}, clear=True):
@@ -146,6 +148,8 @@ class TestConfigLoaderOverrides(unittest.TestCase):
                 "CRE_LIBRARIAN_UMBRELLA_PROMOTE_CAP": "8",
                 "CRE_LIBRARIAN_SHORTLIST_JUDGE_MAX_PICKS": "3",
                 "CRE_LIBRARIAN_MARGIN_GAMMA": "0.85",
+                "CRE_LIBRARIAN_HUB_LEAF_CAGE": "1",
+                "CRE_LIBRARIAN_HUB_LEAF_CAGE_TOP_HUBS": "2",
             },
             clear=True,
         ):
@@ -159,6 +163,8 @@ class TestConfigLoaderOverrides(unittest.TestCase):
         self.assertEqual(cfg.umbrella_promote_cap, 8)
         self.assertEqual(cfg.shortlist_judge_max_picks, 3)
         self.assertAlmostEqual(cfg.margin_gamma or 0.0, 0.85)
+        self.assertTrue(cfg.hub_leaf_cage)
+        self.assertEqual(cfg.hub_leaf_cage_top_hubs, 2)
 
     def test_leaf_drilldown_resources_star_means_all(self):
         with mock.patch.dict(

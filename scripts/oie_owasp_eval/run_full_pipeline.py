@@ -192,6 +192,9 @@ def _apply_promoted_flags() -> None:
     os.environ.setdefault("CRE_LIBRARIAN_CRE_SUMMARY", "1")
     os.environ.setdefault("CRE_LIBRARIAN_MARGIN_GAMMA", "0.85")
     os.environ.setdefault("CRE_LIBRARIAN_RETRIEVER_BACKEND", "pgvector")
+    os.environ.setdefault("CRE_LIBRARIAN_SAFETY_GUARD", "1")
+    os.environ.setdefault("CRE_LIBRARIAN_EMBED_BATCH", "8")
+    os.environ.setdefault("CRE_EMBED_EXPECTED_DIM", "3072")
     # d1 winner combo: E4 shortlist judge + E5 umbrella cap=8; E1/E2 off.
     os.environ.setdefault("CRE_LIBRARIAN_SHORTLIST_JUDGE", "1")
     # Post-60: judge fills score top_k=3 window (FORCE_RESOURCES left off below).
@@ -261,7 +264,11 @@ def _make_tarball_harvester(
         *,
         dry_run: bool = False,
         sync_repos: bool = True,
+        repos_yaml: Any = None,
+        max_repos: Any = None,
+        **_kwargs: Any,
     ) -> Any:
+        # Orchestrator always passes repos_yaml/max_repos; tarball path ignores them.
         from application.utils.harvester.chunk_pipeline import DocumentChunkPipeline
         from application.utils.harvester.harvest_writer import write_harvest_input
         from application.utils.harvester.heading_extractor import HeadingExtractor
@@ -444,11 +451,25 @@ def _top2_cre_ids(envelope: Dict[str, Any], uuid_to_ext: Dict[str, str]) -> List
     return _top_k_cre_ids(envelope, uuid_to_ext, top_k=2)
 
 
+def _asvs_singleton_attribution_enabled() -> bool:
+    """When true (default), only singleton Section-ID chunks vote on ASVS gold.
+
+    Multi-SID taxonomy / chapter soup no longer smears one CRE list onto every
+    requirement id found in the blob. Set ``OIE_ASVS_SINGLETON_ATTRIBUTION=0``
+    to restore legacy regex soup attribution for A/B.
+    """
+    raw = os.getenv("OIE_ASVS_SINGLETON_ATTRIBUTION")
+    if raw is None or not str(raw).strip():
+        return True
+    return str(raw).strip().lower() in ("1", "true", "yes", "on")
+
+
 def _guess_keys_for_decision(
     *,
     path: str,
     text: str,
     repo: str,
+    singleton_asvs: Optional[bool] = None,
 ) -> Set[str]:
     """Map a decision to gold keys ``{resource}::{section_id}``."""
     keys: Set[str] = set()
@@ -459,10 +480,16 @@ def _guess_keys_for_decision(
     is_asvs = "asvs" in repo_l or "/asvs" in path_l or "asvs" in path_l
     is_aisvs = "aisvs" in repo_l or "aisvs" in path_l
     is_cs = "cheatsheet" in repo_l or "cheatsheet" in path_l
+    singleton = (
+        _asvs_singleton_attribution_enabled()
+        if singleton_asvs is None
+        else bool(singleton_asvs)
+    )
 
     if is_asvs and not is_aisvs:
         # Prefer an explicit single requirement Section-ID (extractor / B2 shape).
         primary: Set[str] = set()
+        multi_sid_section = False
         for m in re.finditer(r"Section-ID:\s*([^\n]+)", blob, flags=re.IGNORECASE):
             parts = [p.strip() for p in re.split(r"[,;]+", m.group(1)) if p.strip()]
             three: List[str] = []
@@ -473,8 +500,22 @@ def _guess_keys_for_decision(
                     three.append(f"asvs::V{part}")
             if len(parts) == 1 and three:
                 primary.add(three[0])
-        if primary:
+            elif len(three) > 1 or (len(parts) > 1 and three):
+                multi_sid_section = True
+        if primary and len(primary) == 1 and not multi_sid_section:
             keys |= primary
+        elif singleton:
+            # Exactly one requirement-grain SID in the blob → attribute once.
+            # Chapter/taxonomy soup (2+ SIDs) gets no ASVS gold vote.
+            found: Set[str] = set()
+            for m in ASVS_SID_RE.finditer(blob):
+                sid = m.group(1).upper()
+                if sid.count(".") == 2:
+                    found.add(f"asvs::{sid}")
+            for m in ASVS_BARE_REQ_RE.finditer(blob):
+                found.add(f"asvs::V{m.group(1)}")
+            if len(found) == 1:
+                keys |= found
         else:
             for m in ASVS_SID_RE.finditer(blob):
                 sid = m.group(1).upper()
@@ -774,6 +815,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             "rows in --cache_file before the GitHub arms (use a disposable DB)"
         ),
     )
+    parser.add_argument(
+        "--rq",
+        action="store_true",
+        help=(
+            "Fan-out A/B/C on RQ queue 'oie' (requires make start-oie-workers). "
+            "Uses scripts/oie_owasp_eval/full_pipeline_repos.yaml for harvest."
+        ),
+    )
     args = parser.parse_args(list(argv) if argv is not None else None)
 
     _load_dotenv()
@@ -830,17 +879,57 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             print(f"cleared ALL {model.__tablename__}: {deleted}", flush=True)
         sqla.session.commit()
 
-        harvester = _make_tarball_harvester(github)
-        orch_result = run_oie_pipeline(
-            cache_file=cache,
-            pipeline_run_id=run_id,
-            sync_repos=False,
-            run_harvester_fn=harvester,
-            run_noise_filter_fn=(
-                _keep_all_noise_filter if args.keep_all_knowledge else None
-            ),
-            use_langgraph=True,
+        use_rq = bool(args.rq) or os.environ.get("CRE_OIE_RQ", "").strip() in (
+            "1",
+            "true",
+            "yes",
         )
+        repos_yaml_rq = ROOT / "scripts" / "oie_owasp_eval" / "full_pipeline_repos.yaml"
+        harvester = _make_tarball_harvester(github)
+        if use_rq:
+            if not repos_yaml_rq.is_file():
+                print(f"missing {repos_yaml_rq} for --rq", file=sys.stderr)
+                return 2
+            if args.keep_all_knowledge:
+                os.environ["CRE_OIE_KEEP_ALL_KNOWLEDGE"] = "1"
+            # Same Module A as serial (tarball), then RQ fan-out for B→C only.
+            # Live yaml harvest under-fills vs the golden serial baseline.
+            print("=== Module A (tarball, sync) before RQ B/C ===", flush=True)
+            db = db_connect(cache)
+            a_summary = harvester(db.session, run_id, dry_run=False, sync_repos=False)
+            db.session.commit()
+            print(
+                f"tarball harvest: chunks={getattr(a_summary, 'chunks_written', '?')} "
+                f"status={getattr(a_summary, 'status', '?')}",
+                flush=True,
+            )
+            print(
+                f"=== OIE RQ B/C fan-out (skip_a, repos_yaml={repos_yaml_rq}) ===",
+                flush=True,
+            )
+            orch_result = run_oie_pipeline(
+                cache_file=cache,
+                pipeline_run_id=run_id,
+                sync_repos=False,
+                use_langgraph=False,
+                use_rq=True,
+                skip_a=True,
+                repos_yaml=str(repos_yaml_rq),
+                run_noise_filter_fn=(
+                    _keep_all_noise_filter if args.keep_all_knowledge else None
+                ),
+            )
+        else:
+            orch_result = run_oie_pipeline(
+                cache_file=cache,
+                pipeline_run_id=run_id,
+                sync_repos=False,
+                run_harvester_fn=harvester,
+                run_noise_filter_fn=(
+                    _keep_all_noise_filter if args.keep_all_knowledge else None
+                ),
+                use_langgraph=True,
+            )
         orch_path = out_dir / "orchestrator_result.json"
         orch_path.write_text(orch_result.to_json() + "\n")
         print(f"wrote {orch_path}", flush=True)
@@ -855,6 +944,31 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             _write_b2_shaped_report(
                 github_report, out_dir / "github_arms.b2_report.json"
             )
+            # Snapshot DQ before B2 arms wipe all queues (run_b2_pr_mappings).
+            from collections import Counter
+
+            dq_rows = (
+                sqla.session.query(DecisionQueueItem)
+                .filter_by(pipeline_run_id=run_id)
+                .all()
+            )
+            dq_statuses = Counter(r.status for r in dq_rows)
+            gh_decision_summary = {
+                "run_id": run_id,
+                "n": len(dq_rows),
+                "linked": int(dq_statuses.get("linked", 0)),
+                "review": int(
+                    dq_statuses.get("review_required", 0)
+                    + dq_statuses.get("review", 0)
+                ),
+                "statuses": dict(dq_statuses),
+                "github_accuracy": github_report.get("accuracy"),
+                "github_hits": github_report.get("hits"),
+                "github_scorable": github_report.get("scorable"),
+            }
+            gh_sum_path = out_dir / "github_decision_summary.json"
+            gh_sum_path.write_text(json.dumps(gh_decision_summary, indent=2) + "\n")
+            print(f"wrote {gh_sum_path}", flush=True)
             print(
                 json.dumps(
                     {k: github_report[k] for k in github_report if k != "details"},
