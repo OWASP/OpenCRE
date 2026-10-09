@@ -5,6 +5,7 @@ logger = get_logger(__name__)
 from typing import Any, Literal
 from pydantic import BaseModel, Field, ConfigDict, model_validator
 
+
 # What an OWASP org repo is for. ``standard``/``project``/``other`` feed the
 # knowledge-graph expansion path (harvest -> filter -> Librarian); ``chapter``
 # and ``event`` repos only feed the OWASP agent's metadata index.
@@ -76,12 +77,13 @@ class ChunkingConfig(BaseModel):
         ),
     )
     requirement_extract: Literal["off", "auto", "on"] = Field(
-        default="off",
+        default="auto",
         description=(
-            "Optional requirement extractor: off=never; on=always try; "
-            "auto=only when requirements_needed(text) (ASVS-style tables / "
-            "dense control catalogs). When extraction yields segments, they "
-            "replace primary chunks for that document."
+            "Requirement extractor: auto (default)=only when "
+            "requirements_needed(text) (ASVS-style tables / dense control "
+            "catalogs); on=always try; off=never. When extraction yields "
+            "segments, they replace primary chunks for that document. "
+            "Narrative sources (cheat sheets) usually no-op under auto."
         ),
     )
 
