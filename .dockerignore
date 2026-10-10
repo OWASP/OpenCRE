@@ -5,6 +5,11 @@ tmp
 .vscode
 .github
 .git
+.harvester_cache/
+logs/
+.cursor/
+.cursorignore
+*.nohup.out
 
 # This file specifies files that are *not* uploaded to Google Cloud
 # using gcloud. It follows the same syntax as .gitignore, with the addition of

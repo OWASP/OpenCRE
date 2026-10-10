@@ -113,11 +113,13 @@ class DbKnowledgeSource(KnowledgeSource):
         session: object,
         *,
         pipeline_run_id: Optional[str] = None,
+        artifact_id: Optional[str] = None,
         limit: Optional[int] = None,
         lock_rows: bool = False,
     ) -> None:
         self._session = session
         self._run_id = pipeline_run_id
+        self._artifact_id = artifact_id
         self._limit = limit
         self._lock_rows = lock_rows
         #: Ids of rows B wrote that C could not model, filled during iteration.
@@ -140,6 +142,8 @@ class DbKnowledgeSource(KnowledgeSource):
         )
         if self._run_id:
             query = query.filter(KnowledgeQueueRow.pipeline_run_id == self._run_id)
+        if self._artifact_id:
+            query = query.filter(KnowledgeQueueRow.artifact_id == self._artifact_id)
         query = query.order_by(KnowledgeQueueRow.created_at, KnowledgeQueueRow.id)
         if self._limit is not None:
             query = query.limit(self._limit)

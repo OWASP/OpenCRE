@@ -378,6 +378,34 @@ class LibrarianPipeline:
                 new_reranked.append(cand)
         return audit.model_copy(update={"reranked": new_reranked})
 
+    def _prefetch_query_embeddings(self, batch_items: Sequence[Any]) -> None:
+        """Embed this batch's retrieval strings once, before the per-row loop.
+
+        No-op for stub retrievers and when ``CRE_LIBRARIAN_EMBED_BATCH=0``.
+        A prefetch failure leaves per-call embedding in place.
+        """
+        from application.utils.librarian.embed_batch import (
+            prefetch_retriever_embeddings,
+            texts_for_retrieval,
+        )
+
+        texts: List[str] = []
+        for raw in batch_items:
+            try:
+                section = section_from_queue_row(raw)
+            except SectionValidationError:
+                continue
+            texts.extend(texts_for_retrieval(section.text))
+        if not texts:
+            return
+        try:
+            prefetch_retriever_embeddings(self._retriever, texts)
+        except Exception:  # noqa: BLE001
+            logger.warning(
+                "librarian query embed prefetch failed; continuing per call",
+                exc_info=True,
+            )
+
     def _map_cre_ids(self, external_ids: Sequence[str]) -> tuple:
         return tuple(self._cre_id_map.get(cid, cid) for cid in external_ids)
 
@@ -413,6 +441,8 @@ class LibrarianPipeline:
         else:
             self._resource_family_counts = {}
 
+        self._prefetch_query_embeddings(batch_items)
+
         for item in batch_items:
             total += 1
             row_id = _row_id(item)
@@ -441,7 +471,7 @@ class LibrarianPipeline:
                         self._map_cre_ids(resolution.cre_ids),
                         None,
                     )
-                    verdict_evaluated = True
+                    verdict_evaluated = False
                 elif resolution.outcome in (
                     ResolutionOutcome.unknown_reference,
                     ResolutionOutcome.conflicting_references,
@@ -454,7 +484,7 @@ class LibrarianPipeline:
                         else ReasonCode.below_threshold
                     )
                     result = DecisionResult(Decision.review, 1.0, mapped, reason)
-                    verdict_evaluated = True
+                    verdict_evaluated = False
                 else:
                     audit = self._retriever.retrieve(section.text)
                     from application.utils.librarian.control_name_seed import (
@@ -484,7 +514,7 @@ class LibrarianPipeline:
                             ReasonCode.cre_gap,
                             gap_proposal=gap,
                         )
-                        verdict_evaluated = True
+                        verdict_evaluated = False
                     else:
                         from application.utils.librarian.control_name_seed import (
                             prefer_audit_ids,
@@ -646,16 +676,25 @@ class LibrarianPipeline:
                         if list(cre_ids) != pre_drill:
                             audit = self._sync_audit_after_drilldown(audit, cre_ids)
 
-                        verdict = self._safety_guard.evaluate(section)
                         result = decide(
                             confidence,
                             cre_ids,
                             threshold=self._threshold,
+                        )
+                        verdict_evaluated = False
+
+                # C.4 safety on every path (including explicit-id / CRE_GAP exits).
+                verdict = self._safety_guard.evaluate(section)
+                if verdict.evaluated:
+                    verdict_evaluated = True
+                    if verdict.adversarial or verdict.update_ambiguous:
+                        result = decide(
+                            result.confidence,
+                            result.cre_ids,
+                            threshold=self._threshold,
                             adversarial=verdict.adversarial,
                             update_ambiguous=verdict.update_ambiguous,
                         )
-                        verdict_evaluated = verdict.evaluated
-
                 if not verdict_evaluated:
                     safety_unevaluated += 1
                 result = ground_decision(result, self._cre_registry)

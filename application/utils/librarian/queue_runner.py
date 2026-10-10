@@ -105,6 +105,7 @@ def run_librarian_queue(
     *,
     at: datetime,
     sink: Optional[EnvelopeSink] = None,
+    artifact_id: Optional[str] = None,
     limit: Optional[int] = None,
     lock_rows: bool = False,
     dry_run: bool = False,
@@ -126,6 +127,8 @@ def run_librarian_queue(
         sink: where the envelopes are persisted. Required for a real run —
             consuming a row whose envelope was discarded loses the chunk — and
             it must report ``persists=True``. A dry run may omit it.
+        artifact_id: when set, only drain that Docling document's rows (OIE RQ
+            per-document C jobs).
         limit: cap on rows read in this batch; None drains the run.
         lock_rows: claim the batch with ``FOR UPDATE SKIP LOCKED`` so that
             several consumers draining one run take disjoint rows. Off by
@@ -188,9 +191,13 @@ def run_librarian_queue(
                 "must not mark rows consumed. Use dry_run=True with it."
             )
 
+    if artifact_id is not None and not str(artifact_id).strip():
+        raise ValueError("artifact_id must be non-empty when provided")
+
     source = DbKnowledgeSource(
         session,
         pipeline_run_id=pipeline_run_id,
+        artifact_id=artifact_id,
         limit=limit,
         lock_rows=lock_rows,
     )
@@ -208,6 +215,7 @@ def run_librarian_queue(
         use_focus_query=config.focus_query,
         pref_inject=config.pref_inject,
         prefer_audit=config.prefer_audit_ids,
+        safety_guard=getattr(components, "safety_guard", None),
         parent_index=getattr(components, "parent_index", None),
         leaf_drilldown=bool(getattr(components, "leaf_drilldown", False)),
         leaf_drilldown_resources=tuple(
@@ -255,9 +263,9 @@ def run_librarian_queue(
         if summary.safety_unevaluated:
             logger.warning(
                 "librarian run %s: %d of %d rows were decided without the safety "
-                "path (no SafetyGuard implementation yet), so ADVERSARIAL_FLAG and "
-                "UPDATE_AMBIGUOUS could not fire. Their clean verdicts are defaults, "
-                "not findings.",
+                "path (guard unevaluated — LLM failure or NullSafetyGuard), so "
+                "ADVERSARIAL_FLAG and UPDATE_AMBIGUOUS could not fire. Their clean "
+                "verdicts are defaults, not findings.",
                 pipeline_run_id,
                 summary.safety_unevaluated,
                 summary.read,

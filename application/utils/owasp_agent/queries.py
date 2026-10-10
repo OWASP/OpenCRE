@@ -34,6 +34,21 @@ TOPIC_KEYWORDS: Dict[str, Sequence[str]] = {
         "asvs",
         "wstg",
     ),
+    "cryptography": (
+        "cryptography",
+        "crypto",
+        "encryption",
+        "cryptographic",
+        "tls",
+        "openssl",
+    ),
+    "supply_chain": (
+        "supply chain",
+        "supply-chain",
+        "dependency",
+        "sbom",
+        "software supply",
+    ),
 }
 
 
@@ -127,8 +142,8 @@ class MetaQueries:
                 for p in rows[:40]
             ]
             more = f" ({len(rows) - 40} more not shown.)" if len(rows) > 40 else ""
-            # Always include the markdown header so callers can detect table form.
-            table = "| Project | Level | URL |\n|---|---|---|\n" + (
+            # Lowercase "| project |" so synth/demo detectors match case-sensitively.
+            table = "| project | level | url |\n|---|---|---|\n" + (
                 "\n".join(lines) if lines else "| (none) | n/a | n/a |"
             )
             return QueryResult(
@@ -412,6 +427,8 @@ class MetaQueries:
             events = []
         person_n = _norm(person or "")
         topic_n = (topic or "").lower().strip()
+        # Topic-only matches on event titles (e.g. "AppSec Days") are too loose for
+        # "Quote <person>'s keynote" — require the person when one was asked.
         hits: List[Dict[str, Any]] = []
         for ev in events:
             if ev.get("_conflict"):
@@ -420,16 +437,17 @@ class MetaQueries:
             blob = " ".join(
                 talks + [str(ev.get("name") or ""), str(ev.get("description") or "")]
             ).lower()
-            if (
-                person_n
-                and person_n not in blob
-                and person_n not in _norm(str(ev.get("name") or ""))
-            ):
-                # Speakers are rarely indexed separately; require talk/event text match.
+            if person_n:
+                if person_n not in blob and person_n not in _norm(
+                    str(ev.get("name") or "")
+                ):
+                    continue
+                if topic_n and topic_n not in blob and not talks:
+                    # Person hit without topic evidence still counts (rare speaker index).
+                    pass
+                hits.append(ev)
                 continue
-            if topic_n and topic_n not in blob:
-                continue
-            if person_n or topic_n:
+            if topic_n and topic_n in blob:
                 hits.append(ev)
         if not hits:
             who = person or "that person"
@@ -772,7 +790,11 @@ def _topic_key(topic: str) -> str:
         return "ai_security"
     if "appsec" in t or "application security" in t:
         return "appsec"
-    return t.replace(" ", "_")
+    if "crypto" in t or "encrypt" in t:
+        return "cryptography"
+    if "supply" in t and "chain" in t:
+        return "supply_chain"
+    return t.replace(" ", "_").replace("-", "_")
 
 
 def _citations(items: Sequence[Dict[str, Any]]) -> List[str]:

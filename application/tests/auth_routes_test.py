@@ -104,6 +104,68 @@ class TestAuthRoutes(unittest.TestCase):
 
     @patch("application.web.web_main.id_token")
     @patch("application.web.web_main.CREFlow")
+    def test_auth_callback_rejects_email_not_on_allowlist(
+        self, cre_flow_mock: Any, id_token_mock: Any
+    ) -> None:
+        id_token_mock.verify_oauth2_token.return_value = {
+            "sub": "sub-nope",
+            "name": "Nope",
+            "email": "stranger@example.com",
+        }
+        cre_flow_mock.instance.return_value.flow.credentials._id_token = "tok"
+        with patch.dict(
+            os.environ,
+            {
+                "CRE_ENABLE_LOGIN": "1",
+                "LOGIN_ALLOWED_DOMAINS": "*",
+                "LOGIN_ALLOWED_EMAILS": "spyros.gasteratos@owasp.org,rob.van.der.veer@owasp.org",
+                "INSECURE_REQUESTS": "1",
+            },
+        ):
+            with self.app.test_client() as client:
+                with client.session_transaction() as sess:
+                    sess["state"] = "xyz"
+                resp = client.get("/rest/v1/auth/callback?state=xyz")
+                self.assertEqual(resp.status_code, 403)
+                with client.session_transaction() as sess:
+                    self.assertNotIn("user_id", sess)
+        self.assertEqual(sqla.session.query(db.User).count(), 0)
+
+    @patch("application.web.web_main.id_token")
+    @patch("application.web.web_main.CREFlow")
+    def test_auth_callback_allows_email_on_allowlist(
+        self, cre_flow_mock: Any, id_token_mock: Any
+    ) -> None:
+        id_token_mock.verify_oauth2_token.return_value = {
+            "sub": "sub-ok",
+            "name": "Spyros",
+            "email": "spyros.gasteratos@owasp.org",
+        }
+        cre_flow_mock.instance.return_value.flow.credentials._id_token = "tok"
+        with patch.dict(
+            os.environ,
+            {
+                "CRE_ENABLE_LOGIN": "1",
+                "LOGIN_ALLOWED_DOMAINS": "*",
+                "LOGIN_ALLOWED_EMAILS": (
+                    "spyros.gasteratos@owasp.org,"
+                    "rob.van.der.veer@owasp.org,"
+                    "rock.lambros@owasp.org"
+                ),
+                "INSECURE_REQUESTS": "1",
+            },
+        ):
+            with self.app.test_client() as client:
+                with client.session_transaction() as sess:
+                    sess["state"] = "xyz"
+                resp = client.get("/rest/v1/auth/callback?state=xyz")
+                self.assertEqual(resp.status_code, 302)
+                with client.session_transaction() as sess:
+                    self.assertIn("user_id", sess)
+        self.assertEqual(sqla.session.query(db.User).count(), 1)
+
+    @patch("application.web.web_main.id_token")
+    @patch("application.web.web_main.CREFlow")
     def test_auth_callback_state_mismatch_returns_without_continuing(
         self, cre_flow_mock: Any, id_token_mock: Any
     ) -> None:

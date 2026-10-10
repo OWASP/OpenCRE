@@ -48,6 +48,7 @@ _CONTENT_DEFAULTS = """\
         - "**/archive/**"
     chunking:
       strategy: markdown_heading
+      requirement_extract: auto
       max_tokens: 1000
       overlap_tokens: 100
       merge_profile: narrative
@@ -64,6 +65,7 @@ _METADATA_DEFAULTS = """\
         - "index.md"
     chunking:
       strategy: markdown_heading
+      requirement_extract: auto
       max_tokens: 1000
     polling:
       mode: full

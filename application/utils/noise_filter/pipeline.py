@@ -72,6 +72,7 @@ def run_noise_filter(
     config: Optional[NoiseFilterConfig] = None,
     classifier: Optional[LLMClassifier] = None,
     *,
+    artifact_id: Optional[str] = None,
     dry_run: bool = False,
 ) -> RunSummary:
     """Classify one harvest run's chunks and enqueue the keepers.
@@ -82,16 +83,21 @@ def run_noise_filter(
         config: Module B settings; defaults to load_config().
         classifier: injectable LLMClassifier (tests pass a fake); default builds
             one from config.
+        artifact_id: when set, only pending rows for that Docling document
+            (OIE RQ per-document B jobs).
         dry_run: classify but do not write to the queue or mark rows processed.
     """
     config = config or load_config()
     summary = RunSummary(run_id=pipeline_run_id, dry_run=dry_run)
 
-    rows = (
-        session.query(HarvestInput)
-        .filter_by(pipeline_run_id=pipeline_run_id, status="pending")
-        .all()
+    query = session.query(HarvestInput).filter_by(
+        pipeline_run_id=pipeline_run_id, status="pending"
     )
+    if artifact_id is not None:
+        if not str(artifact_id).strip():
+            raise ValueError("artifact_id must be non-empty when provided")
+        query = query.filter_by(artifact_id=artifact_id)
+    rows = query.all()
     summary.read = len(rows)
     if not rows:
         return summary
