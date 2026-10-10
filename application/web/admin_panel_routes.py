@@ -7,7 +7,7 @@ from cre_logging import get_logger
 
 logger = get_logger(__name__)
 
-from flask import jsonify, request
+from flask import jsonify, request, session
 
 from application.utils.admin_panel import service
 
@@ -64,7 +64,10 @@ def register_admin_panel_routes(
     @imports_enabled
     def admin_config_get() -> Any:
         try:
-            return jsonify(service.config_payload())
+            payload = service.config_payload()
+            # Set by admin_imports_enabled_required on safe methods.
+            payload["csrf_token"] = session.get("csrf_token") or ""
+            return jsonify(payload)
         except Exception as exc:
             logger.exception("config get failed")
             return _err(500, f"config failed: {exc}")
