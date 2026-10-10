@@ -966,6 +966,15 @@ def _auth_challenge():
     )
 
 
+def _login_email_allowed(email: str | None) -> bool:
+    """True when LOGIN_ALLOWED_EMAILS is unset/empty or ``email`` is listed."""
+    raw = (os.environ.get("LOGIN_ALLOWED_EMAILS") or "").strip()
+    if not raw:
+        return True
+    allowed = {e.strip().lower() for e in raw.split(",") if e.strip()}
+    return (email or "").strip().lower() in allowed
+
+
 def login_required(f):
     @wraps(f)
     def login_r(*args, **kwargs):
@@ -973,6 +982,13 @@ def login_required(f):
             return f(*args, **kwargs)
         if not _is_logged_in():
             return _auth_challenge()
+        # Defense in depth: drop sessions that are no longer allowlisted.
+        if not _login_email_allowed(session.get("email")):
+            session.clear()
+            abort(
+                403,
+                description="Your Google account is not on the allowlist for this environment.",
+            )
         return f(*args, **kwargs)
 
     return login_r
@@ -1533,6 +1549,7 @@ def auth_callback():
     session["google_id"] = id_info.get("sub")
     session["name"] = id_info.get("name")
     session["email"] = id_info.get("email")
+    email = (id_info.get("email") or "").strip().lower()
     allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
     allowed_domains = allowed_domains.split(",") if allowed_domains else []
     if not allowed_domains:
@@ -1543,13 +1560,24 @@ def auth_callback():
     if (
         allowed_domains
         and allowed_domains != ["*"]
-        and not any([id_info.get("email").endswith(x) for x in allowed_domains])
+        and not any([email.endswith(x.strip().lower()) for x in allowed_domains])
     ):
         allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
         abort(
             401,
             description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
         )
+    # Optional exact-email allowlist (staging): further restricts who may log in.
+    allowed_emails_raw = (os.environ.get("LOGIN_ALLOWED_EMAILS") or "").strip()
+    if allowed_emails_raw:
+        allowed_emails = {
+            e.strip().lower() for e in allowed_emails_raw.split(",") if e.strip()
+        }
+        if email not in allowed_emails:
+            abort(
+                403,
+                description="Your Google account is not on the allowlist for this environment.",
+            )
 
     # Persist the account when login is enabled. ``session['user_id']`` is what
     # ``_is_logged_in`` checks, so if persistence cannot establish it we must NOT
