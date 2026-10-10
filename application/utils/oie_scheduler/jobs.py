@@ -57,12 +57,18 @@ class SchedulerConfig:
         # Filing below the Librarian's own link threshold would file links the
         # Librarian itself would not have called links.
         floor = max(floor, link_threshold)
-        raw_filing = os.getenv("OIE_GRAPH_FILING_ENABLED", "0").strip().lower()
+        try:
+            from application.utils.admin_panel.runtime_settings import filing_enabled
+
+            filing = filing_enabled()
+        except Exception:  # noqa: BLE001 — boot without DB still defaults off
+            raw_filing = os.getenv("OIE_GRAPH_FILING_ENABLED", "0").strip().lower()
+            filing = raw_filing in ("1", "true", "yes", "on")
         return cls(
             harvest_max_repos=int(os.getenv("OIE_HARVEST_MAX_REPOS", "25")),
             metadata_max_repos=int(os.getenv("OIE_METADATA_MAX_REPOS", "50")),
             file_floor=floor,
-            filing_enabled=raw_filing in ("1", "true", "yes", "on"),
+            filing_enabled=filing,
             repos_yaml=os.getenv("OIE_REPOS_YAML") or None,
             agent_db=os.getenv("OWASP_AGENT_DB") or None,
         )
@@ -314,7 +320,46 @@ def stage_file_graph(ctx: JobContext) -> StageResult:
     return StageResult("file_graph", "ok", "", result.to_dict())
 
 
-def _default_ga(cache_file: str) -> None:
+def _cache_only_ga_block_reason(cache_file: str = "") -> Optional[str]:
+    """Return a reason when scheduled inline GA must not run (Heroku cache-only).
+
+    Heroku ``opencreorg`` serves precomputed GA caches only. Live compute belongs
+    on staging/AWS with explicit allow. See AGENTS.md / docs/oie/feature-flags.md.
+    """
+    if os.getenv("CRE_HEROKU_CACHE_ONLY", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    ):
+        return "CRE_HEROKU_CACHE_ONLY=1"
+    if os.getenv("DYNO"):
+        return "DYNO set (Heroku dyno; cache-only)"
+    blob = " ".join(
+        [
+            cache_file or "",
+            os.getenv("DATABASE_URL", ""),
+            os.getenv("DEV_DATABASE_URL", ""),
+            os.getenv("CRE_CACHE_FILE", ""),
+        ]
+    ).lower()
+    if "amazonaws.com" in blob and "heroku" in blob:
+        return "Heroku-shaped DATABASE_URL"
+    if "opencreorg" in blob:
+        return "opencreorg DSN (cache-only prod)"
+    return None
+
+
+def _enqueue_ga(cache_file: str) -> Dict[str, Any]:
+    """Enqueue gap-analysis backfill on the ``ga`` RQ queue (AWS / staging)."""
+    from application.cmd import cre_main
+
+    cre_main.backfill_gap_analysis_only(cache_file, no_queue=False)
+    return {"queued": True, "queue": "ga"}
+
+
+def _inline_ga(cache_file: str) -> None:
+    """Inline GA only with explicit operator acknowledgement."""
     from application.cmd import cre_main
 
     cre_main.backfill_gap_analysis_only(cache_file, no_queue=True)
@@ -326,11 +371,49 @@ def stage_gap_analysis(ctx: JobContext) -> StageResult:
         return StageResult("gap_analysis", "skipped", "no standard edges were added")
     if ctx.dry_run:
         return StageResult("gap_analysis", "skipped", "dry run")
-    (ctx.ga_fn or _default_ga)(ctx.cache_file)
+    blocked = _cache_only_ga_block_reason(ctx.cache_file)
+    if blocked:
+        return StageResult(
+            "gap_analysis",
+            "skipped",
+            f"cache-only target refuses live GA ({blocked})",
+        )
+    if ctx.ga_fn is not None:
+        ctx.ga_fn(ctx.cache_file)
+        return StageResult(
+            "gap_analysis",
+            "ok",
+            "",
+            {"standards": list(filer.standards), "links_added": filer.links_added},
+        )
+    via_queue = os.getenv("CRE_OIE_GA_VIA_QUEUE", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+    if via_queue:
+        summary = _enqueue_ga(ctx.cache_file)
+        summary.update(
+            {"standards": list(filer.standards), "links_added": filer.links_added}
+        )
+        return StageResult("gap_analysis", "ok", "enqueued on ga queue", summary)
+    allow_inline = (
+        os.getenv("I_UNDERSTAND_LIVE_GA_INLINE", "").strip()
+        == "I_UNDERSTAND_LIVE_GA_INLINE"
+    )
+    if not allow_inline:
+        return StageResult(
+            "gap_analysis",
+            "skipped",
+            "set CRE_OIE_GA_VIA_QUEUE=1 (preferred) or "
+            "I_UNDERSTAND_LIVE_GA_INLINE=I_UNDERSTAND_LIVE_GA_INLINE for inline",
+        )
+    _inline_ga(ctx.cache_file)
     return StageResult(
         "gap_analysis",
         "ok",
-        "",
+        "inline",
         {"standards": list(filer.standards), "links_added": filer.links_added},
     )
 
