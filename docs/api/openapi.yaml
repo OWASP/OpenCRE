@@ -505,6 +505,115 @@ paths:
           description: Not found
         '400':
           description: Missing text parameter
+  /rest/v1/user/mcp_grants:
+    get:
+      tags:
+      - User
+      summary: Scopes granted to the current user's MCP client
+      description: Requires a browser session. Google's device flow cannot carry OpenCRE
+        scopes, so an MCP client's permissions are recorded here instead of in its
+        token.
+      responses:
+        '200':
+          description: The scopes currently granted
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - granted
+                properties:
+                  granted:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - myopencre:read
+                      - myopencre:write
+        '401':
+          description: Not authenticated
+        '403':
+          description: Requires a browser session
+    put:
+      tags:
+      - User
+      summary: Grant one scope to the current user's MCP client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - scope
+              properties:
+                scope:
+                  type: string
+                  enum: &id001
+                  - myopencre:read
+                  - myopencre:write
+                  description: The OpenCRE scope to grant or revoke.
+      responses:
+        '200':
+          description: The scopes currently granted
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - granted
+                properties:
+                  granted:
+                    type: array
+                    items:
+                      type: string
+                      enum: *id001
+        '400':
+          description: Unknown or missing scope
+        '401':
+          description: Not authenticated
+        '403':
+          description: Requires a browser session
+    delete:
+      tags:
+      - User
+      summary: Revoke one scope from the current user's MCP client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - scope
+              properties:
+                scope:
+                  type: string
+                  enum: &id002
+                  - myopencre:read
+                  - myopencre:write
+                  description: The OpenCRE scope to grant or revoke.
+      responses:
+        '200':
+          description: The scopes currently granted
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - granted
+                properties:
+                  granted:
+                    type: array
+                    items:
+                      type: string
+                      enum: *id002
+        '400':
+          description: Unknown or missing scope
+        '401':
+          description: Not authenticated
+        '403':
+          description: Requires a browser session
   /rest/v1/user/resources:
     get:
       tags:
