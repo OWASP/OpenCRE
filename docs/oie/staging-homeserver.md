@@ -1,59 +1,97 @@
 # Homeserver staging (`staging.opencre.org`)
 
-Internet entry is **Cloudflare Tunnel only** → `127.0.0.1:5001`.  
-Login allowlist (Google): three OWASP emails via `LOGIN_ALLOWED_EMAILS`.
+**Runtime:** dedicated **Docker Compose stack** for OpenCRE staging — own Postgres (pgvector), Redis, web, OIE workers, and `cloudflared`.  
+**Not** inside the Cursor `my-agents` worker process. `my-agents` may only *bootstrap* the stack on the homeserver; the long-running system is Compose.
 
-## Cloudflare (already applied from laptop)
+Internet entry: **Cloudflare Tunnel only** → Compose service `web:5001` on an internal Docker network (or host loopback published only to the tunnel container).
 
-- Tunnel name: `opencre-staging`
-- Ingress: `staging.opencre.org` → `http://127.0.0.1:5001`
-- DNS: `staging.opencre.org` CNAME → `{tunnel_id}.cfargotunnel.com` (proxied)
-- Connector token: on operator machine as `/tmp/opencre_staging_tunnel_token` (mode 600) — copy to homeserver; **do not commit**
+Login: Google + `LOGIN_ALLOWED_EMAILS` (Spyros / Rob / Rock only).
 
-## Homeserver env (not in git)
+---
 
-```bash
-export NO_LOGIN=0
-export CRE_ENABLE_LOGIN=1
-export LOGIN_ALLOWED_DOMAINS='*'
-export LOGIN_ALLOWED_EMAILS='spyros.gasteratos@owasp.org,rob.van.der.veer@owasp.org,rock.lambros@owasp.org'
-# Google OAuth: authorized redirect
-#   https://staging.opencre.org/rest/v1/auth/callback
-export GOOGLE_CLIENT_ID=…
-export GOOGLE_CLIENT_SECRET=…
-export NEST_API_KEY=…
-export GEMINI_API_KEY=…   # or Vertex
-export OWASP_AGENT_ENABLED=1
-export OWASP_AGENT_DB=postgresql://…   # or sqlite path
-export CRE_ALLOW_IMPORT=1
-export INSECURE_REQUESTS=   # unset — HTTPS at Cloudflare
-export DEV_DATABASE_URL=postgresql://cre:password@127.0.0.1:5432/cre
+## Cloudflare (already applied)
+
+- Tunnel: `opencre-staging`
+- Ingress: `staging.opencre.org` → `http://127.0.0.1:5001` (or Compose-published loopback)
+- DNS: `staging.opencre.org` → `{tunnel_id}.cfargotunnel.com` (proxied)
+- Connector token: operator machine `/tmp/opencre_staging_tunnel_token` — copy into Compose secrets; **never commit**
+
+---
+
+## Compose layout (`deploy/staging/`)
+
+```text
+deploy/staging/
+  docker-compose.yml
+  .env.example          # no secrets — copy to .env on the host
 ```
 
-Bind Flask/gunicorn to **`127.0.0.1:5001` only**.
+| Service | Role | Notes |
+|---------|------|--------|
+| `db` | `pgvector/pgvector:pg16` | Volume `opencre_staging_pg`; **not** shared with laptop/dev Postgres |
+| `redis` | Redis Stack | Volume `opencre_staging_redis`; queue `oie` |
+| `web` | gunicorn/Flask | Bind internal; tunnel reaches it |
+| `worker` | `cre.py --start_worker` ×N | Same image as web; `CRE_WORKER_QUEUES=oie` |
+| `cloudflared` | Tunnel connector | Token from Docker secret / env file on host |
+| (optional) `neo4j` | Only if staging needs Neo/GA compute | Prefer cache-only like prod |
 
-## cloudflared
+Network: private bridge `opencre_staging_net`. **No** publishing Postgres/Redis to the public interface. Prefer publishing web as `127.0.0.1:5001:5001` so only cloudflared (host or sidecar) can reach it.
+
+---
+
+## Env (host file / Compose `env_file`, not git)
 
 ```bash
-# token from /tmp/opencre_staging_tunnel_token (operator copy)
-cloudflared service install "$TUNNEL_TOKEN"
-# or: cloudflared tunnel run --token "$TUNNEL_TOKEN"
+NO_LOGIN=0
+CRE_ENABLE_LOGIN=1
+LOGIN_ALLOWED_DOMAINS=*
+LOGIN_ALLOWED_EMAILS=spyros.gasteratos@owasp.org,rob.van.der.veer@owasp.org,rock.lambros@owasp.org
+# Google OAuth redirect: https://staging.opencre.org/rest/v1/auth/callback
+GOOGLE_CLIENT_ID=…
+GOOGLE_CLIENT_SECRET=…
+DATABASE_URL=postgresql://cre:…@db:5432/cre
+DEV_DATABASE_URL=postgresql://cre:…@db:5432/cre
+REDIS_URL=…   # as app expects
+NEST_API_KEY=…
+GEMINI_API_KEY=…
+OWASP_AGENT_ENABLED=1
+OWASP_AGENT_DB=postgresql://cre:…@db:5432/cre   # agent index in same DB or separate schema
+CRE_ALLOW_IMPORT=1
+TUNNEL_TOKEN=…   # cloudflared only
 ```
 
-## App stack
+---
+
+## Bring-up (homeserver preferred; Colima laptop OK short-term)
 
 ```bash
+cd /path/to/OpenCRE
 git fetch && git checkout feat/oie-rq-fanout && git pull
-make start-containers
-make migrate-upgrade   # if needed
-make start-oie-workers
-# run web on 127.0.0.1:5001 with env above
+cd deploy/staging
+cp .env.example .env   # fill GOOGLE_*, GEMINI_*, NEST_*, POSTGRES_PASSWORD, TUNNEL_TOKEN
+docker compose up -d --build
+# cloudflared: on Linux use `docker compose --profile tunnel up -d`
+# on macOS/Colima run host: cloudflared tunnel run --token "$TUNNEL_TOKEN"
+# optional catalog seed (skips by default via CRE_SKIP_UPSTREAM_SYNC=1):
+#   docker compose exec -e CRE_SKIP_UPSTREAM_SYNC=0 web python /code/cre.py --upstream_sync
 ```
+
+---
 
 ## Verify
 
 ```bash
 curl -sI https://staging.opencre.org | head -5
-# Allowlisted Google login → /admin OK
-# Other Google account → login 403
+docker compose -f deploy/staging/docker-compose.yml ps
+# Allowlisted Google → login OK; other Google → 403
 ```
+
+---
+
+## Relation to my-agents
+
+| Role | Who |
+|------|-----|
+| Long-running OpenCRE staging | **Compose stack** (this doc) |
+| One-shot “bring the stack up / fix tunnel” | Optional Cursor **my-agents** job on the homeserver |
+| Laptop Cursor chat | Code + Cloudflare DNS/API; not the runtime |
