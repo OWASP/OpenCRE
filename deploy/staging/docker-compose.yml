@@ -1,0 +1,122 @@
+# OpenCRE staging — dedicated Compose stack (not my-agents runtime).
+#   cd deploy/staging && cp .env.example .env   # fill secrets + TUNNEL_TOKEN
+#   docker compose up -d --build
+# Cloudflare tunnel ingress: staging.opencre.org → http://127.0.0.1:5001
+
+name: opencre-staging
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: cre
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cre_staging_change_me}
+      POSTGRES_DB: cre
+    volumes:
+      - opencre_staging_pg:/var/lib/postgresql/data
+    networks:
+      - opencre_staging_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cre -d cre"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis/redis-stack:latest
+    volumes:
+      - opencre_staging_redis:/data
+    networks:
+      - opencre_staging_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      FLASK_CONFIG: production
+      INSECURE_REQUESTS: "1"
+      # Prefer DATABASE_URL only — bare SQLALCHEMY_DATABASE_URI skips psycopg2 pinning.
+      DATABASE_URL: postgresql://cre:${POSTGRES_PASSWORD:-cre_staging_change_me}@db:5432/cre
+      DEV_DATABASE_URL: postgresql://cre:${POSTGRES_PASSWORD:-cre_staging_change_me}@db:5432/cre
+      REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_NO_SSL: "true"
+      CRE_SKIP_UPSTREAM_SYNC: ${CRE_SKIP_UPSTREAM_SYNC:-1}
+      CRE_EMBED_EXPECTED_DIM: ${CRE_EMBED_EXPECTED_DIM:-3072}
+      GUNICORN_BIND: "0.0.0.0:5001"
+    ports:
+      - "127.0.0.1:5001:5001"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - opencre_staging_net
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    entrypoint: ["/bin/bash", "-lc"]
+    command:
+      - |
+        export FLASK_APP=/code/cre.py
+        export FLASK_CONFIG=production
+        export INSECURE_REQUESTS=1
+        exec python /code/cre.py --start_worker
+    env_file:
+      - .env
+    environment:
+      FLASK_CONFIG: production
+      INSECURE_REQUESTS: "1"
+      DATABASE_URL: postgresql://cre:${POSTGRES_PASSWORD:-cre_staging_change_me}@db:5432/cre
+      DEV_DATABASE_URL: postgresql://cre:${POSTGRES_PASSWORD:-cre_staging_change_me}@db:5432/cre
+      REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_NO_SSL: "true"
+      CRE_WORKER_QUEUES: oie,default
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_started
+    networks:
+      - opencre_staging_net
+    restart: unless-stopped
+
+  # Linux homeserver: host network reaches published 127.0.0.1:5001.
+  # On Docker Desktop/Colima, prefer: cloudflared tunnel run --token "$TUNNEL_TOKEN" on the host.
+  cloudflared:
+    profiles: ["tunnel"]
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN}
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    network_mode: host
+    restart: unless-stopped
+    depends_on:
+      - web
+
+volumes:
+  opencre_staging_pg:
+  opencre_staging_redis:
+
+networks:
+  opencre_staging_net:
+    driver: bridge
