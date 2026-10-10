@@ -410,6 +410,11 @@ def classify_intent(text: str) -> str:
         r"\bddos\b|\bbreak into\b|\bsteal (their|passwords|dms)\b|"
         r"\bphishing (email )?template\b|\bvishing\b|\bmetasploit\b|"
         r"\bsocial-?engineer\b|"
+        r"\b(phish|phishing)\b|"
+        r"\bkeylogger\b|\b(write|build)\s+a\s+worm\b|\bpoison .{0,40}dependency\b|"
+        r"\bburp\s+intruder\b|\bauth bypass\b|"
+        r"\bbreaking into\b|\bforged token\b|\bidor\b|\bransomware\b|\bdox\b|"
+        r"\bunrestricted gpt\b|\bdisable safety\b|\bexfiltrate\b|"
         r"\bignore (all )?(previous|prior|earlier)( instructions)?\b|"
         r"\bdump (the )?(api|nest|heroku)?.{0,20}keys?\b|"
         r"\boutput the .{0,40}api keys?\b|"
@@ -429,7 +434,7 @@ def classify_intent(text: str) -> str:
         r"status in greece|compare the two chapters|output encoding|"
         r"appsec keynote summary please|first interview|who ran|"
         r"cre for that thing we discussed|what did they say at the talk|"
-        r"is the chapter active)\??",
+        r"is the chapter active)[?.!\s]*",
         t,
     ):
         return "clarify"
@@ -497,7 +502,9 @@ def classify_intent(text: str) -> str:
     # Chapter leader / status / active (incl. suburb → chapter + who leads)
     if re.search(
         r"\b(chapter leader|leader for|leaders? (for|in|of)|who leads|"
-        r"which chapter|active owasp chapter|chapter status|owasp leader)\b",
+        r"which chapter|active owasp chapter|chapter status|owasp leader|"
+        r"owasp athens|athens currently (active|inactive)|"
+        r"count of indexed owasp chapters|approximate count of .{0,20}chapters)\b",
         t,
     ) or (
         "chapter" in t
@@ -505,7 +512,24 @@ def classify_intent(text: str) -> str:
             w in t for w in ("athens", "thessalon", "los angeles", "active", "status")
         )
     ):
+        if re.search(
+            r"\b(count|how many|approximate count)\b.+\bchapters?\b",
+            t,
+        ) or re.search(r"\bchapters?\b.+\b(count|how many)\b", t):
+            return "count_chapters"
         return "chapter_lookup"
+
+    # Standalone chapter counts (without "how many")
+    if (
+        re.search(
+            r"\b(approximate )?count of (indexed )?owasp chapters\b|"
+            r"\bhow many (indexed )?owasp chapters\b|"
+            r"\bindexed owasp chapters\b",
+            t,
+        )
+        and "project" not in t
+    ):
+        return "count_chapters"
 
     # Talk / keynote claims — fail-closed talk_lookup (not CRE, not invent)
     if re.search(
