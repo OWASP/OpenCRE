@@ -26,6 +26,7 @@ neo4j
 neomodel
 networkx
 PyYAML==6.0.1
+pathspec
 
 # auth + HTTP
 requests
