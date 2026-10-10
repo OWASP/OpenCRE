@@ -581,7 +581,7 @@ class TestProbeGapFixes(unittest.TestCase):
         resp = self.router.handle("List AI security related OWASP projects.")
         self.assertIsNotNone(resp)
         assert resp is not None
-        self.assertIn("| Project |", resp["response"])
+        self.assertIn("| project |", resp["response"])
 
     def test_sam_candidate_statement_did_run(self) -> None:
         resp = self.router.handle(
@@ -705,7 +705,7 @@ class TestProbeGapFixes(unittest.TestCase):
         )
         self.assertIsNotNone(resp)
         assert resp is not None
-        self.assertIn("| Project |", resp["response"])
+        self.assertIn("| project |", resp["response"])
 
     def test_suburb_glendale_chapter_leader(self) -> None:
         resp = self.router.handle(
