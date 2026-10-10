@@ -59,8 +59,19 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
 
     init_openapi(app)
 
-    CORS(app)
-    app.config["CORS_HEADERS"] = "Content-Type"
+    # Credentialed browser calls are same-origin in prod/staging; keep CORS
+    # narrow so cross-site pages cannot drive cookie auth. Admin mutations also
+    # require CSRF (see web_main.admin_imports_enabled_required).
+    cors_origins = [
+        o.strip()
+        for o in (os.environ.get("CORS_ALLOWED_ORIGINS") or "").split(",")
+        if o.strip()
+    ]
+    if cors_origins:
+        CORS(app, origins=cors_origins, supports_credentials=True)
+    else:
+        CORS(app, supports_credentials=True)
+    app.config["CORS_HEADERS"] = "Content-Type, X-CSRF-Token"
 
     compress.init_app(app)
     cache.init_app(app)

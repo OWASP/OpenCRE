@@ -979,13 +979,83 @@ def _auth_challenge():
     )
 
 
+def _is_production_config() -> bool:
+    return (os.environ.get("FLASK_CONFIG") or "").strip().lower() == "production"
+
+
+def _login_emails_raw() -> str:
+    return (os.environ.get("LOGIN_ALLOWED_EMAILS") or "").strip()
+
+
+def _login_email_allowed(email: str | None) -> bool:
+    """True when ``email`` is on LOGIN_ALLOWED_EMAILS.
+
+    Dev/test: unset/empty allowlist allows anyone (local convenience).
+    ``FLASK_CONFIG=production``: empty allowlist fails closed.
+    """
+    raw = _login_emails_raw()
+    if not raw:
+        return not _is_production_config()
+    allowed = {e.strip().lower() for e in raw.split(",") if e.strip()}
+    return (email or "").strip().lower() in allowed
+
+
+def _ensure_csrf_token() -> str:
+    import secrets as _secrets
+
+    token = session.get("csrf_token")
+    if not token:
+        token = _secrets.token_urlsafe(32)
+        session["csrf_token"] = token
+    return str(token)
+
+
+def _require_csrf() -> None:
+    expected = session.get("csrf_token")
+    got = request.headers.get("X-CSRF-Token") or ""
+    if not got:
+        body = request.get_json(silent=True) or {}
+        if isinstance(body, dict):
+            got = str(body.get("csrf_token") or "")
+    if not expected or not got or not secrets_compare(str(expected), str(got)):
+        abort(403, description="CSRF token missing or invalid")
+
+
+def secrets_compare(a: str, b: str) -> bool:
+    import secrets as _secrets
+
+    return _secrets.compare_digest(a, b)
+
+
+def _require_same_origin_admin() -> None:
+    """Reject cross-site admin mutations when Origin is present."""
+    origin = (request.headers.get("Origin") or "").strip()
+    if not origin:
+        return
+    host = (request.host_url or "").rstrip("/")
+    if origin.rstrip("/") != host:
+        abort(403, description="Cross-origin admin mutation refused")
+
+
 def login_required(f):
     @wraps(f)
     def login_r(*args, **kwargs):
         if os.environ.get("NO_LOGIN") == "1":
             return f(*args, **kwargs)
+        if _is_production_config() and not _login_emails_raw():
+            abort(
+                403,
+                description="LOGIN_ALLOWED_EMAILS must be set when FLASK_CONFIG=production",
+            )
         if not _is_logged_in():
             return _auth_challenge()
+        # Defense in depth: drop sessions that are no longer allowlisted.
+        if not _login_email_allowed(session.get("email")):
+            session.clear()
+            abort(
+                403,
+                description="Your Google account is not on the allowlist for this environment.",
+            )
         return f(*args, **kwargs)
 
     return login_r
@@ -1075,10 +1145,36 @@ def apply_user_resource_filter(database, names):
 
 
 def admin_imports_enabled_required(f):
+    """Gate admin APIs: import flag + allowlisted identity + CSRF on writes.
+
+    ``capabilities.admin`` is UI-only; this decorator is the server-side control.
+    ``NO_LOGIN=1`` skips identity/CSRF for hermetic tests.
+    """
+
     @wraps(f)
     def enabled_r(*args, **kwargs):
         if not is_cre_import_allowed():
             abort(404, description="Admin imports API is disabled")
+        if os.environ.get("NO_LOGIN") != "1":
+            if _is_production_config() and not _login_emails_raw():
+                abort(
+                    403,
+                    description=(
+                        "LOGIN_ALLOWED_EMAILS must be set when FLASK_CONFIG=production"
+                    ),
+                )
+            email = session.get("email") or getattr(g, "api_key_email", None)
+            if not _login_email_allowed(email):
+                abort(
+                    403,
+                    description="Only allowlisted admins can use the admin API",
+                )
+            if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+                _ensure_csrf_token()
+                _require_csrf()
+                _require_same_origin_admin()
+            else:
+                _ensure_csrf_token()
         return f(*args, **kwargs)
 
     return enabled_r
@@ -1566,6 +1662,7 @@ def auth_callback():
     session["google_id"] = id_info.get("sub")
     session["name"] = id_info.get("name")
     session["email"] = id_info.get("email")
+    email = (id_info.get("email") or "").strip().lower()
     allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
     allowed_domains = allowed_domains.split(",") if allowed_domains else []
     if not allowed_domains:
@@ -1576,13 +1673,24 @@ def auth_callback():
     if (
         allowed_domains
         and allowed_domains != ["*"]
-        and not any([id_info.get("email").endswith(x) for x in allowed_domains])
+        and not any([email.endswith(x.strip().lower()) for x in allowed_domains])
     ):
         allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
         abort(
             401,
             description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
         )
+    # Optional exact-email allowlist (staging): further restricts who may log in.
+    allowed_emails_raw = (os.environ.get("LOGIN_ALLOWED_EMAILS") or "").strip()
+    if allowed_emails_raw:
+        allowed_emails = {
+            e.strip().lower() for e in allowed_emails_raw.split(",") if e.strip()
+        }
+        if email not in allowed_emails:
+            abort(
+                403,
+                description="Your Google account is not on the allowlist for this environment.",
+            )
 
     # Persist the account when login is enabled. ``session['user_id']`` is what
     # ``_is_logged_in`` checks, so if persistence cannot establish it we must NOT
