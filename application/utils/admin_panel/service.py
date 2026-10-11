@@ -1278,7 +1278,30 @@ def _op_added_name(op: Dict[str, Any], doc: Dict[str, Any]) -> str:
     return ""
 
 
-def review_run_links(run_id: str) -> Dict[str, Any]:
+def _section_title_content(doc: Dict[str, Any], added_name: str) -> tuple[str, str]:
+    title = str(
+        doc.get("name")
+        or doc.get("section")
+        or doc.get("sectionID")
+        or added_name
+        or ""
+    )
+    content = str(
+        doc.get("description")
+        or doc.get("text")
+        or doc.get("body")
+        or doc.get("content")
+        or ""
+    )
+    return title, content
+
+
+def review_run_links(
+    run_id: str,
+    *,
+    page: int = 1,
+    page_size: int = 50,
+) -> Dict[str, Any]:
     cs = db.get_staged_change_set(run_id=run_id)
     if not cs:
         raise KeyError("no staged change set")
@@ -1293,11 +1316,15 @@ def review_run_links(run_id: str) -> Dict[str, Any]:
         if not isinstance(op, dict):
             continue
         doc = _op_document(op)
+        name = _op_added_name(op, doc)
+        title, content = _section_title_content(doc, name)
         added = {
-            "name": _op_added_name(op, doc),
+            "name": name,
             "section": doc.get("section") or "",
             "sectionID": doc.get("sectionID") or "",
             "op": op.get("op"),
+            "title": title,
+            "content": content,
         }
         cres = doc.get("linked_cres")
         if not isinstance(cres, list) or not cres:
@@ -1326,10 +1353,18 @@ def review_run_links(run_id: str) -> Dict[str, Any]:
                     "decision": cre.get("decision") or "pending",
                 }
             )
+    total = len(links)
+    size = max(1, min(int(page_size or 50), 200))
+    page_n = max(1, int(page or 1))
+    start = (page_n - 1) * size
+    page_links = links[start : start + size]
     return {
         "run_id": run_id,
         "staging_status": cs.staging_status,
-        "links": links,
+        "links": page_links,
+        "total": total,
+        "page": page_n,
+        "page_size": size,
         "changeset": ops,
     }
 
@@ -1401,18 +1436,104 @@ def review_link(
     return review_run_links(run_id)
 
 
+def _review_pulse_from_staged() -> Dict[str, Any]:
+    """Accept-as-is / adjust / reject rates from staged link decisions (no gold set)."""
+    accepted = 0
+    adjusted = 0
+    rejected = 0
+    pending = 0
+    try:
+        rows = sqla.session.query(db.StagedChangeSet).all()
+    except Exception:
+        logger.exception("review pulse query failed")
+        rows = []
+    for cs in rows:
+        try:
+            ops = json.loads(cs.changeset_json or "[]")
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(ops, list):
+            continue
+        for op in ops:
+            if not isinstance(op, dict):
+                continue
+            doc = _op_document(op)
+            cres = doc.get("linked_cres")
+            if not isinstance(cres, list) or not cres:
+                if cs.staging_status == "pending_review":
+                    pending += 1
+                continue
+            for cre in cres:
+                if not isinstance(cre, dict):
+                    continue
+                decision = str(cre.get("decision") or "pending").lower()
+                if decision in ("approved", "accept", "accepted"):
+                    accepted += 1
+                elif decision in ("relinked", "relink", "edited"):
+                    adjusted += 1
+                elif decision in ("denied", "deny", "rejected"):
+                    rejected += 1
+                else:
+                    pending += 1
+    decided = accepted + adjusted + rejected
+    total = decided + pending
+
+    def _pct(n: int) -> float:
+        return round((100.0 * n / decided), 1) if decided else 0.0
+
+    return {
+        "accepted_as_is": accepted,
+        "adjusted": adjusted,
+        "rejected": rejected,
+        "pending": pending,
+        "decided": decided,
+        "total": total,
+        "accepted_as_is_pct": _pct(accepted),
+        "adjusted_pct": _pct(adjusted),
+        "rejected_pct": _pct(rejected),
+    }
+
+
 def dashboard_payload() -> Dict[str, Any]:
     pipe = pipeline_snapshot()
     events = pipe.get("events") or []
     running = [e for e in events if e.get("status") == "started"]
     failed = [e for e in events if e.get("status") in ("error", "failed")]
+    ingest_errors = [
+        e
+        for e in events
+        if e.get("status") in ("error", "failed")
+        and str(e.get("stage") or "").lower()
+        in ("harvest", "ingest", "module_a", "a", "chunk", "embed")
+    ]
+    staged_pending = 0
+    try:
+        staged_pending = (
+            sqla.session.query(db.StagedChangeSet)
+            .filter(db.StagedChangeSet.staging_status == "pending_review")
+            .count()
+        )
+    except Exception:
+        logger.exception("staged pending count failed")
+    oie = pipe.get("oie") or {}
+    blocked = int(oie.get("blocked") or oie.get("fail_closed") or 0)
+    pulse = _review_pulse_from_staged()
     return {
         "running": running[:25],
         "failed": failed[:25],
         "import_runs": (pipe.get("import_runs") or [])[:15],
         "latest_strip": pipe.get("latest_strip"),
-        "oie_unconsumed": (pipe.get("oie") or {}).get("unconsumed", 0),
+        "oie_unconsumed": oie.get("unconsumed", 0),
         "agent": agent_status(),
+        "needs_attention": {
+            "staged_review": staged_pending,
+            "failed_24h": len(failed),
+            "blocked": blocked,
+            "ingest_errors": len(ingest_errors),
+            "oie_unconsumed": oie.get("unconsumed", 0),
+            "queue_depth": int(oie.get("queue_depth") or len(running)),
+        },
+        "review_pulse": pulse,
     }
 
 
@@ -1422,6 +1543,15 @@ def config_payload() -> Dict[str, Any]:
         "config": rows,
         "writable": any(bool(r.get("writable")) for r in rows),
         "restart_instructions": RESTART_INSTRUCTIONS,
+    }
+
+
+def config_diff_payload() -> Dict[str, Any]:
+    rows = config_catalog.present_config_diff(os.environ)
+    return {
+        "diff": rows,
+        "dotenv_path": str(config_catalog.ENV_DOTENV),
+        "dotenv_present": config_catalog.ENV_DOTENV.is_file(),
     }
 
 

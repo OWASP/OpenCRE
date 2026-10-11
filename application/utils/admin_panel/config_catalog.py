@@ -142,6 +142,7 @@ CATALOG: Dict[str, ConfigKey] = {
 }
 
 ENV_EXAMPLE = Path(__file__).resolve().parents[3] / ".env.example"
+ENV_DOTENV = Path(__file__).resolve().parents[3] / ".env"
 _SECRET_MARKERS = ("SECRET", "TOKEN", "PASSWORD", "API_KEY", "_AUTH")
 _URL_KEYS = ("_URL", "_DB", "DATABASE_URL")
 
@@ -219,6 +220,97 @@ def present_config(environ: Mapping[str, str]) -> List[Dict[str, Any]]:
                 "help_url": spec.help_url if spec else DOCS_ENV,
                 "secret": secret,
                 "writable": bool(spec.writable) if spec else False,
+            }
+        )
+    return rows
+
+
+def parse_dotenv_file(path: Path) -> Dict[str, str]:
+    """Parse KEY=VALUE lines from a dotenv file (no export, no interpolation)."""
+    if not path.is_file():
+        return {}
+    out: Dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, _, value = stripped.partition("=")
+        key = key.strip()
+        if not key:
+            continue
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+            value = value[1:-1]
+        out[key] = value
+    return out
+
+
+def _redact_value(
+    key: str, raw: Optional[str], spec: Optional[ConfigKey]
+) -> Optional[str]:
+    if raw is None:
+        return None
+    if raw == "":
+        return ""
+    secret = _is_secret_key(key, spec)
+    if secret:
+        return "***"
+    if _should_redact_url(key):
+        return redact_postgres_url(raw)
+    return raw
+
+
+def _normalize_compare(value: Optional[str]) -> str:
+    if value is None:
+        return ""
+    text = str(value).strip().lower()
+    if text in ("1", "true", "yes", "on"):
+        return "1"
+    if text in ("0", "false", "no", "off", ""):
+        return "0"
+    return str(value).strip()
+
+
+def present_config_diff(
+    environ: Mapping[str, str],
+    *,
+    dotenv_path: Optional[Path] = None,
+) -> List[Dict[str, Any]]:
+    """Compare process env to ``.env`` (fallback: empty) for catalog + dotenv keys."""
+    path = dotenv_path if dotenv_path is not None else ENV_DOTENV
+    dotenv = parse_dotenv_file(path)
+    keys = list(_ordered_keys())
+    seen = set(keys)
+    for key in dotenv:
+        if key not in seen:
+            keys.append(key)
+            seen.add(key)
+    rows: List[Dict[str, Any]] = []
+    for key in keys:
+        spec = CATALOG.get(key)
+        proc_raw = environ.get(key)
+        file_raw = dotenv.get(key) if key in dotenv else None
+        in_process = key in environ
+        in_file = key in dotenv
+        if in_process and not in_file:
+            status = "process_only"
+        elif in_file and not in_process:
+            status = "missing"
+        elif _normalize_compare(proc_raw) == _normalize_compare(file_raw):
+            status = "match"
+        else:
+            status = "diff"
+        rows.append(
+            {
+                "key": key,
+                "process": _redact_value(key, proc_raw if in_process else None, spec),
+                "dotenv": _redact_value(key, file_raw if in_file else None, spec),
+                "status": status,
+                "help_text": (
+                    spec.help_text if spec else "Declared in .env / .env.example."
+                ),
+                "help_url": spec.help_url if spec else DOCS_ENV,
+                "secret": _is_secret_key(key, spec),
             }
         )
     return rows
