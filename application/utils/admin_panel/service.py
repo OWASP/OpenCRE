@@ -901,6 +901,7 @@ def _run_oie_job(
     max_repos: Optional[int],
     skip_b: Optional[bool],
     skip_c: Optional[bool],
+    skip_c1: Optional[bool] = None,
     cleanup_yaml: bool,
 ) -> Dict[str, Any]:
     try:
@@ -912,6 +913,7 @@ def _run_oie_job(
             max_repos=max_repos,
             skip_b=skip_b,
             skip_c=skip_c,
+            skip_c1=skip_c1,
         )
         _record_oie_result(run_id, oie)
         return oie
@@ -934,6 +936,253 @@ def _packaged_harvest_source(custom_name: str) -> tuple[str, Optional[str]]:
     return repos_yaml_source_name(custom_name, packaged), path
 
 
+def download_graph_from_upstream(cache_file: str) -> None:
+    """Import CRE graph from opencre.org into ``cache_file`` (Postgres URL).
+
+    Runs in a subprocess so ``cre_main.db_connect`` cannot nest/pop the
+    admin request's Flask app context.
+    """
+    cache = (cache_file or "").replace("postgresql+psycopg2://", "postgresql://")
+    argv = [
+        sys.executable,
+        str(REPO_ROOT / "cre.py"),
+        "--upstream_sync",
+        "--cache_file",
+        cache,
+    ]
+    proc = subprocess.run(
+        argv,
+        capture_output=True,
+        text=True,
+        timeout=60 * 60,
+        check=False,
+        cwd=str(REPO_ROOT),
+        env=_subprocess_env(),
+    )
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "upstream_sync failed")[-1500:]
+        raise RuntimeError(f"cre.py --upstream_sync failed: {detail}")
+
+
+def _cre_hub_sqlite_path() -> Optional[Path]:
+    env = (os.getenv("CRE_HUB_SQLITE") or "").strip()
+    if env:
+        p = Path(env)
+        return p if p.is_file() else None
+    packaged = REPO_ROOT / "standards_cache.sqlite"
+    return packaged if packaged.is_file() else None
+
+
+def sync_cre_hub_embeddings(cache_file: str) -> Dict[str, Any]:
+    """Load CRE embedding vectors into Postgres (required for Module C).
+
+    ``cre.py --upstream_sync`` only imports the CRE graph; Librarian needs
+    ``embeddings`` rows with ``embedding_vec``. Prefer a local hub sqlite
+    (``CRE_HUB_SQLITE`` or ``standards_cache.sqlite``).
+    """
+    hub = _cre_hub_sqlite_path()
+    if hub is None:
+        return {
+            "status": "skipped",
+            "reason": "no CRE hub sqlite (set CRE_HUB_SQLITE or place standards_cache.sqlite)",
+        }
+    dest = (cache_file or "").replace("postgresql+psycopg2://", "postgresql://")
+    argv = [
+        sys.executable,
+        str(REPO_ROOT / "scripts" / "oie_sync_cre_hub.py"),
+        "--from-sqlite",
+        str(hub),
+        "--to-postgres",
+        dest,
+        "--allow-remote-destination",
+    ]
+    proc = subprocess.run(
+        argv,
+        capture_output=True,
+        text=True,
+        timeout=60 * 60,
+        check=False,
+        cwd=str(REPO_ROOT),
+        env=_subprocess_env(),
+    )
+    out = (proc.stdout or "")[-1500:]
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "cre hub sync failed")[-1500:]
+        raise RuntimeError(f"oie_sync_cre_hub failed: {detail}")
+    return {"status": "ok", "hub": str(hub), "detail": out}
+
+
+def _run_upstream_sync_job(run_id: str, cache_file: str) -> Dict[str, Any]:
+    append_event(
+        run_id,
+        "upstream_sync",
+        "started",
+        f"download_graph_from_upstream cache={cache_file[:80]}",
+    )
+    try:
+        download_graph_from_upstream(cache_file)
+    except Exception as exc:
+        append_event(run_id, "upstream_sync", "error", str(exc)[:2000])
+        raise
+    append_event(run_id, "upstream_sync", "ok", "upstream CRE graph synced")
+
+    append_event(run_id, "cre_hub_embeddings", "started", "sync CRE embedding vectors")
+    try:
+        hub = sync_cre_hub_embeddings(cache_file)
+    except Exception as exc:
+        append_event(run_id, "cre_hub_embeddings", "error", str(exc)[:2000])
+        raise
+    status = str(hub.get("status") or "ok")
+    append_event(
+        run_id,
+        "cre_hub_embeddings",
+        status if status in ("ok", "skipped", "error") else "ok",
+        json.dumps(hub)[:2000],
+    )
+    if status == "skipped":
+        # Module C will EmptyPoolError — surface clearly before OIE starts.
+        raise RuntimeError(
+            "CRE hub embeddings missing after upstream sync: "
+            + str(hub.get("reason") or "skipped")
+        )
+    return {"status": "ok", "hub": hub}
+
+
+def start_upstream_sync_and_ingest(
+    *,
+    name: Optional[str] = None,
+    packaged: bool = True,
+    yaml_text: Optional[str] = None,
+    dry_run: bool = False,
+    sync_repos: bool = True,
+    max_repos: Optional[int] = DEFAULT_OIE_MAX_REPOS,
+    skip_b: Optional[bool] = None,
+    skip_c: Optional[bool] = None,
+    skip_c1: Optional[bool] = None,
+    wait: Optional[bool] = None,
+) -> Dict[str, Any]:
+    """Pull CRE hub from upstream, then start packaged (or one-off) OIE ingest.
+
+    Progress events (``upstream_sync``, then ``oie``) land on one import run so
+    Admin → Pipeline shows both stages. Async by default outside tests.
+    """
+    try:
+        cache_file = _oie_cache_file()
+    except RuntimeError as exc:
+        raise ValueError(str(exc)) from exc
+
+    custom_name = (name or "").strip()
+    cleanup_yaml = False
+    one_off_yaml: Optional[str] = None
+    repos_yaml_path: Optional[str] = None
+
+    if yaml_text is not None:
+        data = load_repos_mapping(yaml_text)
+        probe_github_sources(data.get("sources") or [])
+        source = repos_yaml_source_name(custom_name, yaml_text)
+        one_off_yaml = yaml_text
+    elif packaged:
+        source, repos_yaml_path = _packaged_harvest_source(custom_name)
+    else:
+        raise ValueError("packaged=true or yaml is required")
+
+    run = db.create_import_run(source=source, version="admin-upstream-sync-and-ingest")
+    db.persist_staged_change_set(
+        run_id=run.id,
+        changeset_json=import_diff.change_set_to_json([]),
+        staging_status="pending_review",
+    )
+    append_event(run.id, "queued", "ok", f"upstream_sync+oie source={source}")
+
+    if one_off_yaml is not None:
+        repos_yaml_path = str(_write_run_repos_yaml(run.id, one_off_yaml))
+        cleanup_yaml = True
+
+    auto_b, auto_c = _default_skip_bc()
+    eff_skip_b = auto_b if skip_b is None else skip_b
+    eff_skip_c = auto_c if skip_c is None else skip_c
+    eff_skip_c1 = False if skip_c1 is None else bool(skip_c1)
+    oie_plan = {
+        "after": "upstream_sync",
+        "dry_run": dry_run,
+        "sync_repos": sync_repos,
+        "max_repos": max_repos,
+        "skip_b": eff_skip_b,
+        "skip_c": eff_skip_c,
+        "skip_c1": eff_skip_c1,
+        "repos_yaml": repos_yaml_path,
+    }
+
+    testing = (
+        bool(has_app_context() and current_app.config.get("TESTING"))
+        or (os.getenv("ADMIN_OIE_SYNC") or "").strip().lower() in TRUE_VALUES
+    )
+    run_sync = testing if wait is None else bool(wait)
+    job_kwargs = dict(
+        dry_run=dry_run,
+        sync_repos=sync_repos,
+        max_repos=max_repos,
+        skip_b=eff_skip_b,
+        skip_c=eff_skip_c,
+        skip_c1=eff_skip_c1,
+        cleanup_yaml=cleanup_yaml,
+    )
+    oie: Optional[Dict[str, Any]] = None
+    async_job = False
+
+    def _worker_body() -> Dict[str, Any]:
+        # Upstream first — do not start OIE until the CRE hub is in Postgres.
+        _run_upstream_sync_job(run.id, cache_file)
+        append_event(run.id, "oie", "started", json.dumps(oie_plan)[:2000])
+        return _run_oie_job(run.id, repos_yaml_path, **job_kwargs)
+
+    if run_sync:
+        try:
+            oie = _worker_body()
+        except Exception as exc:
+            logger.exception("upstream-sync-and-ingest failed")
+            append_event(run.id, "oie", "error", str(exc)[:2000])
+            raise
+    else:
+        app = current_app._get_current_object()
+        run_id = run.id
+        yaml_path = repos_yaml_path
+        kw = dict(job_kwargs)
+        plan = dict(oie_plan)
+
+        def _worker() -> None:
+            with app.app_context():
+                try:
+                    _run_upstream_sync_job(run_id, cache_file)
+                    append_event(run_id, "oie", "started", json.dumps(plan)[:2000])
+                    _run_oie_job(run_id, yaml_path, **kw)
+                except Exception as exc:
+                    logger.exception("async upstream-sync-and-ingest failed")
+                    append_event(run_id, "oie", "error", str(exc)[:2000])
+
+        threading.Thread(
+            target=_worker, daemon=True, name=f"admin-upstream-oie-{run.id}"
+        ).start()
+        async_job = True
+        oie = {
+            "async": True,
+            "started": True,
+            "skip_b": eff_skip_b,
+            "skip_c": eff_skip_c,
+            "skip_c1": eff_skip_c1,
+        }
+
+    return {
+        "run_id": run.id,
+        "source": source,
+        "oie": oie,
+        "dry_run": dry_run,
+        "sync_repos": sync_repos,
+        "async": async_job,
+        "upstream_sync": True,
+    }
+
+
 def start_ingestion(
     *,
     source: str = "",
@@ -946,6 +1195,7 @@ def start_ingestion(
     max_repos: Optional[int] = DEFAULT_OIE_MAX_REPOS,
     skip_b: Optional[bool] = None,
     skip_c: Optional[bool] = None,
+    skip_c1: Optional[bool] = None,
     wait: Optional[bool] = None,
 ) -> Dict[str, Any]:
     custom_name = (name or "").strip()
@@ -1004,6 +1254,7 @@ def start_ingestion(
         auto_b, auto_c = _default_skip_bc()
         eff_skip_b = auto_b if skip_b is None else skip_b
         eff_skip_c = auto_c if skip_c is None else skip_c
+        eff_skip_c1 = False if skip_c1 is None else bool(skip_c1)
         skip_reason = (
             "admin_default_skip_bc"
             if skip_b is None and skip_c is None and eff_skip_b and eff_skip_c
@@ -1020,7 +1271,7 @@ def start_ingestion(
                     "max_repos": max_repos,
                     "skip_b": eff_skip_b,
                     "skip_c": eff_skip_c,
-                    "skip_c1": False,
+                    "skip_c1": eff_skip_c1,
                     "skip_reason": skip_reason,
                     "repos_yaml": repos_yaml_path,
                     "wait": wait,
@@ -1037,6 +1288,7 @@ def start_ingestion(
                         "C.1 only auto-files when OIE_GRAPH_FILING_ENABLED=1 "
                         "(Config toggle; default off — review decision_queue first). "
                         "Pass skip_b/skip_c/skip_c1 true to opt out of stages. "
+                        "max_repos=0 means no cap. "
                         "Module A may write 0 chunks when checkpoints are already at HEAD."
                     ),
                 }
@@ -1053,6 +1305,7 @@ def start_ingestion(
             max_repos=max_repos,
             skip_b=eff_skip_b,
             skip_c=eff_skip_c,
+            skip_c1=eff_skip_c1,
             cleanup_yaml=cleanup_yaml,
         )
         if run_sync:
@@ -1075,6 +1328,7 @@ def start_ingestion(
                 "started": True,
                 "skip_b": eff_skip_b,
                 "skip_c": eff_skip_c,
+                "skip_c1": eff_skip_c1,
             }
     else:
         append_event(

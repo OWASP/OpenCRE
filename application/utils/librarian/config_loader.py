@@ -97,6 +97,10 @@ class LibrarianConfig:
     batch_size: int
     ece_target: float
     conformal_alpha: float
+    #: C.1 bi-encoder cosine retrieve (pgvector / in_memory). Default on.
+    cosine_retrieval: bool = True
+    #: C.2 MiniLM cross-encoder rerank. Default on; off → cosine-order passthrough.
+    cross_encoder: bool = True
     standard_retrieval: bool = False
     standard_retrieval_families: tuple[str, ...] = ()
     standard_top_k: int = 10
@@ -184,6 +188,9 @@ def load_config() -> LibrarianConfig:
         os.getenv("CRE_LIBRARIAN_STANDARD_MAX_CRES_PER_HIT", "4")
     )
     cre_text_enrich = _env_bool("CRE_LIBRARIAN_CRE_TEXT_ENRICH", False)
+    # C.1 cosine / C.2 CE kill-switches (default on = current behaviour).
+    cosine_retrieval = _env_bool("CRE_LIBRARIAN_COSINE", True)
+    cross_encoder = _env_bool("CRE_LIBRARIAN_CROSS_ENCODER", True)
     # Ship pair: summaries feed C.2 + dual C.1 body pool; dual needs summaries.
     # Env can still force either off (CRE_LIBRARIAN_CRE_SUMMARY=0 / DUAL_INDEX=0).
     cre_summary = _env_bool("CRE_LIBRARIAN_CRE_SUMMARY", True)
@@ -338,6 +345,8 @@ def load_config() -> LibrarianConfig:
         standard_top_k=standard_top_k,
         standard_max_cres_per_hit=standard_max_cres_per_hit,
         cre_text_enrich=cre_text_enrich,
+        cosine_retrieval=cosine_retrieval,
+        cross_encoder=cross_encoder,
         cre_summary=cre_summary,
         dual_index=dual_index,
         prior_cage=prior_cage,

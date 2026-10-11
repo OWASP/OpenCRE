@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 LlmFn = Callable[[str, str], str]  # (system, user) -> raw text
 
 DEFAULT_TOP_N = 15
-DEFAULT_CACHE_DIR = "tmp/oie_shortlist_judge_cache"
+DEFAULT_CACHE_DIR = "tmp/oie_shortlist_judge_cache"  # legacy; use optional_disk_dir
 
 
 def _system_prompt(max_picks: int) -> str:
@@ -125,15 +125,37 @@ def cache_key(
 
 
 class ShortlistJudgeCache:
-    """Process-local + optional disk cache for judged id lists."""
+    """Memory + Postgres (``oie_llm_cache``) + optional disk for judged id lists."""
 
-    def __init__(self, disk_dir: Optional[Path] = None) -> None:
+    def __init__(
+        self,
+        disk_dir: Optional[Path] = None,
+        database: Optional[object] = None,
+    ) -> None:
         self.memory: Dict[str, List[str]] = {}
         self.disk_dir = disk_dir
+        self.database = database
 
     def get(self, key: str) -> Optional[List[str]]:
         if key in self.memory:
             return list(self.memory[key])
+        getter = (
+            getattr(self.database, "get_oie_llm_cache", None) if self.database else None
+        )
+        if callable(getter):
+            try:
+                from application.utils.librarian.llm_response_cache import (
+                    KIND_SHORTLIST_JUDGE,
+                )
+
+                data = getter(KIND_SHORTLIST_JUDGE, key)
+            except Exception:  # noqa: BLE001
+                logger.debug("shortlist judge DB cache read failed", exc_info=True)
+                data = None
+            if isinstance(data, list):
+                ids = [str(x) for x in data]
+                self.memory[key] = ids
+                return list(ids)
         if self.disk_dir is not None:
             path = self.disk_dir / f"{key}.json"
             if path.is_file():
@@ -150,6 +172,18 @@ class ShortlistJudgeCache:
     def put(self, key: str, ids: Sequence[str]) -> None:
         stored = list(ids)
         self.memory[key] = stored
+        putter = (
+            getattr(self.database, "put_oie_llm_cache", None) if self.database else None
+        )
+        if callable(putter):
+            try:
+                from application.utils.librarian.llm_response_cache import (
+                    KIND_SHORTLIST_JUDGE,
+                )
+
+                putter(KIND_SHORTLIST_JUDGE, key, stored)
+            except Exception:  # noqa: BLE001
+                logger.debug("shortlist judge DB cache write failed", exc_info=True)
         if self.disk_dir is not None:
             try:
                 self.disk_dir.mkdir(parents=True, exist_ok=True)
@@ -169,10 +203,14 @@ def default_litellm_fn(model: Optional[str] = None) -> LlmFn:
     return system_user_fn(model_name, temperature=0.0)
 
 
-def default_cache_dir() -> Path:
-    return Path(
-        os.environ.get("CRE_LIBRARIAN_SHORTLIST_JUDGE_CACHE", DEFAULT_CACHE_DIR)
+def default_cache_dir() -> Optional[Path]:
+    """Opt-in disk dir only (empty/unset env → no disk; use Postgres)."""
+    from application.utils.librarian.llm_response_cache import (
+        KIND_SHORTLIST_JUDGE,
+        optional_disk_dir,
     )
+
+    return optional_disk_dir(KIND_SHORTLIST_JUDGE)
 
 
 def candidates_from_audit(

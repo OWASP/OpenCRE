@@ -33,6 +33,8 @@ class TestConfigLoaderDefaults(unittest.TestCase):
         self.assertEqual(cfg.standard_top_k, 10)
         self.assertEqual(cfg.standard_max_cres_per_hit, 4)
         self.assertFalse(cfg.cre_text_enrich)
+        self.assertTrue(cfg.cosine_retrieval)
+        self.assertTrue(cfg.cross_encoder)
         self.assertTrue(cfg.cre_summary)
         self.assertTrue(cfg.dual_index)
         self.assertTrue(cfg.prior_cage)
@@ -128,6 +130,16 @@ class TestConfigLoaderOverrides(unittest.TestCase):
         self.assertFalse(cfg.prefer_audit_ids)
         self.assertAlmostEqual(cfg.hybrid_beta, 3.0)
         self.assertAlmostEqual(cfg.hybrid_gamma, 0.15)
+
+    def test_cosine_and_cross_encoder_kill_switches(self):
+        with mock.patch.dict(
+            os.environ,
+            {"CRE_LIBRARIAN_COSINE": "0", "CRE_LIBRARIAN_CROSS_ENCODER": "0"},
+            clear=True,
+        ):
+            cfg = load_config()
+        self.assertFalse(cfg.cosine_retrieval)
+        self.assertFalse(cfg.cross_encoder)
 
     def test_bad_int_env_raises(self):
         with mock.patch.dict(

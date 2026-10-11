@@ -15,13 +15,17 @@ from unittest import mock
 from application.utils.librarian.config_loader import load_config
 from application.utils.librarian.cre_text import LinkedStandardRef
 from application.utils.librarian.cre_summary import (
+    DOC_TYPE_CRE_SUMMARY,
     MAX_LEAF_CHARS,
     CreRecord,
     apply_summaries_to_cre_texts,
     build_summary_prompt,
     inject_cre_summaries,
+    migrate_json_cache_to_db,
     parse_summary_text,
     prose_leaves,
+    public_cre_metadata,
+    read_oie_summary,
 )
 
 
@@ -294,6 +298,30 @@ class ConfigFlagTest(unittest.TestCase):
             self.assertFalse(load_config().cre_summary)
 
 
+class PublicCreMetadataRedactionTest(unittest.TestCase):
+    def test_public_cre_metadata_strips_summary_and_embedding_id(self) -> None:
+        meta = {
+            "oie": {
+                "class_id": "auth",
+                "families": ["identity"],
+                "summary": "HIDDEN_BLURB",
+                "embedding_id": "emb-uuid-1",
+            },
+            "other": 1,
+        }
+        public = public_cre_metadata(meta)
+        public_oie = public["oie"]
+        assert isinstance(public_oie, dict)
+        self.assertEqual(public_oie["class_id"], "auth")
+        self.assertEqual(public_oie["families"], ["identity"])
+        self.assertNotIn("summary", public_oie)
+        self.assertNotIn("embedding_id", public_oie)
+        self.assertEqual(public["other"], 1)
+        # Original untouched.
+        self.assertEqual(meta["oie"]["summary"], "HIDDEN_BLURB")
+        self.assertEqual(read_oie_summary(meta), ("HIDDEN_BLURB", "emb-uuid-1"))
+
+
 class PublicCrePayloadHidingTest(unittest.TestCase):
     """End users must never see the librarian blurb on the CRE page or REST body."""
 
@@ -313,6 +341,31 @@ class PublicCrePayloadHidingTest(unittest.TestCase):
         self.assertEqual(cre.description, "")
         self.assertNotIn("embeddings_content", payload)
         self.assertNotIn("librarian_summary", payload)
+
+    def test_cre_from_db_redacts_oie_summary(self) -> None:
+        from application.database.db import CRE, CREfromDB
+
+        dbcre = CRE(
+            id="cre-uuid-1",
+            external_id="481-710",
+            name="Access Control",
+            description="Public description",
+            metadata_json={
+                "oie": {
+                    "class_id": "auth",
+                    "summary": self._BLURB,
+                    "embedding_id": "emb-1",
+                }
+            },
+        )
+        cre = CREfromDB(dbcre)
+        payload = json.dumps(cre.todict())
+        self.assertNotIn(self._BLURB, payload)
+        self.assertNotIn("emb-1", payload)
+        self.assertEqual(cre.metadata.get("oie", {}).get("class_id"), "auth")
+        self.assertNotIn("summary", cre.metadata.get("oie", {}))
+        self.assertNotIn("embedding_id", cre.metadata.get("oie", {}))
+        self.assertEqual(cre.description, "Public description")
 
     def test_frontend_cre_page_renders_public_description_only(self) -> None:
         tsx = Path(
@@ -348,6 +401,153 @@ class PublicCrePayloadHidingTest(unittest.TestCase):
         mod._assert_local_clone_url(
             "postgresql://cre:password@127.0.0.1:5432/cre_prodclone"
         )
+
+
+class CreSummaryDbStoreTest(unittest.TestCase):
+    """First-class oie.summary + embedding_id → embeddings(doc_type=CRE_SUMMARY)."""
+
+    def setUp(self) -> None:
+        from application import create_app, sqla
+        from application.database import db as database_db
+
+        self.app = create_app(mode="test")
+        self.ctx = self.app.app_context()
+        self.ctx.push()
+        sqla.create_all()
+        self.sqla = sqla
+        self.database_db = database_db
+        self.collection = database_db.Node_collection()
+        self.sqla.session.add(
+            database_db.CRE(
+                id="cre-uuid-1",
+                external_id="481-710",
+                name="Access Control",
+                description="Public description",
+                metadata_json={"oie": {"class_id": "auth", "families": ["identity"]}},
+            )
+        )
+        self.sqla.session.commit()
+
+    def tearDown(self) -> None:
+        self.sqla.session.remove()
+        self.sqla.drop_all()
+        self.ctx.pop()
+
+    def test_inject_persists_summary_and_embedding_id_without_touching_hub(
+        self,
+    ) -> None:
+        from application.database.db import CRE, Embeddings
+        from application.database.pgvector_utils import parse_stored_embedding_vec
+        from application.defs import cre_defs as defs
+
+        hub = self.collection.add_embedding(
+            self.database_db.CRE(
+                id="cre-uuid-1",
+                external_id="481-710",
+                name="Access Control",
+                description="Public description",
+            ),
+            defs.Credoctypes.CRE,
+            [9.0, 9.0, 9.0],
+            "hub CRE embeddings_content",
+        )
+        hub_id = hub.id if hasattr(hub, "id") else hub[0].id
+
+        record = CreRecord(
+            cre_id="cre-uuid-1",
+            name="Access Control",
+            description="Public description",
+            external_id="481-710",
+        )
+
+        def llm(_system: str, _user: str) -> str:
+            return '{"summary": "Hidden access-control blurb."}'
+
+        def embed(text: str):
+            self.assertEqual(text, "Hidden access-control blurb.")
+            return [0.1, 0.2, 0.3]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out, vectors = inject_cre_summaries(
+                cre_texts={"cre-uuid-1": "stub hub text"},
+                records={"cre-uuid-1": record},
+                linked={},
+                llm_fn=llm,
+                cache_dir=Path(tmp),
+                embed_fn=embed,
+                database=self.collection,
+            )
+        self.assertEqual(out["cre-uuid-1"], "Hidden access-control blurb.")
+        self.assertEqual(vectors, {"cre-uuid-1": [0.1, 0.2, 0.3]})
+
+        cre = self.sqla.session.query(CRE).filter(CRE.id == "cre-uuid-1").one()
+        summary, emb_id = read_oie_summary(cre.metadata_json)
+        self.assertEqual(summary, "Hidden access-control blurb.")
+        self.assertTrue(emb_id)
+        self.assertEqual(cre.description, "Public description")
+        self.assertEqual(cre.metadata_json["oie"]["class_id"], "auth")
+
+        summary_row = (
+            self.sqla.session.query(Embeddings).filter(Embeddings.id == emb_id).one()
+        )
+        self.assertEqual(summary_row.doc_type, DOC_TYPE_CRE_SUMMARY)
+        self.assertEqual(summary_row.cre_id, "cre-uuid-1")
+        self.assertEqual(summary_row.embeddings_content, "Hidden access-control blurb.")
+        self.assertEqual(
+            parse_stored_embedding_vec(summary_row.embedding_vec), [0.1, 0.2, 0.3]
+        )
+
+        hub_row = (
+            self.sqla.session.query(Embeddings).filter(Embeddings.id == hub_id).one()
+        )
+        self.assertEqual(hub_row.doc_type, defs.Credoctypes.CRE.value)
+        self.assertEqual(
+            parse_stored_embedding_vec(hub_row.embedding_vec), [9.0, 9.0, 9.0]
+        )
+        self.assertEqual(hub_row.embeddings_content, "hub CRE embeddings_content")
+
+        def boom(_system: str, _user: str) -> str:
+            raise AssertionError("DB summary should skip a second LLM call")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            again, again_vecs = inject_cre_summaries(
+                cre_texts={"cre-uuid-1": "stub hub text"},
+                records={"cre-uuid-1": record},
+                linked={},
+                llm_fn=boom,
+                cache_dir=Path(tmp),
+                embed_fn=None,
+                database=self.collection,
+            )
+        self.assertEqual(again["cre-uuid-1"], "Hidden access-control blurb.")
+        self.assertIsNone(again_vecs)
+
+    def test_migrate_json_cache_into_oie_and_embeddings(self) -> None:
+        from application.database.db import CRE, Embeddings
+        from application.database.pgvector_utils import parse_stored_embedding_vec
+
+        with tempfile.TemporaryDirectory() as tmp:
+            cache = Path(tmp)
+            (cache / "cre-uuid-1.json").write_text(
+                json.dumps(
+                    {
+                        "cre_id": "cre-uuid-1",
+                        "external_id": "481-710",
+                        "name": "Access Control",
+                        "summary": "Migrated hidden blurb.",
+                        "embedding": [1.0, 2.0, 3.0],
+                    }
+                )
+            )
+            n = migrate_json_cache_to_db(database=self.collection, cache_dir=cache)
+        self.assertEqual(n, 1)
+        cre = self.sqla.session.query(CRE).filter(CRE.id == "cre-uuid-1").one()
+        summary, emb_id = read_oie_summary(cre.metadata_json)
+        self.assertEqual(summary, "Migrated hidden blurb.")
+        self.assertTrue(emb_id)
+        row = self.sqla.session.query(Embeddings).filter(Embeddings.id == emb_id).one()
+        self.assertEqual(row.doc_type, DOC_TYPE_CRE_SUMMARY)
+        self.assertEqual(parse_stored_embedding_vec(row.embedding_vec), [1.0, 2.0, 3.0])
 
 
 if __name__ == "__main__":

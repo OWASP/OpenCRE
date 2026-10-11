@@ -54,6 +54,31 @@ services:
       retries: 20
     restart: unless-stopped
 
+  # Gap-analysis / graph explore (Module C uses Postgres+pgvector, not Neo4j).
+  neo4j:
+    image: neo4j:5
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-password}
+      NEO4J_PLUGINS: '["apoc"]'
+    ports:
+      - "127.0.0.1:7474:7474"
+      - "127.0.0.1:7687:7687"
+    volumes:
+      - opencre_staging_neo4j:/data
+    networks:
+      - opencre_staging_net
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "cypher-shell -u neo4j -p \"$$(echo $$NEO4J_AUTH | cut -d/ -f2)\" 'RETURN 1' >/dev/null || exit 1",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 30
+      start_period: 45s
+    restart: unless-stopped
+
   web:
     build:
       context: ../..
@@ -72,6 +97,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       REDIS_NO_SSL: "true"
+      NEO4J_URL: bolt://neo4j:${NEO4J_PASSWORD:-password}@neo4j:7687
       CRE_SKIP_UPSTREAM_SYNC: ${CRE_SKIP_UPSTREAM_SYNC:-1}
       CRE_EMBED_EXPECTED_DIM: ${CRE_EMBED_EXPECTED_DIM:-3072}
       GUNICORN_BIND: "0.0.0.0:5001"
@@ -84,6 +110,8 @@ services:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      neo4j:
         condition: service_healthy
     networks:
       - opencre_staging_net
@@ -113,6 +141,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       REDIS_NO_SSL: "true"
+      NEO4J_URL: bolt://neo4j:${NEO4J_PASSWORD:-password}@neo4j:7687
       CRE_WORKER_QUEUES: oie,default
       CRE_EMBED_EXPECTED_DIM: ${CRE_EMBED_EXPECTED_DIM:-3072}
       <<: *librarian_promoted
@@ -122,6 +151,8 @@ services:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      neo4j:
         condition: service_healthy
       web:
         condition: service_started
@@ -146,6 +177,7 @@ services:
 volumes:
   opencre_staging_pg:
   opencre_staging_redis:
+  opencre_staging_neo4j:
   opencre_staging_secrets:
 
 networks:

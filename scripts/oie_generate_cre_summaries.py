@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Generate hidden CRE summaries for Librarian C.1/C.2.
 
-Writes JSON files under ``CRE_LIBRARIAN_CRE_SUMMARY_CACHE`` (default
-``tmp/oie_cre_summaries``). Never writes ``CRE.description`` or public Node
-fields. REST/UI keep serving the public CRE document.
+Persists ``CRE.document_metadata.oie.summary`` and optional
+``embeddings(doc_type=CRE_SUMMARY)`` via ``oie.embedding_id``. Also writes JSON
+under ``CRE_LIBRARIAN_CRE_SUMMARY_CACHE`` (default ``tmp/oie_cre_summaries``)
+for local/eval reuse. Never writes ``CRE.description``, hub ``doc_type=CRE``
+embeddings, or public Node fields. REST/UI redact librarian ``oie`` keys.
 
 Usage (local clone only — refuses the ``cre`` database and Heroku URLs):
 
@@ -110,12 +112,14 @@ def main() -> int:
         llm_fn=llm_fn,
         cache_dir=cache_dir,
         embed_fn=embed_fn,
+        database=database,
     )
     n_cache = len(list(cache_dir.glob("*.json")))
     print(
         f"hidden CRE summaries: injected={len(out_texts)} "
         f"cache_files={n_cache} dir={cache_dir} "
-        f"in_memory_vectors={0 if not vectors else len(vectors)}",
+        f"in_memory_vectors={0 if not vectors else len(vectors)} "
+        f"(also persisted to oie.summary / CRE_SUMMARY embeddings)",
         flush=True,
     )
     return 0

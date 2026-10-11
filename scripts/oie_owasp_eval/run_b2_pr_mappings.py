@@ -66,6 +66,12 @@ HARNESSES: List[Dict[str, Any]] = [
         "pr": 960,
     },
     {
+        "fixture_name": "owasp_asvs_5_0_provisional",
+        "gold_file": "owasp_asvs_5_0_provisional.json",
+        "label": "OWASP ASVS 5.0 (provisional)",
+        "pr": 960,
+    },
+    {
         "fixture_name": "owasp_kubernetes_top10_2025",
         "gold_file": "owasp_kubernetes_top10_2025.json",
         "label": "OWASP Kubernetes Top 10 2025",
@@ -748,6 +754,16 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--exclude-fixtures",
+        nargs="*",
+        default=[],
+        metavar="STEM",
+        help=(
+            "Drop these fixture stems from scoring/harvest. "
+            "Example: --exclude-fixtures owasp_agentic_ai_stub"
+        ),
+    )
+    parser.add_argument(
         "--out",
         type=Path,
         default=ART / "b2_accuracy_report.json",
@@ -765,6 +781,9 @@ def main() -> int:
     only_fixtures = {
         str(s).strip() for s in (args.only_fixtures or []) if str(s).strip()
     }
+    exclude_fixtures = {
+        str(s).strip() for s in (args.exclude_fixtures or []) if str(s).strip()
+    }
     if only_fixtures:
         HARNESSES[:] = [
             h
@@ -776,6 +795,20 @@ def main() -> int:
             print(
                 "no harnesses match --only-fixtures:",
                 sorted(only_fixtures),
+                file=sys.stderr,
+            )
+            return 2
+    if exclude_fixtures:
+        HARNESSES[:] = [
+            h
+            for h in HARNESSES
+            if str(h.get("fixture_name") or "") not in exclude_fixtures
+            and gold_stem(h) not in exclude_fixtures
+        ]
+        if not HARNESSES:
+            print(
+                "no harnesses left after --exclude-fixtures:",
+                sorted(exclude_fixtures),
                 file=sys.stderr,
             )
             return 2

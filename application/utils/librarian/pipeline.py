@@ -220,6 +220,7 @@ class LibrarianPipeline:
         cre_membership: Optional[FrozenSet[str]] = None,
         cre_registry: Optional[CreRegistry] = None,
         shortlist_llm_fn: Optional[Any] = None,
+        shortlist_cache: Optional[Any] = None,
         use_focus_query: bool = False,
         pref_inject: bool = True,
         prefer_audit: bool = True,
@@ -233,6 +234,7 @@ class LibrarianPipeline:
         leaf_drilldown_hub_first: bool = False,
         shortlist_judge_max_picks: int = 3,
         margin_gamma: Optional[float] = None,
+        cre_names: Optional[Mapping[str, str]] = None,
     ) -> None:
         self._source = source
         self._retriever = retriever
@@ -249,6 +251,7 @@ class LibrarianPipeline:
         # Optional grounded Gemini shortlist judge (lever C). None = skip;
         # hermetic tests omit it. Live factory injects default_litellm_fn.
         self._shortlist_llm_fn = shortlist_llm_fn
+        self._shortlist_cache = shortlist_cache
         self._use_focus_query = use_focus_query
         self._pref_inject = pref_inject
         self._prefer_audit = prefer_audit
@@ -266,6 +269,7 @@ class LibrarianPipeline:
         self._margin_gamma: Optional[float] = (
             float(margin_gamma) if margin_gamma is not None else None
         )
+        self._cre_names: Mapping[str, str] = cre_names or {}
         self._resource_family_counts: Mapping[str, int] = {}
         # Emit-time grounding: prefer an injected registry; otherwise build from
         # membership (+ cre_id_map for canonicalisation). None membership keeps
@@ -278,6 +282,58 @@ class LibrarianPipeline:
             )
         else:
             self._cre_registry = CreRegistry.disabled()
+
+    def _apply_fail_closed_levers(
+        self,
+        *,
+        section_text: str,
+        result: DecisionResult,
+        cre_ids: Sequence[str],
+        retrieved: RetrievalAudit,
+    ) -> DecisionResult:
+        """Demote auto-link via pairwise vote / source grounding (env-gated)."""
+        if result.decision != Decision.linked:
+            return result
+        from application.utils.librarian.pairwise_vote import pairwise_blocks_auto_link
+        from application.utils.librarian.shortlist_judge import candidates_from_audit
+        from application.utils.librarian.source_grounding import (
+            grounding_blocks_auto_link,
+        )
+
+        meta = candidates_from_audit(retrieved)
+        for row in meta:
+            cid = str(row.get("cre_id") or "").strip()
+            if cid and not row.get("name"):
+                row["name"] = self._cre_names.get(cid, "")
+
+        if pairwise_blocks_auto_link(
+            section_text,
+            cre_ids,
+            candidate_meta=meta,
+            llm_fn=self._shortlist_llm_fn,
+        ):
+            return DecisionResult(
+                Decision.review,
+                result.confidence,
+                tuple(cre_ids[:2]),
+                ReasonCode.pairwise_disagree,
+            )
+
+        top = str(cre_ids[0]).strip() if cre_ids else ""
+        cre_meta = next((m for m in meta if str(m.get("cre_id")) == top), None) or {
+            "cre_id": top,
+            "name": self._cre_names.get(top, ""),
+        }
+        if grounding_blocks_auto_link(
+            section_text, cre_meta, llm_fn=self._shortlist_llm_fn
+        ):
+            return DecisionResult(
+                Decision.review,
+                result.confidence,
+                tuple(cre_ids[:2]),
+                ReasonCode.source_unsupported,
+            )
+        return result
 
     def _apply_leaf_drilldown(
         self,
@@ -406,6 +462,27 @@ class LibrarianPipeline:
                 exc_info=True,
             )
 
+    def _prefetch_safety(self, batch_items: Sequence[Any]) -> None:
+        """Batch-classify uncached safety verdicts before the per-row loop."""
+        prefetch = getattr(self._safety_guard, "prefetch", None)
+        if not callable(prefetch):
+            return
+        sections: List[Any] = []
+        for raw in batch_items:
+            try:
+                sections.append(section_from_queue_row(raw))
+            except SectionValidationError:
+                continue
+        if not sections:
+            return
+        try:
+            prefetch(sections)
+        except Exception:  # noqa: BLE001
+            logger.warning(
+                "librarian safety prefetch failed; continuing per call",
+                exc_info=True,
+            )
+
     def _map_cre_ids(self, external_ids: Sequence[str]) -> tuple:
         return tuple(self._cre_id_map.get(cid, cid) for cid in external_ids)
 
@@ -442,6 +519,7 @@ class LibrarianPipeline:
             self._resource_family_counts = {}
 
         self._prefetch_query_embeddings(batch_items)
+        self._prefetch_safety(batch_items)
 
         for item in batch_items:
             total += 1
@@ -559,6 +637,13 @@ class LibrarianPipeline:
                                     }
                                 )
 
+                        # Experimental: hard cage to hub Standard↔CRE seeds.
+                        from application.utils.librarian.crosswalk_cage import (
+                            apply_crosswalk_cage,
+                        )
+
+                        retrieved = apply_crosswalk_cage(retrieved, preferred)
+
                         # Lever C: grounded shortlist judge — pick up to max_picks
                         # from the retrieval allowlist only; fail open on errors.
                         focus = (
@@ -578,13 +663,14 @@ class LibrarianPipeline:
                             if judge_enabled():
                                 judge_query = focus or section.text
                                 judge_cap = self._shortlist_judge_max_picks
+                                cache = self._shortlist_cache or ShortlistJudgeCache(
+                                    disk_dir=default_cache_dir()
+                                )
                                 judged = judge_shortlist(
                                     judge_query,
                                     candidates_from_audit(retrieved),
                                     llm_fn=self._shortlist_llm_fn,
-                                    cache=ShortlistJudgeCache(
-                                        disk_dir=default_cache_dir()
-                                    ),
+                                    cache=cache,
                                     max_picks=judge_cap,
                                 )
                                 if judged:
@@ -676,11 +762,29 @@ class LibrarianPipeline:
                         if list(cre_ids) != pre_drill:
                             audit = self._sync_audit_after_drilldown(audit, cre_ids)
 
-                        result = decide(
-                            confidence,
-                            cre_ids,
-                            threshold=self._threshold,
+                        from application.utils.librarian.coverage_fail_closed import (
+                            coverage_is_thin,
                         )
+
+                        if coverage_is_thin(retrieved.candidates or []):
+                            result = DecisionResult(
+                                Decision.review,
+                                confidence,
+                                tuple(cre_ids[:2]),
+                                ReasonCode.coverage_thin,
+                            )
+                        else:
+                            result = decide(
+                                confidence,
+                                cre_ids,
+                                threshold=self._threshold,
+                            )
+                            result = self._apply_fail_closed_levers(
+                                section_text=focus or section.text,
+                                result=result,
+                                cre_ids=cre_ids,
+                                retrieved=retrieved,
+                            )
                         verdict_evaluated = False
 
                 # C.4 safety on every path (including explicit-id / CRE_GAP exits).

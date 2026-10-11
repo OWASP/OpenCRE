@@ -72,6 +72,10 @@ class ReasonCode(str, Enum):
     safety_unevaluated = "SAFETY_UNEVALUATED"
     # Prior cage empty: no existing CRE fits this problem class — propose a new one.
     cre_gap = "CRE_GAP"
+    # Experimental fail-closed levers (default off; see accuracy-levers matrix).
+    pairwise_disagree = "PAIRWISE_DISAGREE"
+    source_unsupported = "SOURCE_UNSUPPORTED"
+    coverage_thin = "COVERAGE_THIN"
 
 
 # ---------- RFC sub-models ----------

@@ -1,9 +1,18 @@
-"""Hidden CRE summaries for Librarian C.2 (optional in-memory C.1).
+"""Hidden CRE summaries for Librarian C.2 (optional C.1 summary vectors).
 
 Each CRE is summarized from its name/id/description plus linked Standard/Tool
 ``embeddings_content`` *prose* (junk chrome skipped via
 ``embedding_quality.usable_embedding_text``). The blurb is for the categorizer
 pair text only — it is never written to public ``CRE.description``.
+
+First-class store (preferred):
+  ``CRE.document_metadata.oie.summary`` — hidden text
+  ``CRE.document_metadata.oie.embedding_id`` — FK to ``embeddings.id``
+  ``embeddings`` row with ``doc_type=CRE_SUMMARY`` (pgvector), never hub ``CRE``
+
+JSON under ``CRE_LIBRARIAN_CRE_SUMMARY_CACHE`` remains an optional local/eval
+cache and migration source. REST/UI must use ``public_cre_metadata`` /
+``CREfromDB`` redaction so ``summary`` / ``embedding_id`` never leave the API.
 """
 
 from __future__ import annotations
@@ -28,6 +37,10 @@ LlmFn = Callable[[str, str], str]
 EmbedFn = Callable[[str], Sequence[float]]
 
 DEFAULT_CACHE_DIR = "tmp/oie_cre_summaries"
+DOC_TYPE_CRE_SUMMARY = "CRE_SUMMARY"
+OIE_SUMMARY_KEY = "summary"
+OIE_EMBEDDING_ID_KEY = "embedding_id"
+OIE_PRIVATE_KEYS = frozenset({OIE_SUMMARY_KEY, OIE_EMBEDDING_ID_KEY})
 # Linked prose budget for the LLM prompt (not MiniLM pair text).
 MAX_LINKED_PROMPT_CHARS = 8000
 MAX_LEAF_CHARS = 900
@@ -56,8 +69,34 @@ class CreRecord:
     external_id: str = ""
 
 
-def default_cache_dir() -> Path:
-    return Path(os.environ.get("CRE_LIBRARIAN_CRE_SUMMARY_CACHE", DEFAULT_CACHE_DIR))
+def default_cache_dir() -> Optional[Path]:
+    """Opt-in JSON cache dir only (unset → Postgres ``oie.summary`` only)."""
+    raw = (os.environ.get("CRE_LIBRARIAN_CRE_SUMMARY_CACHE") or "").strip()
+    return Path(raw) if raw else None
+
+
+def public_cre_metadata(meta: Any) -> Dict[str, Any]:
+    """Copy metadata with librarian-private ``oie`` keys removed for REST/UI."""
+    if not isinstance(meta, Mapping):
+        return {}
+    out = dict(meta)
+    oie = out.get("oie")
+    if isinstance(oie, Mapping):
+        redacted = {k: v for k, v in oie.items() if k not in OIE_PRIVATE_KEYS}
+        out["oie"] = redacted
+    return out
+
+
+def read_oie_summary(meta: Any) -> Tuple[Optional[str], Optional[str]]:
+    """Return ``(summary_text, embedding_id)`` from CRE ``document_metadata``."""
+    if not isinstance(meta, Mapping):
+        return None, None
+    oie = meta.get("oie")
+    if not isinstance(oie, Mapping):
+        return None, None
+    summary = str(oie.get(OIE_SUMMARY_KEY) or "").strip() or None
+    emb_id = str(oie.get(OIE_EMBEDDING_ID_KEY) or "").strip() or None
+    return summary, emb_id
 
 
 def default_llm_fn(model: Optional[str] = None) -> LlmFn:
@@ -179,7 +218,9 @@ def _cache_file(cache_dir: Path, cre_id: str) -> Path:
     return cache_dir / f"{safe}.json"
 
 
-def _load_cache(cache_dir: Path, cre_id: str) -> Optional[Dict[str, Any]]:
+def _load_cache(cache_dir: Optional[Path], cre_id: str) -> Optional[Dict[str, Any]]:
+    if cache_dir is None:
+        return None
     path = _cache_file(cache_dir, cre_id)
     if not path.is_file():
         return None
@@ -192,7 +233,9 @@ def _load_cache(cache_dir: Path, cre_id: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-def _write_cache(cache_dir: Path, payload: Mapping[str, Any]) -> None:
+def _write_cache(cache_dir: Optional[Path], payload: Mapping[str, Any]) -> None:
+    if cache_dir is None:
+        return
     cre_id = str(payload.get("cre_id") or "")
     if not cre_id:
         return
@@ -230,24 +273,76 @@ def load_cre_records(database: object) -> Dict[str, CreRecord]:
     return out
 
 
+def _load_summary_from_db(
+    database: object, cre_id: str
+) -> Tuple[Optional[str], Optional[str], Optional[List[float]]]:
+    """Return ``(summary, embedding_id, vector_or_None)`` from Postgres metadata."""
+    getter = getattr(database, "get_cre_oie_summary", None)
+    if not callable(getter):
+        return None, None, None
+    try:
+        return getter(cre_id)
+    except Exception:  # noqa: BLE001
+        logger.debug("CRE summary DB load failed for %s", cre_id, exc_info=True)
+        return None, None, None
+
+
+def _persist_summary_to_db(
+    database: object,
+    *,
+    cre_id: str,
+    summary: str,
+    embedding: Optional[Sequence[float]] = None,
+) -> Optional[str]:
+    """Write ``oie.summary`` (+ optional ``CRE_SUMMARY`` embedding). Return embedding_id."""
+    writer = getattr(database, "upsert_cre_oie_summary", None)
+    if not callable(writer):
+        return None
+    try:
+        return writer(cre_id, summary, embedding=embedding)
+    except Exception:  # noqa: BLE001
+        logger.warning("CRE summary DB persist failed for %s", cre_id, exc_info=True)
+        return None
+
+
 def inject_cre_summaries(
     *,
     cre_texts: Mapping[str, str],
     records: Mapping[str, CreRecord],
     linked: Mapping[str, Sequence[LinkedStandardRef]],
     llm_fn: Optional[LlmFn],
-    cache_dir: Path,
+    cache_dir: Optional[Path] = None,
     embed_fn: Optional[EmbedFn] = None,
+    database: Optional[object] = None,
 ) -> Tuple[Dict[str, str], Optional[Dict[str, List[float]]]]:
-    """Fill C.2 texts from cached/LLM summaries. Optional in-memory C.1 vectors.
+    """Fill C.2 texts from DB / JSON cache / LLM. Optional C.1 summary vectors.
 
-    Never writes ``CRE.description``. ``embed_fn`` failures yield ``vectors=None``
+    Preference order per CRE: Postgres ``oie.summary`` → JSON cache → LLM.
+    When ``database`` is set, new summaries (and optional vectors) persist as
+    ``oie.summary`` + ``embeddings(doc_type=CRE_SUMMARY)``; JSON cache is also
+    written for local/eval reuse. Never writes ``CRE.description`` or hub
+    ``doc_type=CRE`` embeddings. ``embed_fn`` failures yield ``vectors=None``
     (C.2-text-only) rather than a partial hub.
     """
     summaries: Dict[str, str] = {}
     cached_vectors: Dict[str, List[float]] = {}
     for cre_key in cre_texts:
         record = _record_lookup(cre_key, records)
+        db_summary, _db_emb_id, db_vec = (None, None, None)
+        if database is not None:
+            db_summary, _db_emb_id, db_vec = _load_summary_from_db(
+                database, record.cre_id
+            )
+            if not db_summary and cre_key != record.cre_id:
+                db_summary, _db_emb_id, db_vec = _load_summary_from_db(
+                    database, cre_key
+                )
+        if db_summary:
+            summaries[cre_key] = db_summary
+            if db_vec:
+                cached_vectors[cre_key] = db_vec
+            continue
+
         cached = _load_cache(cache_dir, record.cre_id) or _load_cache(
             cache_dir, cre_key
         )
@@ -261,6 +356,11 @@ def inject_cre_summaries(
                 and all(isinstance(x, (int, float)) for x in vec)
             ):
                 cached_vectors[cre_key] = [float(x) for x in vec]
+            if database is not None and summary:
+                emb = cached_vectors.get(cre_key)
+                _persist_summary_to_db(
+                    database, cre_id=record.cre_id, summary=summary, embedding=emb
+                )
             continue
         refs = _linked_for(cre_key, record, linked)
         summary = ""
@@ -284,6 +384,10 @@ def inject_cre_summaries(
                 "summary": summary,
             },
         )
+        if database is not None:
+            _persist_summary_to_db(
+                database, cre_id=record.cre_id, summary=summary, embedding=None
+            )
 
     out = apply_summaries_to_cre_texts(cre_texts, summaries)
     if embed_fn is None:
@@ -300,10 +404,22 @@ def inject_cre_summaries(
                 raise ValueError(f"empty embedding for {cre_key}")
             vectors[cre_key] = [float(x) for x in vec]
             record = _record_lookup(cre_key, records)
-            cached = _load_cache(cache_dir, record.cre_id) or {}
+            cached = _load_cache(cache_dir, record.cre_id) or {
+                "cre_id": record.cre_id,
+                "external_id": record.external_id,
+                "name": record.name,
+                "summary": text,
+            }
             if cached.get("summary"):
                 cached["embedding"] = vectors[cre_key]
                 _write_cache(cache_dir, cached)
+            if database is not None:
+                _persist_summary_to_db(
+                    database,
+                    cre_id=record.cre_id,
+                    summary=str(cached.get("summary") or text),
+                    embedding=vectors[cre_key],
+                )
         widths = {len(v) for v in vectors.values()}
         if len(vectors) != len(out) or len(widths) != 1:
             logger.warning(
@@ -321,10 +437,51 @@ def inject_cre_summaries(
     return out, vectors
 
 
+def migrate_json_cache_to_db(*, database: object, cache_dir: Path) -> int:
+    """Copy JSON cache blurbs (+ optional vectors) into ``oie`` / ``CRE_SUMMARY``.
+
+    Returns the number of CRE rows updated. Skips files without a usable summary
+    or without a matching CRE id in the database.
+    """
+    if not cache_dir.is_dir():
+        return 0
+    n = 0
+    for path in sorted(cache_dir.glob("*.json")):
+        try:
+            data = json.loads(path.read_text())
+        except (OSError, ValueError, json.JSONDecodeError):
+            continue
+        if not isinstance(data, Mapping):
+            continue
+        summary = str(data.get("summary") or "").strip()
+        cre_id = str(data.get("cre_id") or "").strip()
+        if not summary or not cre_id:
+            continue
+        emb_raw = data.get("embedding")
+        embedding: Optional[List[float]] = None
+        if (
+            isinstance(emb_raw, list)
+            and emb_raw
+            and all(isinstance(x, (int, float)) for x in emb_raw)
+        ):
+            embedding = [float(x) for x in emb_raw]
+        # ``upsert`` returns embedding_id, "" for text-only success, or None on miss/fail.
+        result = _persist_summary_to_db(
+            database, cre_id=cre_id, summary=summary, embedding=embedding
+        )
+        if result is not None:
+            n += 1
+    return n
+
+
 __all__ = [
     "CreRecord",
     "DEFAULT_CACHE_DIR",
+    "DOC_TYPE_CRE_SUMMARY",
     "MAX_LEAF_CHARS",
+    "OIE_EMBEDDING_ID_KEY",
+    "OIE_PRIVATE_KEYS",
+    "OIE_SUMMARY_KEY",
     "apply_summaries_to_cre_texts",
     "build_summary_prompt",
     "pack_linked_prose",
@@ -332,6 +489,9 @@ __all__ = [
     "default_llm_fn",
     "inject_cre_summaries",
     "load_cre_records",
+    "migrate_json_cache_to_db",
     "parse_summary_text",
     "prose_leaves",
+    "public_cre_metadata",
+    "read_oie_summary",
 ]

@@ -111,7 +111,12 @@ summary + dual index ship **on** as a pair (set either to `0` to disable).
 | `CRE_LIBRARIAN_STANDARD_RETRIEVAL` | off | Union CRE cosine with Standard cosine → `cre_node_links` → CRE |
 | `CRE_LIBRARIAN_STANDARD_RETRIEVAL_FAMILIES` | all | Comma-separated `Node.name` allowlist (e.g. `PCI DSS,ISO 27001`) |
 | `CRE_LIBRARIAN_CRE_TEXT_ENRICH` | off | C.2 pair `description` += linked Standard `embeddings_content` (junk skipped, ~1.8k chars, no re-embed) |
-| `CRE_LIBRARIAN_CRE_SUMMARY` | **on** | LLM-summarize each CRE from name/description + linked Standard/Tool *prose* (junk skipped); inject as C.2 `cre_texts`. Optional in-memory C.1 vectors for eval only — never writes `CRE.description` or Postgres `embeddings`. Cache: `CRE_LIBRARIAN_CRE_SUMMARY_CACHE` (default `tmp/oie_cre_summaries`). REST/UI still hide these blurbs. |
+| `CRE_LIBRARIAN_COSINE` | **on** | C.1 cosine retrieve (`pgvector` / `in_memory`). Off → empty candidates (ablation). |
+| `CRE_LIBRARIAN_CROSS_ENCODER` | **on** | C.2 MiniLM cross-encoder. Off → `CosineOrderReranker` (C.1 order, no CE load). |
+| `CRE_LIBRARIAN_CRE_SUMMARY` | **on** | LLM-summarize each CRE from name/description + linked Standard/Tool *prose* (junk skipped); inject as C.2 `cre_texts`. Persists hidden text in `CRE.document_metadata.oie.summary` and vectors in `embeddings` (`doc_type=CRE_SUMMARY`) referenced by `oie.embedding_id` — never writes `CRE.description` or hub `doc_type=CRE` embeddings. Optional JSON cache only if `CRE_LIBRARIAN_CRE_SUMMARY_CACHE` is set. REST/UI redact `oie.summary` / `oie.embedding_id`. |
+| Shortlist / edition / neighbor / safety LLM responses | — | Durable in Postgres `oie_llm_cache` (shared across workers). Disk dirs (`CRE_LIBRARIAN_SHORTLIST_JUDGE_CACHE`, `…_EDITION_REMAP_CACHE`, `…_NEIGHBOR_REMAP_CACHE`) are opt-in for eval only. |
+| Edition / neighbor remap | precompute | `scripts/oie_precompute_remap_caches.py` warms `oie_llm_cache`; live C uses cache+heuristic (`CRE_LIBRARIAN_EDITION_REMAP_LIVE=1` to LLM on miss). |
+| Safety batch | default 8 | Pipeline prefetches uncached sections via one JSON-array Gemini call (`CRE_LIBRARIAN_SAFETY_BATCH_SIZE`, `0` = off). |
 | `CRE_LIBRARIAN_DUAL_INDEX` | **on** | C.1 dual pools: Section/Section-ID (header) vs CRE **names**; body vs **summaries**. Requires `CRE_SUMMARY` (and summary vectors); without summaries falls back to single name/hub pool. |
 | `CRE_EMBED_CRE_LINKED_TITLES` | off | Rebuild CRE `embeddings_content` with that linked prose (~12k chars), then re-embed |
 | `CRE_LIBRARIAN_PRIOR_CAGE` | on | Wrap C.1 in `PriorCagedRetriever` (`(_tier, score)`). Off = Lawrence unconstrained cosine |

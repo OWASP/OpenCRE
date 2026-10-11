@@ -152,6 +152,51 @@ class TransferServiceTest(unittest.TestCase):
             set(),
         )
 
+    def test_precompute_all_remaps_warms_cache_without_repeat_llm(self) -> None:
+        calls = {"n": 0}
+
+        def llm(_system: str, _user: str) -> str:
+            calls["n"] += 1
+            return '{"A04": ["A02"], "A02": ["A05"]}'
+
+        old = StandardEdition(
+            family="owasp_top10",
+            year=2021,
+            label="OWASP Top 10 2021",
+            sections=(
+                EditionSection("A02", "Cryptographic Failures"),
+                EditionSection("A05", "Security Misconfiguration"),
+            ),
+        )
+        new = StandardEdition(
+            family="owasp_top10",
+            year=2025,
+            label="OWASP Top 10 2025",
+            sections=(
+                EditionSection("A04", "Cryptographic Failures"),
+                EditionSection("A02", "Security Misconfiguration"),
+            ),
+        )
+        cache = EditionRemapCache(memory={})
+        svc = EditionTransferService(
+            editions=[old, new],
+            section_cre_ids={
+                ("owasp_top10", 2021, "A02"): {"cre-crypto"},
+                ("owasp_top10", 2021, "A05"): {"cre-config"},
+            },
+            llm_fn=llm,
+            cache=cache,
+        )
+        self.assertEqual(svc.precompute_all_remaps(), 1)
+        self.assertEqual(calls["n"], 1)
+        # Second precompute / remap_for is a cache hit.
+        self.assertEqual(svc.precompute_all_remaps(), 1)
+        self.assertEqual(calls["n"], 1)
+        self.assertEqual(
+            svc.cre_ids_for_new_section("owasp_top10", 2025, "A04"),
+            {"cre-crypto"},
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
