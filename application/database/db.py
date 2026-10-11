@@ -212,6 +212,16 @@ class GapAnalysisResults(BaseModel):
     __table_args__ = (sqla.UniqueConstraint(cache_key, name="unique_cache_key_field"),)
 
 
+class OieLlmCache(BaseModel):  # type: ignore
+    """Durable librarian LLM response cache (shortlist / edition / neighbor / safety)."""
+
+    __tablename__ = "oie_llm_cache"
+    kind = sqla.Column(sqla.String, primary_key=True, nullable=False)
+    cache_key = sqla.Column(sqla.String, primary_key=True, nullable=False)
+    payload_json = sqla.Column(sqla.JSON, nullable=False)
+    updated_at = sqla.Column(sqla.DateTime, nullable=False)
+
+
 class ImportRun(BaseModel):  # type: ignore
     """Tracks import runs for Module C diff/staging. Step 6."""
 
@@ -373,6 +383,41 @@ class McpGrants(BaseModel):  # type: ignore
     revoked_at = sqla.Column(sqla.DateTime, nullable=True)
 
     __table_args__ = (sqla.UniqueConstraint(user_id, scope, name="uq_mcp_grants"),)
+
+
+class ApiKey(BaseModel):  # type: ignore
+    """Metadata for a minted JWT API key (``jti`` claim). Token shown once at mint."""
+
+    __tablename__ = "api_keys"
+    jti = sqla.Column(sqla.String, primary_key=True)
+    user_id = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("users.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+    name = sqla.Column(sqla.String, nullable=False)
+    expires_at = sqla.Column(sqla.DateTime, nullable=False)
+    revoked_at = sqla.Column(sqla.DateTime, nullable=True)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+    last_used_at = sqla.Column(sqla.DateTime, nullable=True)
+
+
+class ApiKeyAuditLog(BaseModel):  # type: ignore
+    """One authenticated API-key request (method/path/status)."""
+
+    __tablename__ = "api_key_audit_log"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    jti = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("api_keys.jti", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+    method = sqla.Column(sqla.String, nullable=False)
+    path = sqla.Column(sqla.String, nullable=False)
+    status_code = sqla.Column(sqla.Integer, nullable=False)
+    ip = sqla.Column(sqla.String, nullable=True)
+    user_agent = sqla.Column(sqla.String, nullable=True)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
 
 
 class ArtifactIngestEvent(BaseModel):  # type: ignore
@@ -3127,7 +3172,10 @@ class Node_collection:
             obj = self.session.query(CRE).filter(CRE.external_id == doc.id).first()
             return (
                 self.session.query(Embeddings)
-                .filter(Embeddings.cre_id == obj.id)
+                .filter(
+                    Embeddings.cre_id == obj.id,
+                    Embeddings.doc_type == cre_defs.Credoctypes.CRE.value,
+                )
                 .first()
             )
         else:
@@ -3155,6 +3203,173 @@ class Node_collection:
             )
             .all()
         )
+
+    def get_embedding_by_id(self, embedding_id: str) -> Optional[Embeddings]:
+        if not embedding_id:
+            return None
+        return (
+            self.session.query(Embeddings).filter(Embeddings.id == embedding_id).first()
+        )
+
+    def get_oie_llm_cache(self, kind: str, cache_key: str) -> Optional[Any]:
+        if not kind or not cache_key:
+            return None
+        row = (
+            self.session.query(OieLlmCache)
+            .filter(OieLlmCache.kind == kind, OieLlmCache.cache_key == cache_key)
+            .first()
+        )
+        if row is None:
+            return None
+        return row.payload_json
+
+    def put_oie_llm_cache(self, kind: str, cache_key: str, payload: Any) -> bool:
+        if not kind or not cache_key:
+            return False
+        from datetime import datetime, timezone
+
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        row = (
+            self.session.query(OieLlmCache)
+            .filter(OieLlmCache.kind == kind, OieLlmCache.cache_key == cache_key)
+            .first()
+        )
+        if row is None:
+            self.session.add(
+                OieLlmCache(
+                    kind=kind,
+                    cache_key=cache_key,
+                    payload_json=payload,
+                    updated_at=now,
+                )
+            )
+        else:
+            row.payload_json = payload
+            row.updated_at = now
+            from sqlalchemy.orm.attributes import flag_modified
+
+            flag_modified(row, "payload_json")
+        self.session.commit()
+        return True
+
+    def get_cre_summary_embedding(self, cre_id: str) -> Optional[Embeddings]:
+        """Hidden librarian summary vector row (``doc_type=CRE_SUMMARY``), not hub CRE."""
+        from application.utils.librarian.cre_summary import DOC_TYPE_CRE_SUMMARY
+
+        if not cre_id:
+            return None
+        return (
+            self.session.query(Embeddings)
+            .filter(
+                Embeddings.cre_id == cre_id,
+                Embeddings.doc_type == DOC_TYPE_CRE_SUMMARY,
+            )
+            .first()
+        )
+
+    def get_cre_oie_summary(
+        self, cre_id: str
+    ) -> Tuple[Optional[str], Optional[str], Optional[List[float]]]:
+        """Return ``(summary, embedding_id, vector)`` from CRE ``oie`` metadata."""
+        from application.database.pgvector_utils import parse_stored_embedding_vec
+        from application.utils.librarian.cre_summary import read_oie_summary
+
+        if not cre_id:
+            return None, None, None
+        row = self.session.query(CRE).filter(CRE.id == cre_id).first()
+        if row is None:
+            return None, None, None
+        summary, emb_id = read_oie_summary(row.metadata_json)
+        if not summary:
+            return None, emb_id, None
+        vec: Optional[List[float]] = None
+        if emb_id:
+            emb = self.get_embedding_by_id(emb_id)
+            if emb is not None and emb.embedding_vec is not None:
+                parsed = parse_stored_embedding_vec(emb.embedding_vec)
+                if parsed:
+                    vec = parsed
+        if vec is None:
+            emb = self.get_cre_summary_embedding(cre_id)
+            if emb is not None and emb.embedding_vec is not None:
+                parsed = parse_stored_embedding_vec(emb.embedding_vec)
+                if parsed:
+                    vec = parsed
+                    emb_id = emb.id or emb_id
+        return summary, emb_id, vec
+
+    def upsert_cre_oie_summary(
+        self,
+        cre_id: str,
+        summary: str,
+        embedding: Optional[List[float]] = None,
+    ) -> Optional[str]:
+        """Persist hidden ``oie.summary`` and optional ``CRE_SUMMARY`` embedding.
+
+        Returns the summary embedding id when a vector is stored, ``""`` when only
+        text is stored, or ``None`` when the CRE row is missing / write failed.
+        Never updates hub ``doc_type=CRE`` embeddings or ``CRE.description``.
+        """
+        from sqlalchemy.orm.attributes import flag_modified
+
+        from application.database.pgvector_utils import (
+            require_embedding_vec_store,
+            to_pgvector_literal,
+        )
+        from application.utils.librarian.cre_summary import (
+            DOC_TYPE_CRE_SUMMARY,
+            OIE_EMBEDDING_ID_KEY,
+            OIE_SUMMARY_KEY,
+        )
+
+        blob = (summary or "").strip()
+        if not cre_id or not blob:
+            return None
+        row = self.session.query(CRE).filter(CRE.id == cre_id).first()
+        if row is None:
+            return None
+
+        emb_id: Optional[str] = None
+        if embedding is not None:
+            vec = [float(x) for x in embedding]
+            if not vec:
+                return None
+            require_embedding_vec_store(
+                self.session.get_bind(), context="upsert_cre_oie_summary"
+            )
+            embedding_model_id = (
+                os.environ.get("CRE_EMBED_MODEL", "") or ""
+            ).strip() or "gemini/gemini-embedding-001"
+            literal = to_pgvector_literal(vec)
+            existing = self.get_cre_summary_embedding(cre_id)
+            if existing is None:
+                existing = Embeddings(
+                    cre_id=cre_id,
+                    doc_type=DOC_TYPE_CRE_SUMMARY,
+                    embeddings_content=blob,
+                    embedding_model_id=embedding_model_id,
+                    embedding_dim=len(vec),
+                    embedding_vec=literal,
+                )
+                self.session.add(existing)
+                self.session.flush()
+            else:
+                existing.embeddings_content = blob
+                existing.embedding_model_id = embedding_model_id
+                existing.embedding_dim = len(vec)
+                existing.embedding_vec = literal
+            emb_id = existing.id
+
+        meta = dict(row.metadata_json or {})
+        oie = dict(meta.get("oie") or {}) if isinstance(meta.get("oie"), dict) else {}
+        oie[OIE_SUMMARY_KEY] = blob
+        if emb_id:
+            oie[OIE_EMBEDDING_ID_KEY] = emb_id
+        meta["oie"] = oie
+        row.metadata_json = meta
+        flag_modified(row, "metadata_json")
+        self.session.commit()
+        return emb_id if emb_id is not None else ""
 
     def delete_all_embeddings(self) -> int:
         """
@@ -3197,7 +3412,23 @@ class Node_collection:
         )
 
         require_embedding_vec_store(self.session.get_bind(), context="add_embedding")
-        existing = self.get_embedding(db_object.id)
+        # Hub CRE vs hidden CRE_SUMMARY both set cre_id; match on doc_type so
+        # librarian summary rows never overwrite catalog CRE embeddings.
+        if doctype == cre_defs.Credoctypes.CRE:
+            existing_row = (
+                self.session.query(Embeddings)
+                .filter(
+                    Embeddings.cre_id == db_object.id,
+                    Embeddings.doc_type == cre_defs.Credoctypes.CRE.value,
+                )
+                .first()
+            )
+        else:
+            existing_row = (
+                self.session.query(Embeddings)
+                .filter(Embeddings.node_id == db_object.id)
+                .first()
+            )
         # Sole store is ``embedding_vec`` (pgvector on Postgres; Text literal
         # on SQLite). Never LLM re-embed here — see pgvector_utils.
         embedding_vec_literal = to_pgvector_literal(embeddings)
@@ -3207,7 +3438,7 @@ class Node_collection:
                 embeddings_url if embeddings_url is not None else db_object.link
             )
 
-        if not existing:
+        if not existing_row:
             emb = None
             if doctype == cre_defs.Credoctypes.CRE:
                 emb = Embeddings(
@@ -3235,18 +3466,18 @@ class Node_collection:
             return emb
         else:
             logger.debug(f"knew of embedding for object {db_object.id} ,updating")
-            existing[0].embeddings_content = embedding_text
-            existing[0].embedding_model_id = embedding_model_id
-            existing[0].embedding_dim = embedding_dim
-            existing[0].embedding_vec = embedding_vec_literal
+            existing_row.embeddings_content = embedding_text
+            existing_row.embedding_model_id = embedding_model_id
+            existing_row.embedding_dim = embedding_dim
+            existing_row.embedding_vec = embedding_vec_literal
             if doctype != cre_defs.Credoctypes.CRE:
                 if embeddings_url is not None:
-                    existing[0].embeddings_url = embeddings_url
-                elif getattr(existing[0], "embeddings_url", None) is None:
-                    existing[0].embeddings_url = db_object.link
+                    existing_row.embeddings_url = embeddings_url
+                elif getattr(existing_row, "embeddings_url", None) is None:
+                    existing_row.embeddings_url = db_object.link
             self.session.commit()
 
-            return existing
+            return existing_row
 
     def can_use_pgvector_similarity(self) -> bool:
         """True when Postgres has ``embeddings.embedding_vec`` for SQL cosine."""
@@ -3547,12 +3778,14 @@ def CREfromDB(dbcre: CRE) -> cre_defs.CRE:
     tags = []
     if dbcre.tags:
         tags = list(set(dbcre.tags.split(",")))
+    from application.utils.librarian.cre_summary import public_cre_metadata
+
     return cre_defs.CRE(
         name=dbcre.name,
         description=dbcre.description,
         id=dbcre.external_id,
         tags=tags,
-        metadata=dbcre.metadata_json or {},
+        metadata=public_cre_metadata(dbcre.metadata_json or {}),
     )
 
 

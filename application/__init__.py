@@ -49,6 +49,22 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
         letters = string.ascii_lowercase
         app.secret_key = "".join(random.choice(letters) for i in range(20))
 
+    # JWT API-token signing secret: env, or mint+persist once on install/boot.
+    # Tests get a stable in-process default so create_app does not touch /code.
+    try:
+        from application.utils.api_tokens.secret import ensure_api_token_jwt_secret
+
+        if (
+            mode == "test"
+            and not (os.environ.get("API_TOKEN_JWT_SECRET") or "").strip()
+        ):
+            os.environ["API_TOKEN_JWT_SECRET"] = (
+                "test-only-api-token-jwt-secret-32bytes"
+            )
+        ensure_api_token_jwt_secret()
+    except Exception:
+        logger.exception("API_TOKEN_JWT_SECRET bootstrap failed")
+
     # config[mode].init_app(app)
     sqla.init_app(app=app)
     from application.web.web_main import app as app_blueprint

@@ -10,6 +10,7 @@
     name="description"
     content="Open CRE - Open Cybersecurity Requirement Expression: Link security requirements across standards and frameworks."
   />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <title>Open CRE</title>
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <link rel="alternate icon" href="/favicon.ico" />
@@ -18,4 +19,7 @@
 
 <body>
   <div id="mount"></div>
+  <% htmlWebpackPlugin.files.js.forEach(function (file) { %>
+  <script defer src="<%= file %>" data-cfasync="false"></script>
+  <% }); %>
 </body>
