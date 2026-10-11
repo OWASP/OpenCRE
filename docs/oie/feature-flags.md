@@ -59,10 +59,20 @@ neighborhood — superseded for AIX by the hub gold + d1-winner stack above.
 Neighborhood definition:
 [Evaluation and metrics](evaluation-and-metrics.md).
 
+## Runtime defaults
+
+`application.utils.librarian.config_loader.apply_promoted_defaults()` (called from
+`load_config()`) and `PROMOTED_ENV_DEFAULTS` install this stack whenever env is
+unset — RQ workers, Admin OIE ingest, and
+`scripts/oie_owasp_eval/run_full_pipeline.py` share one source of truth.
+Staging Compose sets the same knobs under `x-librarian-promoted`.
+SQLite / hermetic tests should set `CRE_LIBRARIAN_RETRIEVER_BACKEND=in_memory`
+explicitly. Disable margin with `CRE_LIBRARIAN_MARGIN_GAMMA=off`.
+
 ## Reproduce
 
 ```bash
-# Matches scripts/oie_owasp_eval/run_full_pipeline.py _apply_promoted_flags
+# Same as apply_promoted_defaults() / load_config() when env unset
 export CRE_LIBRARIAN_CRE_SUMMARY=1
 export CRE_LIBRARIAN_MARGIN_GAMMA=0.85
 export CRE_LIBRARIAN_RETRIEVER_BACKEND=pgvector
