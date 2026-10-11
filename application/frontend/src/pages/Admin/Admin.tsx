@@ -2,12 +2,23 @@ import './Admin.scss';
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Checkbox, Form, Message, Modal, Header as SUIHeader } from 'semantic-ui-react';
+import { Button, Checkbox, Form, Message, Modal, Header as SUIHeader, Table } from 'semantic-ui-react';
 
 import { useCapabilities, useEnvironment } from '../../hooks';
 import { useUser } from '../../hooks/useUser';
 
-type Tab = 'dashboard' | 'config' | 'pipeline' | 'oie' | 'graph' | 'myopencre';
+type Tab = 'dashboard' | 'config' | 'pipeline' | 'oie' | 'graph' | 'workbench' | 'myopencre' | 'profile';
+
+const TAB_META: Record<Tab, { label: string; sub: string }> = {
+  dashboard: { label: 'Overview', sub: 'Queue health, needs-attention, review pulse.' },
+  config: { label: 'Config values', sub: 'Process env vs .env — admin only.' },
+  pipeline: { label: 'Pipeline', sub: 'Jobs, stage logs, ingest.' },
+  oie: { label: 'OIE queue', sub: 'RQ / OIE worker status.' },
+  graph: { label: 'Review', sub: 'Staged links — expand section text, accept/reject.' },
+  workbench: { label: 'Workbench', sub: 'Accepted targets and re-ingest.' },
+  myopencre: { label: 'MyOpenCRE', sub: 'Personal CRE workspace (admin shortcut).' },
+  profile: { label: 'Profile', sub: 'Operator account — admin session required.' },
+};
 
 type RepoForm = {
   id: string;
@@ -101,7 +112,7 @@ function mutHeaders(extra: Record<string, string> = {}): Record<string, string> 
 
 export const Admin = () => {
   const { apiUrl } = useEnvironment();
-  const { isLoggedIn, loading, login } = useUser();
+  const { isLoggedIn, loading, login, user } = useUser();
   const { capabilities, loading: capsLoading } = useCapabilities();
   const [tab, setTab] = useState<Tab>('dashboard');
   const origin = adminOrigin(apiUrl);
@@ -137,7 +148,7 @@ export const Admin = () => {
     return (
       <div className="admin-page">
         <SUIHeader as="h1">Admin</SUIHeader>
-        <p>Sign in to continue.</p>
+        <p>Sign in to continue. Admin APIs require login.</p>
         <Button primary onClick={login}>
           Login
         </Button>
@@ -154,35 +165,79 @@ export const Admin = () => {
     );
   }
 
+  const meta = TAB_META[tab];
+  const nav: { id: Tab; label: string; group: string }[] = [
+    { id: 'dashboard', label: 'Overview', group: 'Ops' },
+    { id: 'config', label: 'Config values', group: 'Ops' },
+    { id: 'pipeline', label: 'Pipeline', group: 'Ops' },
+    { id: 'oie', label: 'OIE queue', group: 'Ops' },
+    { id: 'graph', label: 'Review', group: 'Ops' },
+    { id: 'workbench', label: 'Workbench', group: 'Ops' },
+    { id: 'myopencre', label: 'MyOpenCRE', group: 'Apps' },
+    { id: 'profile', label: 'Profile', group: 'Account' },
+  ];
+
   return (
-    <div className="admin-page">
-      <SUIHeader as="h1">Admin</SUIHeader>
-      <div className="admin-tabs">
-        {(
-          [
-            ['dashboard', 'Dashboard'],
-            ['config', 'Config'],
-            ['pipeline', 'Pipeline'],
-            ['oie', 'OIE queue'],
-            ['graph', 'Graph management'],
-            ['myopencre', 'MyOpenCRE'],
-          ] as [Tab, string][]
-        ).map(([id, label]) => (
-          <Button key={id} primary={tab === id} onClick={() => setTab(id)}>
-            {label}
-          </Button>
+    <div className="admin-shell">
+      <aside className="admin-side">
+        <div className="admin-side__brand">
+          OpenCRE
+          <span>Admin · authenticated</span>
+        </div>
+        {(['Ops', 'Apps', 'Account'] as const).map((group) => (
+          <div key={group}>
+            <div className="admin-side__label">{group}</div>
+            <div className="admin-side__nav">
+              {nav
+                .filter((n) => n.group === group)
+                .map((n) => (
+                  <button
+                    key={n.id}
+                    type="button"
+                    className={tab === n.id ? 'is-active' : undefined}
+                    onClick={() => setTab(n.id)}
+                  >
+                    {n.label}
+                  </button>
+                ))}
+            </div>
+          </div>
         ))}
+        <div className="admin-side__foot">
+          Requires login + CRE_ALLOW_IMPORT. Site browse links stay in the main header.
+        </div>
+      </aside>
+      <div className="admin-main">
+        <div className="admin-page">
+          <h1 className="admin-page__title">{meta.label}</h1>
+          <p className="admin-page__sub">{meta.sub}</p>
+          {tab === 'dashboard' && (
+            <DashboardTab
+              origin={origin}
+              onOpenJobs={() => setTab('pipeline')}
+              onOpenReview={() => setTab('graph')}
+              onOpenWorkbench={() => setTab('workbench')}
+            />
+          )}
+          {tab === 'config' && <ConfigTab origin={origin} />}
+          {tab === 'pipeline' && <PipelineTab origin={origin} />}
+          {tab === 'oie' && <OieQueueTab origin={origin} />}
+          {tab === 'graph' && <GraphManagementTab origin={origin} />}
+          {tab === 'workbench' && <WorkbenchTab origin={origin} />}
+          {tab === 'myopencre' && (
+            <div className="admin-card">
+              <h3>MyOpenCRE</h3>
+              <p className="admin-card__sub">
+                Personal workspace (also needs CRE_ENABLE_MYOPENCRE for non-admin users).
+              </p>
+              <Link className="ui primary button" to="/myopencre">
+                Open MyOpenCRE
+              </Link>
+            </div>
+          )}
+          {tab === 'profile' && <ProfileTab user={user} />}
+        </div>
       </div>
-      {tab === 'dashboard' && <DashboardTab origin={origin} onOpenJobs={() => setTab('pipeline')} />}
-      {tab === 'config' && <ConfigTab origin={origin} />}
-      {tab === 'pipeline' && <PipelineTab origin={origin} />}
-      {tab === 'oie' && <OieQueueTab origin={origin} />}
-      {tab === 'graph' && <GraphManagementTab origin={origin} />}
-      {tab === 'myopencre' && (
-        <Link className="ui primary button" to="/myopencre">
-          Open MyOpenCRE
-        </Link>
-      )}
     </div>
   );
 };
@@ -252,12 +307,22 @@ function RepoFormFields({ form, setForm }: { form: RepoForm; setForm: (next: Rep
   );
 }
 
-function DashboardTab({ origin, onOpenJobs }: { origin: string; onOpenJobs: () => void }) {
+function DashboardTab({
+  origin,
+  onOpenJobs,
+  onOpenReview,
+  onOpenWorkbench,
+}: {
+  origin: string;
+  onOpenJobs: () => void;
+  onOpenReview: () => void;
+  onOpenWorkbench: () => void;
+}) {
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
-    fetch(`${origin}/admin/dashboard`)
+    fetch(`${origin}/admin/dashboard`, { credentials: 'include' })
       .then(async (res) => {
         const body = await readJson(res);
         if (!res.ok) throw new Error(body.description || body.error || res.statusText);
@@ -273,47 +338,131 @@ function DashboardTab({ origin, onOpenJobs }: { origin: string; onOpenJobs: () =
   if (error) return <Message negative>{error}</Message>;
   if (!data) return <p>Loading dashboard…</p>;
   const agent = data.agent || {};
+  const attn = data.needs_attention || {};
+  const pulse = data.review_pulse || {};
   return (
     <div>
-      <h3>Jobs</h3>
-      <StageStrip steps={data.latest_strip} />
-      <p>
-        Running: {(data.running || []).length} · Failed: {(data.failed || []).length} · OIE unconsumed:{' '}
-        {data.oie_unconsumed ?? 0}{' '}
+      <div className="admin-kpi-row">
+        <div className="admin-kpi">
+          <div className="admin-kpi__label">Running</div>
+          <div className="admin-kpi__value">{(data.running || []).length}</div>
+        </div>
+        <div className="admin-kpi">
+          <div className="admin-kpi__label">Failed</div>
+          <div className="admin-kpi__value warn">{(data.failed || []).length}</div>
+        </div>
+        <div className="admin-kpi">
+          <div className="admin-kpi__label">OIE unconsumed</div>
+          <div className="admin-kpi__value">{data.oie_unconsumed ?? 0}</div>
+        </div>
+        <div className="admin-kpi">
+          <div className="admin-kpi__label">Blocked</div>
+          <div className="admin-kpi__value danger">{attn.blocked ?? 0}</div>
+        </div>
+        <div className="admin-kpi">
+          <div className="admin-kpi__label">Staged review</div>
+          <div className="admin-kpi__value warn">{attn.staged_review ?? 0}</div>
+        </div>
+        <div className="admin-kpi">
+          <div className="admin-kpi__label">Ingest errors</div>
+          <div className="admin-kpi__value danger">{attn.ingest_errors ?? 0}</div>
+        </div>
+      </div>
+
+      <div className="admin-card">
+        <h3>Needs attention</h3>
+        <p className="admin-card__sub">Actionable queues — open the panel that owns the backlog.</p>
+        <div className="admin-stat-grid">
+          <div className="admin-stat">
+            <div className="admin-stat__k">Staged review runs</div>
+            <div className="admin-stat__v">{attn.staged_review ?? 0}</div>
+          </div>
+          <div className="admin-stat">
+            <div className="admin-stat__k">Failed events</div>
+            <div className="admin-stat__v">{attn.failed_24h ?? (data.failed || []).length}</div>
+          </div>
+          <div className="admin-stat">
+            <div className="admin-stat__k">Blocked</div>
+            <div className="admin-stat__v">{attn.blocked ?? 0}</div>
+          </div>
+          <div className="admin-stat">
+            <div className="admin-stat__k">Ingest errors</div>
+            <div className="admin-stat__v">{attn.ingest_errors ?? 0}</div>
+          </div>
+        </div>
+        <Button primary size="mini" onClick={onOpenReview}>
+          Open review
+        </Button>{' '}
         <Button size="mini" onClick={onOpenJobs}>
-          Job management and logs
+          Pipeline
+        </Button>{' '}
+        <Button size="mini" onClick={onOpenWorkbench}>
+          Workbench
         </Button>
-      </p>
-      {(data.running || []).length === 0 && (data.import_runs || []).length === 0 && <p>No jobs running.</p>}
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th>Source</th>
-            <th>Status</th>
-            <th>Created</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(data.import_runs || []).map((r: any) => (
-            <tr key={r.id}>
-              <td>{r.source}</td>
-              <td>{r.staging_status || '—'}</td>
-              <td>{r.created_at}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <h3>OWASP agent</h3>
-      <p>
-        Enabled: {String(agent.enabled)} · package: {String(agent.package_present)} · writes CRE graph:{' '}
-        {String(agent.writes_cre_graph)}
-      </p>
-      <p>
-        Main DB{agent.db_env_key ? ` (${agent.db_env_key})` : ''}: {agent.db_url || '—'}
-      </p>
-      <Link className="ui mini button" to={agent.demo_path || '/chatbot'}>
-        Open chat demo
-      </Link>
+      </div>
+
+      <div className="admin-grid-2">
+        <div className="admin-card">
+          <h3>Recent import runs</h3>
+          {(data.import_runs || []).length === 0 ? (
+            <p className="admin-help">No import runs yet.</p>
+          ) : (
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Source</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(data.import_runs || []).map((r: any) => (
+                  <tr key={r.id}>
+                    <td>
+                      <code>{r.source}</code>
+                    </td>
+                    <td>{r.staging_status || '—'}</td>
+                    <td>{r.created_at}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+        <div className="admin-card">
+          <h3>Review pulse</h3>
+          <p className="admin-card__sub">Accept-as-is vs adjust vs reject — prod signal, not a gold set.</p>
+          <div className="admin-stat-grid">
+            <div className="admin-stat">
+              <div className="admin-stat__k">Accepted as-is</div>
+              <div className="admin-stat__v">{pulse.accepted_as_is_pct ?? 0}%</div>
+            </div>
+            <div className="admin-stat">
+              <div className="admin-stat__k">Adjusted</div>
+              <div className="admin-stat__v">{pulse.adjusted_pct ?? 0}%</div>
+            </div>
+            <div className="admin-stat">
+              <div className="admin-stat__k">Rejected</div>
+              <div className="admin-stat__v">{pulse.rejected_pct ?? 0}%</div>
+            </div>
+            <div className="admin-stat">
+              <div className="admin-stat__k">Pending links</div>
+              <div className="admin-stat__v">{pulse.pending ?? 0}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="admin-card">
+        <h3>OWASP agent</h3>
+        <p className="admin-help">
+          Enabled: {String(agent.enabled)} · package: {String(agent.package_present)} · writes CRE graph:{' '}
+          {String(agent.writes_cre_graph)}
+        </p>
+        <Link className="ui mini button" to={agent.demo_path || '/chatbot'}>
+          Open chat demo
+        </Link>
+      </div>
     </div>
   );
 }
@@ -323,6 +472,10 @@ function GraphManagementTab({ origin }: { origin: string }) {
   const [detail, setDetail] = useState<any>(null);
   const [graph, setGraph] = useState<any>(null);
   const [links, setLinks] = useState<any[]>([]);
+  const [linksTotal, setLinksTotal] = useState(0);
+  const [linksPage, setLinksPage] = useState(1);
+  const [linksPageSize, setLinksPageSize] = useState(10);
+  const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [source, setSource] = useState('');
@@ -378,13 +531,18 @@ function GraphManagementTab({ origin }: { origin: string }) {
     }
   };
 
-  const openRun = async (runId: string) => {
+  const openRun = async (runId: string, page = 1, pageSize = linksPageSize) => {
     setError(null);
     setNotice(null);
+    setActiveRunId(runId);
+    setLinksPage(page);
+    setLinksPageSize(pageSize);
     try {
       const [csRes, linkRes] = await Promise.all([
-        fetch(`${origin}/admin/imports/runs/${runId}/changeset`),
-        fetch(`${origin}/admin/imports/runs/${runId}/links`),
+        fetch(`${origin}/admin/imports/runs/${runId}/changeset`, { credentials: 'include' }),
+        fetch(`${origin}/admin/imports/runs/${runId}/links?page=${page}&page_size=${pageSize}`, {
+          credentials: 'include',
+        }),
       ]);
       const csBody = await readJson(csRes);
       const linkBody = await readJson(linkRes);
@@ -404,6 +562,7 @@ function GraphManagementTab({ origin }: { origin: string }) {
       }
       setDetail(csBody);
       setLinks(linkBody.links || []);
+      setLinksTotal(typeof linkBody.total === 'number' ? linkBody.total : (linkBody.links || []).length);
       setGraph(null);
     } catch (err) {
       setError(String(err));
@@ -584,60 +743,274 @@ function GraphManagementTab({ origin }: { origin: string }) {
         </div>
       )}
       {detail && (
-        <div>
-          <h3>Added controls and links</h3>
+        <div className="admin-card">
+          <h3>Staged links</h3>
+          <p className="admin-card__sub">
+            Expand a row for section title and content. Page {linksPage} · {linksTotal} total.
+          </p>
+          <p>
+            <label>
+              Page size{' '}
+              <select
+                value={linksPageSize}
+                onChange={(e) => {
+                  const size = Number(e.target.value) || 10;
+                  if (activeRunId) openRun(activeRunId, 1, size);
+                }}
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+              </select>
+            </label>{' '}
+            <Button
+              size="mini"
+              disabled={linksPage <= 1 || !activeRunId}
+              onClick={() => activeRunId && openRun(activeRunId, linksPage - 1, linksPageSize)}
+            >
+              Prev
+            </Button>{' '}
+            <Button
+              size="mini"
+              disabled={!activeRunId || linksPage * linksPageSize >= linksTotal}
+              onClick={() => activeRunId && openRun(activeRunId, linksPage + 1, linksPageSize)}
+            >
+              Next
+            </Button>
+          </p>
           {links.length === 0 ? (
-            <p>No staged links on this run.</p>
+            <p>{linksTotal === 0 ? 'No staged links on this run.' : 'No staged links on this page.'}</p>
           ) : (
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Added</th>
-                  <th>Linked to</th>
-                  <th>Decision</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {links.map((row: any) => {
-                  const key = `${row.op_index}:${row.link_index}`;
-                  const added = row.added || {};
-                  const linked = row.linked_to;
-                  return (
-                    <tr key={key}>
-                      <td>
-                        {added.op} {added.name} {added.section} {added.sectionID}
-                      </td>
-                      <td>{linked ? `${linked.id} ${linked.name}`.trim() : '—'}</td>
-                      <td>{row.decision}</td>
-                      <td>
-                        {linked && (
-                          <>
-                            <Button size="mini" onClick={() => review(detail.run_id, row, 'approve')}>
-                              Approve
-                            </Button>
-                            <Button size="mini" onClick={() => review(detail.run_id, row, 'deny')}>
-                              Deny
-                            </Button>
-                          </>
-                        )}
-                        <input
-                          placeholder="relink CRE id or name"
-                          value={relink[key] || ''}
-                          onChange={(e) => setRelink({ ...relink, [key]: e.target.value })}
-                        />
-                        <Button size="mini" onClick={() => review(detail.run_id, row, 'relink')}>
-                          Relink
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            links.map((row: any) => {
+              const key = `${row.op_index}:${row.link_index}`;
+              const added = row.added || {};
+              const linked = row.linked_to;
+              const title = added.title || added.name || added.sectionID || 'Section';
+              const content = added.content || '';
+              return (
+                <article className="admin-review-item" key={key}>
+                  <div style={{ padding: '0.65rem 0.75rem' }}>
+                    <div>
+                      <code>{added.sectionID || added.section || added.name}</code>{' '}
+                      <span className="admin-pill muted">{row.decision}</span>
+                    </div>
+                    <div className="admin-help">
+                      → {linked ? `${linked.id} ${linked.name}`.trim() : 'no proposal'}
+                    </div>
+                    <div style={{ marginTop: '0.4rem' }}>
+                      {linked && (
+                        <>
+                          <Button size="mini" primary onClick={() => review(detail.run_id, row, 'approve')}>
+                            Accept
+                          </Button>{' '}
+                          <Button size="mini" onClick={() => review(detail.run_id, row, 'deny')}>
+                            Reject
+                          </Button>{' '}
+                        </>
+                      )}
+                      <input
+                        placeholder="relink CRE id or name"
+                        value={relink[key] || ''}
+                        onChange={(e) => setRelink({ ...relink, [key]: e.target.value })}
+                      />{' '}
+                      <Button size="mini" onClick={() => review(detail.run_id, row, 'relink')}>
+                        Relink
+                      </Button>
+                    </div>
+                  </div>
+                  <details>
+                    <summary>Section title &amp; content</summary>
+                    <div className="admin-review-item__body">
+                      <p>
+                        <strong>{title}</strong>
+                      </p>
+                      <p className="admin-help" style={{ whiteSpace: 'pre-wrap' }}>
+                        {content || 'No section body on this staged op.'}
+                      </p>
+                    </div>
+                  </details>
+                </article>
+              );
+            })
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function WorkbenchTab({ origin }: { origin: string }) {
+  const [targets, setTargets] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [lane, setLane] = useState('all');
+  const [q, setQ] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${origin}/admin/targets`, { credentials: 'include' })
+      .then(async (res) => {
+        const body = await readJson(res);
+        if (!res.ok) throw new Error(apiError(body, res));
+        if (!cancelled) setTargets(body.targets || []);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(String(err));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [origin]);
+
+  const filtered = targets.filter((t) => {
+    const kind = String(t.kind || '');
+    const spec = t.spec || {};
+    const repoKind = String(spec.kind || (kind === 'owasp_agent' ? 'project' : 'standard'));
+    const L = repoKind === 'standard' || kind === 'oie_repo' ? 'cre_expansion' : 'owasp_agent';
+    if (lane !== 'all' && L !== lane) return false;
+    const hay = `${t.id} ${t.name} ${spec.owner || ''} ${spec.repo || ''}`.toLowerCase();
+    if (q.trim() && !hay.includes(q.trim().toLowerCase())) return false;
+    return t.enabled !== false;
+  });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize) || 1);
+  const pageSafe = Math.min(page, totalPages);
+  const slice = filtered.slice((pageSafe - 1) * pageSize, pageSafe * pageSize);
+
+  const reingest = async (id: string) => {
+    setBusy(id);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch(`${origin}/admin/ingest/start`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packaged: true, name: id }),
+      });
+      const body = await readJson(res);
+      if (!res.ok) {
+        setError(apiError(body, res));
+        return;
+      }
+      setNotice(`Queued re-ingest for ${id} → ${body.source || 'ok'}`);
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div>
+      {error && <Message negative>{error}</Message>}
+      {notice && <Message>{notice}</Message>}
+      <div className="admin-card">
+        <h3>Accepted targets</h3>
+        <p className="admin-card__sub">
+          From ingestion targets / repos.yaml. Lane: cre_expansion ≈ standards; owasp_agent ≈
+          project/chapter/event.
+        </p>
+        <p>
+          <label>
+            Lane{' '}
+            <select
+              value={lane}
+              onChange={(e) => {
+                setLane(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="all">All</option>
+              <option value="cre_expansion">CRE expansion</option>
+              <option value="owasp_agent">OWASP agent</option>
+            </select>
+          </label>{' '}
+          <input
+            placeholder="Search"
+            value={q}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setPage(1);
+            }}
+          />{' '}
+          <select
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value) || 5);
+              setPage(1);
+            }}
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+          </select>
+        </p>
+        <p className="admin-help">
+          {filtered.length} match · page {pageSafe}/{totalPages}
+        </p>
+        {slice.map((t) => {
+          const spec = t.spec || {};
+          return (
+            <article className="admin-review-item" key={t.id}>
+              <div
+                style={{
+                  padding: '0.65rem 0.75rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: '1rem',
+                }}
+              >
+                <div>
+                  <code>{t.id}</code> <span className="admin-pill muted">{t.kind}</span>
+                  <div className="admin-help">
+                    {t.name}
+                    {spec.owner ? ` · ${spec.owner}/${spec.repo || ''}` : ''}
+                  </div>
+                </div>
+                <Button size="mini" primary disabled={busy === t.id} onClick={() => reingest(t.id)}>
+                  Re-ingest
+                </Button>
+              </div>
+              <details>
+                <summary>Target details</summary>
+                <div className="admin-review-item__body">
+                  <pre className="admin-pre">
+                    {JSON.stringify(spec && Object.keys(spec).length ? spec : t, null, 2)}
+                  </pre>
+                </div>
+              </details>
+            </article>
+          );
+        })}
+        <p>
+          <Button size="mini" disabled={pageSafe <= 1} onClick={() => setPage(pageSafe - 1)}>
+            Prev
+          </Button>{' '}
+          <Button size="mini" disabled={pageSafe >= totalPages} onClick={() => setPage(pageSafe + 1)}>
+            Next
+          </Button>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ProfileTab({ user }: { user: string | null }) {
+  return (
+    <div className="admin-card">
+      <h3>Profile</h3>
+      <p className="admin-card__sub">Operator session — admin panel is gated by login + CRE_ALLOW_IMPORT.</p>
+      <p>
+        Signed in as <strong>{user || '—'}</strong>
+      </p>
+      <p className="admin-help">
+        JWT API keys (mint/revoke) ship via <code>/rest/v1/api-keys</code> when that module is enabled on the
+        deployment. Use <code>Authorization: Bearer</code> or <code>X-API-Key</code> for automated admin
+        calls; browser session cookies remain the primary UI path.
+      </p>
     </div>
   );
 }
@@ -1033,6 +1406,8 @@ function ConfigTab({ origin }: { origin: string }) {
   const [mintedMeta, setMintedMeta] = useState<{ name: string; expires_at?: string } | null>(
     null
   );
+  const [diffRows, setDiffRows] = useState<any[]>([]);
+  const [diffFilter, setDiffFilter] = useState('all');
 
   const loadYaml = useCallback(() => {
     let cancelled = false;
@@ -1090,7 +1465,7 @@ function ConfigTab({ origin }: { origin: string }) {
     const cancelAgent = loadAgent();
     const cancelKeys = loadApiKeys();
     let cancelled = false;
-    fetch(`${origin}/admin/config`)
+    fetch(`${origin}/admin/config`, { credentials: 'include' })
       .then(async (res) => {
         const body = await readJson(res);
         if (!res.ok) throw new Error(body.description || body.error || res.statusText);
@@ -1107,6 +1482,13 @@ function ConfigTab({ origin }: { origin: string }) {
       .catch(() => {
         if (!cancelled) setMsg('failed to load config');
       });
+    fetch(`${origin}/admin/config/diff`, { credentials: 'include' })
+      .then(async (res) => {
+        const body = await readJson(res);
+        if (!res.ok || cancelled) return;
+        setDiffRows(body.diff || []);
+      })
+      .catch(() => undefined);
     return () => {
       cancelYaml();
       cancelAgent();
@@ -1402,11 +1784,55 @@ function ConfigTab({ origin }: { origin: string }) {
   };
 
   const counts = agent?.counts || {};
+  const filteredDiff = diffFilter === 'all' ? diffRows : diffRows.filter((row) => row.status === diffFilter);
   return (
     <div>
       {error && <Message negative>{error}</Message>}
       {notice && <Message>{notice}</Message>}
       {msg && <Message>{msg}</Message>}
+      <h3>Environment vs .env</h3>
+      <p className="admin-help">
+        Compare process environment to the on-disk <code>.env</code> (secrets redacted). Match means values
+        agree; Diff means they disagree; Missing means present in one side only.
+      </p>
+      <div className="admin-toolbar">
+        <select value={diffFilter} onChange={(e) => setDiffFilter(e.target.value)} aria-label="Diff filter">
+          <option value="all">All</option>
+          <option value="match">Match</option>
+          <option value="diff">Diff</option>
+          <option value="missing">Missing in process</option>
+          <option value="process_only">Process only</option>
+        </select>
+        <span className="admin-muted">{filteredDiff.length} keys</span>
+      </div>
+      {filteredDiff.length > 0 && (
+        <Table celled compact size="small" className="admin-config-diff">
+          <Table.Header>
+            <Table.Row>
+              <Table.HeaderCell>Key</Table.HeaderCell>
+              <Table.HeaderCell>Status</Table.HeaderCell>
+              <Table.HeaderCell>Process env</Table.HeaderCell>
+              <Table.HeaderCell>.env</Table.HeaderCell>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {filteredDiff.map((row) => (
+              <Table.Row key={row.key} className={`admin-diff-${row.status}`}>
+                <Table.Cell>
+                  <code>{row.key}</code>
+                </Table.Cell>
+                <Table.Cell>{row.status}</Table.Cell>
+                <Table.Cell>
+                  <code>{row.process ?? '—'}</code>
+                </Table.Cell>
+                <Table.Cell>
+                  <code>{row.dotenv ?? '—'}</code>
+                </Table.Cell>
+              </Table.Row>
+            ))}
+          </Table.Body>
+        </Table>
+      )}
       <h3>End-to-end bootstrap</h3>
       <p className="admin-help">
         CRE explorer graph comes from upstream (<code>opencre.org</code>). Use the upstream+harvest
