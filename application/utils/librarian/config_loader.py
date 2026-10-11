@@ -40,6 +40,7 @@ PROMOTED_ENV_DEFAULTS: dict[str, str] = {
     "CRE_LIBRARIAN_MARGIN_GAMMA": "0.85",
     "CRE_LIBRARIAN_RETRIEVER_BACKEND": "pgvector",
     "CRE_LIBRARIAN_SAFETY_GUARD": "1",
+    "CRE_LIBRARIAN_SAFETY_BATCH_SIZE": "8",
     "CRE_LIBRARIAN_EMBED_BATCH": "8",
     "CRE_EMBED_EXPECTED_DIM": "3072",
     "CRE_LIBRARIAN_SHORTLIST_JUDGE": "1",
@@ -51,6 +52,13 @@ PROMOTED_ENV_DEFAULTS: dict[str, str] = {
     "CRE_LIBRARIAN_LEAF_DRILLDOWN_KEEP_HUB": "0",
     "CRE_LIBRARIAN_LEAF_DRILLDOWN_HUB_FIRST": "0",
     "CRE_LIBRARIAN_UMBRELLA_PROMOTE_CAP": "8",
+    # Cost-free ship path: no live edition-remap Gemini; precompute into oie_llm_cache.
+    "CRE_LIBRARIAN_EDITION_REMAP_LIVE": "0",
+    # Keep experimental fail-closed levers off unless an eval explicitly enables them.
+    "CRE_LIBRARIAN_PAIRWISE_VOTE": "0",
+    "CRE_LIBRARIAN_SOURCE_GROUNDING": "0",
+    "CRE_LIBRARIAN_CROSSWALK_CAGE": "0",
+    "CRE_LIBRARIAN_COVERAGE_FAIL_CLOSED": "0",
     "NO_LOAD_GRAPH_DB": "1",
 }
 
