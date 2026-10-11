@@ -1,0 +1,7 @@
+project_id      = "opencre-llm-prod"
+region          = "us-central1"
+github_repository = "OWASP/OpenCRE"
+github_environment = "gcp-iac"
+budget_usd      = 50
+create_project  = true
+# billing_account is a GitHub secret — never put it here.

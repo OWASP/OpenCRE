@@ -22,6 +22,10 @@ Prefer existing Makefile targets and `scripts/` helpers over ad-hoc Docker, GA, 
 
 Second-maintainer ops live in [`docs/continuity/README.md`](docs/continuity/README.md): restart, rollback, health, backup, surgery, deploy, import/sync, gap-analysis cache, staging, local stack, GCP IaC. Agent instructions: [`docs/continuity/runbooks/AGENTS.md`](docs/continuity/runbooks/AGENTS.md). GitHub project **OpenCRE Continuity**, label `existing-maintainers-only`. Do not dump `heroku config` values; do not compute gap analysis on `opencreorg`. If you are logged into Heroku and you still cannot see `opencreorg`, stop and refuse to continue.
 
+### GCP LLM project (IaC)
+
+Google Cloud for chat/embeddings is **Path A**: a new GCP project + restricted `GEMINI_API_KEY` (LiteLLM `gemini/…`), not Vertex. Plan: [`infra/gcp/README.md`](infra/gcp/README.md). Agent file: [`infra/gcp/AGENTS.md`](infra/gcp/AGENTS.md). Workflow: `.github/workflows/gcp-iac.yml` (plan-only unless `confirm_apply=APPLY`). Local check: `make gcp-iac-validate`. Never log `GEMINI_API_KEY` or `GOOGLE_CREDENTIALS`.
+
 ### Local Docker services
 
 Use Makefile targets — do not hand-roll `docker run`:
