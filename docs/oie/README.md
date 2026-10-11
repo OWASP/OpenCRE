@@ -11,6 +11,7 @@ decides automatic links, and how the B2 evaluation harness measures accuracy.
 | [Feature flags](feature-flags.md) | Promoted `CRE_LIBRARIAN_*` settings and how to reproduce |
 | [Full pipeline](full-pipeline.md) | Repo URL harvest (ASVS, AISVS, Cheat Sheets) + AIX gold arm |
 | [Experimental feature flags](experimental-feature-flags.md) | Flags tried and not promoted — shipped as dead code (default off) |
+| [Admin panel](admin-panel.md) | `/admin` shell, auth, dashboard/config/review APIs |
 
 Package-level API notes remain in
 [`application/utils/librarian/README.md`](../../application/utils/librarian/README.md).

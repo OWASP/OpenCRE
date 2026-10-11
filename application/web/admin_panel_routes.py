@@ -85,6 +85,16 @@ def register_admin_panel_routes(
             return _err(400, "rejected keys: %s" % ",".join(result["rejected"]))
         return jsonify(result)
 
+    @bp.route("/admin/config/diff", methods=["GET"])
+    @login_required
+    @imports_enabled
+    def admin_config_diff() -> Any:
+        try:
+            return jsonify(service.config_diff_payload())
+        except Exception as exc:
+            logger.exception("config diff failed")
+            return _err(500, f"config diff failed: {exc}")
+
     @bp.route("/admin/targets", methods=["GET"])
     @login_required
     @imports_enabled
@@ -414,7 +424,11 @@ def register_admin_panel_routes(
     @imports_enabled
     def admin_run_links(run_id: str) -> Any:
         try:
-            return jsonify(service.review_run_links(run_id))
+            page = int(request.args.get("page") or 1)
+            page_size = int(request.args.get("page_size") or 50)
+            return jsonify(
+                service.review_run_links(run_id, page=page, page_size=page_size)
+            )
         except KeyError as exc:
             return _err(404, _exc_message(exc))
         except ValueError as exc:

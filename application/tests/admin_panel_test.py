@@ -771,7 +771,8 @@ class TestAdminPanel(unittest.TestCase):
             r = c.get("/admin/config")
             self.assertEqual(r.status_code, 200)
             body = r.get_json()
-            self.assertFalse(body["writable"])
+            # At least OIE_GRAPH_FILING_ENABLED is process-writable.
+            self.assertTrue(body["writable"])
             self.assertIn("restart", body["restart_instructions"].lower())
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
@@ -1284,6 +1285,42 @@ class TestAdminPanel(unittest.TestCase):
             self.assertEqual(body["import_runs"][0]["source"], "dash-src")
             self.assertIn("agent", body)
             self.assertFalse(body["agent"]["writes_cre_graph"])
+            self.assertIn("needs_attention", body)
+            self.assertEqual(body["needs_attention"]["staged_review"], 1)
+            self.assertGreaterEqual(body["needs_attention"]["failed_24h"], 1)
+            self.assertIn("review_pulse", body)
+            self.assertIn("accepted_as_is_pct", body["review_pulse"])
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_config_diff_compares_dotenv(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            dotenv = Path(tmp) / ".env"
+            dotenv.write_text(
+                "CRE_ALLOW_IMPORT=1\nGOOGLE_CLIENT_SECRET=file-secret\nONLY_IN_FILE=yes\n",
+                encoding="utf-8",
+            )
+            rows = config_catalog.present_config_diff(
+                {
+                    "CRE_ALLOW_IMPORT": "true",
+                    "GOOGLE_CLIENT_SECRET": "proc-secret",
+                    "OWASP_AGENT_ENABLED": "1",
+                },
+                dotenv_path=dotenv,
+            )
+            by_key = {row["key"]: row for row in rows}
+            self.assertEqual(by_key["CRE_ALLOW_IMPORT"]["status"], "match")
+            self.assertEqual(by_key["GOOGLE_CLIENT_SECRET"]["status"], "diff")
+            self.assertEqual(by_key["GOOGLE_CLIENT_SECRET"]["process"], "***")
+            self.assertEqual(by_key["GOOGLE_CLIENT_SECRET"]["dotenv"], "***")
+            self.assertEqual(by_key["ONLY_IN_FILE"]["status"], "missing")
+            self.assertEqual(by_key["OWASP_AGENT_ENABLED"]["status"], "process_only")
+        with patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"}):
+            with self.app.test_client() as c:
+                r = c.get("/admin/config/diff")
+                self.assertEqual(r.status_code, 200)
+                body = r.get_json()
+                self.assertIn("diff", body)
+                self.assertIsInstance(body["diff"], list)
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_review_links_approve_deny_relink(self) -> None:
@@ -1314,10 +1351,20 @@ class TestAdminPanel(unittest.TestCase):
         with self.app.test_client() as c:
             r = c.get(f"/admin/imports/runs/{run.id}/links")
             self.assertEqual(r.status_code, 200)
-            links = r.get_json()["links"]
+            payload = r.get_json()
+            links = payload["links"]
+            self.assertEqual(payload["total"], 3)
+            self.assertEqual(payload["page"], 1)
             self.assertEqual(links[0]["linked_to"]["id"], "123")
+            self.assertEqual(links[0]["added"]["title"], "ASVS")
             self.assertIsNone(links[1]["linked_to"])
             self.assertEqual(links[2]["added"]["name"], "")
+            r = c.get(f"/admin/imports/runs/{run.id}/links?page=1&page_size=1")
+            self.assertEqual(r.status_code, 200)
+            page_body = r.get_json()
+            self.assertEqual(page_body["total"], 3)
+            self.assertEqual(len(page_body["links"]), 1)
+            self.assertEqual(page_body["page_size"], 1)
             r = c.post(
                 f"/admin/imports/runs/{run.id}/links",
                 json={"op_index": 0, "link_index": 0, "action": "approve"},
@@ -1599,6 +1646,8 @@ class TestAdminPanel(unittest.TestCase):
                 r = c.get("/admin/repos.yaml", headers={"Accept": "application/json"})
                 self.assertEqual(r.status_code, 401)
                 r = c.get("/admin/dashboard", headers={"Accept": "application/json"})
+                self.assertEqual(r.status_code, 401)
+                r = c.get("/admin/config/diff", headers={"Accept": "application/json"})
                 self.assertEqual(r.status_code, 401)
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})

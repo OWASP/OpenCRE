@@ -65,7 +65,7 @@ describe('Admin', () => {
       </MemoryRouter>
     );
     expect(getByText(/CRE_ALLOW_IMPORT/)).toBeTruthy();
-    expect(queryByText('Dashboard')).toBeNull();
+    expect(queryByText('Overview')).toBeNull();
   });
 
   it('asks anonymous users to log in', () => {
@@ -81,7 +81,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    expect(getByText('Sign in to continue.')).toBeTruthy();
+    expect(getByText(/Sign in to continue/)).toBeTruthy();
   });
 
   it('loads import runs and links to MyOpenCRE', async () => {
@@ -97,7 +97,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Graph management'));
+    fireEvent.click(getByText('Review'));
     await findByText('asvs');
     fireEvent.click(getByText('MyOpenCRE'));
     expect(getByText('Open MyOpenCRE').closest('a')?.getAttribute('href')).toBe('/myopencre');
@@ -111,12 +111,17 @@ describe('Admin', () => {
           running: [],
           failed: [],
           import_runs: [],
+          needs_attention: { staged_review: 2, failed_24h: 0, blocked: 1, ingest_errors: 0 },
+          review_pulse: {
+            accepted_as_is_pct: 40,
+            adjusted_pct: 35,
+            rejected_pct: 25,
+            pending: 3,
+          },
           agent: {
             enabled: true,
             writes_cre_graph: false,
             demo_path: '/chatbot',
-            db_url: 'postgresql://cre:***@127.0.0.1:5432/opencre',
-            db_env_key: 'DEV_DATABASE_URL',
             package_present: false,
           },
         });
@@ -129,12 +134,13 @@ describe('Admin', () => {
       </MemoryRouter>
     );
     await findByText(/writes CRE graph: false/);
-    expect(getByText(/Main DB \(DEV_DATABASE_URL\):/)).toBeTruthy();
-    expect(getByText(/postgresql:\/\/cre:\*\*\*@127.0.0.1:5432\/opencre/)).toBeTruthy();
+    expect(getByText('Needs attention')).toBeTruthy();
+    expect(getByText('Review pulse')).toBeTruthy();
+    expect(getByText('40%')).toBeTruthy();
     expect(getByText('Open chat demo').closest('a')?.getAttribute('href')).toBe('/chatbot');
     expect(queryByRole('button', { name: 'OWASP agent' })).toBeNull();
-    fireEvent.click(getByText('Job management and logs'));
-    expect(await findByText('New')).toBeTruthy();
+    fireEvent.click(getByText('Open review'));
+    expect(await findByText(/Approve, deny, or relink/)).toBeTruthy();
   });
 
   it('reviews links per run and loads the changeset graph', async () => {
@@ -147,7 +153,7 @@ describe('Admin', () => {
           edges: [],
         });
       }
-      if (u.endsWith('/links') && init?.method === 'POST') {
+      if (u.includes('/links') && init?.method === 'POST') {
         return jsonRes({
           run_id: 'r1',
           links: [
@@ -161,7 +167,7 @@ describe('Admin', () => {
           ],
         });
       }
-      if (u.endsWith('/links')) {
+      if (u.includes('/links') && (!init || !init.method || init.method === 'GET')) {
         return jsonRes({
           run_id: 'r1',
           links: [
@@ -183,18 +189,19 @@ describe('Admin', () => {
       }
       return jsonRes({});
     });
-    const { getByText, findByText } = render(
+    const { getByText, findByText, getAllByText } = render(
       <MemoryRouter>
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Graph management'));
+    fireEvent.click(getByText('Review'));
     await findByText('asvs');
     fireEvent.click(getByText('Graph'));
     expect(await findByText('ASVS 1.1')).toBeTruthy();
     fireEvent.click(getByText('Changeset'));
-    expect(await findByText('Added controls and links')).toBeTruthy();
-    fireEvent.click(getByText('Approve'));
+    expect(await findByText('Staged links')).toBeTruthy();
+    const accepts = getAllByText('Accept');
+    fireEvent.click(accepts[accepts.length - 1]);
     await waitFor(() =>
       expect((global as any).fetch).toHaveBeenCalledWith(
         expect.stringContaining('/links'),
@@ -233,7 +240,20 @@ describe('Admin', () => {
   it('shows config restart instructions', async () => {
     loggedIn();
     (global as any).fetch = jest.fn((url: string) => {
-      if (String(url).includes('/admin/config')) {
+      const u = String(url);
+      if (u.includes('/admin/config/diff')) {
+        return jsonRes({
+          diff: [
+            {
+              key: 'CRE_ALLOW_IMPORT',
+              status: 'match',
+              process: '1',
+              dotenv: '1',
+            },
+          ],
+        });
+      }
+      if (u.includes('/admin/config')) {
         return jsonRes({
           writable: false,
           restart_instructions: 'HTTP cannot change process env.',
@@ -248,7 +268,7 @@ describe('Admin', () => {
           ],
         });
       }
-      if (String(url).includes('/admin/repos.yaml')) {
+      if (u.includes('/admin/repos.yaml')) {
         return jsonRes({ yaml: 'sources: []\n', source: 'repos.yaml:abc' });
       }
       if (String(url).includes('/rest/v1/api-keys')) {
@@ -256,14 +276,15 @@ describe('Admin', () => {
       }
       return jsonRes({});
     });
-    const { getByText, findByText } = render(
+    const { getByText, findByText, getAllByText } = render(
       <MemoryRouter>
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Config'));
+    fireEvent.click(getByText('Config values'));
+    expect(await findByText('Environment vs .env')).toBeTruthy();
     expect(await findByText('HTTP cannot change process env.')).toBeTruthy();
-    expect(getByText('CRE_ALLOW_IMPORT')).toBeTruthy();
+    expect(getAllByText('CRE_ALLOW_IMPORT').length).toBeGreaterThan(0);
   });
 
   it('mints an API key from Config Manage API keys dialog', async () => {
@@ -373,7 +394,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Config'));
+    fireEvent.click(getByText('Config values'));
     expect(await findByText(/C\.1 auto-file high-confidence links \(off/)).toBeTruthy();
     const toggle = await findByRole('checkbox');
     fireEvent.click(toggle);
@@ -436,7 +457,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Config'));
+    fireEvent.click(getByText('Config values'));
     expect(await findByText(/End-to-end bootstrap/)).toBeTruthy();
     fireEvent.click(getByText(/^Import upstream CRE \+ harvest$/));
     await waitFor(() =>
@@ -534,7 +555,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Graph management'));
+    fireEvent.click(getByText('Review'));
     await findByText('asvs');
     fireEvent.click(getByText('Impact'));
     await waitFor(() =>
@@ -585,11 +606,11 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Graph management'));
+    fireEvent.click(getByText('Review'));
     await findByText('asvs');
     fireEvent.click(getByText('Changeset'));
     expect(await findByText(/run not found/)).toBeTruthy();
-    expect(queryByText('Added controls and links')).toBeNull();
+    expect(queryByText('Staged links')).toBeNull();
   });
 
   it('saves repos.yaml and expands an org from config', async () => {
@@ -632,7 +653,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Config'));
+    fireEvent.click(getByText('Config values'));
     expect(await findByText('targets.yaml')).toBeTruthy();
     fireEvent.change(getByLabelText('repos.yaml'), {
       target: { value: 'repositories:\n  - id: custom\n' },
@@ -666,7 +687,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Config'));
+    fireEvent.click(getByText('Config values'));
     await findByText('targets.yaml');
     fireEvent.change(getByPlaceholderText('GitHub org'), { target: { value: 'NoSuchOrgCcdd' } });
     fireEvent.click(getByText('Add org'));
@@ -725,11 +746,11 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Graph management'));
+    fireEvent.click(getByText('Review'));
     expect(await findByText('Drop last')).toBeTruthy();
     fireEvent.click(getByText('Drop last'));
     expect(await findByText(/source is required/)).toBeTruthy();
-    fireEvent.click(getByText('Config'));
+    fireEvent.click(getByText('Config values'));
     fireEvent.click(getByText('Add target'));
     fireEvent.click(getByText('Add'));
     expect(await findByText(/owner and repo are required/)).toBeTruthy();
@@ -757,7 +778,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Graph management'));
+    fireEvent.click(getByText('Review'));
     await findByText('asvs');
     fireEvent.click(getByText('Graph'));
     expect(await findByText(/graph unavailable/)).toBeTruthy();
@@ -794,7 +815,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Config'));
+    fireEvent.click(getByText('Config values'));
     await findByText('targets.yaml');
     fireEvent.click(getByText('Add target'));
     fireEvent.change(getByPlaceholderText('OWASP'), { target: { value: 'OWASP' } });
@@ -850,7 +871,7 @@ describe('Admin', () => {
     loggedIn();
     (global as any).fetch = jest.fn((url: string) => {
       const u = String(url);
-      if (u.endsWith('/links')) {
+      if (u.includes('/links')) {
         return jsonRes({ run_id: 'r1', links: [] });
       }
       if (u.includes('/changeset')) {
@@ -866,7 +887,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Graph management'));
+    fireEvent.click(getByText('Review'));
     await findByText('asvs');
     fireEvent.click(getByText('Changeset'));
     expect(await findByText('No staged links on this run.')).toBeTruthy();
