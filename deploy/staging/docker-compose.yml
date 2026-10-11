@@ -5,13 +5,16 @@
 
 name: opencre-staging
 
-# Promoted Module C stack (docs/oie/feature-flags.md) — web + workers inherit.
+# Promoted Module C stack — keep in sync with
+# application.utils.librarian.config_loader.PROMOTED_ENV_DEFAULTS
+# (docs/oie/feature-flags.md). Do not invent keys here that are absent there.
 x-librarian-promoted: &librarian_promoted
   CRE_LIBRARIAN_DEVICE: cpu
   CRE_LIBRARIAN_CRE_SUMMARY: "1"
   CRE_LIBRARIAN_MARGIN_GAMMA: "0.85"
   CRE_LIBRARIAN_RETRIEVER_BACKEND: pgvector
   CRE_LIBRARIAN_SAFETY_GUARD: "1"
+  CRE_LIBRARIAN_SAFETY_BATCH_SIZE: "8"
   CRE_LIBRARIAN_EMBED_BATCH: "8"
   CRE_LIBRARIAN_SHORTLIST_JUDGE: "1"
   CRE_LIBRARIAN_SHORTLIST_JUDGE_MAX_PICKS: "3"
@@ -21,6 +24,12 @@ x-librarian-promoted: &librarian_promoted
   CRE_LIBRARIAN_LEAF_DRILLDOWN_KEEP_HUB: "0"
   CRE_LIBRARIAN_LEAF_DRILLDOWN_HUB_FIRST: "0"
   CRE_LIBRARIAN_UMBRELLA_PROMOTE_CAP: "8"
+  # Cost-free path: cache+heuristic remap only (warm with oie_precompute_remap_caches.py).
+  CRE_LIBRARIAN_EDITION_REMAP_LIVE: "0"
+  CRE_LIBRARIAN_PAIRWISE_VOTE: "0"
+  CRE_LIBRARIAN_SOURCE_GROUNDING: "0"
+  CRE_LIBRARIAN_CROSSWALK_CAGE: "0"
+  CRE_LIBRARIAN_COVERAGE_FAIL_CLOSED: "0"
   NO_LOAD_GRAPH_DB: "1"
 
 services:
@@ -143,6 +152,7 @@ services:
       REDIS_NO_SSL: "true"
       NEO4J_URL: bolt://neo4j:${NEO4J_PASSWORD:-password}@neo4j:7687
       CRE_WORKER_QUEUES: oie,default
+      CRE_OIE_GA_VIA_QUEUE: "1"
       CRE_EMBED_EXPECTED_DIM: ${CRE_EMBED_EXPECTED_DIM:-3072}
       <<: *librarian_promoted
     volumes:
@@ -160,6 +170,51 @@ services:
       - opencre_staging_net
     restart: unless-stopped
     # Prefer: docker compose up -d --scale worker=10 worker
+
+  # Optional dedicated GA queue consumers (CRE_OIE_GA_VIA_QUEUE=1 on scheduler/web).
+  # docker compose up -d --scale ga-worker=2 ga-worker
+  ga-worker:
+    profiles: ["ga"]
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        REQUIREMENTS_FILE: requirements-dev.txt
+    entrypoint: ["/bin/bash", "-lc"]
+    command:
+      - |
+        export FLASK_APP=/code/cre.py
+        export FLASK_CONFIG=production
+        export INSECURE_REQUESTS=1
+        exec python /code/cre.py --start_worker
+    env_file:
+      - .env
+    environment:
+      FLASK_CONFIG: production
+      INSECURE_REQUESTS: "1"
+      DATABASE_URL: postgresql://cre:${POSTGRES_PASSWORD:-cre_staging_change_me}@db:5432/cre
+      DEV_DATABASE_URL: postgresql://cre:${POSTGRES_PASSWORD:-cre_staging_change_me}@db:5432/cre
+      REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_NO_SSL: "true"
+      NEO4J_URL: bolt://neo4j:${NEO4J_PASSWORD:-password}@neo4j:7687
+      CRE_WORKER_QUEUES: ga
+      CRE_OIE_GA_VIA_QUEUE: "1"
+      CRE_EMBED_EXPECTED_DIM: ${CRE_EMBED_EXPECTED_DIM:-3072}
+      <<: *librarian_promoted
+    volumes:
+      - opencre_staging_secrets:/code/.secrets
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    networks:
+      - opencre_staging_net
+    restart: unless-stopped
 
   # Linux homeserver: host network reaches published 127.0.0.1:5001.
   # On Docker Desktop/Colima, prefer: cloudflared tunnel run --token "$TUNNEL_TOKEN" on the host.
