@@ -33,6 +33,8 @@ YAML (historical grid cell): `scripts/oie_owasp_eval/experiments/stack_winners.y
 | `CRE_LIBRARIAN_HYBRID_BETA` | `0` | “Lawrence” mix |
 | `CRE_LIBRARIAN_HYBRID_GAMMA` | `0.70` | Cross-encoder weight (≠ margin γ) |
 | `CRE_LIBRARIAN_RETRIEVER_BACKEND` | `pgvector` | Live B2 / full-pipeline |
+| `CRE_LIBRARIAN_COSINE` | **on** | C.1 bi-encoder cosine retrieve. `0` → empty shortlist (ablation). |
+| `CRE_LIBRARIAN_CROSS_ENCODER` | **on** | C.2 MiniLM rerank. `0` → passthrough C.1 cosine order (no torch CE). |
 | `CRE_LIBRARIAN_DEVICE` | `cpu` | Eval matrix |
 | `CRE_LIBRARIAN_USE_RRF` | off | See [experimental-feature-flags.md](experimental-feature-flags.md) |
 | `CRE_LIBRARIAN_HUB_LEAF_CAGE` | off | See experimental notes |

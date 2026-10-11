@@ -905,6 +905,15 @@ function PipelineTab({ origin }: { origin: string }) {
   );
 }
 
+type ApiKeyRow = {
+  jti: string;
+  name: string;
+  expires_at?: string | null;
+  revoked_at?: string | null;
+  created_at?: string | null;
+  last_used_at?: string | null;
+};
+
 function ConfigTab({ origin }: { origin: string }) {
   const [rows, setRows] = useState<any[]>([]);
   const [instructions, setInstructions] = useState('');
@@ -921,6 +930,15 @@ function ConfigTab({ origin }: { origin: string }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [filingEnabled, setFilingEnabled] = useState(false);
   const [filingBusy, setFilingBusy] = useState(false);
+  const [apiKeys, setApiKeys] = useState<ApiKeyRow[]>([]);
+  const [apiKeysOpen, setApiKeysOpen] = useState(false);
+  const [apiKeyName, setApiKeyName] = useState('ci');
+  const [apiKeyDays, setApiKeyDays] = useState('90');
+  const [apiKeyBusy, setApiKeyBusy] = useState(false);
+  const [mintedToken, setMintedToken] = useState<string | null>(null);
+  const [mintedMeta, setMintedMeta] = useState<{ name: string; expires_at?: string } | null>(
+    null
+  );
 
   const loadYaml = useCallback(() => {
     let cancelled = false;
@@ -956,9 +974,27 @@ function ConfigTab({ origin }: { origin: string }) {
     };
   }, [origin]);
 
+  const loadApiKeys = useCallback(() => {
+    let cancelled = false;
+    fetch(`${origin}/rest/v1/api-keys`, { credentials: 'include' })
+      .then(async (res) => {
+        const body = await readJson(res);
+        if (!res.ok) throw new Error(apiError(body, res));
+        if (!cancelled) setApiKeys(Array.isArray(body.keys) ? body.keys : []);
+      })
+      .catch(() => {
+        // Keep Config usable if the caller is not on LOGIN_ALLOWED_EMAILS.
+        if (!cancelled) setApiKeys([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [origin]);
+
   useEffect(() => {
     const cancelYaml = loadYaml();
     const cancelAgent = loadAgent();
+    const cancelKeys = loadApiKeys();
     let cancelled = false;
     fetch(`${origin}/admin/config`)
       .then(async (res) => {
@@ -979,9 +1015,78 @@ function ConfigTab({ origin }: { origin: string }) {
     return () => {
       cancelYaml();
       cancelAgent();
+      cancelKeys();
       cancelled = true;
     };
-  }, [origin, loadYaml, loadAgent]);
+  }, [origin, loadYaml, loadAgent, loadApiKeys]);
+
+  const mintApiKey = async () => {
+    setError(null);
+    setNotice(null);
+    setApiKeyBusy(true);
+    try {
+      const days = Number(apiKeyDays);
+      const res = await fetch(`${origin}/rest/v1/api-keys`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          name: apiKeyName.trim() || 'api-key',
+          expires_days: Number.isFinite(days) && days > 0 ? days : 90,
+        }),
+      });
+      const body = await readJson(res);
+      if (!res.ok) {
+        setError(apiError(body, res));
+        return;
+      }
+      setMintedToken(typeof body.token === 'string' ? body.token : null);
+      setMintedMeta({
+        name: body.name || apiKeyName,
+        expires_at: body.expires_at,
+      });
+      setNotice('API key minted — copy it now; it will not be shown again.');
+      loadApiKeys();
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setApiKeyBusy(false);
+    }
+  };
+
+  const revokeApiKey = async (jti: string) => {
+    setError(null);
+    setNotice(null);
+    setApiKeyBusy(true);
+    try {
+      const res = await fetch(`${origin}/rest/v1/api-keys/${encodeURIComponent(jti)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      });
+      if (res.status !== 204 && !res.ok) {
+        const body = await readJson(res);
+        setError(apiError(body, res));
+        return;
+      }
+      setNotice(`Revoked key ${jti.slice(0, 8)}…`);
+      loadApiKeys();
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setApiKeyBusy(false);
+    }
+  };
+
+  const copyMintedToken = async () => {
+    if (!mintedToken) return;
+    try {
+      await navigator.clipboard.writeText(mintedToken);
+      setMsg('API token copied to clipboard');
+    } catch {
+      setMsg(mintedToken);
+    }
+  };
 
   const setGraphFiling = async (enabled: boolean) => {
     setError(null);
@@ -1031,6 +1136,32 @@ function ConfigTab({ origin }: { origin: string }) {
       }
       setNotice(
         `Golden-set harvest started (${body.source})${body.async ? ' — watch Pipeline for stage logs' : ''}`
+      );
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const runUpstreamSyncAndIngest = async () => {
+    setError(null);
+    setNotice(null);
+    setBusy('upstream');
+    try {
+      const res = await fetch(`${origin}/admin/upstream-sync-and-ingest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packaged: true, max_repos: 50 }),
+      });
+      const body = await readJson(res);
+      if (!res.ok) {
+        setError(body.description || body.error || res.statusText);
+        return;
+      }
+      setNotice(
+        `Upstream CRE sync + harvest started (${body.source})` +
+          `${body.async ? ' — watch Pipeline for upstream_sync then oie' : ''}`
       );
     } catch (err) {
       setError(String(err));
@@ -1183,10 +1314,12 @@ function ConfigTab({ origin }: { origin: string }) {
       {msg && <Message>{msg}</Message>}
       <h3>End-to-end bootstrap</h3>
       <p className="admin-help">
-        CRE explorer graph comes from upstream at <code>make install</code> / <code>make dev</code> (skip with{' '}
-        <code>SKIP_UPSTREAM_SYNC=1</code>). Golden-set harvest runs A → B → C → C.1. C.1 only auto-files
-        high-confidence links when the toggle below is on (default off — review <code>decision_queue</code>{' '}
-        first). OWASP agent sync is separate — progress shows under Pipeline.
+        CRE explorer graph comes from upstream (<code>opencre.org</code>). Use the upstream+harvest
+        button below (or <code>make install</code> / <code>make dev</code>; skip with{' '}
+        <code>SKIP_UPSTREAM_SYNC=1</code>) to pull the CRE hub then run packaged harvest A → B → C → C.1.
+        Golden-set harvest skips the upstream pull. C.1 only auto-files high-confidence links when the
+        toggle below is on (default off — review <code>decision_queue</code> first). OWASP agent sync is
+        separate — progress shows under Pipeline.
       </p>
       <p>
         <Checkbox
@@ -1207,12 +1340,30 @@ function ConfigTab({ origin }: { origin: string }) {
         {counts && Object.keys(counts).length ? ` · rows=${JSON.stringify(counts)}` : ''}
       </p>
       <p>
-        <Button primary size="mini" disabled={!!busy} onClick={runGoldenHarvest}>
+        <Button primary size="mini" disabled={!!busy} onClick={runUpstreamSyncAndIngest}>
+          {busy === 'upstream' ? 'Starting…' : 'Import upstream CRE + harvest'}
+        </Button>{' '}
+        <Button size="mini" disabled={!!busy} onClick={runGoldenHarvest}>
           {busy === 'golden' ? 'Starting…' : 'Run golden-set harvest'}
         </Button>{' '}
         <Button size="mini" disabled={!!busy || agent?.enabled === false} onClick={runAgentSync}>
           {busy === 'agent' ? 'Starting…' : 'Sync OWASP agent'}
         </Button>
+      </p>
+      <p>
+        <Button
+          primary
+          size="small"
+          onClick={() => {
+            setApiKeysOpen(true);
+            loadApiKeys();
+          }}
+        >
+          Manage API keys
+        </Button>
+        <span className="admin-help" style={{ marginLeft: '0.75rem' }}>
+          Mint, name, and revoke JWT API keys (shows expiration).
+        </span>
       </p>
       <h3>targets.yaml</h3>
       <p className="admin-help">
@@ -1283,6 +1434,125 @@ function ConfigTab({ origin }: { origin: string }) {
           <Button onClick={() => setOpen(false)}>Cancel</Button>
           <Button primary onClick={addTarget}>
             Add
+          </Button>
+        </Modal.Actions>
+      </Modal>
+      <Modal
+        open={apiKeysOpen}
+        onClose={() => setApiKeysOpen(false)}
+        size="large"
+      >
+        <Modal.Header>API keys</Modal.Header>
+        <Modal.Content scrolling>
+          <p className="admin-help">
+            JWT Bearer tokens for write routes, Admin APIs, and My OpenCRE. Each key has a name and
+            expiration. The secret is shown once at mint — use{' '}
+            <code>Authorization: Bearer &lt;token&gt;</code> or <code>X-API-Key</code>. Allowlisted
+            admins only.
+          </p>
+          <Form
+            onSubmit={(e) => {
+              e.preventDefault();
+              mintApiKey();
+            }}
+          >
+            <Form.Group widths="equal">
+              <Form.Input
+                label="Name"
+                aria-label="API key name"
+                placeholder="e.g. staging-ci"
+                value={apiKeyName}
+                onChange={(e) => setApiKeyName(e.target.value)}
+              />
+              <Form.Input
+                label="Expires (days)"
+                aria-label="API key expires days"
+                placeholder="90"
+                value={apiKeyDays}
+                onChange={(e) => setApiKeyDays(e.target.value)}
+              />
+            </Form.Group>
+            <Button primary type="submit" disabled={apiKeyBusy} size="small">
+              {apiKeyBusy ? 'Working…' : 'Mint API key'}
+            </Button>
+          </Form>
+          <table className="admin-table" style={{ marginTop: '1rem' }}>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>jti</th>
+                <th>Expires</th>
+                <th>Last used</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {apiKeys.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="admin-help">
+                    No API keys yet.
+                  </td>
+                </tr>
+              ) : (
+                apiKeys.map((key) => (
+                  <tr key={key.jti}>
+                    <td>{key.name}</td>
+                    <td>
+                      <code>{key.jti.slice(0, 8)}…</code>
+                    </td>
+                    <td>{key.expires_at || '—'}</td>
+                    <td>{key.last_used_at || '—'}</td>
+                    <td>{key.revoked_at ? 'revoked' : 'active'}</td>
+                    <td>
+                      {!key.revoked_at && (
+                        <Button
+                          size="mini"
+                          disabled={apiKeyBusy}
+                          onClick={() => revokeApiKey(key.jti)}
+                        >
+                          Revoke
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </Modal.Content>
+        <Modal.Actions>
+          <Button onClick={() => setApiKeysOpen(false)}>Close</Button>
+        </Modal.Actions>
+      </Modal>
+      <Modal
+        open={!!mintedToken}
+        onClose={() => {
+          setMintedToken(null);
+          setMintedMeta(null);
+        }}
+      >
+        <Modal.Header>API key minted</Modal.Header>
+        <Modal.Content>
+          <p className="admin-help">
+            Copy this token now for {mintedMeta?.name || 'key'}
+            {mintedMeta?.expires_at ? ` (expires ${mintedMeta.expires_at})` : ''}. It cannot be
+            retrieved again.
+          </p>
+          <pre className="admin-pre" aria-label="minted API token">
+            {mintedToken}
+          </pre>
+        </Modal.Content>
+        <Modal.Actions>
+          <Button onClick={copyMintedToken}>Copy token</Button>
+          <Button
+            primary
+            onClick={() => {
+              setMintedToken(null);
+              setMintedMeta(null);
+            }}
+          >
+            Done
           </Button>
         </Modal.Actions>
       </Modal>
