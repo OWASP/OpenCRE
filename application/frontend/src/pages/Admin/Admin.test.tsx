@@ -251,6 +251,9 @@ describe('Admin', () => {
       if (String(url).includes('/admin/repos.yaml')) {
         return jsonRes({ yaml: 'sources: []\n', source: 'repos.yaml:abc' });
       }
+      if (String(url).includes('/rest/v1/api-keys')) {
+        return jsonRes({ keys: [] });
+      }
       return jsonRes({});
     });
     const { getByText, findByText } = render(
@@ -261,6 +264,65 @@ describe('Admin', () => {
     fireEvent.click(getByText('Config'));
     expect(await findByText('HTTP cannot change process env.')).toBeTruthy();
     expect(getByText('CRE_ALLOW_IMPORT')).toBeTruthy();
+  });
+
+  it('mints an API key from Config Manage API keys dialog', async () => {
+    loggedIn();
+    let keys: any[] = [];
+    (global as any).fetch = jest.fn((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/rest/v1/api-keys') && init?.method === 'POST') {
+        const body = JSON.parse(String(init.body || '{}'));
+        keys = [
+          {
+            jti: 'abcd1234-eeee-ffff-0000-111122223333',
+            name: body.name || 'ci',
+            expires_at: '2026-12-01T00:00:00Z',
+            revoked_at: null,
+            created_at: '2026-10-11T00:00:00Z',
+            last_used_at: null,
+          },
+        ];
+        return jsonRes(
+          {
+            token: 'eyJhbGciOiJIUzI1NiJ9.test-token',
+            jti: keys[0].jti,
+            name: keys[0].name,
+            expires_at: keys[0].expires_at,
+          },
+          201
+        );
+      }
+      if (u.includes('/rest/v1/api-keys')) {
+        return jsonRes({ keys });
+      }
+      if (u.includes('/admin/config')) {
+        return jsonRes({ config: [], restart_instructions: '' });
+      }
+      if (u.includes('/admin/repos.yaml')) {
+        return jsonRes({ yaml: 'sources: []\n', source: 'repos.yaml:abc' });
+      }
+      return jsonRes({});
+    });
+    const { getByText, getByLabelText, findByText, findByLabelText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    fireEvent.click(getByText('Config'));
+    fireEvent.click(await findByText('Manage API keys'));
+    expect(await findByText('No API keys yet.')).toBeTruthy();
+    fireEvent.change(getByLabelText('API key name'), { target: { value: 'staging-ci' } });
+    fireEvent.click(getByText('Mint API key'));
+    expect(await findByText('API key minted')).toBeTruthy();
+    const tokenEl = await findByLabelText('minted API token');
+    expect(tokenEl.textContent).toContain('eyJhbGciOiJIUzI1NiJ9.test-token');
+    expect(await findByText('staging-ci')).toBeTruthy();
+    expect(await findByText('2026-12-01T00:00:00Z')).toBeTruthy();
+    expect((global as any).fetch).toHaveBeenCalledWith(
+      '/rest/v1/api-keys',
+      expect.objectContaining({ method: 'POST', credentials: 'include' })
+    );
   });
 
   it('toggles Module C.1 graph filing from Config', async () => {
@@ -348,6 +410,14 @@ describe('Admin', () => {
           last_sync: '2026-01-01T00:00:00+00:00',
         });
       }
+      if (u.includes('/admin/upstream-sync-and-ingest')) {
+        return jsonRes({
+          source: 'repos.yaml:deadbeef',
+          async: true,
+          run_id: 'u1',
+          upstream_sync: true,
+        });
+      }
       if (u.includes('/admin/ingest/start')) {
         return jsonRes({ source: 'repos.yaml:deadbeef', async: true, run_id: 'g1' });
       }
@@ -368,6 +438,17 @@ describe('Admin', () => {
     );
     fireEvent.click(getByText('Config'));
     expect(await findByText(/End-to-end bootstrap/)).toBeTruthy();
+    fireEvent.click(getByText(/^Import upstream CRE \+ harvest$/));
+    await waitFor(() =>
+      expect((global as any).fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/admin/upstream-sync-and-ingest'),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ packaged: true, max_repos: 50 }),
+        })
+      )
+    );
+    expect(await findByText(/Upstream CRE sync \+ harvest started/)).toBeTruthy();
     fireEvent.click(getByText('Run golden-set harvest'));
     await waitFor(() =>
       expect((global as any).fetch).toHaveBeenCalledWith(
