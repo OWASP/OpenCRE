@@ -189,27 +189,11 @@ def _iter_md(tgz: Path, includes: Sequence[str]) -> List[Tuple[str, str]]:
 
 
 def _apply_promoted_flags() -> None:
-    os.environ.setdefault("CRE_LIBRARIAN_CRE_SUMMARY", "1")
-    os.environ.setdefault("CRE_LIBRARIAN_MARGIN_GAMMA", "0.85")
-    os.environ.setdefault("CRE_LIBRARIAN_RETRIEVER_BACKEND", "pgvector")
-    os.environ.setdefault("CRE_LIBRARIAN_SAFETY_GUARD", "1")
-    os.environ.setdefault("CRE_LIBRARIAN_EMBED_BATCH", "8")
-    os.environ.setdefault("CRE_EMBED_EXPECTED_DIM", "3072")
-    # d1 winner combo: E4 shortlist judge + E5 umbrella cap=8; E1/E2 off.
-    os.environ.setdefault("CRE_LIBRARIAN_SHORTLIST_JUDGE", "1")
-    # Post-60: judge fills score top_k=3 window (FORCE_RESOURCES left off below).
-    os.environ.setdefault("CRE_LIBRARIAN_SHORTLIST_JUDGE_MAX_PICKS", "3")
-    os.environ.setdefault("CRE_LIBRARIAN_DEVICE", "cpu")
-    os.environ.setdefault("CRE_LIBRARIAN_LEAF_DRILLDOWN", "1")
-    # Grain gate: drill only when resource family has ≥20 chunks (ASVS/AISVS).
-    os.environ.setdefault("CRE_LIBRARIAN_LEAF_DRILLDOWN_MIN_SECTIONS", "20")
-    os.environ.setdefault("CRE_LIBRARIAN_LEAF_DRILLDOWN_MIN_CHILDREN", "3")
-    os.environ.setdefault("CRE_LIBRARIAN_LEAF_DRILLDOWN_KEEP_HUB", "0")
-    os.environ.setdefault("CRE_LIBRARIAN_LEAF_DRILLDOWN_HUB_FIRST", "0")
-    # FORCE_RESOURCES=api dropped API exact 60→50 on cold-start; leave unset/off.
-    os.environ.setdefault("CRE_LIBRARIAN_UMBRELLA_PROMOTE_CAP", "8")
-    os.environ.setdefault("NO_LOAD_GRAPH_DB", "1")
-    # Shared CRE summary cache (GitHub). B2 may fork via ensure_b2_summary_cache.
+    """Promoted Module C stack — shared with workers via config_loader."""
+    from application.utils.librarian.config_loader import apply_promoted_defaults
+
+    apply_promoted_defaults()
+    # Eval harness cache path (not part of worker/runtime defaults).
     os.environ.setdefault(
         "CRE_LIBRARIAN_CRE_SUMMARY_CACHE",
         str(ROOT / "tmp" / "oie_cre_summaries"),
@@ -958,8 +942,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 "n": len(dq_rows),
                 "linked": int(dq_statuses.get("linked", 0)),
                 "review": int(
-                    dq_statuses.get("review_required", 0)
-                    + dq_statuses.get("review", 0)
+                    dq_statuses.get("review_required", 0) + dq_statuses.get("review", 0)
                 ),
                 "statuses": dict(dq_statuses),
                 "github_accuracy": github_report.get("accuracy"),
