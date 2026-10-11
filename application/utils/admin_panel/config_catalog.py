@@ -112,6 +112,13 @@ CATALOG: Dict[str, ConfigKey] = {
             secret=True,
         ),
         ConfigKey(
+            "API_TOKEN_JWT_SECRET",
+            "HS256 secret for JWT API tokens (never returned). "
+            "If unset, minted once into API_TOKEN_JWT_SECRET_FILE.",
+            DOCS_ENV,
+            secret=True,
+        ),
+        ConfigKey(
             "GOOGLE_SECRET_JSON",
             "Path to Google service-account JSON (never returned).",
             DOCS_ENV,

@@ -35,6 +35,30 @@ def register_admin_panel_routes(
             logger.exception("agent status failed")
             return _err(500, f"agent status failed: {exc}")
 
+    @bp.route("/admin/agent/sync", methods=["POST"])
+    @login_required
+    @imports_enabled
+    def admin_agent_sync() -> Any:
+        body = request.get_json(silent=True) or {}
+        skip_nest = body.get("skip_nest")
+        if skip_nest is not None:
+            skip_nest = bool(skip_nest)
+        wait = bool(body["wait"]) if "wait" in body else None
+        try:
+            return jsonify(
+                service.start_agent_sync(
+                    skip_nest=skip_nest,
+                    skip_github=bool(body.get("skip_github", False)),
+                    auto_concepts=bool(body.get("auto_concepts", True)),
+                    wait=wait,
+                )
+            )
+        except ValueError as exc:
+            return _err(400, _exc_message(exc))
+        except Exception as exc:
+            logger.exception("agent sync failed")
+            return _err(500, f"agent sync failed: {exc}")
+
     @bp.route("/admin/config", methods=["GET"])
     @login_required
     @imports_enabled
@@ -179,6 +203,53 @@ def register_admin_panel_routes(
             logger.exception("add repo failed")
             return _err(500, f"add repo failed: {exc}")
 
+    @bp.route("/admin/upstream-sync-and-ingest", methods=["POST"])
+    @login_required
+    @imports_enabled
+    def admin_upstream_sync_and_ingest() -> Any:
+        """Pull CRE graph from upstream, then start OIE ingest (packaged/yaml)."""
+        body = request.get_json(silent=True) or {}
+        yaml_text = body.get("yaml")
+        if yaml_text is not None and not isinstance(yaml_text, str):
+            return _err(400, "yaml must be a string")
+        name = str(body.get("name") or "").strip() or None
+        dry_run = bool(body["dry_run"]) if "dry_run" in body else False
+        sync_repos = bool(body["sync_repos"]) if "sync_repos" in body else True
+        skip_b = bool(body["skip_b"]) if "skip_b" in body else None
+        skip_c = bool(body["skip_c"]) if "skip_c" in body else None
+        skip_c1 = bool(body["skip_c1"]) if "skip_c1" in body else None
+        wait = bool(body["wait"]) if "wait" in body else None
+        max_repos: Optional[int]
+        if "max_repos" in body and body["max_repos"] is not None:
+            try:
+                max_repos = int(body["max_repos"])
+            except (TypeError, ValueError):
+                return _err(400, "max_repos must be an integer")
+            if max_repos < 0:
+                return _err(400, "max_repos must be >= 0 (0 = unlimited)")
+        else:
+            max_repos = service.DEFAULT_OIE_MAX_REPOS
+        packaged = bool(body.get("packaged", True)) if yaml_text is None else False
+        try:
+            result = service.start_upstream_sync_and_ingest(
+                name=name,
+                packaged=packaged,
+                yaml_text=yaml_text if isinstance(yaml_text, str) else None,
+                dry_run=dry_run,
+                sync_repos=sync_repos,
+                max_repos=max_repos,
+                skip_b=skip_b,
+                skip_c=skip_c,
+                skip_c1=skip_c1,
+                wait=wait,
+            )
+        except ValueError as exc:
+            return _err(400, _exc_message(exc))
+        except Exception as exc:
+            logger.exception("upstream-sync-and-ingest failed")
+            return _err(500, f"upstream-sync-and-ingest failed: {exc}")
+        return jsonify(result)
+
     @bp.route("/admin/ingest/start", methods=["POST"])
     @login_required
     @imports_enabled
@@ -194,6 +265,7 @@ def register_admin_panel_routes(
         sync_repos = bool(body["sync_repos"]) if "sync_repos" in body else True
         skip_b = bool(body["skip_b"]) if "skip_b" in body else None
         skip_c = bool(body["skip_c"]) if "skip_c" in body else None
+        skip_c1 = bool(body["skip_c1"]) if "skip_c1" in body else None
         wait = bool(body["wait"]) if "wait" in body else None
         max_repos: Optional[int]
         if "max_repos" in body and body["max_repos"] is not None:
@@ -201,8 +273,9 @@ def register_admin_panel_routes(
                 max_repos = int(body["max_repos"])
             except (TypeError, ValueError):
                 return _err(400, "max_repos must be an integer")
+            # 0 = no cap (full packaged/org harvest); negative rejected.
             if max_repos < 0:
-                return _err(400, "max_repos must be >= 0")
+                return _err(400, "max_repos must be >= 0 (0 = unlimited)")
         else:
             max_repos = service.DEFAULT_OIE_MAX_REPOS
         try:
@@ -217,6 +290,7 @@ def register_admin_panel_routes(
                 max_repos=max_repos,
                 skip_b=skip_b,
                 skip_c=skip_c,
+                skip_c1=skip_c1,
                 wait=wait,
             )
         except KeyError as exc:

@@ -36,10 +36,6 @@ def main() -> int:
     env = os.environ.copy()
     env["CRE_WORKER_QUEUES"] = "oie"
     env.setdefault("OBJC_DISABLE_INITIALIZE_FORK_SAFETY", "YES")
-    env.setdefault(
-        "CRE_LIBRARIAN_CRE_SUMMARY_CACHE",
-        str(REPO / "tmp" / "oie_cre_summaries"),
-    )
     env["FLASK_APP"] = str(REPO / "cre.py")
     env.setdefault("PYTHONPATH", str(REPO))
     for i in range(1, n + 1):
