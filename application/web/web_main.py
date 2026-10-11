@@ -37,6 +37,7 @@ from flask import json as flask_json
 from flask import (
     Blueprint,
     abort,
+    g,
     jsonify,
     make_response,
     redirect,
@@ -911,8 +912,20 @@ def deeplink(
     return abort(404)
 
 
+def _clear_api_key_identity() -> None:
+    """Drop request-scoped API-key bindings (``g`` can outlive a request under a
+    long-lived app context in tests / some workers)."""
+    for name in ("api_key_jti", "api_key_user_id", "api_key_email"):
+        if hasattr(g, name):
+            try:
+                delattr(g, name)
+            except Exception:
+                pass
+
+
 @app.before_request
 def before_request():
+    _clear_api_key_identity()
     if os.environ.get("INSECURE_REQUESTS"):
         return
     elif not request.is_secure:
@@ -927,6 +940,10 @@ def add_header(response):
     # default max-age for them (this hook runs after the view). Covers the
     # resource selection AND the identity endpoint (returns the user's email)
     # plus its deprecated alias, and MCP grant management.
+    if getattr(g, "api_key_jti", None):
+        from application.utils.api_tokens.audit import record_api_key_audit
+
+        record_api_key_audit(response.status_code)
     if request.path in (
         "/rest/v1/user/resources",
         "/rest/v1/user/mcp_grants",
@@ -935,23 +952,28 @@ def add_header(response):
     ):
         response.cache_control.no_store = True
         return response
+    # SPA JS/CSS must not stick behind Cloudflare/browser max-age after deploys.
+    path = request.path or ""
+    if path == "/bundle.js" or path.endswith(".js") or path.endswith(".css"):
+        response.cache_control.no_store = True
+        response.cache_control.max_age = 0
+        response.headers["Pragma"] = "no-cache"
+        return response
     response.cache_control.max_age = 300
     return response
 
 
 def _is_logged_in() -> bool:
-    """Single source of truth for browser-session presence.
+    """True for a browser session or a verified admin API-key identity.
 
-    Keyed on ``session['user_id']`` (recorded by the login flow since #980) — not
-    ``google_id``/``name``. Both ``login_required`` and its content-negotiation
-    branch route through here, so the predicate lives in exactly one place.
-
-    An MCP bearer token is deliberately *not* logged-in here: ``login_required``
-    stays session-only so a leaked MCP token cannot unlock chat, admin, or other
-    general authenticated routes. MyOpenCRE resources use
-    ``login_or_mcp_required`` instead.
+    MCP bearer tokens are deliberately *not* logged-in here: ``login_required``
+    stays free of MCP so a leaked MCP token cannot unlock chat/admin. MyOpenCRE
+    resources use ``login_or_mcp_required`` instead. Admin API keys are a
+    separate, audited door for allowlisted operators.
     """
-    return identity.is_session_authenticated()
+    if identity.is_session_authenticated():
+        return True
+    return getattr(g, "api_key_user_id", None) is not None
 
 
 def _auth_challenge():
@@ -1048,10 +1070,26 @@ def login_required(f):
                 description="LOGIN_ALLOWED_EMAILS must be set when FLASK_CONFIG=production",
             )
         if not _is_logged_in():
-            return _auth_challenge()
+            from application.utils.api_tokens import verify as api_verify
+
+            raw = api_verify.extract_raw_token()
+            if raw and api_verify.api_key_allowed_for_request():
+                identity = api_verify.verify_api_token(raw)
+                if identity is None:
+                    abort(401, description="Invalid or expired API key")
+                if not _login_email_allowed(identity.email):
+                    abort(
+                        403,
+                        description="API key owner is not on the allowlist for this environment.",
+                    )
+                api_verify.bind_api_key_identity(identity)
+            else:
+                return _auth_challenge()
         # Defense in depth: drop sessions that are no longer allowlisted.
-        if not _login_email_allowed(session.get("email")):
-            session.clear()
+        email = session.get("email") or getattr(g, "api_key_email", None)
+        if not _login_email_allowed(email):
+            if "user_id" in session:
+                session.clear()
             abort(
                 403,
                 description="Your Google account is not on the allowlist for this environment.",
@@ -1073,6 +1111,34 @@ def login_or_mcp_required(f):
         return f(*args, **kwargs)
 
     return login_or_mcp_r
+
+
+def _admin_google_session_required(f):
+    """API-key mint/list/revoke: Google session + LOGIN_ALLOWED_EMAILS only."""
+
+    @wraps(f)
+    @login_required
+    def wrapped(*args, **kwargs):
+        if getattr(g, "api_key_jti", None) or not session.get("user_id"):
+            abort(403, description="API key management requires Google login")
+        if not _login_emails_raw():
+            abort(
+                403,
+                description="LOGIN_ALLOWED_EMAILS must be set to mint API keys",
+            )
+        if not _login_email_allowed(session.get("email")):
+            abort(403, description="Only allowlisted admins can manage API keys")
+        if os.environ.get("NO_LOGIN") != "1" and request.method in (
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE",
+        ):
+            _ensure_csrf_token()
+            _require_csrf()
+        return f(*args, **kwargs)
+
+    return wrapped
 
 
 def feature_enabled_or_default(is_enabled: Any, default_factory: Any) -> Any:
@@ -1101,8 +1167,13 @@ def _resolve_current_user(database):
     Prefers ``session['user_id']`` (recorded by the login flow) and only falls
     back to resolving/creating by the OIDC subject when it is absent — e.g. a
     session established before the id was recorded. Returns None when there is no
-    authenticated subject.
+    authenticated subject. API-key auth binds ``g.api_key_user_id``.
     """
+    api_uid = getattr(g, "api_key_user_id", None)
+    if api_uid:
+        user = database.session.query(db.User).filter(db.User.id == api_uid).first()
+        if user is not None:
+            return user
     user_id = session.get("user_id")
     if user_id:
         user = database.session.query(db.User).filter(db.User.id == user_id).first()
@@ -2082,6 +2153,68 @@ def delete_user_mcp_grant() -> Any:
 #         res = [doc.todict() for doc in documents]
 #         return jsonify({"data": res, "page": page, "total_pages": total_pages})
 #     abort(404)
+
+
+@app.route("/rest/v1/api-keys", methods=["POST"])
+@_admin_google_session_required
+def create_api_key() -> Any:
+    """Mint a JWT API key (shown once). Admins only (Google session)."""
+    from application.utils.api_tokens import mint as api_mint
+
+    body = request.get_json(silent=True) or {}
+    name = body.get("name") if isinstance(body, dict) else None
+    expires_days = body.get("expires_days") if isinstance(body, dict) else None
+    database = db.Node_collection()
+    user = _resolve_current_user(database)
+    if user is None:
+        abort(401, description="Not authenticated")
+    try:
+        minted = api_mint.mint_api_token(
+            user=user,
+            name=str(name or "api-key"),
+            expires_days=int(expires_days) if expires_days is not None else None,
+        )
+    except (TypeError, ValueError) as exc:
+        abort(400, description=str(exc))
+    return (
+        jsonify(
+            {
+                "token": minted.token,
+                "jti": minted.jti,
+                "name": minted.name,
+                "expires_at": minted.expires_at.isoformat() + "Z",
+                "user_id": minted.user_id,
+            }
+        ),
+        201,
+    )
+
+
+@app.route("/rest/v1/api-keys", methods=["GET"])
+@_admin_google_session_required
+def list_api_keys() -> Any:
+    from application.utils.api_tokens import mint as api_mint
+
+    return jsonify({"keys": api_mint.list_api_tokens()})
+
+
+@app.route("/rest/v1/api-keys/<jti>", methods=["DELETE"])
+@_admin_google_session_required
+def revoke_api_key(jti: str) -> Any:
+    from application.utils.api_tokens import mint as api_mint
+
+    if not api_mint.revoke_api_token(jti):
+        abort(404, description="API key not found")
+    return ("", 204)
+
+
+@app.route("/rest/v1/api-keys/<jti>/audit", methods=["GET"])
+@_admin_google_session_required
+def api_key_audit(jti: str) -> Any:
+    from application.utils.api_tokens.audit import list_audit_for_jti
+
+    limit = _bounded_int_arg("limit", 100, low=1, high=500)
+    return jsonify({"jti": jti, "events": list_audit_for_jti(jti, limit=limit)})
 
 
 from application.web.admin_panel_routes import register_admin_panel_routes
