@@ -212,6 +212,7 @@ def run_librarian_queue(
         cre_id_map=getattr(components, "cre_id_map", {}) or {},
         cre_membership=getattr(components, "cre_membership", None),
         shortlist_llm_fn=getattr(components, "shortlist_llm_fn", None),
+        shortlist_cache=getattr(components, "shortlist_cache", None),
         use_focus_query=config.focus_query,
         pref_inject=config.pref_inject,
         prefer_audit=config.prefer_audit_ids,
@@ -240,6 +241,7 @@ def run_librarian_queue(
             getattr(components, "shortlist_judge_max_picks", 3) or 3
         ),
         margin_gamma=getattr(components, "margin_gamma", None),
+        cre_names=getattr(components, "cre_names", None) or {},
     )
 
     # A locked run must not leave its claim outstanding. `FOR UPDATE SKIP LOCKED`

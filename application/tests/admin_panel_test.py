@@ -67,6 +67,9 @@ class TestAdminPanel(unittest.TestCase):
         self.assertFalse(any(r["key"] == "OWASP_AGENT_DB" for r in rows))
         agent_flag = next(r for r in rows if r["key"] == "OWASP_AGENT_ENABLED")
         self.assertIn("main app Postgres", agent_flag["help_text"])
+        filing = next(r for r in rows if r["key"] == "OIE_GRAPH_FILING_ENABLED")
+        self.assertTrue(filing["writable"])
+        self.assertIn("decision_queue", filing["help_text"])
         redacted = config_catalog.present_config(
             {
                 "DEV_DATABASE_URL": "postgresql://cre:password@127.0.0.1:5432/opencre",
@@ -75,6 +78,25 @@ class TestAdminPanel(unittest.TestCase):
         shown = next(r["value"] for r in redacted if r["key"] == "DEV_DATABASE_URL")
         self.assertEqual(shown, "postgresql://cre:***@127.0.0.1:5432/opencre")
         self.assertNotIn("password", shown)
+
+    def test_config_can_toggle_graph_filing(self) -> None:
+        env: dict = {}
+        applied, rejected = config_catalog.apply_updates(
+            env, {"OIE_GRAPH_FILING_ENABLED": "true"}
+        )
+        self.assertEqual(applied, ["OIE_GRAPH_FILING_ENABLED"])
+        self.assertEqual(rejected, [])
+        self.assertEqual(env["OIE_GRAPH_FILING_ENABLED"], "1")
+        applied, rejected = config_catalog.apply_updates(
+            env, {"OIE_GRAPH_FILING_ENABLED": "off"}
+        )
+        self.assertEqual(applied, ["OIE_GRAPH_FILING_ENABLED"])
+        self.assertEqual(env["OIE_GRAPH_FILING_ENABLED"], "0")
+        applied, rejected = config_catalog.apply_updates(
+            env, {"OIE_GRAPH_FILING_ENABLED": "maybe"}
+        )
+        self.assertEqual(applied, [])
+        self.assertIn("OIE_GRAPH_FILING_ENABLED", rejected)
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_pipeline_empty_has_queued_strip(self) -> None:
@@ -404,6 +426,133 @@ class TestAdminPanel(unittest.TestCase):
             self.assertEqual(r.status_code, 200)
             self.assertFalse(r.get_json()["enabled"])
 
+    @patch.dict(
+        os.environ,
+        {
+            "NO_LOGIN": "1",
+            "CRE_ALLOW_IMPORT": "1",
+            "OWASP_AGENT_ENABLED": "1",
+            "DEV_DATABASE_URL": "postgresql://cre:password@127.0.0.1:1/opencre",
+        },
+        clear=False,
+    )
+    def test_agent_sync_starts_and_records_events(self) -> None:
+        os.environ.pop("NEST_API_KEY", None)
+        os.environ.pop("OWASP_AGENT_DB", None)
+        fake = {
+            "status": "ok",
+            "sync": {"nest_ok": False, "github_ok": True, "errors": []},
+            "concepts": [],
+        }
+        with patch(
+            "application.utils.admin_panel.service._run_agent_sync_job",
+            return_value=fake,
+        ) as job:
+            with self.app.test_client() as c:
+                r = c.post(
+                    "/admin/agent/sync",
+                    json={"wait": True, "auto_concepts": True},
+                )
+            self.assertEqual(r.status_code, 200)
+            body = r.get_json()
+            self.assertEqual(body["source"], "owasp-agent-sync")
+            self.assertTrue(body["skip_nest"])
+            self.assertFalse(body["async"])
+            self.assertEqual(body["result"]["status"], "ok")
+            job.assert_called_once()
+            run = db.get_import_run(run_id=body["run_id"])
+            self.assertIsNotNone(run)
+            events = (
+                sqla.session.query(db.AdminPipelineEvent)
+                .filter(db.AdminPipelineEvent.run_id == body["run_id"])
+                .all()
+            )
+            stages = {e.stage for e in events}
+            self.assertIn("queued", stages)
+            self.assertIn("agent_sync", stages)
+
+    @patch.dict(
+        os.environ,
+        {
+            "NO_LOGIN": "1",
+            "CRE_ALLOW_IMPORT": "1",
+            "DEV_DATABASE_URL": "postgresql://cre:password@127.0.0.1:5432/opencre",
+        },
+        clear=False,
+    )
+    def test_upstream_sync_and_ingest_runs_sync_then_oie(self) -> None:
+        oie_result = {
+            "async": False,
+            "started": True,
+            "skip_b": False,
+            "skip_c": False,
+            "skip_c1": True,
+        }
+        with patch(
+            "application.utils.admin_panel.service._run_upstream_sync_job",
+            return_value={"status": "ok", "hub": {"status": "ok"}},
+        ) as upstream, patch(
+            "application.utils.admin_panel.service._run_oie_job",
+            return_value=oie_result,
+        ) as oie:
+            with self.app.test_client() as c:
+                r = c.post(
+                    "/admin/upstream-sync-and-ingest",
+                    json={
+                        "wait": True,
+                        "packaged": True,
+                        "max_repos": 50,
+                        "skip_c1": True,
+                    },
+                )
+            self.assertEqual(r.status_code, 200, r.get_data(as_text=True))
+            body = r.get_json()
+            self.assertFalse(body["async"])
+            self.assertIn("run_id", body)
+            self.assertTrue(str(body["source"]).startswith("repos.yaml:"))
+            upstream.assert_called_once()
+            oie.assert_called_once()
+            self.assertEqual(oie.call_args.kwargs.get("skip_c1"), True)
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_upstream_sync_and_ingest_requires_postgres(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "NO_LOGIN": "1",
+                "CRE_ALLOW_IMPORT": "1",
+                "DEV_DATABASE_URL": "/tmp/not-postgres.sqlite",
+            },
+            clear=False,
+        ):
+            os.environ.pop("DATABASE_URL", None)
+            os.environ.pop("PROD_DATABASE_URL", None)
+            with self.app.test_client() as c:
+                r = c.post(
+                    "/admin/upstream-sync-and-ingest",
+                    json={"wait": True, "packaged": True},
+                )
+            self.assertEqual(r.status_code, 400)
+            self.assertIn("Postgres", r.get_json()["description"])
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_agent_sync_requires_postgres(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "NO_LOGIN": "1",
+                "CRE_ALLOW_IMPORT": "1",
+                "DEV_DATABASE_URL": "/tmp/not-postgres.sqlite",
+            },
+            clear=False,
+        ):
+            os.environ.pop("DATABASE_URL", None)
+            os.environ.pop("PROD_DATABASE_URL", None)
+            with self.app.test_client() as c:
+                r = c.post("/admin/agent/sync", json={"wait": True})
+            self.assertEqual(r.status_code, 400)
+            self.assertIn("Postgres", r.get_json()["description"])
+
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_agent_status_ignores_sqlite_main_db(self) -> None:
         with patch.dict(
@@ -569,8 +718,8 @@ class TestAdminPanel(unittest.TestCase):
                     dry_run=False,
                     sync_repos=True,
                     max_repos=service.DEFAULT_OIE_MAX_REPOS,
-                    skip_b=True,
-                    skip_c=True,
+                    skip_b=False,
+                    skip_c=False,
                 )
                 pipe = c.get("/admin/pipeline").get_json()
                 stages = {e["stage"] for e in pipe["events"]}
@@ -592,9 +741,16 @@ class TestAdminPanel(unittest.TestCase):
                     dry_run=True,
                     sync_repos=False,
                     max_repos=2,
-                    skip_b=True,
-                    skip_c=True,
+                    skip_b=False,
+                    skip_c=False,
                 )
+
+                r = c.post(
+                    "/admin/ingest/start",
+                    json={"target_id": "repo1", "max_repos": 0},
+                )
+                self.assertEqual(r.status_code, 400)
+                self.assertIn("max_repos", (r.get_json() or {}).get("description", ""))
 
             with self.app.test_client() as c:
                 c.post(
@@ -670,13 +826,23 @@ class TestAdminPanel(unittest.TestCase):
                 return_value=proc,
             ) as mock_run:
                 out = service.invoke_oie_cli("run-1")
+            with patch(
+                "application.utils.admin_panel.service.subprocess.run",
+                return_value=proc,
+            ) as mock_skip:
+                service.invoke_oie_cli("run-1", skip_b=True, skip_c=True)
         self.assertEqual(out["ok"], True)
         argv = mock_run.call_args.args[0]
         self.assertNotIn("--dry-run", argv)
         self.assertNotIn("--no-sync-repos", argv)
         self.assertIn("--max-repos", argv)
-        self.assertIn("--skip-b", argv)
-        self.assertIn("--skip-c", argv)
+        self.assertNotIn("--skip-b", argv)
+        self.assertNotIn("--skip-c", argv)
+        self.assertNotIn("--skip-c1", argv)
+        skip_argv = mock_skip.call_args.args[0]
+        self.assertIn("--skip-b", skip_argv)
+        self.assertIn("--skip-c", skip_argv)
+        self.assertNotIn("--skip-c1", skip_argv)
         self.assertNotIn("sqlite://", argv)
         self.assertIn("postgresql+psycopg2://cre:password@127.0.0.1:5432/cre", argv)
         self.assertTrue(str(argv[1]).endswith("run_oie_pipeline.py"))
@@ -1067,6 +1233,39 @@ class TestAdminPanel(unittest.TestCase):
                         self.assertEqual(r.status_code, 200)
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_ingest_skip_c1_and_unlimited_max_repos(self) -> None:
+        """Full harvest stop-after-C: skip_c1 + max_repos=0 (no cap)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            packaged = Path(tmp) / "repos.yaml"
+            packaged.write_text(MINIMAL_REPOS_YAML, encoding="utf-8")
+            with patch.object(service, "REPOS_YAML", packaged):
+                with patch(
+                    "application.utils.admin_panel.service.invoke_oie_cli",
+                    return_value={"ok": True, "stages": []},
+                ) as mock_oie:
+                    with self.app.test_client() as c:
+                        r = c.post(
+                            "/admin/ingest/start",
+                            json={
+                                "packaged": True,
+                                "max_repos": 0,
+                                "skip_b": False,
+                                "skip_c": False,
+                                "skip_c1": True,
+                                "wait": True,
+                            },
+                        )
+                        self.assertEqual(r.status_code, 200, r.data)
+                        body = r.get_json() or {}
+                        self.assertTrue((body.get("oie") or {}).get("ok"))
+                        mock_oie.assert_called_once()
+                        kwargs = mock_oie.call_args.kwargs
+                        self.assertEqual(kwargs.get("max_repos"), 0)
+                        self.assertTrue(kwargs.get("skip_c1"))
+                        self.assertFalse(kwargs.get("skip_b"))
+                        self.assertFalse(kwargs.get("skip_c"))
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_dashboard_payload(self) -> None:
         run = db.create_import_run(source="dash-src", version="v")
         db.persist_staged_change_set(
@@ -1352,8 +1551,8 @@ class TestAdminPanel(unittest.TestCase):
                     dry_run=False,
                     sync_repos=True,
                     max_repos=service.DEFAULT_OIE_MAX_REPOS,
-                    skip_b=True,
-                    skip_c=True,
+                    skip_b=False,
+                    skip_c=False,
                 )
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
