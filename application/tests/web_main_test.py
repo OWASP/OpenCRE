@@ -11,6 +11,7 @@ import json
 import unittest
 import tempfile
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import patch, Mock
 
 import rq
