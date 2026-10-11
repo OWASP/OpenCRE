@@ -42,6 +42,27 @@ YAML (historical grid cell): `scripts/oie_owasp_eval/experiments/stack_winners.y
 | `CRE_LIBRARIAN_FOCUS_QUERY` | off | Neutral / slight drag on grid mean |
 | `CRE_LIBRARIAN_CRE_TEXT_ENRICH` | off | Tied at top; mean slightly lower when on |
 
+## Cost-free ship path (no quality trade-off)
+
+These are already the defaults — pin them in staging Compose / env so experiments
+cannot accidentally turn live LLM remap or fail-closed levers on:
+
+| Variable | Value | Effect |
+|----------|-------|--------|
+| `CRE_LIBRARIAN_EDITION_REMAP_LIVE` | `0` | Edition remap = `oie_llm_cache` + heuristic only (no Gemini on miss). |
+| `CRE_LIBRARIAN_SAFETY_BATCH_SIZE` | `8` | Prefetch uncached safety sections in one JSON-array call. |
+| `CRE_LIBRARIAN_PAIRWISE_VOTE` / `SOURCE_GROUNDING` / `CROSSWALK_CAGE` / `COVERAGE_FAIL_CLOSED` | `0` | Extra LLM / fail-closed gates stay off until eval promotes them. |
+
+Neighbor remap is always `llm_fn=None` in the factory. Warm caches after hub sync:
+
+```bash
+PYTHONPATH=. python scripts/oie_precompute_remap_caches.py \
+  --cache-file "$DEV_DATABASE_URL"
+```
+
+Admin / RQ drains that only need CRE suggestions (not graph filing) should pass
+`skip_c1=1` so Module C.1 auto-file work is skipped.
+
 ## Headline scores (cold-start post-60, hub LLM gold)
 
 Cold-start run `20261002T103821Z` (`tmp/oie_owasp_eval/full_pipeline_cold_start_post60/`)
@@ -67,9 +88,24 @@ Neighborhood definition:
 `load_config()`) and `PROMOTED_ENV_DEFAULTS` install this stack whenever env is
 unset — RQ workers, Admin OIE ingest, and
 `scripts/oie_owasp_eval/run_full_pipeline.py` share one source of truth.
-Staging Compose sets the same knobs under `x-librarian-promoted`.
+Staging Compose sets the same knobs under `x-librarian-promoted`
+(must stay in sync with `PROMOTED_ENV_DEFAULTS`).
 SQLite / hermetic tests should set `CRE_LIBRARIAN_RETRIEVER_BACKEND=in_memory`
 explicitly. Disable margin with `CRE_LIBRARIAN_MARGIN_GAMMA=off`.
+
+## Heroku vs staging / AWS (operability)
+
+| Surface | Live OIE | Live GA | Worker queues |
+|---------|----------|---------|---------------|
+| **Heroku `opencreorg`** | No | No (cache-only) | Default `high,default,low,ga` — **never** add `oie`; do not run `cre.py --run_scheduled` |
+| **Staging Compose** | Yes | Queued only | Set `CRE_WORKER_QUEUES=oie,default` (and a `ga` worker if filing edges) |
+| **AWS (future)** | Yes | Yes via `ga` queue | Split roles: `oie` / `ga` / default |
+
+Heroku landmines (code enforces):
+
+- `application.worker.DEFAULT_LISTEN` omits `oie` unless `CRE_WORKER_QUEUES` says otherwise.
+- Scheduled `gap_analysis` skips when `CRE_HEROKU_CACHE_ONLY=1`, `DYNO` is set, or the DSN looks like `opencreorg`.
+- Live scheduled GA requires `CRE_OIE_GA_VIA_QUEUE=1` (preferred) or explicit `I_UNDERSTAND_LIVE_GA_INLINE=I_UNDERSTAND_LIVE_GA_INLINE`.
 
 ## Reproduce
 
