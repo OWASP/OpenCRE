@@ -28,9 +28,37 @@ from typing import Optional
 # enum it maps to.
 _RETRIEVER_BACKENDS = frozenset({"in_memory", "pgvector"})
 
-# Default γ for CRE_LIBRARIAN_MARGIN_GAMMA when the env is present but empty /
-# boolean-true (distinct from CRE_LIBRARIAN_HYBRID_GAMMA).
+# Default γ for CRE_LIBRARIAN_MARGIN_GAMMA (distinct from CRE_LIBRARIAN_HYBRID_GAMMA).
+# Promoted d1-winner stack — see docs/oie/feature-flags.md.
 _DEFAULT_MARGIN_GAMMA = 0.85
+
+# Env knobs every live Module C path should inherit (workers, Admin ingest, eval).
+# ``setdefault`` only — explicit env always wins. Keep in sync with
+# ``docs/oie/feature-flags.md`` / ``scripts/oie_owasp_eval/run_full_pipeline.py``.
+PROMOTED_ENV_DEFAULTS: dict[str, str] = {
+    "CRE_LIBRARIAN_CRE_SUMMARY": "1",
+    "CRE_LIBRARIAN_MARGIN_GAMMA": "0.85",
+    "CRE_LIBRARIAN_RETRIEVER_BACKEND": "pgvector",
+    "CRE_LIBRARIAN_SAFETY_GUARD": "1",
+    "CRE_LIBRARIAN_EMBED_BATCH": "8",
+    "CRE_EMBED_EXPECTED_DIM": "3072",
+    "CRE_LIBRARIAN_SHORTLIST_JUDGE": "1",
+    "CRE_LIBRARIAN_SHORTLIST_JUDGE_MAX_PICKS": "3",
+    "CRE_LIBRARIAN_DEVICE": "cpu",
+    "CRE_LIBRARIAN_LEAF_DRILLDOWN": "1",
+    "CRE_LIBRARIAN_LEAF_DRILLDOWN_MIN_SECTIONS": "20",
+    "CRE_LIBRARIAN_LEAF_DRILLDOWN_MIN_CHILDREN": "3",
+    "CRE_LIBRARIAN_LEAF_DRILLDOWN_KEEP_HUB": "0",
+    "CRE_LIBRARIAN_LEAF_DRILLDOWN_HUB_FIRST": "0",
+    "CRE_LIBRARIAN_UMBRELLA_PROMOTE_CAP": "8",
+    "NO_LOAD_GRAPH_DB": "1",
+}
+
+
+def apply_promoted_defaults() -> None:
+    """Install promoted Module C env defaults when unset (workers / pipeline / Admin)."""
+    for key, value in PROMOTED_ENV_DEFAULTS.items():
+        os.environ.setdefault(key, value)
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -46,11 +74,13 @@ def _env_csv(name: str) -> tuple[str, ...]:
 
 
 def _env_optional_margin_gamma(name: str) -> Optional[float]:
-    """Unset → off (None). Set → float, or 0.85 for empty / boolean-true."""
+    """Unset → promoted 0.85. Explicit ``0`` / ``off`` / ``false`` → disabled."""
     raw = os.getenv(name)
     if raw is None:
-        return None
+        return _DEFAULT_MARGIN_GAMMA
     stripped = raw.strip()
+    if stripped.lower() in ("0", "false", "no", "off"):
+        return None
     if not stripped or stripped.lower() in ("1", "true", "yes", "on"):
         return _DEFAULT_MARGIN_GAMMA
     return float(stripped)
@@ -98,11 +128,16 @@ class LibrarianConfig:
     umbrella_promote_cap: int = 8
     #: Grounded judge: max CRE ids (3 aligns with score top_k=3).
     shortlist_judge_max_picks: int = 3
-    #: Relative CE shortlist cutoff after C.2 (None = off).
-    margin_gamma: Optional[float] = None
+    #: Relative CE shortlist cutoff after C.2 (None = off; default 0.85 promoted).
+    margin_gamma: Optional[float] = _DEFAULT_MARGIN_GAMMA
     #: Hub→leaf Contains cage on C.1 (default off — A/B via env).
     hub_leaf_cage: bool = False
     hub_leaf_cage_top_hubs: int = 3
+    #: Experimental accuracy levers (default off).
+    pairwise_vote: bool = False
+    source_grounding: bool = False
+    crosswalk_cage: bool = False
+    coverage_fail_closed: bool = False
 
 
 def _env_leaf_drilldown_resources() -> tuple[str, ...]:
@@ -130,10 +165,11 @@ def _env_leaf_drilldown_force_resources() -> tuple[str, ...]:
 
 
 def load_config() -> LibrarianConfig:
+    apply_promoted_defaults()
     crossencoder_model = os.getenv(
         "CRE_LIBRARIAN_CROSSENCODER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2"
     )
-    retriever_backend = os.getenv("CRE_LIBRARIAN_RETRIEVER_BACKEND", "in_memory")
+    retriever_backend = os.getenv("CRE_LIBRARIAN_RETRIEVER_BACKEND", "pgvector")
     top_k_retrieval = int(os.getenv("CRE_LIBRARIAN_TOP_K_RETRIEVAL", "20"))
     top_k_rerank = int(os.getenv("CRE_LIBRARIAN_TOP_K_RERANK", "5"))
     link_threshold = float(os.getenv("CRE_LIBRARIAN_LINK_THRESHOLD", "0.8"))
@@ -182,6 +218,10 @@ def load_config() -> LibrarianConfig:
     # Default off: high-risk cage; turn on to A/B leaf recall under hub parents.
     hub_leaf_cage = _env_bool("CRE_LIBRARIAN_HUB_LEAF_CAGE", False)
     hub_leaf_cage_top_hubs = int(os.getenv("CRE_LIBRARIAN_HUB_LEAF_CAGE_TOP_HUBS", "3"))
+    pairwise_vote = _env_bool("CRE_LIBRARIAN_PAIRWISE_VOTE", False)
+    source_grounding = _env_bool("CRE_LIBRARIAN_SOURCE_GROUNDING", False)
+    crosswalk_cage = _env_bool("CRE_LIBRARIAN_CROSSWALK_CAGE", False)
+    coverage_fail_closed = _env_bool("CRE_LIBRARIAN_COVERAGE_FAIL_CLOSED", False)
 
     if retriever_backend not in _RETRIEVER_BACKENDS:
         raise ValueError(
@@ -275,6 +315,13 @@ def load_config() -> LibrarianConfig:
     os.environ["CRE_LIBRARIAN_SHORTLIST_JUDGE_MAX_PICKS"] = str(
         shortlist_judge_max_picks
     )
+    # Keep experimental lever modules (env-gated) aligned with typed config.
+    os.environ["CRE_LIBRARIAN_PAIRWISE_VOTE"] = "1" if pairwise_vote else "0"
+    os.environ["CRE_LIBRARIAN_SOURCE_GROUNDING"] = "1" if source_grounding else "0"
+    os.environ["CRE_LIBRARIAN_CROSSWALK_CAGE"] = "1" if crosswalk_cage else "0"
+    os.environ["CRE_LIBRARIAN_COVERAGE_FAIL_CLOSED"] = (
+        "1" if coverage_fail_closed else "0"
+    )
 
     return LibrarianConfig(
         crossencoder_model=crossencoder_model,
@@ -311,4 +358,8 @@ def load_config() -> LibrarianConfig:
         margin_gamma=margin_gamma,
         hub_leaf_cage=hub_leaf_cage,
         hub_leaf_cage_top_hubs=hub_leaf_cage_top_hubs,
+        pairwise_vote=pairwise_vote,
+        source_grounding=source_grounding,
+        crosswalk_cage=crosswalk_cage,
+        coverage_fail_closed=coverage_fail_closed,
     )
