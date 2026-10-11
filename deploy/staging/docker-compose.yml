@@ -5,6 +5,24 @@
 
 name: opencre-staging
 
+# Promoted Module C stack (docs/oie/feature-flags.md) — web + workers inherit.
+x-librarian-promoted: &librarian_promoted
+  CRE_LIBRARIAN_DEVICE: cpu
+  CRE_LIBRARIAN_CRE_SUMMARY: "1"
+  CRE_LIBRARIAN_MARGIN_GAMMA: "0.85"
+  CRE_LIBRARIAN_RETRIEVER_BACKEND: pgvector
+  CRE_LIBRARIAN_SAFETY_GUARD: "1"
+  CRE_LIBRARIAN_EMBED_BATCH: "8"
+  CRE_LIBRARIAN_SHORTLIST_JUDGE: "1"
+  CRE_LIBRARIAN_SHORTLIST_JUDGE_MAX_PICKS: "3"
+  CRE_LIBRARIAN_LEAF_DRILLDOWN: "1"
+  CRE_LIBRARIAN_LEAF_DRILLDOWN_MIN_SECTIONS: "20"
+  CRE_LIBRARIAN_LEAF_DRILLDOWN_MIN_CHILDREN: "3"
+  CRE_LIBRARIAN_LEAF_DRILLDOWN_KEEP_HUB: "0"
+  CRE_LIBRARIAN_LEAF_DRILLDOWN_HUB_FIRST: "0"
+  CRE_LIBRARIAN_UMBRELLA_PROMOTE_CAP: "8"
+  NO_LOAD_GRAPH_DB: "1"
+
 services:
   db:
     image: pgvector/pgvector:pg16
@@ -40,6 +58,8 @@ services:
     build:
       context: ../..
       dockerfile: Dockerfile
+      args:
+        REQUIREMENTS_FILE: requirements-dev.txt
     env_file:
       - .env
     environment:
@@ -55,8 +75,11 @@ services:
       CRE_SKIP_UPSTREAM_SYNC: ${CRE_SKIP_UPSTREAM_SYNC:-1}
       CRE_EMBED_EXPECTED_DIM: ${CRE_EMBED_EXPECTED_DIM:-3072}
       GUNICORN_BIND: "0.0.0.0:5001"
+      <<: *librarian_promoted
     ports:
       - "127.0.0.1:5001:5001"
+    volumes:
+      - opencre_staging_secrets:/code/.secrets
     depends_on:
       db:
         condition: service_healthy
@@ -70,6 +93,8 @@ services:
     build:
       context: ../..
       dockerfile: Dockerfile
+      args:
+        REQUIREMENTS_FILE: requirements-dev.txt
     entrypoint: ["/bin/bash", "-lc"]
     command:
       - |
@@ -89,6 +114,10 @@ services:
       REDIS_PORT: "6379"
       REDIS_NO_SSL: "true"
       CRE_WORKER_QUEUES: oie,default
+      CRE_EMBED_EXPECTED_DIM: ${CRE_EMBED_EXPECTED_DIM:-3072}
+      <<: *librarian_promoted
+    volumes:
+      - opencre_staging_secrets:/code/.secrets
     depends_on:
       db:
         condition: service_healthy
@@ -99,6 +128,7 @@ services:
     networks:
       - opencre_staging_net
     restart: unless-stopped
+    # Prefer: docker compose up -d --scale worker=10 worker
 
   # Linux homeserver: host network reaches published 127.0.0.1:5001.
   # On Docker Desktop/Colima, prefer: cloudflared tunnel run --token "$TUNNEL_TOKEN" on the host.
@@ -116,6 +146,7 @@ services:
 volumes:
   opencre_staging_pg:
   opencre_staging_redis:
+  opencre_staging_secrets:
 
 networks:
   opencre_staging_net:

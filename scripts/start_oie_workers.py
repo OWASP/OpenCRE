@@ -29,26 +29,13 @@ def spawn_one(index: int, env: dict) -> None:
 
 def main() -> int:
     n = int(os.environ.get("OIE_WORKER_COUNT", "10"))
+    sys.path.insert(0, str(REPO))
+    from application.utils.librarian.config_loader import apply_promoted_defaults
+
+    apply_promoted_defaults()
     env = os.environ.copy()
     env["CRE_WORKER_QUEUES"] = "oie"
     env.setdefault("OBJC_DISABLE_INITIALIZE_FORK_SAFETY", "YES")
-    env.setdefault("CRE_LIBRARIAN_DEVICE", "cpu")
-    # Match run_full_pipeline promoted librarian knobs (workers are separate procs).
-    env.setdefault("CRE_LIBRARIAN_CRE_SUMMARY", "1")
-    env.setdefault("CRE_LIBRARIAN_MARGIN_GAMMA", "0.85")
-    env.setdefault("CRE_LIBRARIAN_RETRIEVER_BACKEND", "pgvector")
-    env.setdefault("CRE_LIBRARIAN_SAFETY_GUARD", "1")
-    env.setdefault("CRE_LIBRARIAN_EMBED_BATCH", "8")
-    env.setdefault("CRE_EMBED_EXPECTED_DIM", "3072")
-    env.setdefault("CRE_LIBRARIAN_SHORTLIST_JUDGE", "1")
-    env.setdefault("CRE_LIBRARIAN_SHORTLIST_JUDGE_MAX_PICKS", "3")
-    env.setdefault("CRE_LIBRARIAN_LEAF_DRILLDOWN", "1")
-    env.setdefault("CRE_LIBRARIAN_LEAF_DRILLDOWN_MIN_SECTIONS", "20")
-    env.setdefault("CRE_LIBRARIAN_LEAF_DRILLDOWN_MIN_CHILDREN", "3")
-    env.setdefault("CRE_LIBRARIAN_LEAF_DRILLDOWN_KEEP_HUB", "0")
-    env.setdefault("CRE_LIBRARIAN_LEAF_DRILLDOWN_HUB_FIRST", "0")
-    env.setdefault("CRE_LIBRARIAN_UMBRELLA_PROMOTE_CAP", "8")
-    env.setdefault("NO_LOAD_GRAPH_DB", "1")
     env.setdefault(
         "CRE_LIBRARIAN_CRE_SUMMARY_CACHE",
         str(REPO / "tmp" / "oie_cre_summaries"),

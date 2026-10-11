@@ -16,7 +16,8 @@ class TestConfigLoaderDefaults(unittest.TestCase):
     def test_defaults_when_env_unset(self):
         with mock.patch.dict(os.environ, {}, clear=True):
             cfg = load_config()
-        self.assertEqual(cfg.retriever_backend, "in_memory")
+        # Promoted d1-winner stack (docs/oie/feature-flags.md).
+        self.assertEqual(cfg.retriever_backend, "pgvector")
         self.assertEqual(cfg.crossencoder_model, "cross-encoder/ms-marco-MiniLM-L-6-v2")
         self.assertEqual(cfg.top_k_retrieval, 20)
         self.assertEqual(cfg.top_k_rerank, 5)
@@ -51,9 +52,25 @@ class TestConfigLoaderDefaults(unittest.TestCase):
         self.assertFalse(cfg.leaf_drilldown_hub_first)
         self.assertEqual(cfg.umbrella_promote_cap, 8)
         self.assertEqual(cfg.shortlist_judge_max_picks, 3)
-        self.assertIsNone(cfg.margin_gamma)
+        self.assertAlmostEqual(cfg.margin_gamma or 0.0, 0.85)
         self.assertFalse(cfg.hub_leaf_cage)
         self.assertEqual(cfg.hub_leaf_cage_top_hubs, 3)
+
+    def test_margin_gamma_off_explicit(self):
+        with mock.patch.dict(
+            os.environ, {"CRE_LIBRARIAN_MARGIN_GAMMA": "off"}, clear=True
+        ):
+            cfg = load_config()
+        self.assertIsNone(cfg.margin_gamma)
+
+    def test_in_memory_override_still_works(self):
+        with mock.patch.dict(
+            os.environ,
+            {"CRE_LIBRARIAN_RETRIEVER_BACKEND": "in_memory"},
+            clear=True,
+        ):
+            cfg = load_config()
+        self.assertEqual(cfg.retriever_backend, "in_memory")
 
     def test_config_is_frozen(self):
         with mock.patch.dict(os.environ, {}, clear=True):
