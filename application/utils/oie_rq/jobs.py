@@ -63,6 +63,8 @@ def run_oie_a_job(
     from application.utils.harvester.pipeline import run_harvester
     from application.utils.oie_rq.fanout import enqueue_b_jobs_for_artifacts
 
+    from application.utils.harvester.schemas import HARVESTABLE_KINDS
+
     session = _session(db_connection_str)
     summary = run_harvester(
         session,
@@ -71,6 +73,7 @@ def run_oie_a_job(
         dry_run=dry_run,
         sync_repos=sync_repos,
         repo_ids=[repo_id],
+        kinds=HARVESTABLE_KINDS,
     )
     out: Dict[str, Any] = {
         "stage": "a",

@@ -471,6 +471,70 @@ class TestAdminPanel(unittest.TestCase):
             self.assertIn("queued", stages)
             self.assertIn("agent_sync", stages)
 
+    @patch.dict(
+        os.environ,
+        {
+            "NO_LOGIN": "1",
+            "CRE_ALLOW_IMPORT": "1",
+            "DEV_DATABASE_URL": "postgresql://cre:password@127.0.0.1:5432/opencre",
+        },
+        clear=False,
+    )
+    def test_upstream_sync_and_ingest_runs_sync_then_oie(self) -> None:
+        oie_result = {
+            "async": False,
+            "started": True,
+            "skip_b": False,
+            "skip_c": False,
+            "skip_c1": True,
+        }
+        with patch(
+            "application.utils.admin_panel.service._run_upstream_sync_job",
+            return_value={"status": "ok", "hub": {"status": "ok"}},
+        ) as upstream, patch(
+            "application.utils.admin_panel.service._run_oie_job",
+            return_value=oie_result,
+        ) as oie:
+            with self.app.test_client() as c:
+                r = c.post(
+                    "/admin/upstream-sync-and-ingest",
+                    json={
+                        "wait": True,
+                        "packaged": True,
+                        "max_repos": 50,
+                        "skip_c1": True,
+                    },
+                )
+            self.assertEqual(r.status_code, 200, r.get_data(as_text=True))
+            body = r.get_json()
+            self.assertFalse(body["async"])
+            self.assertIn("run_id", body)
+            self.assertTrue(str(body["source"]).startswith("repos.yaml:"))
+            upstream.assert_called_once()
+            oie.assert_called_once()
+            self.assertEqual(oie.call_args.kwargs.get("skip_c1"), True)
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_upstream_sync_and_ingest_requires_postgres(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "NO_LOGIN": "1",
+                "CRE_ALLOW_IMPORT": "1",
+                "DEV_DATABASE_URL": "/tmp/not-postgres.sqlite",
+            },
+            clear=False,
+        ):
+            os.environ.pop("DATABASE_URL", None)
+            os.environ.pop("PROD_DATABASE_URL", None)
+            with self.app.test_client() as c:
+                r = c.post(
+                    "/admin/upstream-sync-and-ingest",
+                    json={"wait": True, "packaged": True},
+                )
+            self.assertEqual(r.status_code, 400)
+            self.assertIn("Postgres", r.get_json()["description"])
+
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_agent_sync_requires_postgres(self) -> None:
         with patch.dict(
@@ -1167,6 +1231,39 @@ class TestAdminPanel(unittest.TestCase):
                         mock_oie.assert_called_once()
                         r = c.post("/admin/ingest/start", json={"current": True})
                         self.assertEqual(r.status_code, 200)
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_ingest_skip_c1_and_unlimited_max_repos(self) -> None:
+        """Full harvest stop-after-C: skip_c1 + max_repos=0 (no cap)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            packaged = Path(tmp) / "repos.yaml"
+            packaged.write_text(MINIMAL_REPOS_YAML, encoding="utf-8")
+            with patch.object(service, "REPOS_YAML", packaged):
+                with patch(
+                    "application.utils.admin_panel.service.invoke_oie_cli",
+                    return_value={"ok": True, "stages": []},
+                ) as mock_oie:
+                    with self.app.test_client() as c:
+                        r = c.post(
+                            "/admin/ingest/start",
+                            json={
+                                "packaged": True,
+                                "max_repos": 0,
+                                "skip_b": False,
+                                "skip_c": False,
+                                "skip_c1": True,
+                                "wait": True,
+                            },
+                        )
+                        self.assertEqual(r.status_code, 200, r.data)
+                        body = r.get_json() or {}
+                        self.assertTrue((body.get("oie") or {}).get("ok"))
+                        mock_oie.assert_called_once()
+                        kwargs = mock_oie.call_args.kwargs
+                        self.assertEqual(kwargs.get("max_repos"), 0)
+                        self.assertTrue(kwargs.get("skip_c1"))
+                        self.assertFalse(kwargs.get("skip_b"))
+                        self.assertFalse(kwargs.get("skip_c"))
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_dashboard_payload(self) -> None:
