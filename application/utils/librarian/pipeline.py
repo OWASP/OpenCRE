@@ -291,14 +291,13 @@ class LibrarianPipeline:
         cre_ids: Sequence[str],
         retrieved: RetrievalAudit,
     ) -> DecisionResult:
-        """Demote auto-link via pairwise vote / source grounding (env-gated)."""
+        """Demote auto-link via pairwise / grounding (batched when both on)."""
         if result.decision != Decision.linked:
             return result
-        from application.utils.librarian.pairwise_vote import pairwise_blocks_auto_link
-        from application.utils.librarian.shortlist_judge import candidates_from_audit
-        from application.utils.librarian.source_grounding import (
-            grounding_blocks_auto_link,
+        from application.utils.librarian.fail_closed_batch import (
+            evaluate_fail_closed_levers,
         )
+        from application.utils.librarian.shortlist_judge import candidates_from_audit
 
         meta = candidates_from_audit(retrieved)
         for row in meta:
@@ -306,34 +305,20 @@ class LibrarianPipeline:
             if cid and not row.get("name"):
                 row["name"] = self._cre_names.get(cid, "")
 
-        if pairwise_blocks_auto_link(
+        reason = evaluate_fail_closed_levers(
             section_text,
             cre_ids,
             candidate_meta=meta,
             llm_fn=self._shortlist_llm_fn,
-        ):
-            return DecisionResult(
-                Decision.review,
-                result.confidence,
-                tuple(cre_ids[:2]),
-                ReasonCode.pairwise_disagree,
-            )
-
-        top = str(cre_ids[0]).strip() if cre_ids else ""
-        cre_meta = next((m for m in meta if str(m.get("cre_id")) == top), None) or {
-            "cre_id": top,
-            "name": self._cre_names.get(top, ""),
-        }
-        if grounding_blocks_auto_link(
-            section_text, cre_meta, llm_fn=self._shortlist_llm_fn
-        ):
-            return DecisionResult(
-                Decision.review,
-                result.confidence,
-                tuple(cre_ids[:2]),
-                ReasonCode.source_unsupported,
-            )
-        return result
+        )
+        if reason is None:
+            return result
+        return DecisionResult(
+            Decision.review,
+            result.confidence,
+            tuple(cre_ids[:2]),
+            reason,
+        )
 
     def _apply_leaf_drilldown(
         self,

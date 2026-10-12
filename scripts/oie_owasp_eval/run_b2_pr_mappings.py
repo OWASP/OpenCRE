@@ -130,12 +130,14 @@ def _load_dotenv() -> None:
             if not line or line.startswith("#") or "=" not in line:
                 continue
             k, _, v = line.partition("=")
-            if env_path.name == "oie.env" and (
-                k.startswith("CRE_LIBRARIAN_") or k.startswith("DEV_DATABASE")
-            ):
-                os.environ[k.strip()] = v.strip()
+            # Librarian flags from oie.env win. DEV_DATABASE_URL must NOT — parallel
+            # matrix workers set cre_al_wN; clobbering them scores an empty `cre`.
+            key = k.strip()
+            val = v.strip().strip('"').strip("'")
+            if env_path.name == "oie.env" and key.startswith("CRE_LIBRARIAN_"):
+                os.environ[key] = val
             else:
-                os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+                os.environ.setdefault(key, val)
 
 
 def normalize_source_url(url: str) -> str:

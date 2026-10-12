@@ -29,6 +29,7 @@ promoted path (`SHORTLIST_JUDGE` remains on).
 |------|--------|
 | `CRE_LIBRARIAN_PAIRWISE_VOTE` | LLM A-vs-B on top-2; `neither`/disagree → `PAIRWISE_DISAGREE` review |
 | `CRE_LIBRARIAN_SOURCE_GROUNDING` | LLM support check on chosen CRE; weak → `SOURCE_UNSUPPORTED` |
+| *(both of the above)* | Batched into **one** LLM call (`fail_closed_batch.py`) when both are on |
 | `CRE_LIBRARIAN_CROSSWALK_CAGE` | Hard-intersect C.1 shortlist with hub Standard↔CRE preferred ids |
 | `CRE_LIBRARIAN_COVERAGE_FAIL_CLOSED` | Thin shortlist → `COVERAGE_THIN` (see `COVERAGE_MIN_CANDIDATES` / `MIN_SCORE`) |
 
