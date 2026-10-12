@@ -62,21 +62,30 @@ class OwaspAgentRouter:
         else:
             self.queries = MetaQueries(self.store)
 
-    def handle(self, prompt: str) -> Optional[Dict[str, Any]]:
-        """Return a chat response dict, or None to defer to CRE RAG."""
+    def handle(
+        self,
+        prompt: str,
+        history: Optional[List[Dict[str, Any]]] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Return a chat response dict, or None to defer to CRE RAG.
+
+        ``history`` is prior chat turns ``[{role, content}, ...]`` (native
+        LiteLLM-style). Used to resolve clarify follow-ups; does not invent facts.
+        """
         if not is_owasp_agent_enabled():
             return None
         text = (prompt or "").strip()
         if not text:
             return None
 
-        intent = classify_intent(text)
+        effective = _effective_prompt(text, history)
+        intent = classify_intent(effective)
         if intent == "cre_normative":
             return None
         if intent == "aix_fact":
             from application.utils.owasp_agent.aix_facts import lookup_aix_factoid
 
-            aix_hit = lookup_aix_factoid(text)
+            aix_hit = lookup_aix_factoid(effective)
             if not aix_hit:
                 return None
             message, citations = aix_hit
@@ -94,7 +103,7 @@ class OwaspAgentRouter:
                 lookup_cre_factoid,
             )
 
-            cre_hit = lookup_cre_factoid(text)
+            cre_hit = lookup_cre_factoid(effective)
             if not cre_hit:
                 return None  # fall through to CRE RAG
             cre_id, title, note = cre_hit
@@ -118,8 +127,8 @@ class OwaspAgentRouter:
             )
             return format_chat_response(result)
 
-        slots = extract_slots(text)
-        result = self._dispatch(intent, slots, text)
+        slots = extract_slots(effective)
+        result = self._dispatch(intent, slots, effective)
         return format_chat_response(result)
 
     def _dispatch(self, intent: str, slots: Slots, text: str) -> QueryResult:
@@ -1009,3 +1018,22 @@ def _clean_project_name(raw: str) -> str:
     name = re.sub(r"\s+project$", "", name, flags=re.IGNORECASE).strip()
     return name
 
+
+def _effective_prompt(
+    prompt: str, history: Optional[List[Dict[str, Any]]] = None
+) -> str:
+    """Join recent user turns so clarify follow-ups keep prior slots/context."""
+    prior: List[str] = []
+    for turn in history or []:
+        if not isinstance(turn, dict):
+            continue
+        if str(turn.get("role") or "").lower() != "user":
+            continue
+        content = str(turn.get("content") or "").strip()
+        if content:
+            prior.append(content)
+    if prior and prior[-1] == prompt:
+        prior = prior[:-1]
+    if not prior:
+        return prompt
+    return (" ".join(prior[-3:]) + "\n" + prompt).strip()
