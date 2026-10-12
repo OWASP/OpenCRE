@@ -903,6 +903,28 @@ class TestEntityAndChatMemoryFixes(unittest.TestCase):
         self.assertNotIn("do not appear to be commonly recognized", text)
         self.assertNotIn("facilitate the sharing, discovery", text)
 
+    def test_clarify_followup_uses_history(self) -> None:
+        history = [
+            {
+                "role": "user",
+                "content": "What does OWASP membership cost in Switzerland?",
+            },
+            {
+                "role": "assistant",
+                "content": "Answer: Standard individual dues apply in Switzerland.",
+            },
+        ]
+        resp = self.router.handle("and in Morocco?", history=history)
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        # Combined context should route as membership, not bare clarify miss.
+        self.assertIn("owasp_agent", resp)
+        kind = resp["owasp_agent"]["kind"]
+        self.assertIn(kind, ("membership", "clarify"))
+        if kind == "membership":
+            self.assertIn("morocco", resp["response"].lower())
+
+
 
 class TestIndexStoreDefaults(unittest.TestCase):
     def test_override_env_wins_over_app_db(self) -> None:
