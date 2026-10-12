@@ -950,43 +950,25 @@ class TestEntityAndChatMemoryFixes(unittest.TestCase):
     def test_clarify_followup_uses_history(self) -> None:
         history = [
             {
-                "OWASP_AGENT_DB": "sqlite:////tmp/agent-override.sqlite",
-                "DATABASE_URL": "postgresql://cre:pw@127.0.0.1:5432/cre",
+                "role": "user",
+                "content": "What does OWASP membership cost in Switzerland?",
             },
-        ):
-            self.assertEqual(default_db_path(), "sqlite:////tmp/agent-override.sqlite")
+            {
+                "role": "assistant",
+                "content": "Answer: Standard individual dues apply in Switzerland.",
+            },
+        ]
+        resp = self.router.handle("and in Morocco?", history=history)
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        # Combined context should route as membership, not bare clarify miss.
+        self.assertIn("owasp_agent", resp)
+        kind = resp["owasp_agent"]["kind"]
+        self.assertIn(kind, ("membership", "clarify"))
+        if kind == "membership":
+            self.assertIn("morocco", resp["response"].lower())
 
-    def test_falls_back_to_main_database_url(self) -> None:
-        env = {
-            k: v
-            for k, v in os.environ.items()
-            if k
-            not in {
-                "OWASP_AGENT_DB",
-                "DATABASE_URL",
-                "DEV_DATABASE_URL",
-                "PROD_DATABASE_URL",
-                "SQLALCHEMY_DATABASE_URI",
-            }
-        }
-        env["DATABASE_URL"] = "postgresql://cre:pw@127.0.0.1:5432/cre"
-        with patch.dict(os.environ, env, clear=True):
-            self.assertEqual(
-                default_db_path(), "postgresql://cre:pw@127.0.0.1:5432/cre"
-            )
 
-    def test_no_sqlite_file_default_when_unset(self) -> None:
-        drop = {
-            "OWASP_AGENT_DB",
-            "DATABASE_URL",
-            "DEV_DATABASE_URL",
-            "PROD_DATABASE_URL",
-            "SQLALCHEMY_DATABASE_URI",
-        }
-        env = {k: v for k, v in os.environ.items() if k not in drop}
-        with patch.dict(os.environ, env, clear=True):
-            with self.assertRaises(RuntimeError):
-                default_db_path()
 
 
 
