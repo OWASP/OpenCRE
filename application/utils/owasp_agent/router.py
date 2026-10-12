@@ -36,6 +36,9 @@ class Slots:
     list_mode: bool = False
     country: Optional[str] = None
     countries: List[str] = field(default_factory=list)
+    project_name: Optional[str] = None
+    project_a: Optional[str] = None
+    project_b: Optional[str] = None
 
 
 class OwaspAgentRouter:
@@ -70,16 +73,31 @@ class OwaspAgentRouter:
         intent = classify_intent(text)
         if intent == "cre_normative":
             return None
+        if intent == "aix_fact":
+            from application.utils.owasp_agent.aix_facts import lookup_aix_factoid
+
+            aix_hit = lookup_aix_factoid(text)
+            if not aix_hit:
+                return None
+            message, citations = aix_hit
+            result = QueryResult(
+                ok=True,
+                kind="aix_fact",
+                data={"source": "owasp_ai_exchange"},
+                message=message,
+                citations=citations,
+            )
+            return format_chat_response(result)
         if intent == "cre_fact":
             from application.utils.owasp_agent.cre_facts import (
                 format_cre_factoid,
                 lookup_cre_factoid,
             )
 
-            hit = lookup_cre_factoid(text)
-            if not hit:
+            cre_hit = lookup_cre_factoid(text)
+            if not cre_hit:
                 return None  # fall through to CRE RAG
-            cre_id, title, note = hit
+            cre_id, title, note = cre_hit
             result = QueryResult(
                 ok=True,
                 kind="cre_fact",
@@ -203,6 +221,36 @@ class OwaspAgentRouter:
             )
         if intent == "talk_lookup":
             return self.queries.talk_lookup(person=slots.person, topic=slots.topic)
+        if intent == "person_lookup":
+            if not slots.person:
+                return QueryResult(
+                    ok=False,
+                    kind="person_lookup",
+                    message="Which person should I look up in OWASP metadata?",
+                    clarify="Please give the person's full name.",
+                )
+            return self.queries.person_lookup(slots.person)
+        if intent == "project_lookup":
+            name = slots.project_name or slots.topic
+            if not name:
+                return QueryResult(
+                    ok=False,
+                    kind="project_lookup",
+                    message="Which OWASP project should I look up?",
+                    clarify="Please name a project.",
+                )
+            return self.queries.project_lookup(name)
+        if intent == "compare_projects":
+            a = slots.project_a
+            b = slots.project_b
+            if not a or not b:
+                return QueryResult(
+                    ok=False,
+                    kind="compare_projects",
+                    message="Which two OWASP projects should I compare?",
+                    clarify="Name both projects (e.g. AI Exchange vs GenAI Security Project).",
+                )
+            return self.queries.compare_projects(a, b)
         if intent == "cre_fact":
             from application.utils.owasp_agent.cre_facts import (
                 format_cre_factoid,
@@ -249,6 +297,38 @@ class OwaspAgentRouter:
 
 def classify_intent(text: str) -> str:
     t = text.lower().strip()
+    # Curated AI Exchange factoids (before CRE fallthrough / "not cybersecurity")
+    if "lethal trifecta" in t or (
+        re.search(r"\b(ai exchange|owaspai|\baix\b)\b", t)
+        and re.search(r"\b(trifecta|say about|says about)\b", t)
+    ):
+        from application.utils.owasp_agent.aix_facts import lookup_aix_factoid
+
+        if lookup_aix_factoid(text):
+            return "aix_fact"
+
+    # Who-is person lookup from leaders.json / project leaders (not CRE bios)
+    if re.search(r"\bwho is\b", t) and not re.search(r"\bwho is (the|on|a|an)\b", t):
+        if _extract_quoted_or_capitalized_name(text):
+            return "person_lookup"
+
+    # Project compare / definition (OWASP metadata, not generic LLM knowledge)
+    if re.search(
+        r"\b(difference between|differ(?:ence)? between|compare)\b", t
+    ) and re.search(r"\b(project|ai exchange|genai|aix|llm top)\b", t):
+        return "compare_projects"
+    if re.search(
+        r"\b(what is|what's|tell me about|describe)\b.+\b("
+        r"ai exchange|genai security|genai project|owasp project|"
+        r"llm top\s*10|integration standards)\b",
+        t,
+    ) or re.search(
+        r"\b(what is|what's)\b.+\bproject\b",
+        t,
+    ):
+        if not re.search(r"\b(how (do|should)|mitigate|vulnerability)\b", t):
+            return "project_lookup"
+
     # Security normative signals → defer to CRE (unless clearly meta)
     normative_hints = (
         "how should i",
@@ -305,6 +385,10 @@ def classify_intent(text: str) -> str:
         "roster",
         "commuting",
         "suburb",
+        "who is",
+        "ai exchange",
+        "genai",
+        "lethal trifecta",
     )
     has_meta = any(h in t for h in meta_hints)
     has_norm = any(h in t for h in normative_hints)
@@ -637,6 +721,33 @@ def extract_slots(text: str) -> Slots:
     if person:
         slots.person = person
 
+    m_who = re.search(
+        r"\b[Ww]ho\s+is\s+(" + _PERSON_NAME_RE + r")\s*\??",
+        text,
+    )
+    if m_who:
+        slots.person = m_who.group(1).strip().rstrip(".?!")
+
+    m_diff = re.search(
+        r"\b(?:difference between|differ(?:ence)? between|compare)\s+"
+        r"(?:the\s+)?(.+?)\s+(?:and|vs\.?|versus)\s+(?:the\s+)?(.+?)\s*\??\s*$",
+        text,
+        re.IGNORECASE,
+    )
+    if m_diff:
+        slots.project_a = _clean_project_name(m_diff.group(1))
+        slots.project_b = _clean_project_name(m_diff.group(2))
+
+    m_what_proj = re.search(
+        r"\b(?:what is|what's|tell me about|describe)\s+(?:the\s+)?(.+?)\s*\??\s*$",
+        text,
+        re.IGNORECASE,
+    )
+    if m_what_proj and not slots.project_a:
+        cand = _clean_project_name(m_what_proj.group(1))
+        if cand and not re.match(r"^(who|how|why)\b", cand, re.I):
+            slots.project_name = cand
+
     # Membership countries — any Title Case token looked up later; seed common ones
     known_countries = (
         "Morocco",
@@ -831,37 +942,46 @@ def _mentions_appsec(text: str) -> bool:
     return "appsec" in t or "application security" in t
 
 
+# Capitalized personal names, including multi-particle Dutch/German forms
+# (e.g. "Rob van der Veer", "Andrew van der Stock").
+_PERSON_NAME_RE = r"[A-Z][a-z]+(?:\s+(?:van|der|de|la|von|[A-Z][a-z]+))+"
+
+
 def _extract_quoted_or_capitalized_name(text: str) -> Optional[str]:
     m = re.search(r"[\"']([A-Z][^\"']+)[\"']", text)
     if m:
         return m.group(1).strip()
+    m_who = re.search(r"\b[Ww]ho\s+is\s+(" + _PERSON_NAME_RE + r")\s*\??", text)
+    if m_who:
+        return m_who.group(1).strip().rstrip(".?!")
     m_quote = re.search(
-        r"\b[Qq]uote\s+([A-Z][a-z]+(?:\s+(?:van|der|de|la|von|[A-Z][a-z]+))+)\s+from\b",
+        r"\b[Qq]uote\s+(" + _PERSON_NAME_RE + r")(?:'s)?\s+(?:from\b|keynote\b|talk\b)",
         text,
     )
     if m_quote:
         return m_quote.group(1).strip()
     m_by = re.search(
-        r"\btalks?\s+by\s+(?:a\s+random\s+person\s+named\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b",
+        r"\btalks?\s+by\s+(?:a\s+random\s+person\s+named\s+)?("
+        + _PERSON_NAME_RE
+        + r")\b",
         text,
     )
     if m_by:
         return m_by.group(1).strip()
     m_did = re.search(
-        r"\b(?:[Ww]hat\s+[Dd]id|[Dd]id)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b",
+        r"\b(?:[Ww]hat\s+[Dd]id|[Dd]id)\s+(" + _PERSON_NAME_RE + r")\b",
         text,
     )
     if m_did:
         return m_did.group(1).strip()
     m2 = re.search(
-        r"(?:position of|board member|candidate|quote)\s+"
-        r"([A-Z][a-z]+(?:\s+(?:van|der|de|la|von)\s+)?[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)",
+        r"(?:position of|board member|candidate|quote)\s+(" + _PERSON_NAME_RE + r")",
         text,
     )
     if m2:
         return m2.group(1).strip()
     m3 = re.search(
-        r"\b([A-Z][a-z]+(?:\s+(?:van|der|de|la|von)\s+)?[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+(?:say|said|run|ever|present|give|from)\b",
+        r"\b(" + _PERSON_NAME_RE + r")\s+(?:say|said|run|ever|present|give|from)\b",
         text,
     )
     if m3:
@@ -870,9 +990,22 @@ def _extract_quoted_or_capitalized_name(text: str) -> Optional[str]:
         if first not in ("did", "what", "who", "how", "when", "where", "is", "the"):
             return name
     m4 = re.search(
-        r"\b(?:for|by|of)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\s*\??\s*$",
+        r"\b(?:for|by|of)\s+(" + _PERSON_NAME_RE + r")\s*\??\s*$",
         text,
     )
     if m4:
         return m4.group(1).strip()
     return None
+
+
+def _clean_project_name(raw: str) -> str:
+    name = (raw or "").strip().rstrip(".?!")
+    name = re.sub(
+        r"^(the\s+)?(owasp\s+)?",
+        "",
+        name,
+        flags=re.IGNORECASE,
+    ).strip()
+    name = re.sub(r"\s+project$", "", name, flags=re.IGNORECASE).strip()
+    return name
+

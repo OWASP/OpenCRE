@@ -1,4 +1,4 @@
-OWASP agent synth suite v2 — 400 unique probes
+OWASP agent synth suite v2 — 404 unique probes
 
 1. [membership] What does OWASP membership cost for someone living in Switzerland?
 2. [chapter] Which flagged OWASP projects touch supply chain? Table form preferred.
@@ -400,3 +400,7 @@ OWASP agent synth suite v2 — 400 unique probes
 398. [clarify] Membership price?
 399. [neighbor_hallucination] Quote Jeff Williams's keynote on memory safety from OWASP AppSec last year.
 400. [board] Who is on the OWASP board in 2025?
+401. [person_lookup] Who is Rob van der Veer?
+402. [aix_fact] what does the AI Exchange say about the lethal trifecta?
+403. [compare_projects] what is the difference between the genai security project and the AI exchange?
+404. [compare_projects] what is the difference between the AI Exchange project and the Genai security project

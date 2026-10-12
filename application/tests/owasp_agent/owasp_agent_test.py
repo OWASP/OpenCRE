@@ -17,6 +17,7 @@ from application.utils.owasp_agent.concepts import (
 from application.utils.owasp_agent.github_crawler import (
     GitHubCrawler,
     parse_board_history_yaml,
+    project_leaders_from_site_data,
 )
 from application.utils.owasp_agent.index_store import IndexStore
 from application.utils.owasp_agent.models import Chapter, Event, Project
@@ -27,7 +28,8 @@ from application.utils.owasp_agent.router import (
     extract_slots,
     format_chat_response,
 )
-from application.utils.owasp_agent.sync import sync_all
+from application.utils.owasp_agent.sync import apply_project_leaders_from_site, sync_all
+import json
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -87,6 +89,29 @@ def _seed_store(db_path: str) -> IndexStore:
             source="github",
         )
     )
+    aix = crawler.parse_project_markdown(
+        "OWASP/www-project-ai-security-and-privacy-guide",
+        (FIXTURES / "project-aix.md.txt").read_text(),
+    )
+    store.upsert_project(aix)
+    llm = crawler.parse_project_markdown(
+        "OWASP/www-project-top-10-for-large-language-model-applications",
+        (FIXTURES / "project-llm-top10.md.txt").read_text(),
+    )
+    store.upsert_project(llm)
+    store.upsert_project(
+        Project(
+            key="integration-standards",
+            name="OWASP Integration Standards",
+            level="2",
+            description="OpenCRE and related integration standards work",
+            url="https://owasp.org/www-project-integration-standards/",
+            tags=["standards"],
+            source="github",
+        )
+    )
+    leaders = json.loads((FIXTURES / "leaders-site.json").read_text())
+    apply_project_leaders_from_site(store, leaders)
 
     # Upcoming AI event near LA
     store.upsert_event(
@@ -727,6 +752,71 @@ class TestProbeGapFixes(unittest.TestCase):
         assert resp is not None
         # Fixture seed: 1 chapter (+athens/la in probe gaps) and several projects
         self.assertRegex(resp["response"], r"\b\d{1,4}\b")
+
+
+
+class TestEntityAndChatMemoryFixes(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.db_path = os.path.join(self.tmp.name, "agent.sqlite")
+        self.store = _seed_store(self.db_path)
+        self.queries = MetaQueries(
+            self.store, geocode_fn=lambda place: (34.1478, -118.1445)
+        )
+        self.router = OwaspAgentRouter(store=self.store, queries=self.queries)
+        os.environ["OWASP_AGENT_ENABLED"] = "1"
+
+    def tearDown(self) -> None:
+        os.environ.pop("OWASP_AGENT_ENABLED", None)
+        self.tmp.cleanup()
+
+    def test_project_leaders_from_site_keeps_projects(self) -> None:
+        leaders = json.loads((FIXTURES / "leaders-site.json").read_text())
+        rows = project_leaders_from_site_data(leaders)
+        self.assertTrue(any(r["name"] == "Rob van der Veer" for r in rows))
+        self.assertTrue(any(r["group"] == "OWASP AI Exchange" for r in rows))
+
+    def test_who_is_rob_van_der_veer(self) -> None:
+        self.assertEqual(classify_intent("Who is Rob van der Veer?"), "person_lookup")
+        slots = extract_slots("Who is Rob van der Veer?")
+        self.assertEqual(slots.person, "Rob van der Veer")
+        resp = self.router.handle("Who is Rob van der Veer?")
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        text = resp["response"].lower()
+        self.assertIn("ai exchange", text)
+        self.assertNotIn("marketplace", text)
+        cites = resp["owasp_agent"]["citations"]
+        self.assertTrue(any("owasp" in c.lower() for c in cites))
+
+    def test_lethal_trifecta_aix_fact(self) -> None:
+        q = "what does the AI Exchange say about the lethal trifecta?"
+        self.assertEqual(classify_intent(q), "aix_fact")
+        resp = self.router.handle(q)
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        text = resp["response"].lower()
+        self.assertIn("trifecta", text)
+        self.assertIn("exfiltration", text)
+        self.assertNotIn("does not appear to be about cybersecurity", text)
+        self.assertTrue(
+            any("owaspai.org" in c for c in resp["owasp_agent"]["citations"])
+        )
+
+    def test_genai_vs_ai_exchange(self) -> None:
+        q = (
+            "what is the difference between the genai security project "
+            "and the AI exchange?"
+        )
+        self.assertEqual(classify_intent(q), "compare_projects")
+        resp = self.router.handle(q)
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        text = resp["response"].lower()
+        self.assertIn("ai exchange", text)
+        self.assertTrue("genai" in text or "large language" in text)
+        self.assertNotIn("do not appear to be commonly recognized", text)
+        self.assertNotIn("facilitate the sharing, discovery", text)
 
 
 if __name__ == "__main__":
