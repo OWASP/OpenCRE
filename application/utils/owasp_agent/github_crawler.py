@@ -371,6 +371,65 @@ def parse_board_history_yaml(
     return members, candidates
 
 
+def project_leaders_from_site_data(
+    leaders: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Extract project-group leader rows from owasp.github.io ``leaders.json``.
+
+    Returns dicts with ``name``, ``group``, ``group_url``, ``email``.
+    """
+    out: List[Dict[str, Any]] = []
+    seen: set = set()
+    for row in leaders or []:
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("group-type") or "").lower() != "project":
+            continue
+        group = str(row.get("group") or "").strip()
+        name = str(row.get("name") or "").strip()
+        if not group or not name or name.lower() == "open position":
+            continue
+        key = (name.lower(), group.lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(
+            {
+                "name": name,
+                "group": group,
+                "group_url": str(row.get("group_url") or "").strip(),
+                "email": str(row.get("email") or "").strip(),
+            }
+        )
+    return out
+
+
+def match_project_leader_group(
+    project_name: str, project_url: str, group: str, group_url: str
+) -> bool:
+    """True when a leaders.json project group refers to this indexed project."""
+    g = (group or "").lower().strip()
+    pn = (project_name or "").lower().strip()
+    if not g or not pn:
+        return False
+    if g == pn or g in pn or pn in g:
+        return True
+    # Strip common "OWASP " prefix for looser match.
+    g2 = re.sub(r"^owasp\s+", "", g)
+    pn2 = re.sub(r"^owasp\s+", "", pn)
+    if g2 and pn2 and (g2 == pn2 or g2 in pn2 or pn2 in g2):
+        return True
+    gu = (group_url or "").lower()
+    pu = (project_url or "").lower()
+    if gu and pu:
+        # Compare path tails, e.g. www-project-ai-security-and-privacy-guide
+        g_tail = gu.rstrip("/").split("/")[-1]
+        p_tail = pu.rstrip("/").split("/")[-1]
+        if g_tail and p_tail and g_tail == p_tail:
+            return True
+    return False
+
+
 def chapters_from_site_data(
     chapters: List[Dict[str, Any]],
     inactive: List[Dict[str, Any]],

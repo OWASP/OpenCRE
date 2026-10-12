@@ -4,19 +4,98 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from application.utils.owasp_agent.github_crawler import (
     GitHubCrawler,
     GitHubCrawlerError,
     chapters_from_site_data,
+    match_project_leader_group,
+    project_leaders_from_site_data,
 )
 from application.utils.owasp_agent.index_store import IndexStore
+from application.utils.owasp_agent.models import Project
 from application.utils.owasp_agent.nest_client import (
     NestAuthError,
     NestClient,
     NestClientError,
 )
+
+
+def apply_project_leaders_from_site(store: IndexStore, leaders: List[Any]) -> int:
+    """Index project leaders from site ``leaders.json`` and attach to projects."""
+    rows = project_leaders_from_site_data(leaders if isinstance(leaders, list) else [])
+    if not rows:
+        return 0
+    projects = store.list_entities("project")
+    # Merge by project key across sources for leader updates.
+    by_key: dict = {}
+    for p in projects:
+        key = str(p.get("key") or "")
+        if not key:
+            continue
+        cur = by_key.get(key)
+        if cur is None:
+            by_key[key] = dict(p)
+        else:
+            # Prefer non-empty fields; union leaders later.
+            for field in ("name", "url", "description", "level"):
+                if p.get(field) and not cur.get(field):
+                    cur[field] = p.get(field)
+            tags = list(cur.get("tags") or [])
+            for t in p.get("tags") or []:
+                if t not in tags:
+                    tags.append(t)
+            cur["tags"] = tags
+
+    applied = 0
+    for row in rows:
+        name = row["name"]
+        group = row["group"]
+        group_url = row.get("group_url") or ""
+        email = row.get("email") or ""
+        store.upsert_entity(
+            "project_leader",
+            f"{name.lower()}::{group.lower()}",
+            name,
+            "site",
+            {
+                "name": name,
+                "group": group,
+                "group_url": group_url,
+                "email": email,
+                "source": "site",
+            },
+        )
+        applied += 1
+        for key, proj in by_key.items():
+            if not match_project_leader_group(
+                str(proj.get("name") or ""),
+                str(proj.get("url") or ""),
+                group,
+                group_url,
+            ):
+                continue
+            leaders_list = list(proj.get("leaders") or [])
+            if name not in leaders_list:
+                leaders_list.append(name)
+            proj["leaders"] = leaders_list
+            store.upsert_project(
+                Project(
+                    key=key,
+                    name=str(proj.get("name") or key),
+                    level=str(proj.get("level") or ""),
+                    description=str(proj.get("description") or ""),
+                    url=str(proj.get("url") or ""),
+                    tags=list(proj.get("tags") or []),
+                    leaders=leaders_list,
+                    source=str(
+                        proj.get("source") or proj.get("_index_source") or "site"
+                    ),
+                    raw=dict(proj.get("raw") or {}),
+                )
+            )
+    return applied
 
 
 @dataclass
@@ -108,6 +187,10 @@ def sync_all(
                 for ch in merged:
                     store.upsert_chapter(ch)
                 report.chapters += len(merged)
+                leader_n = apply_project_leaders_from_site(
+                    store,
+                    site_leaders if isinstance(site_leaders, list) else [],
+                )
                 if isinstance(site_countries, list):
                     for row in site_countries:
                         if not isinstance(row, dict):
@@ -129,7 +212,11 @@ def sync_all(
                 store.log_sync(
                     "site_data",
                     "ok",
-                    f"chapters={len(merged)} countries={len(site_countries) if isinstance(site_countries, list) else 0}",
+                    (
+                        f"chapters={len(merged)} "
+                        f"project_leaders={leader_n} "
+                        f"countries={len(site_countries) if isinstance(site_countries, list) else 0}"
+                    ),
                 )
             except (GitHubCrawlerError, AttributeError, TypeError, ValueError) as exc:
                 report.errors.append(f"site_data: {exc}")
