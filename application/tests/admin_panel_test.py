@@ -1600,3 +1600,31 @@ class TestAdminPanel(unittest.TestCase):
                 self.assertEqual(r.status_code, 401)
                 r = c.get("/admin/dashboard", headers={"Accept": "application/json"})
                 self.assertEqual(r.status_code, 401)
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    @patch(
+        "application.utils.rq_dashboard_snapshot.requeue_failed_oie_jobs",
+        return_value={"requeued_count": 2, "requeued": ["a", "b"], "errors": []},
+    )
+    def test_oie_rq_requeue_failed_route(self, mock_requeue) -> None:
+        with self.app.test_client() as c:
+            r = c.post("/admin/oie/rq/requeue-failed", json={})
+            self.assertEqual(r.status_code, 200)
+            self.assertEqual(r.get_json()["requeued_count"], 2)
+            mock_requeue.assert_called_once()
+            r = c.post("/admin/oie/rq/requeue-failed", json={"job_ids": "nope"})
+            self.assertEqual(r.status_code, 400)
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    @patch(
+        "application.utils.rq_dashboard_snapshot.cancel_oie_jobs",
+        return_value={"cancelled_count": 1, "cancelled": ["x"], "errors": []},
+    )
+    def test_oie_rq_cancel_route(self, mock_cancel) -> None:
+        with self.app.test_client() as c:
+            r = c.post("/admin/oie/rq/cancel", json={})
+            self.assertEqual(r.status_code, 400)
+            r = c.post("/admin/oie/rq/cancel", json={"job_ids": ["x"]})
+            self.assertEqual(r.status_code, 200)
+            self.assertEqual(r.get_json()["cancelled_count"], 1)
+            mock_cancel.assert_called_once_with(["x"])

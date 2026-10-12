@@ -84,12 +84,45 @@ function apiError(body: any, res: Response): string {
   return body?.description || body?.error || res.statusText || 'Request failed';
 }
 
+/** Session CSRF from GET /admin/config (see web_main.admin_imports_enabled_required). */
+let _adminCsrf = '';
+
+function setAdminCsrf(token: string) {
+  _adminCsrf = (token || '').trim();
+}
+
+function mutHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  return {
+    Accept: 'application/json',
+    ...(_adminCsrf ? { 'X-CSRF-Token': _adminCsrf } : {}),
+    ...extra,
+  };
+}
+
 export const Admin = () => {
   const { apiUrl } = useEnvironment();
   const { isLoggedIn, loading, login } = useUser();
   const { capabilities, loading: capsLoading } = useCapabilities();
   const [tab, setTab] = useState<Tab>('dashboard');
   const origin = adminOrigin(apiUrl);
+
+  useEffect(() => {
+    if (!origin || !isLoggedIn || !capabilities?.admin) return;
+    let cancelled = false;
+    fetch(`${origin}/admin/config`)
+      .then(async (res) => {
+        const body = await readJson(res);
+        if (!cancelled && typeof body.csrf_token === 'string') {
+          setAdminCsrf(body.csrf_token);
+        }
+      })
+      .catch(() => {
+        /* ConfigTab will retry; mutations fail closed without token. */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [origin, isLoggedIn, capabilities?.admin]);
 
   if (loading || capsLoading) {
     return (
@@ -319,7 +352,10 @@ function GraphManagementTab({ origin }: { origin: string }) {
     setNotice(null);
     setBusy(`${runId}:${path}`);
     try {
-      const res = await fetch(`${origin}/admin/imports/runs/${runId}/${path}`, { method });
+      const res = await fetch(`${origin}/admin/imports/runs/${runId}/${path}`, {
+        method,
+        headers: mutHeaders(),
+      });
       const body = await readJson(res);
       if (!res.ok) {
         setError(apiError(body, res));
@@ -408,7 +444,7 @@ function GraphManagementTab({ origin }: { origin: string }) {
     try {
       const res = await fetch(`${origin}/admin/imports/runs/${runId}/links`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload),
       });
       const body = await readJson(res);
@@ -432,7 +468,7 @@ function GraphManagementTab({ origin }: { origin: string }) {
     try {
       const res = await fetch(`${origin}/admin/imports/drop-last`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ source: source.trim() }),
       });
       const body = await readJson(res);
@@ -609,6 +645,8 @@ function GraphManagementTab({ origin }: { origin: string }) {
 function OieQueueTab({ origin }: { origin: string }) {
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [runId, setRunId] = useState('');
 
   const load = useCallback(() => {
@@ -640,15 +678,40 @@ function OieQueueTab({ origin }: { origin: string }) {
     };
   }, [load]);
 
+  const postJobs = async (path: string, jobIds?: string[]) => {
+    setBusy(true);
+    setNotice(null);
+    setError(null);
+    try {
+      const res = await fetch(`${origin}${path}`, {
+        method: 'POST',
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(jobIds ? { job_ids: jobIds } : {}),
+      });
+      const body = await readJson(res);
+      if (!res.ok) throw new Error(apiError(body, res));
+      const n = body.requeued_count ?? body.cancelled_count ?? 0;
+      const kind = body.requeued_count != null ? 'requeued' : 'cancelled';
+      setNotice(`${kind} ${n} job(s)` + (body.errors?.length ? ` · ${body.errors.length} error(s)` : ''));
+      load();
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const queues = data?.queues || {};
   const oie = data?.oie || {};
-  const jobTable = (rows: any[] | undefined) => (
+  const failedCount = (oie.failed || []).length;
+  const jobTable = (rows: any[] | undefined, actions?: 'failed' | 'active') => (
     <table className="admin-table">
       <thead>
         <tr>
           <th>description</th>
           <th>status</th>
           <th>job id</th>
+          {actions ? <th /> : null}
         </tr>
       </thead>
       <tbody>
@@ -658,11 +721,33 @@ function OieQueueTab({ origin }: { origin: string }) {
               <td className="mono">{r.description}</td>
               <td>{r.status}</td>
               <td className="mono">{r.job_id}</td>
+              {actions === 'failed' ? (
+                <td>
+                  <Button
+                    size="mini"
+                    disabled={busy}
+                    onClick={() => postJobs('/admin/oie/rq/requeue-failed', [r.job_id])}
+                  >
+                    Requeue
+                  </Button>
+                </td>
+              ) : null}
+              {actions === 'active' ? (
+                <td>
+                  <Button
+                    size="mini"
+                    disabled={busy}
+                    onClick={() => postJobs('/admin/oie/rq/cancel', [r.job_id])}
+                  >
+                    Cancel
+                  </Button>
+                </td>
+              ) : null}
             </tr>
           ))
         ) : (
           <tr>
-            <td colSpan={3}>—</td>
+            <td colSpan={actions ? 4 : 3}>—</td>
           </tr>
         )}
       </tbody>
@@ -682,11 +767,20 @@ function OieQueueTab({ origin }: { origin: string }) {
           onChange={(_, { value }) => setRunId(String(value || ''))}
           placeholder="uncapped-safety-…"
         />
-        <Button type="button" onClick={() => load()}>
+        <Button type="button" onClick={() => load()} disabled={busy}>
           Refresh
+        </Button>
+        <Button
+          type="button"
+          primary
+          disabled={busy || !failedCount}
+          onClick={() => postJobs('/admin/oie/rq/requeue-failed')}
+        >
+          Requeue all failed ({failedCount})
         </Button>
       </Form>
       {error && <Message negative>{error}</Message>}
+      {notice && <Message positive>{notice}</Message>}
       {data && (
         <>
           <p className="admin-help">
@@ -718,11 +812,11 @@ function OieQueueTab({ origin }: { origin: string }) {
           </table>
           {data.run && <pre className="admin-pre">{JSON.stringify(data.run, null, 2)}</pre>}
           <h3>Started</h3>
-          {jobTable(oie.started)}
+          {jobTable(oie.started, 'active')}
           <h3>Queued</h3>
-          {jobTable(oie.queued)}
+          {jobTable(oie.queued, 'active')}
           <h3>Failed</h3>
-          {jobTable(oie.failed)}
+          {jobTable(oie.failed, 'failed')}
           <h3>Recent finished</h3>
           {jobTable(oie.finished)}
         </>
@@ -762,7 +856,7 @@ function PipelineTab({ origin }: { origin: string }) {
     try {
       const res = await fetch(`${origin}/admin/ingest/start`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ packaged: true }),
       });
       const body = await readJson(res);
@@ -787,7 +881,7 @@ function PipelineTab({ origin }: { origin: string }) {
     try {
       const built = await fetch(`${origin}/admin/repos.yaml/add-repo`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ yaml: 'sources: []\n', ...repoSpec(form) }),
       });
       const builtBody = await readJson(built);
@@ -797,7 +891,7 @@ function PipelineTab({ origin }: { origin: string }) {
       }
       const res = await fetch(`${origin}/admin/ingest/start`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ yaml: builtBody.yaml, name: repoSpec(form).id }),
       });
       const body = await readJson(res);
@@ -1003,6 +1097,7 @@ function ConfigTab({ origin }: { origin: string }) {
         if (cancelled) return;
         setRows(body.config || []);
         setInstructions(body.restart_instructions || '');
+        if (typeof body.csrf_token === 'string') setAdminCsrf(body.csrf_token);
         const filing = (body.config || []).find(
           (row: { key?: string; value?: string | null }) => row.key === 'OIE_GRAPH_FILING_ENABLED'
         );
@@ -1029,7 +1124,7 @@ function ConfigTab({ origin }: { origin: string }) {
       const res = await fetch(`${origin}/rest/v1/api-keys`, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           name: apiKeyName.trim() || 'api-key',
           expires_days: Number.isFinite(days) && days > 0 ? days : 90,
@@ -1062,7 +1157,7 @@ function ConfigTab({ origin }: { origin: string }) {
       const res = await fetch(`${origin}/rest/v1/api-keys/${encodeURIComponent(jti)}`, {
         method: 'DELETE',
         credentials: 'include',
-        headers: { Accept: 'application/json' },
+        headers: mutHeaders(),
       });
       if (res.status !== 204 && !res.ok) {
         const body = await readJson(res);
@@ -1095,7 +1190,7 @@ function ConfigTab({ origin }: { origin: string }) {
     try {
       const res = await fetch(`${origin}/admin/config`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           updates: { OIE_GRAPH_FILING_ENABLED: enabled ? '1' : '0' },
         }),
@@ -1126,7 +1221,7 @@ function ConfigTab({ origin }: { origin: string }) {
     try {
       const res = await fetch(`${origin}/admin/ingest/start`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ packaged: true, max_repos: 50 }),
       });
       const body = await readJson(res);
@@ -1151,7 +1246,7 @@ function ConfigTab({ origin }: { origin: string }) {
     try {
       const res = await fetch(`${origin}/admin/upstream-sync-and-ingest`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ packaged: true, max_repos: 50 }),
       });
       const body = await readJson(res);
@@ -1177,7 +1272,7 @@ function ConfigTab({ origin }: { origin: string }) {
     try {
       const res = await fetch(`${origin}/admin/agent/sync`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ auto_concepts: true }),
       });
       const body = await readJson(res);
@@ -1202,7 +1297,7 @@ function ConfigTab({ origin }: { origin: string }) {
     try {
       const res = await fetch(`${origin}/admin/repos.yaml`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ yaml: yamlText }),
       });
       const body = await readJson(res);
@@ -1227,7 +1322,7 @@ function ConfigTab({ origin }: { origin: string }) {
     try {
       const res = await fetch(`${origin}/admin/repos.yaml/expand-org`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ yaml: yamlText, owner: org.trim(), cron: orgCron.trim() }),
       });
       const body = await readJson(res);
@@ -1237,7 +1332,7 @@ function ConfigTab({ origin }: { origin: string }) {
       }
       const saved = await fetch(`${origin}/admin/repos.yaml`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ yaml: body.yaml }),
       });
       const savedBody = await readJson(saved);
@@ -1267,7 +1362,7 @@ function ConfigTab({ origin }: { origin: string }) {
     try {
       const res = await fetch(`${origin}/admin/repos.yaml/add-repo`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ yaml: yamlText, ...repoSpec(form) }),
       });
       const body = await readJson(res);
@@ -1277,7 +1372,7 @@ function ConfigTab({ origin }: { origin: string }) {
       }
       const saved = await fetch(`${origin}/admin/repos.yaml`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ yaml: body.yaml }),
       });
       const savedBody = await readJson(saved);

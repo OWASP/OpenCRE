@@ -128,6 +128,93 @@ def oie_rq_status(*, limit: int = 40) -> Dict[str, Any]:
     }
 
 
+def requeue_failed_oie_jobs(
+    job_ids: Optional[Sequence[str]] = None,
+    *,
+    description_prefix: str = "oie:",
+    limit: int = 500,
+) -> Dict[str, Any]:
+    """Requeue failed OIE RQ jobs (all matching prefix, or explicit ids).
+
+    Returns counts + per-id outcomes for Admin REST / UI.
+    """
+    conn = redis.connect()  # type: ignore[no-untyped-call]
+    qn = oie_queue_name()
+    q = Queue(name=qn, connection=conn)
+    registry = FailedJobRegistry(qn, connection=conn)
+    failed_ids = list(registry.get_job_ids())
+    if job_ids:
+        wanted = {str(j).strip() for j in job_ids if str(j).strip()}
+        candidates = [jid for jid in failed_ids if jid in wanted]
+        missing = sorted(wanted - set(candidates))
+    else:
+        candidates = []
+        for jid in failed_ids:
+            if len(candidates) >= limit:
+                break
+            job = _fetch_job(conn, q, jid)
+            desc = (job.description or "") if job is not None else ""
+            if description_prefix and not str(desc).startswith(description_prefix):
+                continue
+            candidates.append(jid)
+        missing = []
+
+    requeued: List[str] = []
+    errors: List[Dict[str, str]] = []
+    for jid in candidates:
+        try:
+            registry.requeue(jid)
+            requeued.append(jid)
+        except Exception as exc:
+            errors.append({"job_id": jid, "error": str(exc)[:500]})
+
+    return {
+        "queue": qn,
+        "requested": list(job_ids) if job_ids else None,
+        "considered": len(candidates),
+        "requeued": requeued,
+        "requeued_count": len(requeued),
+        "missing": missing,
+        "errors": errors,
+        "queues": queue_summary(conn),
+    }
+
+
+def cancel_oie_jobs(job_ids: Sequence[str]) -> Dict[str, Any]:
+    """Cancel queued/started OIE jobs by id (best-effort)."""
+    conn = redis.connect()  # type: ignore[no-untyped-call]
+    qn = oie_queue_name()
+    q = Queue(name=qn, connection=conn)
+    cancelled: List[str] = []
+    errors: List[Dict[str, str]] = []
+    missing: List[str] = []
+    for raw in job_ids:
+        jid = str(raw).strip()
+        if not jid:
+            continue
+        job = _fetch_job(conn, q, jid)
+        if job is None:
+            missing.append(jid)
+            continue
+        desc = job.description or ""
+        if not str(desc).startswith("oie:"):
+            errors.append({"job_id": jid, "error": "not an oie: job"})
+            continue
+        try:
+            job.cancel()
+            cancelled.append(jid)
+        except Exception as exc:
+            errors.append({"job_id": jid, "error": str(exc)[:500]})
+    return {
+        "queue": qn,
+        "cancelled": cancelled,
+        "cancelled_count": len(cancelled),
+        "missing": missing,
+        "errors": errors,
+        "queues": queue_summary(conn),
+    }
+
+
 def oie_run_queue_counts(session: Any, pipeline_run_id: str) -> Dict[str, int]:
     """DB-side progress counters for one OIE run."""
     from application.database.db import (

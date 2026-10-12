@@ -350,6 +350,48 @@ def register_admin_panel_routes(
             logger.exception("oie rq status failed")
             return _err(500, f"oie rq status failed: {exc}")
 
+    @bp.route("/admin/oie/rq/requeue-failed", methods=["POST"])
+    @login_required
+    @imports_enabled
+    def admin_oie_rq_requeue_failed() -> Any:
+        """Requeue failed ``oie:*`` RQ jobs (all, or ``job_ids`` in body)."""
+        body = request.get_json(silent=True) or {}
+        raw_ids = body.get("job_ids")
+        job_ids = None
+        if raw_ids is not None:
+            if not isinstance(raw_ids, list):
+                return _err(400, "job_ids must be a list of strings")
+            job_ids = [str(x) for x in raw_ids]
+        try:
+            limit = int(body.get("limit") or 500)
+        except (TypeError, ValueError):
+            return _err(400, "limit must be an integer")
+        limit = max(1, min(limit, 2000))
+        try:
+            from application.utils.rq_dashboard_snapshot import requeue_failed_oie_jobs
+
+            return jsonify(requeue_failed_oie_jobs(job_ids=job_ids, limit=limit))
+        except Exception as exc:
+            logger.exception("oie rq requeue-failed failed")
+            return _err(500, f"oie rq requeue-failed failed: {exc}")
+
+    @bp.route("/admin/oie/rq/cancel", methods=["POST"])
+    @login_required
+    @imports_enabled
+    def admin_oie_rq_cancel() -> Any:
+        """Cancel queued/started ``oie:*`` jobs by id."""
+        body = request.get_json(silent=True) or {}
+        raw_ids = body.get("job_ids")
+        if not isinstance(raw_ids, list) or not raw_ids:
+            return _err(400, "job_ids list required")
+        try:
+            from application.utils.rq_dashboard_snapshot import cancel_oie_jobs
+
+            return jsonify(cancel_oie_jobs([str(x) for x in raw_ids]))
+        except Exception as exc:
+            logger.exception("oie rq cancel failed")
+            return _err(500, f"oie rq cancel failed: {exc}")
+
     @bp.route("/admin/imports/runs/<run_id>/mapping", methods=["POST"])
     @login_required
     @imports_enabled
