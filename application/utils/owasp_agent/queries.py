@@ -252,6 +252,187 @@ class MetaQueries:
             citations=citations,
         )
 
+    def person_lookup(self, name: str) -> QueryResult:
+        """Who-is lookup: project/chapter leaders + optional board history."""
+        target = _norm(name)
+        if not target:
+            return QueryResult(
+                ok=False,
+                kind="person_lookup",
+                message="Which person should I look up in OWASP metadata?",
+                clarify="Please give the person's full name.",
+            )
+        leader_rows = [
+            r
+            for r in self.store.list_entities("project_leader")
+            if target in _norm(str(r.get("name") or ""))
+        ]
+        projects = self._merged_projects()
+        led_projects = [
+            p
+            for p in projects
+            if any(target in _norm(str(n)) for n in (p.get("leaders") or []))
+        ]
+        chapters = self._merged_chapters()
+        led_chapters = [
+            c
+            for c in chapters
+            if any(target in _norm(str(n)) for n in (c.get("leaders") or []))
+        ]
+        board = self.board_person(name)
+        parts: List[str] = []
+        citations: List[str] = []
+        groups: List[str] = []
+        for row in leader_rows:
+            g = str(row.get("group") or "").strip()
+            if g and g not in groups:
+                groups.append(g)
+            url = str(row.get("group_url") or "").strip()
+            if url:
+                citations.append(url)
+        for p in led_projects:
+            g = str(p.get("name") or "").strip()
+            if g and g not in groups:
+                groups.append(g)
+            if p.get("url"):
+                citations.append(str(p["url"]))
+            desc = (p.get("description") or "").strip()
+            if desc and g:
+                parts.append(f"{g}: {desc}")
+        for c in led_chapters:
+            g = str(c.get("name") or "").strip()
+            if g and g not in groups:
+                groups.append(f"chapter {g}")
+            if c.get("url"):
+                citations.append(str(c["url"]))
+
+        if not groups and not board.ok:
+            return QueryResult(
+                ok=False,
+                kind="person_lookup",
+                message=(
+                    f"I found no indexed OWASP project leadership, chapter leadership, "
+                    f"or board history for {name!r} (fail closed)."
+                ),
+            )
+
+        display = name.strip() or (leader_rows[0].get("name") if leader_rows else name)
+        if groups:
+            msg = (
+                f"{display} is listed in OWASP metadata as a leader for: "
+                f"{', '.join(groups)}."
+            )
+        else:
+            msg = f"{display} appears in indexed OWASP board/candidate history."
+        if parts:
+            msg += " " + " ".join(parts[:3])
+        if board.ok:
+            msg += " " + board.message
+            citations.extend(board.citations or [])
+        citations.append(
+            "https://raw.githubusercontent.com/OWASP/owasp.github.io/master/_data/leaders.json"
+        )
+        return QueryResult(
+            ok=True,
+            kind="person_lookup",
+            data={
+                "name": display,
+                "groups": groups,
+                "projects": [_public_entity(p) for p in led_projects[:10]],
+                "chapters": [_public_entity(c) for c in led_chapters[:10]],
+                "leader_rows": [_public_entity(r) for r in leader_rows[:10]],
+            },
+            message=msg,
+            citations=list(dict.fromkeys(citations)),
+        )
+
+    def project_lookup(self, name: str) -> QueryResult:
+        """Describe a single OWASP project from the local index."""
+        target = (name or "").strip()
+        if not target:
+            return QueryResult(
+                ok=False,
+                kind="project_lookup",
+                message="Which OWASP project should I look up?",
+                clarify="Please name a project (e.g. AI Exchange, ZAP).",
+            )
+        hit = _match_project(self._merged_projects(), target)
+        if not hit:
+            return QueryResult(
+                ok=False,
+                kind="project_lookup",
+                message=(
+                    f"No OWASP project matching {target!r} is indexed "
+                    "(fail closed). Run `make owasp-agent-sync` if the index is empty."
+                ),
+            )
+        pname = hit.get("name") or hit.get("key")
+        desc = (hit.get("description") or "").strip()
+        leaders = [x for x in (hit.get("leaders") or []) if x]
+        level = hit.get("level") or ""
+        url = hit.get("url") or ""
+        msg = f"{pname} is an indexed OWASP project"
+        if level:
+            msg += f" (level {level})"
+        msg += "."
+        if desc:
+            msg += f" {desc}"
+        if leaders:
+            msg += f" Leaders: {', '.join(leaders)}."
+        citations = [url] if url else []
+        return QueryResult(
+            ok=True,
+            kind="project_lookup",
+            data={"project": _public_entity(hit)},
+            message=msg,
+            citations=citations,
+        )
+
+    def compare_projects(self, name_a: str, name_b: str) -> QueryResult:
+        """Contrast two OWASP projects from indexed metadata."""
+        a = self.project_lookup(name_a)
+        b = self.project_lookup(name_b)
+        if not a.ok and not b.ok:
+            return QueryResult(
+                ok=False,
+                kind="compare_projects",
+                message=(
+                    f"Neither {name_a!r} nor {name_b!r} is indexed as an OWASP project "
+                    "(fail closed)."
+                ),
+            )
+        if not a.ok:
+            return QueryResult(
+                ok=False,
+                kind="compare_projects",
+                message=a.message,
+                clarify=f"I could not find {name_a!r}. Check the project name.",
+            )
+        if not b.ok:
+            return QueryResult(
+                ok=False,
+                kind="compare_projects",
+                message=b.message,
+                clarify=f"I could not find {name_b!r}. Check the project name.",
+            )
+        pa = (a.data or {}).get("project") or {}
+        pb = (b.data or {}).get("project") or {}
+        msg = (
+            f"{pa.get('name')}: {pa.get('description') or '(no description indexed)'}. "
+            f"{pb.get('name')}: {pb.get('description') or '(no description indexed)'}. "
+            "These are distinct OWASP initiatives with different scopes."
+        )
+        citations = list(
+            dict.fromkeys(list(a.citations or []) + list(b.citations or []))
+        )
+        return QueryResult(
+            ok=True,
+            kind="compare_projects",
+            data={"a": pa, "b": pb},
+            message=msg,
+            citations=citations,
+        )
+
     def board_members_years(self, years: Sequence[int]) -> QueryResult:
         cleaned = sorted({int(y) for y in years})
         if not cleaned:
@@ -490,6 +671,40 @@ class MetaQueries:
             ):
                 if item.get("source") == "site" or not cur.get("name"):
                     cur["name"] = item.get("name")
+        return list(by_key.values())
+
+    def _merged_projects(self) -> List[Dict[str, Any]]:
+        """Merge project fields across nest/github/site for leaders/description."""
+        by_key: Dict[str, Dict[str, Any]] = {}
+        for item in self.store.list_entities("project"):
+            key = str(item.get("key") or "")
+            if not key:
+                continue
+            cur = by_key.get(key)
+            if cur is None:
+                by_key[key] = dict(item)
+                continue
+            if item.get("leaders"):
+                merged = list(cur.get("leaders") or [])
+                for n in item.get("leaders") or []:
+                    if n not in merged:
+                        merged.append(n)
+                cur["leaders"] = merged
+            if item.get("description") and (
+                not cur.get("description")
+                or len(str(item.get("description") or ""))
+                > len(str(cur.get("description") or ""))
+            ):
+                cur["description"] = item.get("description")
+            if item.get("url") and not cur.get("url"):
+                cur["url"] = item.get("url")
+            if item.get("name") and not cur.get("name"):
+                cur["name"] = item.get("name")
+            tags = list(cur.get("tags") or [])
+            for t in item.get("tags") or []:
+                if t not in tags:
+                    tags.append(t)
+            cur["tags"] = tags
         return list(by_key.values())
 
     def board_candidate_stats(self, names: Sequence[str]) -> QueryResult:
@@ -803,11 +1018,15 @@ _PUBLIC_FIELDS = (
     "chapter_key",
     "source",
     "leaders",
+    "description",
     "active",
     "meetings",
     "year",
     "statement",
     "notes",
+    "group",
+    "group_url",
+    "email",
 )
 
 
@@ -880,6 +1099,47 @@ def _match_chapter(
         if target in hay and best is None:
             best = ch
     return best
+
+
+def _match_project(
+    projects: List[Dict[str, Any]], name: str
+) -> Optional[Dict[str, Any]]:
+    target = _norm(name)
+    if not target:
+        return None
+    for prefix in ("owasp ", "the ", "project "):
+        if target.startswith(prefix):
+            target = target[len(prefix) :].strip()
+    # Aliases for common short names.
+    aliases = {
+        "ai exchange": ("ai exchange", "ai security and privacy"),
+        "aix": ("ai exchange", "ai security and privacy"),
+        "genai security project": ("genai", "large language model", "llm top"),
+        "genai security": ("genai", "large language model", "llm top"),
+        "genai": ("genai", "large language model"),
+    }
+    alias_needles = aliases.get(target)
+
+    exact = None
+    partial = None
+    for p in projects:
+        key = _norm(str(p.get("key") or "").replace("-", " "))
+        pname = _norm(str(p.get("name") or ""))
+        desc = _norm(str(p.get("description") or ""))
+        hay = f"{key} {pname} {desc}"
+        if target == key or target == pname:
+            return p
+        if target in pname or pname in target or target in key:
+            if exact is None:
+                exact = p
+            continue
+        if alias_needles and any(n in hay for n in alias_needles):
+            if partial is None:
+                partial = p
+            continue
+        if target in hay and partial is None:
+            partial = p
+    return exact or partial
 
 
 def _metro_chapter_alias(place: str) -> Optional[str]:

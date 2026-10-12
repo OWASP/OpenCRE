@@ -153,7 +153,7 @@ OWASP_AGENT_ENABLED=1 PYTHONPATH=. \
   python -m unittest discover -s application/tests/owasp_agent -p '*_test.py'
 ```
 
-### Synth suite v2 (400 unique probes)
+### Synth suite v2 (404 unique probes)
 
 Fixtures (this PR):
 
