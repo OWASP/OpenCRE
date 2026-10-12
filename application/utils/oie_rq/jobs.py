@@ -61,9 +61,8 @@ def run_oie_a_job(
 ) -> Dict[str, Any]:
     """Harvest one repository; enqueue B jobs per artifact written."""
     from application.utils.harvester.pipeline import run_harvester
-    from application.utils.oie_rq.fanout import enqueue_b_jobs_for_artifacts
-
     from application.utils.harvester.schemas import HARVESTABLE_KINDS
+    from application.utils.oie_rq.fanout import enqueue_b_jobs_for_artifacts
 
     session = _session(db_connection_str)
     summary = run_harvester(
