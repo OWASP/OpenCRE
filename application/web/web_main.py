@@ -1262,7 +1262,11 @@ def chat_cre() -> Any:
             "Chat is unavailable on this deployment (ML/LLM dependencies not installed).",
         )
 
-    user_prompt = message.get("prompt")
+    from application.utils.chat_history import split_prompt_and_history
+
+    user_prompt, chat_history = split_prompt_and_history(
+        message if isinstance(message, dict) else {}
+    )
     # Experimental OIE OWASP metadata agent (feature-flagged). Logistics/meta
     # questions must not be forced through CRE RAG — see owasp_agent router.
     try:
@@ -1272,7 +1276,9 @@ def chat_cre() -> Any:
         )
 
         if is_owasp_agent_enabled():
-            agent_response = OwaspAgentRouter().handle(user_prompt or "")
+            agent_response = OwaspAgentRouter().handle(
+                user_prompt or "", history=chat_history
+            )
             if agent_response is not None:
                 return jsonify(agent_response)
     except Exception:
@@ -1301,7 +1307,7 @@ def chat_cre() -> Any:
             )
 
     try:
-        response = prompt.generate_text(user_prompt)
+        response = prompt.generate_text(user_prompt, history=chat_history)
     except Exception as e:
         if llm_error_utils.is_rate_limit_error(e):
             return (
