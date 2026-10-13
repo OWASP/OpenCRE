@@ -720,6 +720,7 @@ class TestAdminPanel(unittest.TestCase):
                     max_repos=service.DEFAULT_OIE_MAX_REPOS,
                     skip_b=False,
                     skip_c=False,
+                    skip_c1=False,
                 )
                 pipe = c.get("/admin/pipeline").get_json()
                 stages = {e["stage"] for e in pipe["events"]}
@@ -743,14 +744,24 @@ class TestAdminPanel(unittest.TestCase):
                     max_repos=2,
                     skip_b=False,
                     skip_c=False,
+                    skip_c1=False,
                 )
 
                 r = c.post(
                     "/admin/ingest/start",
                     json={"target_id": "repo1", "max_repos": 0},
                 )
-                self.assertEqual(r.status_code, 400)
-                self.assertIn("max_repos", (r.get_json() or {}).get("description", ""))
+                self.assertEqual(r.status_code, 200, r.data)
+                mock_oie.assert_called_with(
+                    r.get_json()["run_id"],
+                    repos_yaml=str(service.REPOS_YAML),
+                    dry_run=False,
+                    sync_repos=True,
+                    max_repos=0,
+                    skip_b=False,
+                    skip_c=False,
+                    skip_c1=False,
+                )
 
             with self.app.test_client() as c:
                 c.post(
@@ -1595,6 +1606,7 @@ class TestAdminPanel(unittest.TestCase):
                     max_repos=service.DEFAULT_OIE_MAX_REPOS,
                     skip_b=False,
                     skip_c=False,
+                    skip_c1=False,
                 )
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
