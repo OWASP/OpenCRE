@@ -1751,7 +1751,8 @@ class TestAdminPanel(unittest.TestCase):
 
         run = db.create_import_run(source="frozen-src", version="admin-start")
         service._INGEST_PROGRESS_MEM.clear()
-        remaining = 10 + 5  # hi_pending + rq_queued
+        # Module C remaining = kq_open + rq_queued (+ started); HI is excluded.
+        remaining = 0 + 5
         service._INGEST_PROGRESS_MEM[run.id] = {
             "remaining": remaining,
             "ts": time.time() - service._STUCK_REMAINING_SEC - 5,
