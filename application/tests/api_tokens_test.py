@@ -206,8 +206,8 @@ class TestApiTokens(unittest.TestCase):
             )
             self.assertEqual(resp.status_code, 401)
 
-    def test_admin_get_rejects_bearer(self) -> None:
-        """Admin surfaces require Google session — API keys are denied."""
+    def test_admin_oie_allows_bearer(self) -> None:
+        """OIE Admin REST allows API keys for machine ops."""
         minted = mint.mint_api_token(
             user=self.admin,
             name="admin-read",
@@ -219,4 +219,4 @@ class TestApiTokens(unittest.TestCase):
                     "/admin/oie/rq/status",
                     headers={"Authorization": f"Bearer {minted.token}"},
                 )
-                self.assertIn(resp.status_code, (401, 302), resp.data)
+                self.assertEqual(resp.status_code, 200, resp.data)

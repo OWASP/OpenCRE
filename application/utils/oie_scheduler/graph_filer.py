@@ -154,8 +154,13 @@ def file_linked_decisions(
 
         db_cres = []
         for link in sure:
+            # Librarian proposals store CRE primary key (uuid); also accept
+            # human-facing external_id (e.g. "123-456") for hand-authored rows.
             db_cre = (
-                session.query(db.CRE).filter(db.CRE.external_id == link.cre_id).first()
+                session.query(db.CRE).filter(db.CRE.id == link.cre_id).first()
+                or session.query(db.CRE)
+                .filter(db.CRE.external_id == link.cre_id)
+                .first()
             )
             if db_cre is None:
                 result.unknown_cre += 1
