@@ -36,9 +36,21 @@ def extract_raw_token() -> Optional[str]:
 def api_key_allowed_for_request() -> bool:
     """True when this request may authenticate via API key.
 
-    Admin HTML/API surfaces require a Google session (not a bearer token).
+    OIE/agent Admin REST allows Bearer for machine ops; other /admin HTML
+    surfaces still require a Google session.
     """
     path = request.path or ""
+    ops_prefixes = (
+        "/admin/oie/",
+        "/admin/ingest",
+        "/admin/agent/",
+        "/admin/config",
+        "/admin/pipeline",
+        "/admin/dashboard",
+        "/admin/upstream-sync",
+    )
+    if path == "/admin/config" or any(path.startswith(p) for p in ops_prefixes):
+        return True
     if path.startswith("/admin/") or path.startswith("/rest/v1/admin/"):
         return False
     if path.startswith("/rest/v1/api-keys"):
