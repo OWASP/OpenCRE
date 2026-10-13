@@ -1661,6 +1661,110 @@ class TestAdminPanel(unittest.TestCase):
                 self.assertEqual(r.status_code, 401)
                 r = c.get("/admin/config/diff", headers={"Accept": "application/json"})
                 self.assertEqual(r.status_code, 401)
+                r = c.get(
+                    "/admin/ingest/status", headers={"Accept": "application/json"}
+                )
+                self.assertEqual(r.status_code, 401)
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    @patch(
+        "application.utils.rq_dashboard_snapshot.oie_rq_status",
+        return_value={
+            "queues": {"oie": {"queued": 3, "started": 1, "failed": 0, "finished": 10}},
+            "oie": {"queued": [], "started": [], "failed": [], "finished": []},
+        },
+    )
+    @patch(
+        "application.utils.rq_dashboard_snapshot.queue_summary",
+        return_value={"oie": {"queued": 3, "started": 1, "failed": 0, "finished": 10}},
+    )
+    @patch(
+        "application.utils.rq_dashboard_snapshot.oie_run_queue_counts",
+        return_value={
+            "harvest_pending": 2,
+            "harvest_processed": 8,
+            "knowledge_unconsumed": 1,
+            "knowledge_consumed": 4,
+            "decision_rows": 5,
+        },
+    )
+    def test_ingest_status_route(self, _counts, _qsum, _rq) -> None:
+        run = db.create_import_run(source="owasp-asvs", version="admin-start")
+        service.append_event(
+            run.id,
+            "oie",
+            "started",
+            json.dumps(
+                {
+                    "dry_run": False,
+                    "skip_b": False,
+                    "skip_c": False,
+                    "skip_c1": True,
+                    "max_repos": 0,
+                    "skip_reason": "client_flags",
+                    "graph_path": ["START", "END"],
+                }
+            ),
+        )
+        service._INGEST_PROGRESS_MEM.clear()
+        with self.app.test_client() as c:
+            r = c.get("/admin/ingest/status")
+            self.assertEqual(r.status_code, 200)
+            body = r.get_json()
+            self.assertIn("ingestions", body)
+            self.assertGreaterEqual(len(body["ingestions"]), 1)
+            row = next(i for i in body["ingestions"] if i["run_id"] == run.id)
+            self.assertEqual(row["config"]["skip_c1"], True)
+            self.assertEqual(row["config"]["max_repos"], 0)
+            self.assertIn("progress", row)
+            self.assertIn("remaining", row["progress"])
+            self.assertIn("eta", row)
+            self.assertIn("note", row["eta"])
+            self.assertIn("stuck", row)
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    @patch(
+        "application.utils.rq_dashboard_snapshot.oie_rq_status",
+        return_value={
+            "queues": {"oie": {"queued": 5, "started": 0, "failed": 0, "finished": 0}},
+            "oie": {"queued": [], "started": [], "failed": [], "finished": []},
+        },
+    )
+    @patch(
+        "application.utils.rq_dashboard_snapshot.queue_summary",
+        return_value={"oie": {"queued": 5, "started": 0, "failed": 0, "finished": 0}},
+    )
+    @patch(
+        "application.utils.rq_dashboard_snapshot.oie_run_queue_counts",
+        return_value={
+            "harvest_pending": 10,
+            "harvest_processed": 0,
+            "knowledge_unconsumed": 0,
+            "knowledge_consumed": 0,
+            "decision_rows": 0,
+        },
+    )
+    def test_ingest_status_marks_stuck_when_remaining_frozen(
+        self, _counts, _qsum, _rq
+    ) -> None:
+        import time
+
+        run = db.create_import_run(source="frozen-src", version="admin-start")
+        service._INGEST_PROGRESS_MEM.clear()
+        remaining = 10 + 5  # hi_pending + rq_queued
+        service._INGEST_PROGRESS_MEM[run.id] = {
+            "remaining": remaining,
+            "ts": time.time() - service._STUCK_REMAINING_SEC - 5,
+            "rq_failed": 0,
+            "rq_finished": 0,
+            "done": 0,
+        }
+        with self.app.test_client() as c:
+            r = c.get("/admin/ingest/status")
+            self.assertEqual(r.status_code, 200)
+            row = next(i for i in r.get_json()["ingestions"] if i["run_id"] == run.id)
+            self.assertTrue(row["stuck"])
+            self.assertIn("unchanged", row["stuck_reason"] or "")
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     @patch(

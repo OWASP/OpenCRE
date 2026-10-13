@@ -385,6 +385,84 @@
   gap: 1rem;
 }
 
+.admin-ingest-strip {
+  margin-bottom: 1rem;
+}
+
+.admin-ingest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-ingest-card {
+  border: 1px solid #dbeafe;
+  border-radius: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  background: #f8fbff;
+}
+
+.admin-ingest-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.admin-ingest-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.55rem;
+}
+
+.admin-chip {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.35rem;
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+
+.admin-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-badge--stuck {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.admin-ingest-progress {
+  margin-top: 0.25rem;
+}
+
+.admin-ingest-stuck-reason {
+  margin: 0.4rem 0 0;
+  color: #991b1b;
+}
+
+.admin-linkish {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: #1d4ed8;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
 @media (max-width: 900px) {
   .admin-shell {
     flex-direction: column;

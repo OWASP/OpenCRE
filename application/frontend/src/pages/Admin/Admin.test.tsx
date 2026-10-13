@@ -213,7 +213,11 @@ describe('Admin', () => {
   it('shows empty pipeline state', async () => {
     loggedIn();
     (global as any).fetch = jest.fn((url: string) => {
-      if (String(url).includes('/admin/pipeline')) {
+      const u = String(url);
+      if (u.includes('/admin/ingest/status')) {
+        return jsonRes({ ingestions: [], active_count: 0, stuck_count: 0 });
+      }
+      if (u.includes('/admin/pipeline')) {
         return jsonRes({
           import_runs: [],
           events: [],
@@ -235,6 +239,64 @@ describe('Admin', () => {
     expect(await findByText('No pipeline runs yet.')).toBeTruthy();
     expect(getByText('Queued')).toBeTruthy();
     expect(getByText('New')).toBeTruthy();
+  });
+
+  it('renders active ingestions with config progress and ETA', async () => {
+    loggedIn();
+    (global as any).fetch = jest.fn((url: string) => {
+      const u = String(url);
+      if (u.includes('/admin/ingest/status')) {
+        return jsonRes({
+          active_count: 1,
+          stuck_count: 1,
+          ingestions: [
+            {
+              run_id: 'run-abc-123',
+              source: 'owasp-asvs',
+              phase: 'oie/started',
+              stuck: true,
+              stuck_reason: 'remaining unchanged for 12m',
+              config: {
+                skip_c1: true,
+                max_repos: 0,
+                spec: { owner: 'OWASP', repo: 'ASVS', lane: 'owasp_agent' },
+              },
+              progress: {
+                harvest_pending: 2,
+                harvest_processed: 8,
+                knowledge_unconsumed: 1,
+                knowledge_consumed: 4,
+                rq_queued: 3,
+                rq_started: 1,
+                rq_failed: 0,
+                remaining: 6,
+              },
+              eta: { note: '~40m left', eta_utc: '2026-10-13T12:00:00Z' },
+            },
+          ],
+        });
+      }
+      if (u.includes('/admin/pipeline')) {
+        return jsonRes({
+          import_runs: [],
+          events: [],
+          latest_strip: [{ id: 'queued', label: 'Queued', state: 'current' }],
+          oie: { unconsumed: 0, recent: [], knowledge: [] },
+        });
+      }
+      return jsonRes({});
+    });
+    const { getByText, findByText, getAllByText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    fireEvent.click(getByText('Pipeline'));
+    expect(await findByText('owasp-asvs')).toBeTruthy();
+    expect(getByText('skip_c1')).toBeTruthy();
+    expect(getByText(/~40m left/)).toBeTruthy();
+    expect(getAllByText('Stuck').length).toBeGreaterThan(0);
+    expect(getByText(/remaining unchanged/)).toBeTruthy();
   });
 
   it('shows config restart instructions', async () => {
@@ -330,7 +392,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Config'));
+    fireEvent.click(getByText('Config values'));
     fireEvent.click(await findByText('Manage API keys'));
     expect(await findByText('No API keys yet.')).toBeTruthy();
     fireEvent.change(getByLabelText('API key name'), { target: { value: 'staging-ci' } });
@@ -515,7 +577,11 @@ describe('Admin', () => {
   it('shows pipeline error state', async () => {
     loggedIn();
     (global as any).fetch = jest.fn((url: string) => {
-      if (String(url).includes('/admin/pipeline')) {
+      const u = String(url);
+      if (u.includes('/admin/ingest/status')) {
+        return jsonRes({ ingestions: [], active_count: 0, stuck_count: 0 });
+      }
+      if (u.includes('/admin/pipeline')) {
         return jsonRes({ description: 'pipeline down' }, 500);
       }
       return jsonRes({});
@@ -703,6 +769,9 @@ describe('Admin', () => {
         startBody = JSON.parse(String(init.body || '{}'));
         return jsonRes({ run_id: 'r-new', source: 'repos.yaml:abc', dry_run: true });
       }
+      if (u.includes('/admin/ingest/status')) {
+        return jsonRes({ ingestions: [], active_count: 0, stuck_count: 0 });
+      }
       if (u.includes('/admin/pipeline')) {
         return jsonRes({
           import_runs: [],
@@ -839,6 +908,9 @@ describe('Admin', () => {
       if (u.includes('/admin/ingest/start') && init?.method === 'POST') {
         startBody = JSON.parse(String(init.body || '{}'));
         return jsonRes({ run_id: 'r-one', source: 'one-off', dry_run: true });
+      }
+      if (u.includes('/admin/ingest/status')) {
+        return jsonRes({ ingestions: [], active_count: 0, stuck_count: 0 });
       }
       if (u.includes('/admin/pipeline')) {
         return jsonRes({
