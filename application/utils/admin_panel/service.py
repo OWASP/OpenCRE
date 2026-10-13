@@ -2072,12 +2072,10 @@ def ingestions_status(
         hi_done = int(counts.get("harvest_processed") or 0)
         kq_open = int(counts.get("knowledge_unconsumed") or 0)
         kq_done = int(counts.get("knowledge_consumed") or 0)
-        remaining = hi_pending + kq_open + rq_queued + rq_started
-        done = hi_done + kq_done + rq_finished
-        # Prefer work units that move for this run when DB has signal.
-        if hi_done + hi_pending + kq_done + kq_open > 0:
-            remaining = hi_pending + kq_open + rq_queued + rq_started
-            done = hi_done + kq_done
+        # Module C drain = KQ + RQ. Do NOT fold HI pending into remaining/ETA
+        # (HI is Module A harvest backlog and can be tens of thousands).
+        remaining = kq_open + rq_queued + rq_started
+        done = kq_done + rq_finished
 
         progress = {
             "harvest_pending": hi_pending,
@@ -2093,16 +2091,32 @@ def ingestions_status(
             "done": done,
         }
 
-        eta_iso, eta_note = _eta_from_rate(
-            started_at=run.created_at,
-            done=done,
-            remaining=remaining,
-            now=now_dt,
-        )
+        prior = _load_progress_snap(run.id)
+        # Prefer snap-to-snap throughput so old ImportRun.created_at cannot
+        # invent multi-day ETAs from a tiny done count.
+        eta_iso, eta_note = "", "warming up"
+        if remaining <= 0:
+            eta_iso, eta_note = "", "complete"
+        elif prior:
+            try:
+                prior_rem = int(prior.get("remaining") or -1)
+                prior_ts = float(prior.get("ts") or 0)
+                age = max(time.time() - prior_ts, 1.0)
+                drained = prior_rem - remaining
+                if drained > 0 and prior_rem >= 0:
+                    per = age / drained
+                    seconds_left = per * remaining
+                    eta = now_dt.timestamp() + seconds_left
+                    eta_iso = datetime.fromtimestamp(eta, tz=timezone.utc).strftime(
+                        "%Y-%m-%dT%H:%M:%SZ"
+                    )
+                    mins = int(seconds_left // 60)
+                    eta_note = f"~{mins}m left · {per:.1f}s/unit"
+            except (TypeError, ValueError):
+                eta_note = "warming up"
         if db_note and eta_note == "warming up":
             eta_note = db_note
 
-        prior = _load_progress_snap(run.id)
         stuck = False
         stuck_reason = ""
         if remaining > 0 and prior:
