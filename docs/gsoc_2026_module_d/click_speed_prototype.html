@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reviewer click-speed prototype</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg:#0f1115; --card:#191d24; --text:#e8eaed; --dim:#9aa0a6;
+          --ok:#34a853; --no:#ea4335; --accent:#8ab4f8; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font:16px/1.5 -apple-system, "Segoe UI", sans-serif;
+         display:flex; min-height:100vh; align-items:center; justify-content:center; }
+  main { width:min(680px, 92vw); }
+  .meta { color:var(--dim); font-size:13px; display:flex; justify-content:space-between; }
+  .card { background:var(--card); border-radius:12px; padding:24px; margin:10px 0 16px; }
+  .chunk { font-size:18px; margin:0 0 14px; }
+  .reason { color:var(--accent); font-size:13px; letter-spacing:.05em; }
+  .cand { display:flex; justify-content:space-between; padding:6px 10px;
+          border-radius:6px; background:#232936; margin-top:6px; font-size:14px; }
+  .keys { color:var(--dim); font-size:14px; text-align:center; }
+  kbd { background:#2a2f3a; border-radius:4px; padding:2px 7px; font-size:13px; }
+  .done { text-align:center; }
+  .big { font-size:42px; margin:8px 0; }
+  .pass { color:var(--ok); } .fail { color:var(--no); }
+</style>
+</head>
+<body>
+<main>
+  <div class="meta"><span id="progress"></span><span id="timer"></span></div>
+  <div class="card" id="card"></div>
+  <p class="keys"><kbd>y</kbd> approve &nbsp; <kbd>n</kbd> reject &nbsp;
+     <kbd>u</kbd> undo last &nbsp; (target: under 3s per item)</p>
+</main>
+<script>
+// The founding RFC's pre-code experiment for Module D: can a reviewer
+// approve/reject in under 3 seconds per item? Fake but realistically shaped
+// items; keybinds only; measures per-item seconds and the running average.
+const ITEMS = [
+  {text:"Verify that passwords are at least 12 characters in length.", reason:"BELOW_THRESHOLD", cre:"616-305 Password length", conf:0.42},
+  {text:"Do NOT use MD5 or SHA-1 for password hashing.", reason:"BELOW_THRESHOLD", cre:"186-121 Approved hash functions", conf:0.55},
+  {text:"Session tokens must be regenerated after privilege change.", reason:"AMBIGUOUS", cre:"065-782 Session fixation", conf:0.38},
+  {text:"Log all authentication decisions without storing credentials.", reason:"BELOW_THRESHOLD", cre:"542-113 Security logging", conf:0.61},
+  {text:"Rate-limit password reset requests per account and per IP.", reason:"AMBIGUOUS", cre:"731-004 Anti-automation", conf:0.34},
+  {text:"TLS 1.2 or higher is required for all connections.", reason:"BELOW_THRESHOLD", cre:"330-207 Transport security", conf:0.58},
+  {text:"Validate file uploads against an allowlist of types.", reason:"BELOW_THRESHOLD", cre:"434-119 Unrestricted upload", conf:0.47},
+  {text:"Escape output according to the HTML context it lands in.", reason:"AMBIGUOUS", cre:"079-338 Output encoding", conf:0.41},
+  {text:"Secrets must never appear in URLs or query strings.", reason:"BELOW_THRESHOLD", cre:"598-020 Info exposure via query", conf:0.52},
+  {text:"Use per-user salts and a memory-hard KDF for stored passwords.", reason:"BELOW_THRESHOLD", cre:"916-115 Password storage", conf:0.63},
+];
+let i = 0, t0 = performance.now(), times = [], verdicts = [];
+const card = document.getElementById("card"),
+      progress = document.getElementById("progress"),
+      timer = document.getElementById("timer");
+function show() {
+  if (i >= ITEMS.length) return finish();
+  const it = ITEMS[i];
+  progress.textContent = `item ${i+1} of ${ITEMS.length}`;
+  card.innerHTML = `
+    <div class="reason">${it.reason} · confidence ${it.conf}</div>
+    <p class="chunk">${it.text}</p>
+    <div class="cand"><span>suggested: ${it.cre}</span><span>${it.conf}</span></div>`;
+  t0 = performance.now();
+}
+function decide(v) {
+  if (i >= ITEMS.length) return;
+  times.push((performance.now() - t0) / 1000);
+  verdicts.push(v);
+  i++; show();
+}
+function undo() {
+  if (times.length === 0) return;   // nothing to take back
+  i--; times.pop(); verdicts.pop(); show();   // works from the done screen too
+}
+function finish() {
+  const avg = times.reduce((a,b)=>a+b,0) / times.length;
+  const worst = Math.max(...times);
+  const ok = avg < 3;
+  progress.textContent = "done"; timer.textContent = "";
+  card.innerHTML = `<div class="done">
+    <div class="big ${ok ? "pass" : "fail"}">${avg.toFixed(2)}s avg</div>
+    <p>worst item ${worst.toFixed(2)}s · ${verdicts.filter(v=>v==="y").length} approved,
+       ${verdicts.filter(v=>v==="n").length} rejected</p>
+    <p>${ok ? "PASS: under the RFC's 3-second bar." :
+              "FAIL: over 3s per item; the UI needs fewer things to read."}</p>
+    <p class="keys">refresh to run again</p></div>`;
+}
+setInterval(() => { if (i < ITEMS.length)
+  timer.textContent = ((performance.now()-t0)/1000).toFixed(1) + "s"; }, 100);
+document.addEventListener("keydown", e => {
+  if (e.repeat) return;   // held key must not auto-verdict a run of items
+  if (e.key === "y") decide("y");
+  else if (e.key === "n") decide("n");
+  else if (e.key === "u") undo();
+});
+show();
+</script>
+</body>
+</html>
