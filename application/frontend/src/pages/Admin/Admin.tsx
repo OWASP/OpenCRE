@@ -319,6 +319,7 @@ function DashboardTab({
   onOpenWorkbench: () => void;
 }) {
   const [data, setData] = useState<any>(null);
+  const [ingest, setIngest] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -335,6 +336,26 @@ function DashboardTab({
       cancelled = true;
     };
   }, [origin]);
+  useEffect(() => {
+    let cancelled = false;
+    const loadIngest = () => {
+      fetch(`${origin}/admin/ingest/status`, { credentials: 'include' })
+        .then(async (res) => {
+          const body = await readJson(res);
+          if (!res.ok) throw new Error(body.description || body.error || res.statusText);
+          if (!cancelled) setIngest(body);
+        })
+        .catch(() => {
+          /* strip is optional on Overview */
+        });
+    };
+    loadIngest();
+    const t = window.setInterval(loadIngest, 15000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(t);
+    };
+  }, [origin]);
   if (error) return <Message negative>{error}</Message>;
   if (!data) return <p>Loading dashboard…</p>;
   const agent = data.agent || {};
@@ -342,6 +363,21 @@ function DashboardTab({
   const pulse = data.review_pulse || {};
   return (
     <div>
+      {ingest && (
+        <div className="admin-card admin-ingest-strip">
+          <h3>Active ingestions</h3>
+          <p className="admin-card__sub">
+            {ingest.active_count ?? 0} with remaining work
+            {(ingest.stuck_count ?? 0) > 0 ? (
+              <span className="admin-badge admin-badge--stuck"> · {ingest.stuck_count} stuck</span>
+            ) : null}
+            {' · '}
+            <button type="button" className="admin-linkish" onClick={onOpenJobs}>
+              Open Pipeline
+            </button>
+          </p>
+        </div>
+      )}
       <div className="admin-kpi-row">
         <div className="admin-kpi">
           <div className="admin-kpi__label">Running</div>
@@ -1198,8 +1234,23 @@ function OieQueueTab({ origin }: { origin: string }) {
   );
 }
 
+function flagChips(cfg: any): string[] {
+  if (!cfg) return [];
+  const chips: string[] = [];
+  if (cfg.skip_b) chips.push('skip_b');
+  if (cfg.skip_c) chips.push('skip_c');
+  if (cfg.skip_c1) chips.push('skip_c1');
+  if (cfg.dry_run) chips.push('dry_run');
+  if (cfg.max_repos != null) chips.push(`max_repos=${cfg.max_repos}`);
+  if (cfg.spec?.owner && cfg.spec?.repo) chips.push(`${cfg.spec.owner}/${cfg.spec.repo}`);
+  if (cfg.spec?.lane) chips.push(`lane=${cfg.spec.lane}`);
+  if (cfg.skip_reason && cfg.skip_reason !== 'none') chips.push(String(cfg.skip_reason));
+  return chips;
+}
+
 function PipelineTab({ origin }: { origin: string }) {
   const [data, setData] = useState<any>(null);
+  const [ingest, setIngest] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -1222,7 +1273,31 @@ function PipelineTab({ origin }: { origin: string }) {
     };
   }, [origin]);
 
+  const loadIngest = useCallback(() => {
+    let cancelled = false;
+    fetch(`${origin}/admin/ingest/status`)
+      .then(async (res) => {
+        const body = await readJson(res);
+        if (!res.ok) throw new Error(apiError(body, res));
+        if (!cancelled) setIngest(body);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(String(err));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [origin]);
+
   useEffect(() => load(), [load]);
+  useEffect(() => {
+    const cancel = loadIngest();
+    const t = window.setInterval(() => loadIngest(), 5000);
+    return () => {
+      cancel();
+      window.clearInterval(t);
+    };
+  }, [loadIngest]);
 
   const startCurrent = async () => {
     setError(null);
@@ -1283,6 +1358,7 @@ function PipelineTab({ origin }: { origin: string }) {
   if (error && !data) return <Message negative>{error}</Message>;
   if (!data) return <p>Loading pipeline…</p>;
   const empty = !(data.import_runs || []).length && !(data.events || []).length;
+  const ingestRows = ingest?.ingestions || [];
   return (
     <div>
       {error && <Message negative>{error}</Message>}
@@ -1292,6 +1368,82 @@ function PipelineTab({ origin }: { origin: string }) {
           New
         </Button>
       </p>
+      <div className="admin-card">
+        <h3>Active ingestions</h3>
+        <p className="admin-card__sub">
+          Config + live progress + ETA (polls every 5s). Stuck when remaining freezes or jobs age out.
+        </p>
+        {!ingest ? (
+          <p>Loading ingest status…</p>
+        ) : ingestRows.length === 0 ? (
+          <p>No recent ingestions.</p>
+        ) : (
+          <div className="admin-ingest-list">
+            {ingestRows.map((row: any) => {
+              const p = row.progress || {};
+              const eta = row.eta || {};
+              const chips = flagChips(row.config);
+              return (
+                <div key={row.run_id} className="admin-ingest-card">
+                  <div className="admin-ingest-card__head">
+                    <strong>{row.source || row.run_id}</strong>
+                    <span className="mono">{(row.run_id || '').slice(0, 8)}</span>
+                    <span className="admin-help">{row.phase}</span>
+                    {row.stuck ? (
+                      <span className="admin-badge admin-badge--stuck" title={row.stuck_reason || ''}>
+                        Stuck
+                      </span>
+                    ) : null}
+                  </div>
+                  {chips.length > 0 && (
+                    <div className="admin-ingest-chips">
+                      {chips.map((c) => (
+                        <span key={c} className="admin-chip">
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="admin-stat-grid admin-ingest-progress">
+                    <div className="admin-stat">
+                      <div className="admin-stat__k">HI pending / done</div>
+                      <div className="admin-stat__v">
+                        {p.harvest_pending ?? 0} / {p.harvest_processed ?? 0}
+                      </div>
+                    </div>
+                    <div className="admin-stat">
+                      <div className="admin-stat__k">KQ open / done</div>
+                      <div className="admin-stat__v">
+                        {p.knowledge_unconsumed ?? 0} / {p.knowledge_consumed ?? 0}
+                      </div>
+                    </div>
+                    <div className="admin-stat">
+                      <div className="admin-stat__k">RQ q / start / fail</div>
+                      <div className="admin-stat__v">
+                        {p.rq_queued ?? 0} / {p.rq_started ?? 0} / {p.rq_failed ?? 0}
+                      </div>
+                    </div>
+                    <div className="admin-stat">
+                      <div className="admin-stat__k">Remaining</div>
+                      <div className="admin-stat__v">{p.remaining ?? 0}</div>
+                    </div>
+                    <div className="admin-stat">
+                      <div className="admin-stat__k">ETA</div>
+                      <div className="admin-stat__v">
+                        {eta.note || '—'}
+                        {eta.eta_utc ? <span className="admin-help"> · {eta.eta_utc}</span> : null}
+                      </div>
+                    </div>
+                  </div>
+                  {row.stuck_reason ? (
+                    <p className="admin-help admin-ingest-stuck-reason">{row.stuck_reason}</p>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
       <h3>Latest run</h3>
       <StageStrip steps={data.latest_strip} />
       {empty && <p>No pipeline runs yet.</p>}
@@ -1403,9 +1555,7 @@ function ConfigTab({ origin }: { origin: string }) {
   const [apiKeyDays, setApiKeyDays] = useState('90');
   const [apiKeyBusy, setApiKeyBusy] = useState(false);
   const [mintedToken, setMintedToken] = useState<string | null>(null);
-  const [mintedMeta, setMintedMeta] = useState<{ name: string; expires_at?: string } | null>(
-    null
-  );
+  const [mintedMeta, setMintedMeta] = useState<{ name: string; expires_at?: string } | null>(null);
   const [diffRows, setDiffRows] = useState<any[]>([]);
   const [diffFilter, setDiffFilter] = useState('all');
 
@@ -1835,12 +1985,12 @@ function ConfigTab({ origin }: { origin: string }) {
       )}
       <h3>End-to-end bootstrap</h3>
       <p className="admin-help">
-        CRE explorer graph comes from upstream (<code>opencre.org</code>). Use the upstream+harvest
-        button below (or <code>make install</code> / <code>make dev</code>; skip with{' '}
+        CRE explorer graph comes from upstream (<code>opencre.org</code>). Use the upstream+harvest button
+        below (or <code>make install</code> / <code>make dev</code>; skip with{' '}
         <code>SKIP_UPSTREAM_SYNC=1</code>) to pull the CRE hub then run packaged harvest A → B → C → C.1.
-        Golden-set harvest skips the upstream pull. C.1 only auto-files high-confidence links when the
-        toggle below is on (default off — review <code>decision_queue</code> first). OWASP agent sync is
-        separate — progress shows under Pipeline.
+        Golden-set harvest skips the upstream pull. C.1 only auto-files high-confidence links when the toggle
+        below is on (default off — review <code>decision_queue</code> first). OWASP agent sync is separate —
+        progress shows under Pipeline.
       </p>
       <p>
         <Checkbox
@@ -1958,18 +2108,14 @@ function ConfigTab({ origin }: { origin: string }) {
           </Button>
         </Modal.Actions>
       </Modal>
-      <Modal
-        open={apiKeysOpen}
-        onClose={() => setApiKeysOpen(false)}
-        size="large"
-      >
+      <Modal open={apiKeysOpen} onClose={() => setApiKeysOpen(false)} size="large">
         <Modal.Header>API keys</Modal.Header>
         <Modal.Content scrolling>
           <p className="admin-help">
             JWT Bearer tokens for write routes, Admin APIs, and My OpenCRE. Each key has a name and
             expiration. The secret is shown once at mint — use{' '}
-            <code>Authorization: Bearer &lt;token&gt;</code> or <code>X-API-Key</code>. Allowlisted
-            admins only.
+            <code>Authorization: Bearer &lt;token&gt;</code> or <code>X-API-Key</code>. Allowlisted admins
+            only.
           </p>
           <Form
             onSubmit={(e) => {
@@ -2027,11 +2173,7 @@ function ConfigTab({ origin }: { origin: string }) {
                     <td>{key.revoked_at ? 'revoked' : 'active'}</td>
                     <td>
                       {!key.revoked_at && (
-                        <Button
-                          size="mini"
-                          disabled={apiKeyBusy}
-                          onClick={() => revokeApiKey(key.jti)}
-                        >
+                        <Button size="mini" disabled={apiKeyBusy} onClick={() => revokeApiKey(key.jti)}>
                           Revoke
                         </Button>
                       )}
@@ -2057,8 +2199,8 @@ function ConfigTab({ origin }: { origin: string }) {
         <Modal.Content>
           <p className="admin-help">
             Copy this token now for {mintedMeta?.name || 'key'}
-            {mintedMeta?.expires_at ? ` (expires ${mintedMeta.expires_at})` : ''}. It cannot be
-            retrieved again.
+            {mintedMeta?.expires_at ? ` (expires ${mintedMeta.expires_at})` : ''}. It cannot be retrieved
+            again.
           </p>
           <pre className="admin-pre" aria-label="minted API token">
             {mintedToken}

@@ -332,6 +332,17 @@ def register_admin_panel_routes(
             logger.exception("pipeline snapshot failed")
             return _err(500, f"pipeline failed: {exc}")
 
+    @bp.route("/admin/ingest/status", methods=["GET"])
+    @login_required
+    @imports_enabled
+    def admin_ingest_status() -> Any:
+        """Active/recent ingestions: config, progress, ETA, stuck."""
+        try:
+            return jsonify(service.ingestions_status())
+        except Exception as exc:
+            logger.exception("ingest status failed")
+            return _err(500, f"ingest status failed: {exc}")
+
     @bp.route("/admin/oie/rq/status", methods=["GET"])
     @login_required
     @imports_enabled

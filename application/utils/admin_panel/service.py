@@ -4,7 +4,7 @@ from cre_logging import get_logger
 
 logger = get_logger(__name__)
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
 import importlib.util
 import json
@@ -14,8 +14,9 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from flask import current_app, has_app_context
 
@@ -1835,4 +1836,340 @@ def config_put(updates: Dict[str, Optional[str]]) -> Dict[str, Any]:
         "config": config_catalog.present_config(os.environ),
         "needs_restart": needs_restart,
         "note": RESTART_INSTRUCTIONS if needs_restart else None,
+    }
+
+
+# Prior remaining snapshots for ETA/stuck (Redis when available; else process memory).
+_INGEST_PROGRESS_MEM: Dict[str, Dict[str, Any]] = {}
+_STUCK_REMAINING_SEC = 600
+_STUCK_STARTED_JOB_SEC = 1800
+_INGEST_STATUS_LOOKBACK = timedelta(hours=48)
+_INGEST_STATUS_CAP = 20
+
+
+def _parse_event_detail(detail: Optional[str]) -> Dict[str, Any]:
+    if not detail:
+        return {}
+    text = str(detail).strip()
+    if not text.startswith("{"):
+        return {"raw": text[:500]}
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError:
+        return {"raw": text[:500]}
+    return parsed if isinstance(parsed, dict) else {"raw": text[:500]}
+
+
+def _spec_summary(spec: Any) -> Dict[str, Any]:
+    if not isinstance(spec, dict):
+        return {}
+    out: Dict[str, Any] = {}
+    for key in (
+        "owner",
+        "repo",
+        "branch",
+        "kind",
+        "lane",
+        "id",
+        "include",
+        "mode",
+        "cron",
+    ):
+        if key in spec and spec[key] is not None:
+            out[key] = spec[key]
+    return out
+
+
+def _load_progress_snap(run_id: str) -> Optional[Dict[str, Any]]:
+    key = f"admin:ingest:progress:{run_id}"
+    try:
+        from application.utils import redis as redis_util
+
+        conn = redis_util.connect()  # type: ignore[no-untyped-call]
+        raw = conn.get(key)
+        if raw:
+            if isinstance(raw, bytes):
+                raw = raw.decode("utf-8")
+            data = json.loads(raw)
+            if isinstance(data, dict):
+                return data
+    except Exception:  # noqa: BLE001
+        pass
+    mem = _INGEST_PROGRESS_MEM.get(run_id)
+    return dict(mem) if mem else None
+
+
+def _store_progress_snap(run_id: str, snap: Dict[str, Any]) -> None:
+    _INGEST_PROGRESS_MEM[run_id] = dict(snap)
+    key = f"admin:ingest:progress:{run_id}"
+    try:
+        from application.utils import redis as redis_util
+
+        conn = redis_util.connect()  # type: ignore[no-untyped-call]
+        conn.set(key, json.dumps(snap), ex=7 * 24 * 3600)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _eta_from_rate(
+    *,
+    started_at: Optional[datetime],
+    done: int,
+    remaining: int,
+    now: datetime,
+) -> Tuple[str, str]:
+    """Return (eta_iso_or_empty, note) — same idea as estimate_eta_utc."""
+    total = done + remaining
+    if remaining <= 0 and total > 0:
+        return "", "complete"
+    if done <= 0:
+        return "", "warming up"
+    if not started_at:
+        return "", "warming up"
+    start = started_at if started_at.tzinfo else started_at.replace(tzinfo=timezone.utc)
+    elapsed = max((now - start).total_seconds(), 1.0)
+    per = elapsed / done
+    seconds_left = per * remaining
+    eta = now.timestamp() + seconds_left
+    eta_iso = datetime.fromtimestamp(eta, tz=timezone.utc).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+    mins = int(seconds_left // 60)
+    return eta_iso, f"~{mins}m left · {per/60:.1f}m/unit"
+
+
+def ingestions_status(
+    *,
+    lookback: Optional[timedelta] = None,
+    limit: int = _INGEST_STATUS_CAP,
+    now: Optional[datetime] = None,
+) -> Dict[str, Any]:
+    """Active/recent ingestions with config, live progress, ETA, and stuck flag."""
+    now_dt = now or datetime.now(timezone.utc)
+    since = now_dt - (lookback or _INGEST_STATUS_LOOKBACK)
+    cap = max(1, min(int(limit), 50))
+
+    runs = (
+        sqla.session.query(db.ImportRun)
+        .filter(db.ImportRun.created_at >= since)
+        .order_by(db.ImportRun.created_at.desc())
+        .limit(cap)
+        .all()
+    )
+    if not runs:
+        # Fall back to most recent even if older than lookback.
+        runs = (
+            sqla.session.query(db.ImportRun)
+            .order_by(db.ImportRun.created_at.desc())
+            .limit(min(cap, 5))
+            .all()
+        )
+
+    from application.utils.rq_dashboard_snapshot import (
+        oie_rq_status,
+        oie_run_queue_counts,
+        queue_summary,
+    )
+
+    try:
+        rq_body = oie_rq_status(limit=40)
+    except Exception:  # noqa: BLE001
+        logger.exception("ingestions_status: oie_rq_status failed")
+        rq_body = {
+            "queues": {},
+            "oie": {"queued": [], "started": [], "failed": [], "finished": []},
+        }
+    try:
+        queues = queue_summary()
+    except Exception:  # noqa: BLE001
+        queues = rq_body.get("queues") or {}
+
+    oie_q = "oie"
+    try:
+        from application.utils.oie_rq.fanout import oie_queue_name
+
+        oie_q = oie_queue_name()
+    except Exception:  # noqa: BLE001
+        pass
+    q_depths = queues.get(oie_q) or queues.get("oie") or {}
+    rq_queued = int(q_depths.get("queued") or 0)
+    rq_started = int(q_depths.get("started") or 0)
+    rq_failed = int(q_depths.get("failed") or 0)
+    rq_finished = int(q_depths.get("finished") or 0)
+
+    oie_jobs = rq_body.get("oie") or {}
+    started_jobs = list(oie_jobs.get("started") or [])
+    oldest_started_age: Optional[float] = None
+    for job in started_jobs:
+        started_raw = job.get("started_at") or job.get("enqueued_at")
+        if not started_raw:
+            continue
+        try:
+            ts = datetime.fromisoformat(str(started_raw).replace("Z", "+00:00"))
+            age = (now_dt - ts).total_seconds()
+            if oldest_started_age is None or age > oldest_started_age:
+                oldest_started_age = age
+        except (TypeError, ValueError):
+            continue
+
+    targets = {t.id: t for t in sqla.session.query(db.IngestionTarget).all()}
+    targets_by_name = {t.name: t for t in targets.values() if t.name}
+
+    ingestions: List[Dict[str, Any]] = []
+    for run in runs:
+        events = (
+            sqla.session.query(db.AdminPipelineEvent)
+            .filter(db.AdminPipelineEvent.run_id == run.id)
+            .order_by(db.AdminPipelineEvent.created_at.desc())
+            .limit(50)
+            .all()
+        )
+        latest = events[0] if events else None
+        phase = f"{latest.stage}/{latest.status}" if latest else "unknown"
+        start_cfg: Dict[str, Any] = {}
+        for ev in events:
+            if ev.stage == "oie" and ev.status == "started":
+                start_cfg = _parse_event_detail(ev.detail)
+                break
+        target = targets.get(run.source) or targets_by_name.get(run.source)
+        spec = {}
+        if target:
+            try:
+                spec = json.loads(target.spec_json or "{}")
+            except json.JSONDecodeError:
+                spec = {}
+        config = {
+            "source": run.source,
+            "target_id": target.id if target else None,
+            "kind": target.kind if target else None,
+            "dry_run": start_cfg.get("dry_run"),
+            "sync_repos": start_cfg.get("sync_repos"),
+            "max_repos": start_cfg.get("max_repos"),
+            "skip_b": start_cfg.get("skip_b"),
+            "skip_c": start_cfg.get("skip_c"),
+            "skip_c1": start_cfg.get("skip_c1"),
+            "skip_reason": start_cfg.get("skip_reason"),
+            "graph_path": start_cfg.get("graph_path"),
+            "wait": start_cfg.get("wait"),
+            "repos_yaml": start_cfg.get("repos_yaml"),
+            "spec": _spec_summary(spec),
+        }
+
+        db_note = ""
+        try:
+            counts = oie_run_queue_counts(sqla.session, run.id)
+        except Exception:  # noqa: BLE001
+            counts = {
+                "harvest_pending": 0,
+                "harvest_processed": 0,
+                "knowledge_unconsumed": 0,
+                "knowledge_consumed": 0,
+                "decision_rows": 0,
+            }
+            db_note = "db_counts_unavailable"
+
+        hi_pending = int(counts.get("harvest_pending") or 0)
+        hi_done = int(counts.get("harvest_processed") or 0)
+        kq_open = int(counts.get("knowledge_unconsumed") or 0)
+        kq_done = int(counts.get("knowledge_consumed") or 0)
+        remaining = hi_pending + kq_open + rq_queued + rq_started
+        done = hi_done + kq_done + rq_finished
+        # Prefer work units that move for this run when DB has signal.
+        if hi_done + hi_pending + kq_done + kq_open > 0:
+            remaining = hi_pending + kq_open + rq_queued + rq_started
+            done = hi_done + kq_done
+
+        progress = {
+            "harvest_pending": hi_pending,
+            "harvest_processed": hi_done,
+            "knowledge_unconsumed": kq_open,
+            "knowledge_consumed": kq_done,
+            "decision_rows": int(counts.get("decision_rows") or 0),
+            "rq_queued": rq_queued,
+            "rq_started": rq_started,
+            "rq_failed": rq_failed,
+            "rq_finished": rq_finished,
+            "remaining": remaining,
+            "done": done,
+        }
+
+        eta_iso, eta_note = _eta_from_rate(
+            started_at=run.created_at,
+            done=done,
+            remaining=remaining,
+            now=now_dt,
+        )
+        if db_note and eta_note == "warming up":
+            eta_note = db_note
+
+        prior = _load_progress_snap(run.id)
+        stuck = False
+        stuck_reason = ""
+        if remaining > 0 and prior:
+            try:
+                prior_rem = int(prior.get("remaining") or -1)
+                prior_ts = float(prior.get("ts") or 0)
+                age = time.time() - prior_ts
+                if prior_rem == remaining and age >= _STUCK_REMAINING_SEC:
+                    stuck = True
+                    stuck_reason = f"remaining unchanged for {int(age // 60)}m"
+            except (TypeError, ValueError):
+                pass
+        if (
+            not stuck
+            and remaining > 0
+            and oldest_started_age is not None
+            and oldest_started_age >= _STUCK_STARTED_JOB_SEC
+        ):
+            stuck = True
+            stuck_reason = f"oldest started RQ job age {int(oldest_started_age // 60)}m"
+        if not stuck and remaining > 0 and prior:
+            try:
+                prior_failed = int(prior.get("rq_failed") or 0)
+                prior_fin = int(prior.get("rq_finished") or 0)
+                if (
+                    rq_failed > prior_failed
+                    and rq_finished <= prior_fin
+                    and (time.time() - float(prior.get("ts") or 0))
+                    >= _STUCK_REMAINING_SEC
+                ):
+                    stuck = True
+                    stuck_reason = "failed jobs rising with no finishes"
+            except (TypeError, ValueError):
+                pass
+
+        _store_progress_snap(
+            run.id,
+            {
+                "remaining": remaining,
+                "ts": time.time(),
+                "rq_failed": rq_failed,
+                "rq_finished": rq_finished,
+                "done": done,
+            },
+        )
+
+        ingestions.append(
+            {
+                "run_id": run.id,
+                "source": run.source,
+                "created_at": run.created_at.isoformat() if run.created_at else None,
+                "phase": phase,
+                "config": config,
+                "progress": progress,
+                "eta": {"eta_utc": eta_iso, "note": eta_note},
+                "stuck": stuck,
+                "stuck_reason": stuck_reason or None,
+            }
+        )
+
+    return {
+        "timestamp": now_dt.isoformat(),
+        "ingestions": ingestions,
+        "active_count": sum(
+            1
+            for i in ingestions
+            if int((i.get("progress") or {}).get("remaining") or 0) > 0
+        ),
+        "stuck_count": sum(1 for i in ingestions if i.get("stuck")),
     }
