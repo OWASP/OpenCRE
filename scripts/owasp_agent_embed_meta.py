@@ -58,18 +58,22 @@ def _embed_gemini_rest(text_in: str) -> List[float]:
     api_key = (os.environ.get("GEMINI_API_KEY") or "").strip()
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY required for REST embed path")
-    model = (os.environ.get("CRE_EMBED_MODEL") or "gemini-embedding-001").strip()
-    if model.startswith("gemini/"):
-        model = model.split("/", 1)[1]
-    if not model.startswith("models/"):
-        model = "models/" + model
+    # Keep DB model id aligned with cre_graph/corpus (litellm style).
+    model_id = (os.environ.get("CRE_EMBED_MODEL") or "").strip() or (
+        "gemini/gemini-embedding-001"
+    )
+    api_model = model_id
+    if api_model.startswith("gemini/"):
+        api_model = api_model.split("/", 1)[1]
+    if not api_model.startswith("models/"):
+        api_model = "models/" + api_model
     url = (
-        f"https://generativelanguage.googleapis.com/v1beta/{model}"
+        f"https://generativelanguage.googleapis.com/v1beta/{api_model}"
         f":embedContent?key={api_key}"
     )
     body = json.dumps(
         {
-            "model": model,
+            "model": api_model,
             "content": {"parts": [{"text": text_in[:8000]}]},
         }
     ).encode("utf-8")
