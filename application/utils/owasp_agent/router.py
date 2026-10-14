@@ -938,6 +938,12 @@ def classify_intent(text: str) -> str:
                 "suburb",
             )
         ):
+            # Named chapter + meetup/contact → chapter card, not geo clarify.
+            if "chapter" in t and re.search(
+                r"\b(owasp\s+)?[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ .'-]{1,40}\s+chapter\b",
+                text,
+            ):
+                return "chapter_lookup"
             return "events_near"
         if "project" in t and ("ai" in t or "appsec" in t):
             return "count_projects"
