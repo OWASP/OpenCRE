@@ -36,7 +36,7 @@ vector;`).
 | Var | Purpose | Default |
 |---|---|---|
 | `GEMINI_API_KEY` | LLM credential (Gemini) | — (required) |
-| `CRE_NOISE_FILTER_LLM_MODEL` | classification model | `gemini/gemini-2.5-flash-lite` |
+| `CRE_NOISE_FILTER_LLM_MODEL` | classification model | `gemini/gemini-2.5-flash` |
 | `CRE_NOISE_FILTER_BATCH_SIZE` | chunks per LLM request | `10` |
 | `CRE_NOISE_FILTER_MAX_CHARS` | per-chunk truncation | `1500` |
 | `CRE_NOISE_FILTER_CONFIDENCE_THRESHOLD` | KNOWLEDGE-below → UNCERTAIN | `0.8` |

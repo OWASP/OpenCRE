@@ -24,7 +24,7 @@ from dataclasses import dataclass
 # Cheap, dedicated classification model. Decoupled from CRE_LLM_CHAT_MODEL by
 # design: Module B is the cheap gate and must not pull in the chatbot's
 # heavier model.
-DEFAULT_LLM_MODEL = "gemini/gemini-2.5-flash-lite"
+DEFAULT_LLM_MODEL = "gemini/gemini-2.5-flash"
 DEFAULT_BATCH_SIZE = 10
 DEFAULT_MAX_CHARS = 1500
 DEFAULT_CONFIDENCE_THRESHOLD = 0.8
