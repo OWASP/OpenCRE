@@ -2,6 +2,11 @@
 
 How to run Module C, what each knob does, and what to do when a run goes wrong.
 
+Human-oriented OIE overview (pipeline, metrics, promoted flags):
+[`docs/oie/`](../oie/README.md). Experimental flags that did not improve the
+exact Links bar are in-tree as dead code (default off):
+[`docs/oie/experimental-feature-flags.md`](../oie/experimental-feature-flags.md).
+
 The package overview lives in
 [`application/utils/librarian/README.md`](../../application/utils/librarian/README.md).
 The table C reads from is specified in
