@@ -13,6 +13,7 @@ import mcp.types as types
 from mcp.server.lowlevel import Server
 from mcp.server.stdio import stdio_server
 
+from application.mcp.ask import ASK_TOOL, ask as run_ask
 from application.mcp.catalog import active_tools, auth_tools_enabled
 from application.mcp.openapi_loader import input_schemas_for
 from application.mcp.owasp_agent_tools import (
@@ -32,10 +33,11 @@ from application.utils.owasp_agent import is_owasp_agent_enabled
 
 SERVER_NAME = "opencre"
 SERVER_VERSION = "0.1.0"
+ASK_TOOL_NAME = ASK_TOOL["name"]
 
 
 def server_instructions() -> str:
-    """Describe the live tool surface (v1/v2, optional OWASP meta tools)."""
+    """Describe the live tool surface (v1/v2, ask, optional OWASP meta tools)."""
     if auth_tools_enabled():
         served = active_tools()
         has_write = any(not tool.read_only for tool in served)
@@ -55,6 +57,10 @@ def server_instructions() -> str:
             "OpenCRE MCP v1 exposes public JSON REST reads for CREs/standards. "
             "Authenticated MyOpenCRE, chat, and admin tools remain out of scope."
         )
+    base += (
+        " The ask tool returns structured facts only (CRE and/or OWASP metadata); "
+        "the host synthesizes narrative answers via multiple tool calls."
+    )
     if is_owasp_agent_enabled():
         return (
             base
@@ -89,6 +95,20 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
             )
             for tool in served
         ]
+        # Local fact router — always available (security path needs no OWASP agent).
+        tools.append(
+            types.Tool(
+                name=ASK_TOOL["name"],
+                description=ASK_TOOL["summary"],
+                input_schema=ASK_TOOL["input_schema"],
+                annotations=types.ToolAnnotations(
+                    read_only_hint=True,
+                    destructive_hint=False,
+                    idempotent_hint=True,
+                    open_world_hint=True,
+                ),
+            )
+        )
         # Optional OWASP metadata channel (chat/MCP only — not CRE REST).
         if is_owasp_agent_enabled():
             for meta in OWASP_META_TOOLS:
@@ -114,6 +134,25 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
         name = params.name
         arguments: Dict[str, Any] = dict(params.arguments or {})
         try:
+            if name == ASK_TOOL_NAME:
+                data = run_ask(
+                    str(arguments.get("prompt") or ""),
+                    corpus=str(arguments.get("corpus") or "auto"),
+                    place=(
+                        str(arguments["place"])
+                        if arguments.get("place") is not None
+                        else None
+                    ),
+                    rest_client=client,
+                )
+                payload = json.dumps(data, ensure_ascii=False, default=str)
+                return types.CallToolResult(
+                    content=[types.TextContent(type="text", text=payload)],
+                    structured_content=(
+                        data if isinstance(data, dict) else {"result": data}
+                    ),
+                    is_error=False,
+                )
             if get_owasp_meta_tool(name) is not None:
                 data = call_owasp_meta_tool(name, arguments)
                 payload = json.dumps(data, ensure_ascii=False, default=str)
@@ -201,8 +240,16 @@ def dispatch_tool(
     *,
     rest_client: Optional[RestClient] = None,
 ) -> Any:
-    """Synchronous helper used by tests: catalog → REST or local owasp_meta_*."""
+    """Synchronous helper used by tests: catalog → REST or local tools."""
+    args = dict(arguments or {})
+    if tool_name == ASK_TOOL_NAME:
+        return run_ask(
+            str(args.get("prompt") or ""),
+            corpus=str(args.get("corpus") or "auto"),
+            place=str(args["place"]) if args.get("place") is not None else None,
+            rest_client=rest_client,
+        )
     if tool_name in list_owasp_meta_tool_names() or get_owasp_meta_tool(tool_name):
-        return call_owasp_meta_tool(tool_name, arguments or {})
+        return call_owasp_meta_tool(tool_name, args)
     client = rest_client or RestClient()
-    return client.call_tool(tool_name, arguments or {}).data
+    return client.call_tool(tool_name, args).data
