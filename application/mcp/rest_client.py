@@ -31,6 +31,9 @@ DEFAULT_TIMEOUT_SECONDS = 30.0
 
 # Path params must be single URL segments — no separators that alter routing.
 _UNSAFE_PATH_PARAM = re.compile(r"[/?#]")
+# CRE names may contain "/" ("MFA/OTP"); REST serves them via a path: converter.
+_SLASH_ALLOWED_PATH_PARAMS: Set[str] = {"crename"}
+_UNSAFE_SLASH_ALLOWED_PATH_PARAM = re.compile(r"[?#]")
 
 # First-path segments under /rest/v1 that are static routes, not Credoctypes.
 # Blocked so get_node cannot collide with MyOpenCRE / auth / other surfaces.
@@ -250,7 +253,17 @@ def _sanitize_path_value(name: str, value: Any) -> str:
     text = str(value).strip()
     if not text:
         raise RestRequestError(f"Path parameter '{name}' must be non-empty")
-    if _UNSAFE_PATH_PARAM.search(text) or ".." in text or text.startswith("//"):
+    if name in _SLASH_ALLOWED_PATH_PARAMS:
+        # "/" inside the name only; no empty segments that could change routing.
+        unsafe = (
+            _UNSAFE_SLASH_ALLOWED_PATH_PARAM.search(text) is not None
+            or text.startswith("/")
+            or text.endswith("/")
+            or "//" in text
+        )
+    else:
+        unsafe = _UNSAFE_PATH_PARAM.search(text) is not None or text.startswith("//")
+    if unsafe or ".." in text:
         raise RestRequestError(f"Path parameter '{name}' contains unsafe characters")
     return text
 

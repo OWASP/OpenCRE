@@ -238,6 +238,18 @@ class TestMain(unittest.TestCase):
             response = client.get(f"/rest/v1/name/CW")
             self.assertEqual(404, response.status_code)
 
+            # Many CRE names contain "/" (e.g. "MFA/OTP"); the route must still match.
+            slash_cre = defs.CRE(id="555-555", description="MFA", name="MFA/OTP")
+            collection.add_cre(slash_cre)
+            for path in ("/rest/v1/name/MFA/OTP", "/rest/v1/name/MFA%2FOTP"):
+                response = client.get(path)
+                self.assertEqual(200, response.status_code, path)
+                self.assertEqual(
+                    json.loads(response.data.decode()), {"data": slash_cre.todict()}
+                )
+            response = client.get("/rest/v1/name/MFA/missing")
+            self.assertEqual(404, response.status_code)
+
             expected = {"data": cres["ca"].todict()}
             response = client.get(
                 f"/rest/v1/name/{cres['ca'].name}",

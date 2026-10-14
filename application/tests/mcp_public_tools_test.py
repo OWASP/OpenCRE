@@ -310,6 +310,28 @@ class McpPublicToolsTest(unittest.TestCase):
         self.assertEqual(tags_mcp, tags_rest.get_json())
         self.assertEqual(ga_mcp, ga_rest.get_json())
 
+    def test_parity_get_cre_by_name_with_slash(self) -> None:
+        cre = defs.CRE(id="444-444", description="MFA", name="MFA/OTP")
+        self.collection.add_cre(cre)
+        with self.app.test_client() as flask_client:
+            rest = flask_client.get("/rest/v1/name/MFA/OTP")
+            mcp_data = dispatch_tool(
+                "get_cre_by_name",
+                {"crename": "MFA/OTP"},
+                rest_client=RestClient(session=flask_test_session(flask_client)),
+            )
+        self.assertEqual(rest.status_code, 200)
+        self.assertEqual(mcp_data["data"]["name"], "MFA/OTP")
+        self.assertEqual(mcp_data, rest.get_json())
+
+    def test_slash_only_allowed_in_cre_names(self) -> None:
+        client = self._rest()
+        for bad in ("../MFA", "MFA/../user", "/MFA", "MFA/", "MFA//OTP", "MFA?x=1"):
+            with self.assertRaises(RestRequestError, msg=bad):
+                client.call_tool("get_cre_by_name", {"crename": bad})
+        with self.assertRaises(RestRequestError):
+            client.call_tool("get_node", {"ntype": "Standard", "name": "ASVS/1"})
+
     # --- D. Error behavior ---
 
     def test_rest_404_is_tool_failure_not_empty_success(self) -> None:

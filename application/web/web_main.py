@@ -163,7 +163,8 @@ if os.environ.get("POSTHOG_API_KEY") and os.environ.get("POSTHOG_HOST"):
 
 @openapi_documented("find_cre")
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
-@app.route("/rest/v1/name/<crename>", methods=["GET"])
+# path: converter — many CRE names contain "/" (e.g. "MFA/OTP", "Deploy/build").
+@app.route("/rest/v1/name/<path:crename>", methods=["GET"])
 def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
     if posthog:
         source = request.args.get("source")
