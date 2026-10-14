@@ -4,7 +4,7 @@ Self-contained by design (decided 2026-06-18, Option B): this module does not
 construct PromptHandler (DB-coupled). Completions go through
 ``application.prompt_client.litellm_router`` so retry policy and parsing match
 chat/embeddings. The classifier uses a dedicated cheap model
-(config.llm_model, default gemini/gemini-2.5-flash) and never falls back
+(config.llm_model, default gemini/gemini-3.5-flash-lite) and never falls back
 to CRE_LLM_CHAT_MODEL: Module B is the cheap gate and must stay decoupled
 from the chatbot's model.
 """
