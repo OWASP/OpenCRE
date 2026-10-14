@@ -1,4 +1,4 @@
-"""Human-facing commands for the MCP client: login, logout, status.
+"""Human-facing commands for the MCP client: login, logout, status, serve-http.
 
 Owns all printing. Everything is written to stderr so stdout stays clean for
 JSON-RPC when the stdio server runs.
@@ -10,12 +10,13 @@ from cre_logging import get_logger
 
 logger = get_logger(__name__)
 
+import os
 import sys
 from typing import List
 
 from application.mcp import auth
 
-COMMANDS = ("login", "logout", "status")
+COMMANDS = ("login", "logout", "status", "serve-http")
 
 
 def _say(message: str = "") -> None:
@@ -58,8 +59,55 @@ def _status() -> int:
     return 0
 
 
+def _serve_http() -> int:
+    """Run Streamable HTTP MCP (staging only; requires OPENCRE_MCP_REMOTE=1)."""
+    from application.mcp.remote_auth import REMOTE_FLAG, remote_mode_enabled
+
+    if not remote_mode_enabled():
+        _say(
+            f"Refusing to start HTTP MCP without {REMOTE_FLAG}=1 "
+            "(staging-only remote transport)."
+        )
+        return 1
+
+    import uvicorn
+
+    from application import create_app
+    from application.mcp.http_app import create_http_app
+
+    host = (os.environ.get("OPENCRE_MCP_HTTP_HOST") or "127.0.0.1").strip()
+    port_raw = (os.environ.get("OPENCRE_MCP_HTTP_PORT") or "5002").strip()
+    try:
+        port = int(port_raw)
+    except ValueError:
+        _say(f"Invalid OPENCRE_MCP_HTTP_PORT: {port_raw}")
+        return 2
+
+    mode = (os.environ.get("FLASK_CONFIG") or "production").strip() or "production"
+    flask_app = create_app(mode="test" if mode == "test" else mode)
+    # Flask app context for JWT DB checks and ask/meta for the process lifetime.
+    ctx = flask_app.app_context()
+    ctx.push()
+    try:
+        asgi = create_http_app()
+        _say(f"OpenCRE remote MCP (Streamable HTTP) on http://{host}:{port}/mcp")
+        # One worker: sessionful Streamable HTTP clients (sticky if scaled later).
+        uvicorn.run(asgi, host=host, port=port, workers=1, log_level="info")
+    except Exception as exc:
+        _say(f"HTTP MCP failed to start: {exc}")
+        return 1
+    finally:
+        ctx.pop()
+    return 0
+
+
 def parse_and_run_command(command: List[str]) -> int:
-    handlers = {"login": _login, "logout": _logout, "status": _status}
+    handlers = {
+        "login": _login,
+        "logout": _logout,
+        "status": _status,
+        "serve-http": _serve_http,
+    }
     if len(command) != 1 or command[0] not in handlers:
         _say(f"Usage: python -m application.mcp [{'|'.join(COMMANDS)}]")
         return 2
