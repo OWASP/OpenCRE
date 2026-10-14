@@ -309,32 +309,38 @@ def ask_http(q: str) -> str:
         return f"__ERROR__:{exc}"
 
 
+_INPROCESS_APP = None
+
+
 def ask_inprocess(q: str) -> str:
+    global _INPROCESS_APP
     os.environ["NO_LOGIN"] = "1"
     os.environ.setdefault("OWASP_AGENT_ENABLED", "1")
     sys.path.insert(0, str(_REPO))
-    db_url = (
-        (os.environ.get("DATABASE_URL") or "").strip()
-        or (os.environ.get("DEV_DATABASE_URL") or "").strip()
-    )
-    if db_url and not (os.environ.get("SQLALCHEMY_DATABASE_URI") or "").strip():
-        try:
-            from application.utils.postgres_url import (
-                is_postgres_url,
-                sqlalchemy_postgres_url,
-            )
+    if _INPROCESS_APP is None:
+        db_url = (
+            (os.environ.get("DATABASE_URL") or "").strip()
+            or (os.environ.get("DEV_DATABASE_URL") or "").strip()
+        )
+        if db_url and not (os.environ.get("SQLALCHEMY_DATABASE_URI") or "").strip():
+            try:
+                from application.utils.postgres_url import (
+                    is_postgres_url,
+                    sqlalchemy_postgres_url,
+                )
 
-            if is_postgres_url(db_url):
-                db_url = sqlalchemy_postgres_url(db_url)
-        except Exception:  # noqa: BLE001
-            if db_url.startswith("postgres://"):
-                db_url = "postgresql+psycopg2://" + db_url.split("://", 1)[1]
-            elif db_url.startswith("postgresql://"):
-                db_url = "postgresql+psycopg2://" + db_url.split("://", 1)[1]
-        os.environ["SQLALCHEMY_DATABASE_URI"] = db_url
-    from application import create_app
+                if is_postgres_url(db_url):
+                    db_url = sqlalchemy_postgres_url(db_url)
+            except Exception:  # noqa: BLE001
+                if db_url.startswith("postgres://"):
+                    db_url = "postgresql+psycopg2://" + db_url.split("://", 1)[1]
+                elif db_url.startswith("postgresql://"):
+                    db_url = "postgresql+psycopg2://" + db_url.split("://", 1)[1]
+            os.environ["SQLALCHEMY_DATABASE_URI"] = db_url
+        from application import create_app
 
-    app = create_app(mode="production")
+        _INPROCESS_APP = create_app(mode="production")
+    app = _INPROCESS_APP
     with app.app_context():
         with app.test_client() as client:
             resp = client.post(
