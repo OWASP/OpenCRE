@@ -41,7 +41,7 @@
         },
         "reason_code": {
           "type": "string",
-          "enum": ["BELOW_THRESHOLD", "NO_CANDIDATES", "ADVERSARIAL_FLAG", "UPDATE_AMBIGUOUS"],
+          "enum": ["BELOW_THRESHOLD", "NO_CANDIDATES", "ADVERSARIAL_FLAG", "UPDATE_AMBIGUOUS", "CRE_GAP"],
           "description": "Required when decision=review"
         },
         "is_update": { "type": "boolean", "description": "Used by slice=update" }
