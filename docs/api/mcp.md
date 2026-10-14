@@ -14,8 +14,8 @@ reads**, optional authenticated MyOpenCRE tools, a fact-only `ask` router, and
 - Optional `owasp_meta_*` tools when `OWASP_AGENT_ENABLED` is set
 - No MCP bypass secret
 
-**Not in MCP:** chat (`POST /rest/v1/completion`), admin/import tools, remote
-HTTP transport.
+**Not in MCP:** chat (`POST /rest/v1/completion`), admin/import tools.
+Production remote HTTP is out of scope; staging Streamable HTTP is documented below.
 
 ## Installation
 
@@ -43,6 +43,9 @@ Or point the MCP server at a hosted instance such as `https://opencre.org`.
 |----------|---------|---------|
 | `OPENCRE_BASE_URL` | OpenCRE origin used for REST calls (server-side only) | `http://127.0.0.1:5000` |
 | `OPENCRE_MCP_AUTH_TOOLS` | Expose the v2 authenticated tools (`1`/`true`/`yes`) | off |
+| `OPENCRE_MCP_REMOTE` | Enable Streamable HTTP (`serve-http`); staging only | off |
+| `OPENCRE_MCP_ALLOWED_HOSTS` | Host allowlist for DNS-rebinding protection | `staging.opencre.org` (+ localhost) |
+| `OPENCRE_MCP_HTTP_HOST` / `OPENCRE_MCP_HTTP_PORT` | Bind for `serve-http` | `127.0.0.1` / `5002` |
 | `GOOGLE_MCP_CLIENT_ID` | Google client of type *TVs and Limited Input devices* | — |
 | `GOOGLE_MCP_CLIENT_SECRET` | Secret for that client | — |
 | `OPENCRE_MCP_TOKEN_FILE` | Override the credential path (skips the OS keyring) | `~/.config/opencre-mcp/tokens.json` |
@@ -60,7 +63,8 @@ python -m application.mcp
 
 ## Cursor setup (stdio)
 
-Add an MCP server entry that runs the module with your venv interpreter. Example (adjust the absolute repo path):
+Stdio remains the primary local workflow. Add an MCP server entry that runs the
+module with your venv interpreter. Example (adjust the absolute repo path):
 
 ```json
 {
@@ -76,6 +80,43 @@ Add an MCP server entry that runs the module with your venv interpreter. Example
   }
 }
 ```
+
+## Remote MCP (staging Streamable HTTP)
+
+Staging exposes Streamable HTTP at `https://staging.opencre.org/mcp` when
+Compose service `mcp` is up with `OPENCRE_MCP_REMOTE=1`. Production /
+`opencre.org` remote MCP is **not** enabled.
+
+- Public REST MCP tools work without auth.
+- Remote `ask` requires an **Admin API JWT** (minted after Google Admin login)
+  whose email is on `LOGIN_ALLOWED_EMAILS`. Same identity door as Admin REST.
+- Stdio `ask` stays ungated (local trust boundary).
+
+```bash
+# Local/dev only after setting the flag (Compose sets this for the mcp service):
+export OPENCRE_MCP_REMOTE=1
+export OPENCRE_BASE_URL=http://127.0.0.1:5001
+python -m application.mcp serve-http   # refuses unless OPENCRE_MCP_REMOTE=1
+```
+
+Cursor config (mint a token in Admin → API keys on staging; prefer env interpolation):
+
+```json
+{
+  "mcpServers": {
+    "opencre-staging": {
+      "url": "https://staging.opencre.org/mcp",
+      "headers": {
+        "Authorization": "Bearer ${env:OPENCRE_STAGING_ADMIN_API_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+Tunnel path routing: `/mcp*` → `127.0.0.1:5002`, everything else → `:5001`
+(see `docs/oie/staging-homeserver.md`). Run **one** uvicorn worker for sessionful
+clients; if scaling later, use sticky sessions.
 
 ## Tool ↔ REST mapping
 
@@ -235,8 +276,8 @@ Not exposed yet (tracked for follow-up, not implied as MCP-complete):
 - `/api/capabilities`
 - Chat (`POST /rest/v1/completion`) and admin/import surfaces — use MCP `ask`
   for fact packs; hosts synthesize narrative locally
-- Remote (HTTP) transport — stdio only, so credentials come from the
-  environment as the MCP specification directs for stdio servers
+- Production remote HTTP MCP — staging Streamable HTTP exists
+  (`OPENCRE_MCP_REMOTE`); stdio remains primary for local work
 
 ## Security boundary
 
