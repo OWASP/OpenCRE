@@ -1,7 +1,7 @@
 """add oie_run
 
 Revision ID: b8c9d0e1f2a3
-Revises: 967016ee10fa
+Revises: f3a91c07d24b
 Create Date: 2026-10-05
 
 oie_run -- one row per scheduled OIE job run (``<job>-<slot>``), the audit trail
@@ -15,7 +15,7 @@ from sqlalchemy.dialects import postgresql
 
 
 revision = "b8c9d0e1f2a3"
-down_revision = "967016ee10fa"
+down_revision = "f3a91c07d24b"
 branch_labels = None
 depends_on = None
 
