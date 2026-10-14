@@ -166,6 +166,7 @@ def sync_meta_embeddings(
             items = store.list_entities(kind) or []
         except Exception:
             continue
+        print(f"meta kind={kind} rows={len(items)}", flush=True)
         for item in items:
             row = dict(item)
             row["kind"] = kind
@@ -193,6 +194,8 @@ def sync_meta_embeddings(
                 embeddings=vec,
             )
             written += 1
+            if written % 25 == 0:
+                print(f"  written={written}", flush=True)
 
     evidence_n = 0
     if include_evidence:
