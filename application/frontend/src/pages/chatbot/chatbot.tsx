@@ -24,6 +24,7 @@ export const Chatbot = () => {
     message: string;
     data: Document[] | null;
     accurate: boolean;
+    owaspCitations?: string[];
   };
 
   interface ChatState {
@@ -187,8 +188,17 @@ export const Chatbot = () => {
             timestamp: new Date().toLocaleTimeString(),
             role: 'assistant',
             message: data.response,
-            data: data.table,
+            // CRE RAG citations only — never treat owasp_agent hits as graph nodes.
+            data: Array.isArray(data.table)
+              ? data.table.filter(
+                  (d: Document) =>
+                    d &&
+                    d.doctype &&
+                    !['owaspmeta', 'owasp_meta', 'concept'].includes(String(d.doctype).toLowerCase())
+                )
+              : data.table,
             accurate: data.accurate,
+            owaspCitations: Array.isArray(data?.owasp_agent?.citations) ? data.owasp_agent.citations : [],
           },
         ]);
       })
@@ -201,6 +211,11 @@ export const Chatbot = () => {
 
   function displayDocument(d: Document) {
     if (!d || !d.doctype) return null;
+    // Never present non-CRE / meta-shaped payloads as OpenCRE graph nodes.
+    const dt = String(d.doctype).toLowerCase();
+    if (dt === 'owaspmeta' || dt === 'owasp_meta' || dt === 'concept') {
+      return null;
+    }
 
     let link = `/node/${d.doctype.toLowerCase()}/${d.name}`;
     link += d.section ? `/section/${d.section}` : `/sectionid/${d.sectionID}`;
@@ -220,6 +235,30 @@ export const Chatbot = () => {
         <div className="reference-link">
           <a href={link}>View in OpenCRE</a>
         </div>
+      </div>
+    );
+  }
+
+  function displayOwaspCitations(urls: string[]) {
+    const safe = urls.filter((url) => {
+      try {
+        const parsed = new URL(url);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    });
+    if (!safe.length) return null;
+    return (
+      <div className="references">
+        <div className="references-title">OWASP community sources</div>
+        {safe.map((url, i) => (
+          <div className="reference-card" key={i}>
+            <a href={url} target="_blank" rel="noopener noreferrer">
+              {url}
+            </a>
+          </div>
+        ))}
       </div>
     );
   }
@@ -263,6 +302,10 @@ export const Chatbot = () => {
                             ))}
                           </div>
                         )}
+
+                        {m.owaspCitations && m.owaspCitations.length > 0
+                          ? displayOwaspCitations(m.owaspCitations)
+                          : null}
 
                         {!m.accurate && (
                           <div className="accuracy-warning">

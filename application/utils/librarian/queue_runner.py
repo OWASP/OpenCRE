@@ -209,7 +209,7 @@ def run_librarian_queue(
         pref_inject=config.pref_inject,
         prefer_audit=config.prefer_audit_ids,
         safety_guard=getattr(components, "safety_guard", None),
-parent_index=getattr(components, "parent_index", None),
+        parent_index=getattr(components, "parent_index", None),
         leaf_drilldown=bool(getattr(components, "leaf_drilldown", False)),
         leaf_drilldown_resources=tuple(
             getattr(components, "leaf_drilldown_resources", ()) or ()
@@ -221,7 +221,7 @@ parent_index=getattr(components, "parent_index", None),
             getattr(components, "leaf_drilldown_min_children", 3) or 3
         ),
         leaf_drilldown_min_sections=int(
-            getattr(components, "leaf_drilldown_min_sections", 20) or 20
+            getattr(components, "leaf_drilldown_min_sections", 20)
         ),
         leaf_drilldown_keep_hub=bool(
             getattr(components, "leaf_drilldown_keep_hub", False)
@@ -232,7 +232,7 @@ parent_index=getattr(components, "parent_index", None),
         shortlist_judge_max_picks=int(
             getattr(components, "shortlist_judge_max_picks", 3) or 3
         ),
-        margin_gamma=getattr(components, "margin_gamma", None),>>>>>>> 7208db90 (feat(librarian): promote d1-winner combo defaults (judge+cap8+top_k=3))
+        margin_gamma=getattr(components, "margin_gamma", None),
     )
 
     # A locked run must not leave its claim outstanding. `FOR UPDATE SKIP LOCKED`

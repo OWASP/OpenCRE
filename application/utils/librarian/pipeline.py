@@ -378,6 +378,34 @@ class LibrarianPipeline:
                 new_reranked.append(cand)
         return audit.model_copy(update={"reranked": new_reranked})
 
+    def _prefetch_query_embeddings(self, batch_items: Sequence[Any]) -> None:
+        """Embed this batch's retrieval strings once, before the per-row loop.
+
+        No-op for stub retrievers and when ``CRE_LIBRARIAN_EMBED_BATCH=0``.
+        A prefetch failure leaves per-call embedding in place.
+        """
+        from application.utils.librarian.embed_batch import (
+            prefetch_retriever_embeddings,
+            texts_for_retrieval,
+        )
+
+        texts: List[str] = []
+        for raw in batch_items:
+            try:
+                section = section_from_queue_row(raw)
+            except SectionValidationError:
+                continue
+            texts.extend(texts_for_retrieval(section.text))
+        if not texts:
+            return
+        try:
+            prefetch_retriever_embeddings(self._retriever, texts)
+        except Exception:  # noqa: BLE001
+            logger.warning(
+                "librarian query embed prefetch failed; continuing per call",
+                exc_info=True,
+            )
+
     def _map_cre_ids(self, external_ids: Sequence[str]) -> tuple:
         return tuple(self._cre_id_map.get(cid, cid) for cid in external_ids)
 
@@ -412,6 +440,8 @@ class LibrarianPipeline:
             self._resource_family_counts = count_resource_families(arts)
         else:
             self._resource_family_counts = {}
+
+        self._prefetch_query_embeddings(batch_items)
 
         for item in batch_items:
             total += 1
@@ -632,8 +662,6 @@ class LibrarianPipeline:
                                 section.text
                             )
 
-<<<<<<< HEAD
-=======
                         query_for_drill = focus or section.text
                         pre_drill = list(cre_ids)
                         cre_ids = self._apply_leaf_drilldown(
@@ -648,8 +676,6 @@ class LibrarianPipeline:
                         if list(cre_ids) != pre_drill:
                             audit = self._sync_audit_after_drilldown(audit, cre_ids)
 
-                        verdict = self._safety_guard.evaluate(section)
->>>>>>> 7208db90 (feat(librarian): promote d1-winner combo defaults (judge+cap8+top_k=3))
                         result = decide(
                             confidence,
                             cre_ids,

@@ -509,9 +509,9 @@ class LeafDrilldownGatePipelineTest(unittest.TestCase):
             pipeline_run_id=RUN,
             parent_index=parents,
             leaf_drilldown=True,
-            leaf_drilldown_resources=(),
+            leaf_drilldown_resources=("asvs", "aisvs"),
             leaf_drilldown_min_children=3,
-            leaf_drilldown_min_sections=20,
+            leaf_drilldown_min_sections=0,
         ).run(at=AT)
         env = result.envelopes[0]
         ids = [c.cre_id for c in env.retrieval.reranked]
