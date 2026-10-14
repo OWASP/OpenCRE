@@ -1100,15 +1100,34 @@ def login_required(f):
 
 
 def login_or_mcp_required(f):
-    """Admit a browser session or a verified MCP bearer (not general login)."""
+    """Admit a browser session, MCP bearer, or allowlisted admin API key.
+
+    MCP Google ID tokens resolve via ``identity.current_identity``. Admin API
+    JWTs are a separate door (same as ``login_required``) for machine clients
+    on ``/rest/v1/user/*``.
+    """
 
     @wraps(f)
     def login_or_mcp_r(*args, **kwargs):
         if os.environ.get("NO_LOGIN") == "1":
             return f(*args, **kwargs)
-        if identity.current_identity() is None:
-            return _auth_challenge()
-        return f(*args, **kwargs)
+        if identity.current_identity() is not None:
+            return f(*args, **kwargs)
+        from application.utils.api_tokens import verify as api_verify
+
+        raw = api_verify.extract_raw_token()
+        if raw and api_verify.api_key_allowed_for_request():
+            api_id = api_verify.verify_api_token(raw)
+            if api_id is None:
+                abort(401, description="Invalid or expired API key")
+            if not _login_email_allowed(api_id.email):
+                abort(
+                    403,
+                    description="API key owner is not on the allowlist for this environment.",
+                )
+            api_verify.bind_api_key_identity(api_id)
+            return f(*args, **kwargs)
+        return _auth_challenge()
 
     return login_or_mcp_r
 
