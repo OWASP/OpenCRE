@@ -1,4 +1,4 @@
-OWASP agent synth suite v2 — 404 unique probes
+OWASP agent synth suite v2 — 430 unique probes
 
 1. [membership] What does OWASP membership cost for someone living in Switzerland?
 2. [chapter] Which flagged OWASP projects touch supply chain? Table form preferred.
@@ -404,3 +404,29 @@ OWASP agent synth suite v2 — 404 unique probes
 402. [aix_fact] what does the AI Exchange say about the lethal trifecta?
 403. [compare_projects] what is the difference between the genai security project and the AI exchange?
 404. [compare_projects] what is the difference between the AI Exchange project and the Genai security project
+405. [chat_memory] and in Morocco?
+406. [chat_memory] what about student pricing there?
+407. [chat_memory] and GenAI vs AI Exchange — short difference?
+408. [person_lookup] Who is Rob van der Veer at OWASP?
+409. [person_lookup] Tell me about Rob van der Veer
+410. [person_lookup] Rob van der Veer — which OWASP projects does he lead?
+411. [person_lookup] Who is Rob van der Veer?
+412. [aix_fact] What does the OWASP AI Exchange say about the lethal trifecta?
+413. [aix_fact] According to the AI Exchange, what is the lethal trifecta?
+414. [aix_fact] OWASP AI Exchange lethal trifecta explanation
+415. [aix_fact] what does the AI Exchange say about the lethal trifecta?
+416. [compare_projects] What is the difference between the GenAI Security Project and the AI Exchange?
+417. [compare_projects] Compare OWASP AI Exchange vs OWASP GenAI Security Project
+418. [compare_projects] AI Exchange project vs GenAI security project — how do they differ?
+419. [compare_projects] what is the difference between the AI Exchange project and the Genai security project
+420. [project_lookup] What is the OWASP AI Exchange project?
+421. [project_lookup] Describe the OWASP GenAI Security Project
+422. [project_lookup] Is the OWASP AI Exchange indexed as a project?
+423. [aix_content] What does the OWASP AI Exchange say about multiple layers of prompt injection protection?
+424. [aix_content] What does the OWASP AI Exchange say about multiple layers of prompt injection protection?
+425. [aix_content] According to the AI Exchange, how should teams think about prompt injection defenses?
+426. [aix_content] What does OWASP AI Exchange say about indirect prompt injection?
+427. [person_lookup] Who is Andrew van der Stock?
+428. [board] Is Steve Springett on any indexed OWASP board year roster?
+429. [board] Jeff Williams: board service years if indexed (do not invent talk quotes).
+430. [chat_memory] and in Morocco?

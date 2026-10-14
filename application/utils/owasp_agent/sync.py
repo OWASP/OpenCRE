@@ -424,4 +424,23 @@ def sync_all(
     if curated_n:
         store.log_sync("curated_meta", "ok", f"projects={curated_n}")
 
+    # Optional: push meta (+ evidence notes) into shared embeddings for lane routing.
+    if os.environ.get("OWASP_AGENT_EMBED_META", "").strip() in ("1", "true", "yes"):
+        try:
+            from application.database import db as db_mod
+            from application.prompt_client import prompt_client
+            from application.utils.owasp_agent.meta_embeddings import (
+                sync_meta_embeddings,
+            )
+
+            database = db_mod.Node_collection()
+            handler = prompt_client.PromptHandler(database, load_all_embeddings=False)
+            stats = sync_meta_embeddings(
+                store, database, lambda t: handler.get_text_embeddings(t)
+            )
+            store.log_sync("meta_embeddings", "ok", str(stats))
+        except Exception as exc:  # noqa: BLE001
+            store.log_sync("meta_embeddings", "error", str(exc))
+            report.errors.append(f"meta_embeddings: {exc}")
+
     return report

@@ -79,24 +79,71 @@ class OwaspAgentRouter:
             return None
 
         effective = _effective_prompt(text, history)
+
+        # Multi-lane embedding gate (preferred): no brand/project keyword routing.
+        sim_decision = _similarity_gate(effective)
+        if sim_decision is not None:
+            if sim_decision.action == "clarify":
+                return format_chat_response(
+                    QueryResult(
+                        ok=False,
+                        kind="clarify",
+                        message=(
+                            "I can help with OWASP community metadata (chapters, "
+                            "projects, events, board, membership) or OpenCRE "
+                            "security standards. Which did you mean?"
+                        ),
+                        clarify="community metadata or CRE/standards?",
+                        data={"lane_scores": sim_decision.scores},
+                    )
+                )
+            if sim_decision.action == "cre":
+                return None
+            # agent | both — serve evidence hit directly when similarity found one
+            from application.utils.owasp_agent.lane_similarity import (
+                CHANNEL_AGENT,
+                is_evidence_hit,
+            )
+
+            agent_hit = sim_decision.hits.get(CHANNEL_AGENT)
+            if is_evidence_hit(agent_hit) and agent_hit is not None:
+                cites = (
+                    [
+                        c.strip()
+                        for c in (agent_hit.content or "")
+                        .split("Citations:")[-1]
+                        .split(",")
+                        if "http" in c
+                    ]
+                    if "Citations:" in (agent_hit.content or "")
+                    else []
+                )
+                # Strip the Topics/Citations footers for display when present.
+                message = (agent_hit.content or "").split("\n\nTopics:")[0].strip()
+                message = message.split("\n\nCitations:")[0].strip()
+                resp = format_chat_response(
+                    QueryResult(
+                        ok=True,
+                        kind="evidence",
+                        message=message,
+                        citations=cites
+                        or (
+                            [agent_hit.url] if agent_hit.url.startswith("http") else []
+                        ),
+                        data={
+                            "lane_scores": sim_decision.scores,
+                            "evidence_url": agent_hit.url,
+                        },
+                    )
+                )
+                if sim_decision.action == "both":
+                    resp["owasp_agent"]["also_cre"] = True
+                    resp["owasp_agent"]["lane_reason"] = sim_decision.reason
+                return resp
+
         intent = classify_intent(effective)
         if intent == "cre_normative":
             return None
-        if intent == "aix_fact":
-            from application.utils.owasp_agent.aix_facts import lookup_aix_factoid
-
-            aix_hit = lookup_aix_factoid(effective)
-            if not aix_hit:
-                return None
-            message, citations = aix_hit
-            result = QueryResult(
-                ok=True,
-                kind="aix_fact",
-                data={"source": "owasp_ai_exchange"},
-                message=message,
-                citations=citations,
-            )
-            return format_chat_response(result)
         if intent == "cre_fact":
             from application.utils.owasp_agent.cre_facts import (
                 format_cre_factoid,
@@ -369,34 +416,71 @@ class OwaspAgentRouter:
         )
 
 
+def _similarity_gate(prompt: str):
+    """Optional embedding lane decision; None if disabled or unavailable."""
+    from application.utils.owasp_agent.lane_similarity import (
+        route_prompt,
+        sim_router_enabled,
+    )
+
+    if not sim_router_enabled():
+        return None
+    try:
+        from application import sqla
+        from application.database import db as db_mod
+        from application.prompt_client import prompt_client
+
+        database = db_mod.Node_collection()
+        if not database.can_use_pgvector_similarity():
+            return None
+        handler = prompt_client.PromptHandler(database, load_all_embeddings=False)
+
+        def _embed(text: str):
+            return handler.get_text_embeddings(text)
+
+        bind = sqla.session.get_bind()
+        with bind.connect() as conn:
+            return route_prompt(prompt, embed_fn=_embed, connection=conn)
+    except Exception:
+        return None
+
+
 def classify_intent(text: str) -> str:
     t = text.lower().strip()
-    # Curated AI Exchange factoids (before CRE fallthrough / "not cybersecurity")
-    if "lethal trifecta" in t or (
-        re.search(r"\b(ai exchange|owaspai|\baix\b)\b", t)
-        and re.search(r"\b(trifecta|say about|says about)\b", t)
-    ):
-        from application.utils.owasp_agent.aix_facts import lookup_aix_factoid
-
-        if lookup_aix_factoid(text):
-            return "aix_fact"
-
-    # Who-is person lookup from leaders.json / project leaders (not CRE bios)
+    # Who-is / tell-me-about person lookup from leaders.json (not CRE bios)
     if re.search(r"\bwho is\b", t) and not re.search(r"\bwho is (the|on|a|an)\b", t):
         if _extract_quoted_or_capitalized_name(text):
             return "person_lookup"
+    if re.search(
+        r"\b(tell me about|what about)\b", t
+    ) and _extract_quoted_or_capitalized_name(text):
+        # "Tell me about Rob van der Veer" — person card, not CRE biography.
+        if not re.search(r"\b(vulnerability|mitigate|how (do|should)|cre)\b", t):
+            return "person_lookup"
+    # Leading capitalized name + which projects they lead
+    if (
+        _extract_quoted_or_capitalized_name(text)
+        and re.search(r"\b(lead|leads|leader|leads\?)\b", t)
+        and re.search(r"\bprojects?\b", t)
+    ):
+        return "person_lookup"
 
-    # Project compare / definition (OWASP metadata, not generic LLM knowledge)
+    # Project-vs-chapter counts before project-vs-project compares.
+    if re.search(r"\b(projects? versus chapters|chapters versus projects)\b", t):
+        return "count_projects_and_chapters"
+    if "how many" in t and "chapter" in t and "project" in t:
+        return "count_projects_and_chapters"
+    # Project compare / definition — structural phrasing only (no brand lists).
     if re.search(
-        r"\b(difference between|differ(?:ence)? between|compare)\b", t
-    ) and re.search(r"\b(project|ai exchange|genai|aix|llm top)\b", t):
-        return "compare_projects"
-    if re.search(
-        r"\b(what is|what's|tell me about|describe)\b.+\b("
-        r"ai exchange|genai security|genai project|owasp project|"
-        r"llm top\s*10|integration standards)\b",
+        r"\b(difference between|differ(?:ence)? between|compare|"
+        r"\bvs\.?\b|versus|how do they differ|how they differ)\b",
         t,
-    ) or re.search(
+    ) and re.search(r"\bprojects?\b", t):
+        # "projects versus chapters" already handled; bare chapter compare stays out.
+        if "chapter" in t and "project" in t and "difference" not in t:
+            return "count_projects_and_chapters"
+        return "compare_projects"
+    if re.search(r"\b(what is|what's|describe)\b.+\bowasp project\b", t) or re.search(
         r"\b(what is|what's)\b.+\bproject\b",
         t,
     ):
@@ -460,9 +544,6 @@ def classify_intent(text: str) -> str:
         "commuting",
         "suburb",
         "who is",
-        "ai exchange",
-        "genai",
-        "lethal trifecta",
     )
     has_meta = any(h in t for h in meta_hints)
     has_norm = any(h in t for h in normative_hints)
@@ -915,6 +996,16 @@ def extract_slots(text: str) -> Slots:
     if m_diff:
         slots.project_a = _clean_project_name(m_diff.group(1))
         slots.project_b = _clean_project_name(m_diff.group(2))
+    if not slots.project_a or not slots.project_b:
+        # "AI Exchange project vs GenAI security project — how do they differ?"
+        m_vs_proj = re.search(
+            r"(.+?)\s+(?:vs\.?|versus)\s+(.+?)(?:\s*[—–\-:,].*)?\s*$",
+            text.strip(),
+            re.IGNORECASE,
+        )
+        if m_vs_proj and re.search(r"\bprojects?\b", text, re.I):
+            slots.project_a = _clean_project_name(m_vs_proj.group(1))
+            slots.project_b = _clean_project_name(m_vs_proj.group(2))
 
     m_what_proj = re.search(
         r"\b(?:what is|what's|tell me about|describe)\s+(?:the\s+)?(.+?)\s*\??\s*$",
@@ -1177,6 +1268,12 @@ def _extract_quoted_or_capitalized_name(text: str) -> Optional[str]:
     m_who = re.search(r"\b[Ww]ho\s+is\s+(" + _PERSON_NAME_RE + r")\s*\??", text)
     if m_who:
         return m_who.group(1).strip().rstrip(".?!")
+    m_about = re.search(
+        r"\b(?:[Tt]ell me about|[Ww]hat about)\s+(" + _PERSON_NAME_RE + r")\b",
+        text,
+    )
+    if m_about and not _name_starts_with_stopword(m_about.group(1)):
+        return m_about.group(1).strip().rstrip(".?!")
     # "Jeff Williams: board service years…" (colon only — not Name's possessive)
     m_lead = re.search(
         r"^(" + _PERSON_NAME_RE + r")\s*:",
@@ -1184,6 +1281,13 @@ def _extract_quoted_or_capitalized_name(text: str) -> Optional[str]:
     )
     if m_lead and not _name_starts_with_stopword(m_lead.group(1)):
         return m_lead.group(1).strip()
+    # Leading name before dash/em-dash ("Rob van der Veer — which projects…")
+    m_lead_dash = re.search(
+        r"^(" + _PERSON_NAME_RE + r")\s*[—–\-]\s*",
+        text.strip(),
+    )
+    if m_lead_dash and not _name_starts_with_stopword(m_lead_dash.group(1)):
+        return m_lead_dash.group(1).strip()
     # Leading name + board / years without requiring colon
     # ("Andrew van der Stock board years — …")
     m_lead_board = re.search(
