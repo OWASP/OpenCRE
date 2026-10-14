@@ -137,7 +137,15 @@ def is_session_authenticated() -> bool:
 
 def current_scopes() -> Tuple[str, ...]:
     """What this caller may do. Google never carries OpenCRE scopes, so for
-    the MCP channel they come from the ``mcp_grants`` table."""
+    the MCP channel they come from the ``mcp_grants`` table.
+
+    Allowlisted admin API keys (bound on ``g.api_key_user_id``) carry the same
+    scopes as a browser session — they are operator credentials, not MCP.
+    """
+    from flask import g
+
+    if getattr(g, "api_key_user_id", None):
+        return ALL_SCOPES
     identity = current_identity()
     if identity is None:
         return ()
