@@ -901,9 +901,10 @@ def add_header(response):
     # Per-user endpoints must never be shared-cached; no-store wins over the
     # default max-age for them (this hook runs after the view). Covers the
     # resource selection AND the identity endpoint (returns the user's email)
-    # plus its deprecated alias.
+    # plus its deprecated alias, and MCP grant management.
     if request.path in (
         "/rest/v1/user/resources",
+        "/rest/v1/user/mcp_grants",
         "/rest/v1/auth/user",
         "/rest/v1/user",
     ):
@@ -914,16 +915,18 @@ def add_header(response):
 
 
 def _is_logged_in() -> bool:
-    """Single source of truth for session presence.
+    """Single source of truth for browser-session presence.
 
     Keyed on ``session['user_id']`` (recorded by the login flow since #980) — not
     ``google_id``/``name``. Both ``login_required`` and its content-negotiation
     branch route through here, so the predicate lives in exactly one place.
 
-    Since #1003 v2 a Google ID token issued to a registered client also counts,
-    so the MCP client authenticates the same way the browser does.
+    An MCP bearer token is deliberately *not* logged-in here: ``login_required``
+    stays session-only so a leaked MCP token cannot unlock chat, admin, or other
+    general authenticated routes. MyOpenCRE resources use
+    ``login_or_mcp_required`` instead.
     """
-    return identity.current_identity() is not None
+    return identity.is_session_authenticated()
 
 
 def _auth_challenge():
@@ -961,6 +964,20 @@ def login_required(f):
         return f(*args, **kwargs)
 
     return login_r
+
+
+def login_or_mcp_required(f):
+    """Admit a browser session or a verified MCP bearer (not general login)."""
+
+    @wraps(f)
+    def login_or_mcp_r(*args, **kwargs):
+        if os.environ.get("NO_LOGIN") == "1":
+            return f(*args, **kwargs)
+        if identity.current_identity() is None:
+            return _auth_challenge()
+        return f(*args, **kwargs)
+
+    return login_or_mcp_r
 
 
 def feature_enabled_or_default(is_enabled: Any, default_factory: Any) -> Any:
@@ -1458,7 +1475,7 @@ def logout():
     lambda: is_login_enabled() and is_myopencre_enabled(),
     lambda: jsonify({"selected": []}),
 )
-@login_required
+@login_or_mcp_required
 @identity.require_scopes(identity.SCOPE_MYOPENCRE_READ)
 def get_user_resources() -> Any:
     """Return the standard names the current user has selected."""
@@ -1475,7 +1492,7 @@ def get_user_resources() -> Any:
     lambda: is_login_enabled() and is_myopencre_enabled(),
     lambda: jsonify({"selected": []}),
 )
-@login_required
+@login_or_mcp_required
 @identity.require_scopes(identity.SCOPE_MYOPENCRE_WRITE)
 def put_user_resources() -> Any:
     """Replace the current user's selected standards."""

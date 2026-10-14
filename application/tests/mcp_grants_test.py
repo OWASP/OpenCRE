@@ -189,8 +189,10 @@ class McpGrantsTest(unittest.TestCase):
                     headers=self._bearer(),
                 )
 
-        self.assertEqual(read.status_code, 403)
-        self.assertEqual(escalate.status_code, 403)
+        # login_required is session-only, so a bearer is challenged with 401
+        # before session_only's 403; either denial is correct.
+        self.assertIn(read.status_code, (401, 403))
+        self.assertIn(escalate.status_code, (401, 403))
         self.assertEqual(
             self.collection.get_mcp_grants(user.id),
             [identity.SCOPE_MYOPENCRE_READ],
@@ -279,6 +281,74 @@ class McpGrantsTest(unittest.TestCase):
         self.assertEqual(write.status_code, 200)
         self.assertEqual(read.status_code, 200)
         self.assertIn("ASVS", read.get_json()["selected"])
+
+    # --- D. bearer must not unlock general login_required routes ---
+
+    def test_mcp_bearer_cannot_call_completion(self) -> None:
+        """A leaked MCP token must not unlock the chatbot."""
+        self._seed_user()
+        with self._as_token():
+            with self.app.test_client() as client:
+                response = client.post(
+                    "/rest/v1/completion",
+                    json={"prompt": "hi"},
+                    headers=self._bearer(),
+                    content_type="application/json",
+                )
+        self.assertIn(response.status_code, (401, 403))
+
+    def test_mcp_bearer_cannot_apply_admin_import(self) -> None:
+        """A leaked MCP token must not unlock admin import apply."""
+        self._seed_user()
+        with patch.dict(os.environ, {"CRE_ALLOW_IMPORT": "1"}):
+            with self._as_token():
+                with self.app.test_client() as client:
+                    response = client.post(
+                        "/admin/imports/runs/not-a-real-run/apply",
+                        headers=self._bearer(),
+                    )
+        self.assertIn(response.status_code, (401, 403))
+
+    def test_revoked_grants_block_resources_and_completion(self) -> None:
+        """All grants revoked → resources 403; completion still denied."""
+        user = self._seed_user()
+        with self._as_token():
+            with self.app.test_client() as client:
+                client.get(RESOURCES_URL, headers=self._bearer())
+
+        for scope in list(self.collection.get_mcp_grants(user.id)):
+            self.collection.revoke_mcp_grant(user.id, scope)
+        self.assertEqual(self.collection.get_mcp_grants(user.id), [])
+
+        with self._as_token():
+            with self.app.test_client() as client:
+                resources = client.get(RESOURCES_URL, headers=self._bearer())
+                completion = client.post(
+                    "/rest/v1/completion",
+                    json={"prompt": "hi"},
+                    headers=self._bearer(),
+                    content_type="application/json",
+                )
+        self.assertEqual(resources.status_code, 403)
+        self.assertIn(completion.status_code, (401, 403))
+
+    def test_web_audience_bearer_is_rejected_on_resources(self) -> None:
+        """A web client ID token must not authenticate as CHANNEL_WEB via bearer."""
+        self._seed_user()
+        claims = {"sub": GOOGLE_SUB, "aud": WEB_CLIENT_ID, "email": "a@x.com"}
+        with patch.object(identity, "verify_google_token", return_value=claims):
+            with self.app.test_client() as client:
+                response = client.get(RESOURCES_URL, headers=self._bearer())
+        self.assertEqual(response.status_code, 401)
+
+    def test_mcp_grants_responses_are_no_store(self) -> None:
+        user = self._seed_user()
+        with self.app.test_client() as client:
+            self._login(client, user)
+            response = client.get(GRANTS_URL)
+        self.assertEqual(response.status_code, 200)
+        cache_control = response.headers.get("Cache-Control", "")
+        self.assertIn("no-store", cache_control.lower())
 
 
 if __name__ == "__main__":

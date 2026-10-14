@@ -115,24 +115,9 @@ AUTHENTICATED_TOOLS: Tuple[ToolSpec, ...] = (
     ),
 )
 
-_TOOLS_BY_NAME: Dict[str, ToolSpec] = {
-    tool.name: tool for tool in PUBLIC_TOOLS + AUTHENTICATED_TOOLS
-}
-
 
 def auth_tools_enabled() -> bool:
     return os.environ.get(AUTH_TOOLS_ENV, "").strip().lower() in _TRUE_VALUES
-
-
-def list_tool_names() -> List[str]:
-    return [tool.name for tool in PUBLIC_TOOLS]
-
-
-def get_tool(name: str) -> ToolSpec:
-    try:
-        return _TOOLS_BY_NAME[name]
-    except KeyError as exc:
-        raise KeyError(f"Unknown MCP tool: {name}") from exc
 
 
 def active_tools() -> Tuple[ToolSpec, ...]:
@@ -140,3 +125,20 @@ def active_tools() -> Tuple[ToolSpec, ...]:
     if auth_tools_enabled():
         return PUBLIC_TOOLS + AUTHENTICATED_TOOLS
     return PUBLIC_TOOLS
+
+
+def list_tool_names() -> List[str]:
+    return [tool.name for tool in active_tools()]
+
+
+def get_tool(name: str) -> ToolSpec:
+    """Resolve a tool that is active in this process.
+
+    Hidden authenticated tools must not dispatch when ``OPENCRE_MCP_AUTH_TOOLS``
+    is off — lookup is built from ``active_tools()``, not the full catalog.
+    """
+    by_name: Dict[str, ToolSpec] = {tool.name: tool for tool in active_tools()}
+    try:
+        return by_name[name]
+    except KeyError as exc:
+        raise KeyError(f"Unknown MCP tool: {name}") from exc

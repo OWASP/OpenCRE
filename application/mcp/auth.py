@@ -120,10 +120,16 @@ def login(on_code: Callable[[str, str], None]) -> Dict[str, Any]:
             },
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
-        body = polled.json()
+        try:
+            body = polled.json()
+        except ValueError:
+            raise AuthError(
+                f"authorization failed: non-JSON token response "
+                f"[{polled.status_code}]"
+            )
         if polled.status_code == 200:
             return _store(body)
-        error = body.get("error")
+        error = body.get("error") if isinstance(body, dict) else None
         if error == "authorization_pending":
             continue
         if error == "slow_down":
@@ -138,9 +144,15 @@ def _store(tokens: Dict[str, Any]) -> Dict[str, Any]:
     global _cached_id_token
 
     # A refresh response omits refresh_token; keep the one already held.
+    # Login must not succeed with only an in-memory id_token — without a
+    # durable refresh token the next process cannot continue the session.
     refresh_token = tokens.get("refresh_token") or token_store.load()
-    if refresh_token:
-        token_store.save(refresh_token)
+    if not refresh_token:
+        raise AuthError(
+            "token endpoint returned no refresh_token and none is stored; "
+            "cannot persist MCP login"
+        )
+    token_store.save(refresh_token)
 
     _cached_id_token = tokens.get("id_token")
     return _decode_claims(_cached_id_token) if _cached_id_token else {}

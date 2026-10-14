@@ -40,12 +40,14 @@ _IDENTITY_KEY = "cre_identity"
 
 
 def allowed_audiences() -> Dict[str, str]:
-    """Map each registered Google client id to the channel it represents."""
+    """Map Google client ids accepted on the bearer door to their channel.
+
+    Only the MCP client id is admitted here. The web client id is never a
+    bearer audience: browser traffic authenticates via the session cookie, and
+    a leaked web ID token must not become CHANNEL_WEB with ALL_SCOPES.
+    """
     audiences: Dict[str, str] = {}
-    web = os.environ.get("GOOGLE_CLIENT_ID")
     mcp = os.environ.get("GOOGLE_MCP_CLIENT_ID")
-    if web:
-        audiences[web] = CHANNEL_WEB
     if mcp:
         audiences[mcp] = CHANNEL_MCP
     return audiences

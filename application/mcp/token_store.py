@@ -57,13 +57,24 @@ def save(refresh_token: str) -> None:
 
     path = token_file()
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps({"refresh_token": refresh_token, "saved_at": time.time()})
-    )
+    payload = json.dumps({"refresh_token": refresh_token, "saved_at": time.time()})
+    # Create/truncate with mode 0600 up front — never write under a looser umask
+    # and chmod afterwards. Fail closed if confidentiality cannot be guaranteed.
     try:
-        os.chmod(path, 0o600)
-    except OSError:
-        logger.debug("could not chmod token file", exc_info=True)
+        fd = os.open(
+            path,
+            os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
+            0o600,
+        )
+    except OSError as exc:
+        raise OSError(f"cannot create confidential token file {path}") from exc
+    try:
+        os.fchmod(fd, 0o600)
+    except (AttributeError, OSError) as exc:
+        os.close(fd)
+        raise OSError(f"cannot set confidential mode on token file {path}") from exc
+    with os.fdopen(fd, "w") as handle:
+        handle.write(payload)
 
 
 def load() -> Optional[str]:

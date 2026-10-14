@@ -101,12 +101,16 @@ class IdentityTest(unittest.TestCase):
         self.assertEqual(token_channel, identity.CHANNEL_MCP)
         self.assertEqual(session_channel, identity.CHANNEL_WEB)
 
-    def test_web_audience_token_is_the_web_channel(self) -> None:
+    def test_web_audience_token_is_rejected(self) -> None:
+        """A web Google client ID token must not authenticate via bearer.
+
+        Browser traffic uses the session cookie; a leaked web ID token must not
+        become CHANNEL_WEB with ALL_SCOPES.
+        """
         self._seed_user()
         with self._as_token(self._claims(aud=WEB_CLIENT_ID)):
             with self._token_request():
-                _, channel = identity.current_identity()
-        self.assertEqual(channel, identity.CHANNEL_WEB)
+                self.assertIsNone(identity.current_identity())
 
     # --- B. tokens that must be refused ---
 
