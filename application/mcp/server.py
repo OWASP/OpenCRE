@@ -135,6 +135,21 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
         arguments: Dict[str, Any] = dict(params.arguments or {})
         try:
             if name == ASK_TOOL_NAME:
+                from application.mcp import remote_auth
+
+                if remote_auth.remote_mode_enabled():
+                    try:
+                        remote_auth.require_remote_ask_auth()
+                    except remote_auth.RemoteAskAuthError as auth_exc:
+                        return types.CallToolResult(
+                            content=[
+                                types.TextContent(
+                                    type="text",
+                                    text=str(auth_exc),
+                                )
+                            ],
+                            is_error=True,
+                        )
                 data = run_ask(
                     str(arguments.get("prompt") or ""),
                     corpus=str(arguments.get("corpus") or "auto"),

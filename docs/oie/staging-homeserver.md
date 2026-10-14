@@ -3,7 +3,7 @@
 **Runtime:** dedicated **Docker Compose stack** for OpenCRE staging — own Postgres (pgvector), Redis, web, OIE workers, and `cloudflared`.  
 **Not** inside the Cursor `my-agents` worker process. `my-agents` may only *bootstrap* the stack on the homeserver; the long-running system is Compose.
 
-Internet entry: **Cloudflare Tunnel only** → Compose service `web:5001` on an internal Docker network (or host loopback published only to the tunnel container).
+Internet entry: **Cloudflare Tunnel only** → Compose `web:5001` (Flask) and `mcp:5002` (Streamable HTTP MCP) on an internal Docker network (or host loopback published only to the tunnel container).
 
 Login: Google + `LOGIN_ALLOWED_EMAILS` (Spyros / Rob / Rock only).
 
@@ -12,9 +12,13 @@ Login: Google + `LOGIN_ALLOWED_EMAILS` (Spyros / Rob / Rock only).
 ## Cloudflare (already applied)
 
 - Tunnel: `opencre-staging`
-- Ingress: `staging.opencre.org` → `http://127.0.0.1:5001` (or Compose-published loopback)
+- Ingress (path order matters — more specific first):
+  - `staging.opencre.org/mcp*` → `http://127.0.0.1:5002` (Compose `mcp` / Streamable HTTP)
+  - `staging.opencre.org` → `http://127.0.0.1:5001` (Compose `web`)
 - DNS: `staging.opencre.org` → `{tunnel_id}.cfargotunnel.com` (proxied)
 - Connector token: operator machine `/tmp/opencre_staging_tunnel_token` — copy into Compose secrets; **never commit**
+
+Homeserver ops after deploy: update the tunnel ingress for `/mcp*`, rebuild Compose (`mcp` service), mint an Admin API JWT on staging, then verify Cursor `url: https://staging.opencre.org/mcp`.
 
 ---
 
@@ -30,13 +34,14 @@ deploy/staging/
 |---------|------|--------|
 | `db` | `pgvector/pgvector:pg16` | Volume `opencre_staging_pg`; **not** shared with laptop/dev Postgres |
 | `redis` | Redis Stack | Volume `opencre_staging_redis`; queue `oie` |
-| `web` | gunicorn/Flask | Bind internal; tunnel reaches it |
+| `web` | gunicorn/Flask | Bind internal; tunnel reaches `:5001` |
+| `mcp` | uvicorn Streamable HTTP | `OPENCRE_MCP_REMOTE=1`; tunnel `/mcp*` → `:5002`; public tools open, remote `ask` needs Admin JWT |
 | `worker` | `cre.py --start_worker` ×N | Same image as web; **must** set `CRE_WORKER_QUEUES=oie,default` (default listen has no `oie`) |
 | `ga-worker` | profile `ga` | Optional; `CRE_WORKER_QUEUES=ga` when `CRE_OIE_GA_VIA_QUEUE=1` |
 | `cloudflared` | Tunnel connector | Token from Docker secret / env file on host |
 | (optional) `neo4j` | Only if staging needs Neo/GA compute | Prefer cache-only like prod |
 
-Network: private bridge `opencre_staging_net`. **No** publishing Postgres/Redis to the public interface. Prefer publishing web as `127.0.0.1:5001:5001` so only cloudflared (host or sidecar) can reach it.
+Network: private bridge `opencre_staging_net`. **No** publishing Postgres/Redis to the public interface. Prefer publishing web/mcp as `127.0.0.1:5001:5001` and `127.0.0.1:5002:5002` so only cloudflared (host or sidecar) can reach them.
 
 ---
 
@@ -88,8 +93,10 @@ docker compose up -d --build
 
 ```bash
 curl -sI https://staging.opencre.org | head -5
+curl -i https://staging.opencre.org/mcp | head -20   # MCP/HTTP, not Flask 404 HTML
 docker compose -f deploy/staging/docker-compose.yml ps
 # Allowlisted Google → login OK; other Google → 403
+# Remote ask: Bearer Admin API JWT required; public MCP tools work without it
 ```
 
 ---
