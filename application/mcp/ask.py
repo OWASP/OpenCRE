@@ -210,8 +210,12 @@ def _security_facts(
     docs = _as_doc_list(search_data)
     cre_docs = [d for d in docs if _is_cre_doc(d)]
     if not cre_docs:
-        # Fall back to any hit that has a CRE-like id field.
-        cre_docs = [d for d in docs if isinstance(d.get("id"), str) and d.get("id")]
+        # Only accept CRE-shaped ids (e.g. 622-203), never Standard composite keys.
+        cre_docs = [
+            d
+            for d in docs
+            if isinstance(d.get("id"), str) and _looks_like_cre_id(str(d["id"]))
+        ]
 
     selection, standards_filter = _myopencre_selection(client)
     items: List[Dict[str, Any]] = []
@@ -286,6 +290,11 @@ def _as_doc_list(data: Any) -> List[Dict[str, Any]]:
 def _is_cre_doc(doc: Mapping[str, Any]) -> bool:
     doctype = str(doc.get("doctype") or "").lower()
     return doctype == "cre"
+
+
+def _looks_like_cre_id(cre_id: str) -> bool:
+    parts = cre_id.strip().split("-")
+    return len(parts) == 2 and all(p.isdigit() for p in parts)
 
 
 def _extract_standards(cre_doc: Mapping[str, Any]) -> List[Dict[str, Any]]:
