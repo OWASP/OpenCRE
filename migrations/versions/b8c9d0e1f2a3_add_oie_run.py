@@ -1,26 +1,33 @@
 """add oie_run
 
 Revision ID: b8c9d0e1f2a3
-Revises: 967016ee10fa
+Revises: c9d0e1f2a3b4
 Create Date: 2026-10-05
 
 oie_run -- one row per scheduled OIE job run (``<job>-<slot>``), the audit trail
 behind the admin run pages. Unique on (job, slot) so a replayed tick reuses its
 row.
+
+Chains after ``c9d0e1f2a3b4`` (embeddings.source_channel) so the OWASP-agent
+stack stays a single Alembic head.
 """
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 from sqlalchemy.dialects import postgresql
 
 
 revision = "b8c9d0e1f2a3"
-down_revision = "967016ee10fa"
+down_revision = "c9d0e1f2a3b4"
 branch_labels = None
 depends_on = None
 
 
 def upgrade():
+    bind = op.get_bind()
+    if inspect(bind).has_table("oie_run"):
+        return
     op.create_table(
         "oie_run",
         sa.Column("id", sa.String, primary_key=True),
@@ -44,5 +51,8 @@ def upgrade():
 
 
 def downgrade():
+    bind = op.get_bind()
+    if not inspect(bind).has_table("oie_run"):
+        return
     op.drop_index("ix_oie_run_job_started", table_name="oie_run")
     op.drop_table("oie_run")
