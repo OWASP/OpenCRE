@@ -1,4 +1,4 @@
-"""Static security allowlist for OpenCRE MCP v1 public-read tools.
+"""Static security allowlist for OpenCRE MCP tools.
 
 Exposure is determined only by this allowlist — never by enumerating OpenAPI.
 """
@@ -9,18 +9,27 @@ from cre_logging import get_logger
 
 logger = get_logger(__name__)
 
-from dataclasses import dataclass
+import os
+from dataclasses import dataclass, field
 from typing import Dict, List, Tuple
+
+# Authenticated tools stay hidden unless a deployment opts in, so the public
+# surface is identical whether or not anyone has logged in on this machine.
+AUTH_TOOLS_ENV = "OPENCRE_MCP_AUTH_TOOLS"
+_TRUE_VALUES = {"1", "true", "yes"}
 
 
 @dataclass(frozen=True)
 class ToolSpec:
-    """One MCP tool bound to a fixed public REST GET operation."""
+    """One MCP tool bound to a fixed REST operation."""
 
     name: str
     method: str
     path_template: str
     summary: str
+    auth: bool = False
+    read_only: bool = True
+    scopes: Tuple[str, ...] = field(default=())
 
     @property
     def openapi_identity(self) -> Tuple[str, str]:
@@ -86,15 +95,50 @@ PUBLIC_TOOLS: Tuple[ToolSpec, ...] = (
     ),
 )
 
-_TOOLS_BY_NAME: Dict[str, ToolSpec] = {tool.name: tool for tool in PUBLIC_TOOLS}
+AUTHENTICATED_TOOLS: Tuple[ToolSpec, ...] = (
+    ToolSpec(
+        name="get_my_resources",
+        method="GET",
+        path_template="/rest/v1/user/resources",
+        summary="Get your saved standards selection",
+        auth=True,
+        scopes=("myopencre:read",),
+    ),
+    ToolSpec(
+        name="set_my_resources",
+        method="PUT",
+        path_template="/rest/v1/user/resources",
+        summary="Replace your saved standards selection",
+        auth=True,
+        read_only=False,
+        scopes=("myopencre:write",),
+    ),
+)
+
+
+def auth_tools_enabled() -> bool:
+    return os.environ.get(AUTH_TOOLS_ENV, "").strip().lower() in _TRUE_VALUES
+
+
+def active_tools() -> Tuple[ToolSpec, ...]:
+    """Tools this process serves: public always, authenticated on opt-in."""
+    if auth_tools_enabled():
+        return PUBLIC_TOOLS + AUTHENTICATED_TOOLS
+    return PUBLIC_TOOLS
 
 
 def list_tool_names() -> List[str]:
-    return [tool.name for tool in PUBLIC_TOOLS]
+    return [tool.name for tool in active_tools()]
 
 
 def get_tool(name: str) -> ToolSpec:
+    """Resolve a tool that is active in this process.
+
+    Hidden authenticated tools must not dispatch when ``OPENCRE_MCP_AUTH_TOOLS``
+    is off — lookup is built from ``active_tools()``, not the full catalog.
+    """
+    by_name: Dict[str, ToolSpec] = {tool.name: tool for tool in active_tools()}
     try:
-        return _TOOLS_BY_NAME[name]
+        return by_name[name]
     except KeyError as exc:
         raise KeyError(f"Unknown MCP tool: {name}") from exc
