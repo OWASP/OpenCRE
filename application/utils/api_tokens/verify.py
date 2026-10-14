@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional
@@ -81,6 +82,31 @@ def verify_api_token(raw: str) -> Optional[ApiKeyIdentity]:
     if row.user_id != user_id:
         return None
     return ApiKeyIdentity(jti=jti, user_id=user_id, email=email or "")
+
+
+def email_on_login_allowlist(email: Optional[str]) -> bool:
+    """True when ``email`` is on LOGIN_ALLOWED_EMAILS.
+
+    Mirrors Admin ``login_required`` / ``_login_email_allowed`` without Flask
+    request path gates. Dev/test: empty allowlist allows anyone.
+    ``FLASK_CONFIG=production``: empty allowlist fails closed.
+    """
+    raw = (os.environ.get("LOGIN_ALLOWED_EMAILS") or "").strip()
+    is_prod = (os.environ.get("FLASK_CONFIG") or "").strip().lower() == "production"
+    if not raw:
+        return not is_prod
+    allowed = {e.strip().lower() for e in raw.split(",") if e.strip()}
+    return (email or "").strip().lower() in allowed
+
+
+def verify_admin_allowlisted_api_token(raw: str) -> Optional[ApiKeyIdentity]:
+    """Path-agnostic Admin JWT check: signature + DB + LOGIN_ALLOWED_EMAILS."""
+    identity = verify_api_token(raw)
+    if identity is None:
+        return None
+    if not email_on_login_allowlist(identity.email):
+        return None
+    return identity
 
 
 def bind_api_key_identity(identity: ApiKeyIdentity) -> None:

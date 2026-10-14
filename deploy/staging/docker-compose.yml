@@ -1,7 +1,9 @@
 # OpenCRE staging — dedicated Compose stack (not my-agents runtime).
 #   cd deploy/staging && cp .env.example .env   # fill secrets + TUNNEL_TOKEN
 #   docker compose up -d --build
-# Cloudflare tunnel ingress: staging.opencre.org → http://127.0.0.1:5001
+# Cloudflare tunnel ingress:
+#   staging.opencre.org/mcp* → http://127.0.0.1:5002
+#   staging.opencre.org      → http://127.0.0.1:5001
 
 name: opencre-staging
 
@@ -216,7 +218,58 @@ services:
       - opencre_staging_net
     restart: unless-stopped
 
-  # Linux homeserver: host network reaches published 127.0.0.1:5001.
+  # Streamable HTTP MCP (staging only). Tunnel /mcp* → :5002; ask needs Admin JWT.
+  mcp:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        REQUIREMENTS_FILE: requirements-dev.txt
+    entrypoint: ["/bin/bash", "-lc"]
+    command:
+      - |
+        export FLASK_APP=/code/cre.py
+        export FLASK_CONFIG=production
+        export INSECURE_REQUESTS=1
+        export OPENCRE_MCP_REMOTE=1
+        export OPENCRE_MCP_HTTP_HOST=0.0.0.0
+        export OPENCRE_MCP_HTTP_PORT=5002
+        exec python -m application.mcp serve-http
+    env_file:
+      - .env
+    environment:
+      FLASK_CONFIG: production
+      INSECURE_REQUESTS: "1"
+      OPENCRE_MCP_REMOTE: "1"
+      OPENCRE_BASE_URL: http://web:5001
+      OPENCRE_MCP_ALLOWED_HOSTS: ${OPENCRE_MCP_ALLOWED_HOSTS:-staging.opencre.org,staging.opencre.org:*}
+      OPENCRE_MCP_HTTP_HOST: "0.0.0.0"
+      OPENCRE_MCP_HTTP_PORT: "5002"
+      DATABASE_URL: postgresql://cre:${POSTGRES_PASSWORD:-cre_staging_change_me}@db:5432/cre
+      DEV_DATABASE_URL: postgresql://cre:${POSTGRES_PASSWORD:-cre_staging_change_me}@db:5432/cre
+      REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_NO_SSL: "true"
+      NEO4J_URL: bolt://neo4j:${NEO4J_PASSWORD:-password}@neo4j:7687
+      CRE_EMBED_EXPECTED_DIM: ${CRE_EMBED_EXPECTED_DIM:-3072}
+      <<: *librarian_promoted
+    ports:
+      - "127.0.0.1:5002:5002"
+    volumes:
+      - opencre_staging_secrets:/code/.secrets
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_started
+    networks:
+      - opencre_staging_net
+    restart: unless-stopped
+
+  # Linux homeserver: host network reaches published 127.0.0.1:5001 / :5002.
   # On Docker Desktop/Colima, prefer: cloudflared tunnel run --token "$TUNNEL_TOKEN" on the host.
   cloudflared:
     profiles: ["tunnel"]
@@ -228,6 +281,7 @@ services:
     restart: unless-stopped
     depends_on:
       - web
+      - mcp
 
 volumes:
   opencre_staging_pg:
