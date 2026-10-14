@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 import copy
 import os
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, Iterable, List, Optional, Set
 
 import yaml
 
@@ -21,6 +21,9 @@ from application.mcp.catalog import PUBLIC_TOOLS, ToolSpec, get_tool
 
 # Response-format switchers that can leave JSON; omit from MCP v1 inputs.
 _JSON_UNSAFE_QUERY_PARAMS: Set[str] = {"format"}
+
+# Argument name carrying an operation's JSON request body.
+BODY_ARG = "body"
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 DEFAULT_OPENAPI_PATH = os.path.join(REPO_ROOT, "docs", "api", "openapi.yaml")
@@ -132,6 +135,27 @@ def operation_input_schema(
         if param.get("required"):
             required.append(name)
 
+    request_body = _resolve_ref(document, operation.get("requestBody"))
+    if isinstance(request_body, dict):
+        content = request_body.get("content") or {}
+        json_content = content.get("application/json")
+
+        if isinstance(json_content, dict):
+            body_schema = json_content.get("schema")
+            if body_schema is not None:
+                resolved_body_schema = _resolve_ref(document, body_schema)
+
+                if not isinstance(resolved_body_schema, dict):
+                    raise OpenAPILookupError(
+                        f"Request body schema must be an object on "
+                        f"{method.upper()} {path}"
+                    )
+
+                properties[BODY_ARG] = copy.deepcopy(resolved_body_schema)
+
+                if request_body.get("required"):
+                    required.append(BODY_ARG)
+
     schema: Dict[str, Any] = {
         "type": "object",
         "properties": properties,
@@ -156,9 +180,14 @@ def input_schema_for_tool(name: str) -> Dict[str, Any]:
 
 
 def all_tool_input_schemas() -> Dict[str, Dict[str, Any]]:
-    """Resolve input schemas for every allowlisted tool (fails if OpenAPI drifts)."""
+    """Resolve input schemas for every public tool (fails if OpenAPI drifts)."""
+    return input_schemas_for(PUBLIC_TOOLS)
+
+
+def input_schemas_for(tools: Iterable[ToolSpec]) -> Dict[str, Dict[str, Any]]:
+    """Resolve input schemas for the given tools against one loaded spec."""
     spec = load_openapi_spec()
-    return {tool.name: operation_input_schema(tool, spec=spec) for tool in PUBLIC_TOOLS}
+    return {tool.name: operation_input_schema(tool, spec=spec) for tool in tools}
 
 
 def openapi_has_operation(method: str, path: str) -> bool:

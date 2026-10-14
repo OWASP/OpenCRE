@@ -28,7 +28,7 @@ from application.feature_flags import (
     is_login_enabled,
     is_myopencre_enabled,
 )
-
+from application.web import identity
 from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors, gap_analysis
 from application.web.openapi_registry import openapi_documented
@@ -901,9 +901,10 @@ def add_header(response):
     # Per-user endpoints must never be shared-cached; no-store wins over the
     # default max-age for them (this hook runs after the view). Covers the
     # resource selection AND the identity endpoint (returns the user's email)
-    # plus its deprecated alias.
+    # plus its deprecated alias, and MCP grant management.
     if request.path in (
         "/rest/v1/user/resources",
+        "/rest/v1/user/mcp_grants",
         "/rest/v1/auth/user",
         "/rest/v1/user",
     ):
@@ -914,13 +915,18 @@ def add_header(response):
 
 
 def _is_logged_in() -> bool:
-    """Single source of truth for session presence.
+    """Single source of truth for browser-session presence.
 
     Keyed on ``session['user_id']`` (recorded by the login flow since #980) — not
     ``google_id``/``name``. Both ``login_required`` and its content-negotiation
     branch route through here, so the predicate lives in exactly one place.
+
+    An MCP bearer token is deliberately *not* logged-in here: ``login_required``
+    stays session-only so a leaked MCP token cannot unlock chat, admin, or other
+    general authenticated routes. MyOpenCRE resources use
+    ``login_or_mcp_required`` instead.
     """
-    return "user_id" in session
+    return identity.is_session_authenticated()
 
 
 def _auth_challenge():
@@ -958,6 +964,20 @@ def login_required(f):
         return f(*args, **kwargs)
 
     return login_r
+
+
+def login_or_mcp_required(f):
+    """Admit a browser session or a verified MCP bearer (not general login)."""
+
+    @wraps(f)
+    def login_or_mcp_r(*args, **kwargs):
+        if os.environ.get("NO_LOGIN") == "1":
+            return f(*args, **kwargs)
+        if identity.current_identity() is None:
+            return _auth_challenge()
+        return f(*args, **kwargs)
+
+    return login_or_mcp_r
 
 
 def feature_enabled_or_default(is_enabled: Any, default_factory: Any) -> Any:
@@ -1455,11 +1475,12 @@ def logout():
     lambda: is_login_enabled() and is_myopencre_enabled(),
     lambda: jsonify({"selected": []}),
 )
-@login_required
+@login_or_mcp_required
+@identity.require_scopes(identity.SCOPE_MYOPENCRE_READ)
 def get_user_resources() -> Any:
     """Return the standard names the current user has selected."""
     database = db.Node_collection()
-    user = _resolve_current_user(database)
+    user = identity.current_user() or _resolve_current_user(database)
     if user is None:
         abort(401, description="Not authenticated")
     return jsonify({"selected": database.get_user_resource_selection(user.id)})
@@ -1471,7 +1492,8 @@ def get_user_resources() -> Any:
     lambda: is_login_enabled() and is_myopencre_enabled(),
     lambda: jsonify({"selected": []}),
 )
-@login_required
+@login_or_mcp_required
+@identity.require_scopes(identity.SCOPE_MYOPENCRE_WRITE)
 def put_user_resources() -> Any:
     """Replace the current user's selected standards."""
     body = request.get_json(silent=True)
@@ -1489,7 +1511,7 @@ def put_user_resources() -> Any:
     if selected and OPENCRE_STANDARD_NAME not in selected:
         selected.append(OPENCRE_STANDARD_NAME)
     database = db.Node_collection()
-    user = _resolve_current_user(database)
+    user = identity.current_user() or _resolve_current_user(database)
     if user is None:
         abort(401, description="Not authenticated")
     stored = database.set_user_resource_selection(user.id, selected)
@@ -1696,6 +1718,60 @@ def import_from_cre_csv() -> Any:
             "new_standards": len(standards_only),
         }
     )
+
+
+def _requested_scope() -> str:
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or "scope" not in body:
+        abort(400, description="Body must be a JSON object with a 'scope' field")
+    scope = body["scope"]
+    if not isinstance(scope, str) or scope.strip() not in identity.ALL_SCOPES:
+        abort(
+            400,
+            description=f"'scope' must be one of: {', '.join(identity.ALL_SCOPES)}",
+        )
+    return scope.strip()
+
+
+@openapi_documented("get_user_mcp_grants")
+@app.route("/rest/v1/user/mcp_grants", methods=["GET"])
+@login_required
+@identity.session_only
+def get_user_mcp_grants() -> Any:
+    """Return the scopes granted to the current user's MCP client."""
+    database = db.Node_collection()
+    user = identity.current_user()
+    if user is None:
+        abort(401, description="Not authenticated")
+    return jsonify({"granted": database.get_mcp_grants(user.id)})
+
+
+@openapi_documented("put_user_mcp_grant")
+@app.route("/rest/v1/user/mcp_grants", methods=["PUT"])
+@login_required
+@identity.session_only
+def put_user_mcp_grant() -> Any:
+    """Grant one scope to the current user's MCP client."""
+    scope = _requested_scope()
+    database = db.Node_collection()
+    user = identity.current_user()
+    if user is None:
+        abort(401, description="Not authenticated")
+    return jsonify({"granted": database.add_mcp_grant(user.id, scope)})
+
+
+@openapi_documented("delete_user_mcp_grant")
+@app.route("/rest/v1/user/mcp_grants", methods=["DELETE"])
+@login_required
+@identity.session_only
+def delete_user_mcp_grant() -> Any:
+    """Revoke one scope from the current user's MCP client."""
+    scope = _requested_scope()
+    database = db.Node_collection()
+    user = identity.current_user()
+    if user is None:
+        abort(401, description="Not authenticated")
+    return jsonify({"granted": database.revoke_mcp_grant(user.id, scope)})
 
 
 # /End Importing Handlers
