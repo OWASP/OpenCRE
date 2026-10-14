@@ -62,6 +62,71 @@ class OwaspAgentRouter:
         else:
             self.queries = MetaQueries(self.store)
 
+    def _response_from_meta_hit(
+        self,
+        agent_hit: Any,
+        *,
+        sim_decision: Any = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Answer from a similarity hit whose URL is ``owasp-agent://meta/...``."""
+        url = str(getattr(agent_hit, "url", "") or "")
+        if not url.startswith("owasp-agent://meta/"):
+            return None
+        parts = url[len("owasp-agent://meta/") :].split("/")
+        if len(parts) < 2:
+            return None
+        kind = parts[0].strip().lower()
+        key = parts[1].strip()
+        if not kind or not key:
+            return None
+        result: Optional[QueryResult] = None
+        if kind == "chapter":
+            result = self.queries.chapter_lookup(place=key.replace("-", " "))
+        elif kind == "project":
+            result = self.queries.project_lookup(key.replace("-", " "))
+        elif kind in ("project_leader", "person", "board_member", "board_candidate"):
+            # Prefer the display name from embed text when present.
+            name = key.replace("-", " ")
+            content = str(getattr(agent_hit, "content", "") or "")
+            for line in content.splitlines():
+                if line.lower().startswith("owasp ") and ":" in line:
+                    name = line.split(":", 1)[1].strip() or name
+                    break
+            if kind.startswith("board"):
+                result = self.queries.board_person(name)
+            else:
+                result = self.queries.person_lookup(name)
+        elif kind == "event":
+            # Fall back to content card; events_near needs geo slots.
+            message = str(getattr(agent_hit, "content", "") or "").strip()
+            if message:
+                result = QueryResult(
+                    ok=True,
+                    kind="event_meta",
+                    message=message,
+                    data={"meta_url": url, "key": key},
+                )
+        elif kind == "membership_country":
+            result = self.queries.membership_info(country=key.replace("-", " "))
+        if result is None:
+            message = str(getattr(agent_hit, "content", "") or "").strip()
+            if not message:
+                return None
+            result = QueryResult(
+                ok=True,
+                kind=f"meta_{kind}",
+                message=message,
+                data={"meta_url": url, "key": key},
+            )
+        resp = format_chat_response(result)
+        if sim_decision is not None:
+            resp.setdefault("owasp_agent", {})
+            resp["owasp_agent"]["lane_scores"] = getattr(sim_decision, "scores", None)
+            resp["owasp_agent"]["lane_reason"] = getattr(sim_decision, "reason", None)
+            if getattr(sim_decision, "action", None) == "both":
+                resp["owasp_agent"]["also_cre"] = True
+        return resp
+
     def handle(
         self,
         prompt: str,
@@ -81,67 +146,126 @@ class OwaspAgentRouter:
         effective = _effective_prompt(text, history)
 
         # Multi-lane embedding gate (preferred): no brand/project keyword routing.
+        # On weak/ambiguous scores, fall through to intent — hard-clarify only when
+        # intent is also unclear (avoids regressing person/project keyword hits
+        # while meta embeddings are still backfilling).
         sim_decision = _similarity_gate(effective)
+        intent_preview = classify_intent(effective)
         if sim_decision is not None:
             if sim_decision.action == "clarify":
-                return format_chat_response(
-                    QueryResult(
-                        ok=False,
-                        kind="clarify",
-                        message=(
-                            "I can help with OWASP community metadata (chapters, "
-                            "projects, events, board, membership) or OpenCRE "
-                            "security standards. Which did you mean?"
-                        ),
-                        clarify="community metadata or CRE/standards?",
-                        data={"lane_scores": sim_decision.scores},
+                if intent_preview in ("clarify",):
+                    return format_chat_response(
+                        QueryResult(
+                            ok=False,
+                            kind="clarify",
+                            message=(
+                                "I can help with OWASP community metadata (chapters, "
+                                "projects, events, board, membership) or OpenCRE "
+                                "security standards. Which did you mean?"
+                            ),
+                            clarify="community metadata or CRE/standards?",
+                            data={"lane_scores": sim_decision.scores},
+                        )
                     )
+                # else: fall through to intent handlers below
+            elif sim_decision.action == "cre":
+                if intent_preview in (
+                    "cre_normative",
+                    "cre_fact",
+                    "clarify",
+                ):
+                    return None
+                # Strong CRE lane but clear meta intent → prefer meta handlers.
+            else:
+                # agent | both — serve evidence hit directly when similarity found one
+                from application.utils.owasp_agent.lane_similarity import (
+                    CHANNEL_AGENT,
+                    is_evidence_hit,
                 )
-            if sim_decision.action == "cre":
-                return None
-            # agent | both — serve evidence hit directly when similarity found one
-            from application.utils.owasp_agent.lane_similarity import (
-                CHANNEL_AGENT,
-                is_evidence_hit,
-            )
 
-            agent_hit = sim_decision.hits.get(CHANNEL_AGENT)
-            if is_evidence_hit(agent_hit) and agent_hit is not None:
-                cites = (
-                    [
-                        c.strip()
-                        for c in (agent_hit.content or "")
-                        .split("Citations:")[-1]
-                        .split(",")
-                        if "http" in c
-                    ]
-                    if "Citations:" in (agent_hit.content or "")
-                    else []
-                )
-                # Strip the Topics/Citations footers for display when present.
-                message = (agent_hit.content or "").split("\n\nTopics:")[0].strip()
-                message = message.split("\n\nCitations:")[0].strip()
-                resp = format_chat_response(
-                    QueryResult(
-                        ok=True,
-                        kind="evidence",
-                        message=message,
-                        citations=cites
+                agent_hit = sim_decision.hits.get(CHANNEL_AGENT)
+                if agent_hit is not None and is_evidence_hit(agent_hit):
+                    cites = (
+                        [
+                            c.strip()
+                            for c in (agent_hit.content or "")
+                            .split("Citations:")[-1]
+                            .split(",")
+                            if "http" in c
+                        ]
+                        if "Citations:" in (agent_hit.content or "")
+                        else []
+                    )
+                    # Strip the Topics/Citations footers for display when present.
+                    message = (agent_hit.content or "").split("\n\nTopics:")[0].strip()
+                    message = message.split("\n\nCitations:")[0].strip()
+                    resp = format_chat_response(
+                        QueryResult(
+                            ok=True,
+                            kind="evidence",
+                            message=message,
+                            citations=cites
+                            or (
+                                [agent_hit.url]
+                                if agent_hit.url.startswith("http")
+                                else []
+                            ),
+                            data={
+                                "lane_scores": sim_decision.scores,
+                                "evidence_url": agent_hit.url,
+                            },
+                        )
+                    )
+                    if sim_decision.action == "both":
+                        resp["owasp_agent"]["also_cre"] = True
+                        resp["owasp_agent"]["lane_reason"] = sim_decision.reason
+                    return resp
+                # Non-evidence agent meta hit → answer from that entity when the
+                # hit kind agrees with intent (avoid wrong-lane answers while
+                # backfill is incomplete).
+                if agent_hit is not None and (agent_hit.url or "").startswith(
+                    "owasp-agent://meta/"
+                ):
+                    hit_kind = (
+                        agent_hit.url[len("owasp-agent://meta/") :]
+                        .split("/", 1)[0]
+                        .strip()
+                        .lower()
+                    )
+                    kind_ok = (
+                        (
+                            intent_preview == "chapter_lookup"
+                            and hit_kind == "chapter"
+                        )
                         or (
-                            [agent_hit.url] if agent_hit.url.startswith("http") else []
-                        ),
-                        data={
-                            "lane_scores": sim_decision.scores,
-                            "evidence_url": agent_hit.url,
-                        },
+                            intent_preview == "project_lookup"
+                            and hit_kind == "project"
+                        )
+                        or (
+                            intent_preview
+                            in ("person_lookup", "board_person")
+                            and hit_kind
+                            in (
+                                "person",
+                                "project_leader",
+                                "board_member",
+                                "board_candidate",
+                            )
+                        )
+                        or (
+                            intent_preview == "membership"
+                            and hit_kind == "membership_country"
+                        )
+                        or intent_preview in ("clarify",)
                     )
-                )
-                if sim_decision.action == "both":
-                    resp["owasp_agent"]["also_cre"] = True
-                    resp["owasp_agent"]["lane_reason"] = sim_decision.reason
-                return resp
+                    if kind_ok:
+                        meta_resp = self._response_from_meta_hit(
+                            agent_hit, sim_decision=sim_decision
+                        )
+                        if meta_resp is not None:
+                            return meta_resp
 
-        intent = classify_intent(effective)
+        intent = intent_preview
         if intent == "cre_normative":
             return None
         if intent == "cre_fact":
@@ -667,6 +791,24 @@ def classify_intent(text: str) -> str:
     ):
         return "count_projects_and_chapters"
 
+    # Project leaders before bare "who leads" (which otherwise steals projects).
+    if re.search(r"\b(who leads|leaders? (of|for)|project leader)\b", t) and re.search(
+        r"\bprojects?\b", t
+    ):
+        return "project_lookup"
+
+    # Chapter existence / "chapter in {city}" before general clarify.
+    if re.search(r"\bchapters?\b", t) and re.search(
+        r"\b(in|near|for|at|around)\b", t
+    ):
+        if not re.search(r"\b(how many|count of)\b", t):
+            return "chapter_lookup"
+    if re.search(
+        r"\b(does|is there|any|have).{0,40}\bchapter\b|\bchapter\b.{0,20}\b(exist|active)\b",
+        t,
+    ):
+        return "chapter_lookup"
+
     # Chapter leader / status / active (incl. suburb → chapter + who leads)
     if re.search(
         r"\b(chapter leader|leader for|leaders? (for|in|of)|who leads|"
@@ -1016,6 +1158,29 @@ def extract_slots(text: str) -> Slots:
         cand = _clean_project_name(m_what_proj.group(1))
         if cand and not re.match(r"^(who|how|why)\b", cand, re.I):
             slots.project_name = cand
+
+    # "Who leads the OWASP Juice Shop project?" / "leaders of OWASP ASVS"
+    if not slots.project_name:
+        m_leads_proj = re.search(
+            r"\b(?:who leads|leaders? (?:of|for)|project leaders? (?:of|for))\s+"
+            r"(?:the\s+)?(?:owasp\s+)?(.+?)\s+projects?\b",
+            text,
+            re.IGNORECASE,
+        )
+        if m_leads_proj:
+            cand = _clean_project_name(m_leads_proj.group(1))
+            if cand:
+                slots.project_name = cand
+        else:
+            m_owasp_proj = re.search(
+                r"\bowasp\s+(.+?)\s+project\b",
+                text,
+                re.IGNORECASE,
+            )
+            if m_owasp_proj and re.search(r"\b(lead|leader|who)\b", text, re.I):
+                cand = _clean_project_name(m_owasp_proj.group(1))
+                if cand:
+                    slots.project_name = cand
 
     # Membership countries — any Title Case token looked up later; seed common ones
     known_countries = (

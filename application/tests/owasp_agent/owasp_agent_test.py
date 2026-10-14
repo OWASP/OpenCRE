@@ -860,7 +860,28 @@ class TestEntityAndChatMemoryFixes(unittest.TestCase):
         self.assertTrue(any(r["name"] == "Rob van der Veer" for r in rows))
         self.assertTrue(any(r["group"] == "OWASP AI Exchange" for r in rows))
 
+    def test_chapter_in_city_intent(self) -> None:
+        q = "Does OWASP have a chapter in London?"
+        self.assertEqual(classify_intent(q), "chapter_lookup")
+        resp = self.router.handle(q)
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        self.assertIn("london", resp["response"].lower())
+
+    def test_project_who_leads_not_chapter(self) -> None:
+        q = "Who leads the OWASP Juice Shop project?"
+        self.assertEqual(classify_intent(q), "project_lookup")
+        slots = extract_slots(q)
+        self.assertEqual(slots.project_name, "Juice Shop")
+        resp = self.router.handle(q)
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        text = resp["response"].lower()
+        self.assertIn("juice shop", text)
+        self.assertNotIn("which chapter or city", text)
+
     def test_who_is_rob_van_der_veer(self) -> None:
+
         self.assertEqual(classify_intent("Who is Rob van der Veer?"), "person_lookup")
         slots = extract_slots("Who is Rob van der Veer?")
         self.assertEqual(slots.person, "Rob van der Veer")
