@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, field
 from typing import Any, List, Optional
 
@@ -22,8 +23,43 @@ from application.utils.owasp_agent.nest_client import (
 )
 
 
+# Curated blurbs when Nest has no project row but leaders.json lists the group.
+_GROUP_PROJECT_BLURBS = {
+    "owasp ai exchange": (
+        "OWASP AI Exchange (AI security and privacy guide): community guidance on "
+        "privacy-preserving and secure AI systems; material at owaspai.org."
+    ),
+    "ai exchange": (
+        "OWASP AI Exchange (AI security and privacy guide): community guidance on "
+        "privacy-preserving and secure AI systems; material at owaspai.org."
+    ),
+    "owasp genai security project": (
+        "OWASP GenAI Security Project: global initiative for generative AI and "
+        "Large Language Model security risks (successor home for LLM Top 10 work)."
+    ),
+    "genai security project": (
+        "OWASP GenAI Security Project: global initiative for generative AI and "
+        "Large Language Model security risks (successor home for LLM Top 10 work)."
+    ),
+}
+
+
+def _project_key_from_group(group: str, group_url: str) -> str:
+    tail = (group_url or "").rstrip("/").split("/")[-1].strip()
+    if tail.startswith("www-project-"):
+        return tail[len("www-project-") :]
+    if tail:
+        return re.sub(r"[^a-z0-9]+", "-", tail.lower()).strip("-")
+    slug = re.sub(r"^owasp\s+", "", (group or "").lower())
+    return re.sub(r"[^a-z0-9]+", "-", slug).strip("-") or "unknown-project"
+
+
 def apply_project_leaders_from_site(store: IndexStore, leaders: List[Any]) -> int:
-    """Index project leaders from site ``leaders.json`` and attach to projects."""
+    """Index project leaders from site ``leaders.json`` and attach to projects.
+
+    When Nest/GitHub never indexed the group as a project, create a site stub so
+    person/compare queries still resolve (additive; does not delete Nest rows).
+    """
     rows = project_leaders_from_site_data(leaders if isinstance(leaders, list) else [])
     if not rows:
         return 0
@@ -68,6 +104,7 @@ def apply_project_leaders_from_site(store: IndexStore, leaders: List[Any]) -> in
             },
         )
         applied += 1
+        matched = False
         for key, proj in by_key.items():
             if not match_project_leader_group(
                 str(proj.get("name") or ""),
@@ -76,6 +113,7 @@ def apply_project_leaders_from_site(store: IndexStore, leaders: List[Any]) -> in
                 group_url,
             ):
                 continue
+            matched = True
             leaders_list = list(proj.get("leaders") or [])
             if name not in leaders_list:
                 leaders_list.append(name)
@@ -95,7 +133,107 @@ def apply_project_leaders_from_site(store: IndexStore, leaders: List[Any]) -> in
                     raw=dict(proj.get("raw") or {}),
                 )
             )
+        if matched:
+            continue
+        # Additive stub so compare/person_lookup can resolve site-only groups.
+        stub_key = _project_key_from_group(group, group_url)
+        g_norm = re.sub(r"^owasp\s+", "", group.lower()).strip()
+        blurb = _GROUP_PROJECT_BLURBS.get(group.lower()) or _GROUP_PROJECT_BLURBS.get(
+            g_norm
+        )
+        existing = by_key.get(stub_key) or {}
+        leaders_list = list(existing.get("leaders") or [])
+        if name not in leaders_list:
+            leaders_list.append(name)
+        desc = str(existing.get("description") or blurb or "")
+        tags = list(existing.get("tags") or [])
+        for t in ("ai", "ai security"):
+            if "ai" in g_norm and t not in tags:
+                tags.append(t)
+        if "genai" in g_norm or "llm" in g_norm:
+            for t in ("genai", "llm"):
+                if t not in tags:
+                    tags.append(t)
+        stub = Project(
+            key=stub_key,
+            name=str(existing.get("name") or group),
+            level=str(existing.get("level") or ""),
+            description=desc,
+            url=str(existing.get("url") or group_url or ""),
+            tags=tags,
+            leaders=leaders_list,
+            source="site",
+            raw={"from_leaders_json": True, "group": group},
+        )
+        store.upsert_project(stub)
+        by_key[stub_key] = stub.to_dict()
     return applied
+
+
+def ensure_known_meta_projects(store: IndexStore) -> int:
+    """Upsert a few high-signal projects Nest often omits (additive stubs)."""
+    known = [
+        Project(
+            key="ai-security-and-privacy-guide",
+            name="OWASP AI Exchange",
+            level="",
+            description=_GROUP_PROJECT_BLURBS["owasp ai exchange"],
+            url="https://owasp.org/www-project-ai-security-and-privacy-guide/",
+            tags=["ai", "ai security", "privacy"],
+            source="site",
+            raw={"curated_meta": True},
+        ),
+        Project(
+            key="genai-security-project",
+            name="OWASP GenAI Security Project",
+            level="",
+            description=_GROUP_PROJECT_BLURBS["owasp genai security project"],
+            url="https://genai.owasp.org/",
+            tags=["genai", "llm", "ai"],
+            source="site",
+            raw={"curated_meta": True},
+        ),
+        Project(
+            key="top-10-for-large-language-model-applications",
+            name="OWASP Top 10 for Large Language Model Applications",
+            level="",
+            description=(
+                "Legacy entry for Large Language Model Top 10; active GenAI Security "
+                "Project work covers generative AI and LLM risks at genai.owasp.org."
+            ),
+            url="https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+            tags=["genai", "llm", "large language"],
+            source="site",
+            raw={"curated_meta": True},
+        ),
+    ]
+    n = 0
+    existing = {str(p.get("key") or ""): p for p in store.list_entities("project")}
+    for proj in known:
+        cur = existing.get(proj.key) or {}
+        # Do not clobber richer Nest/GitHub descriptions.
+        if cur.get("description") and not (cur.get("raw") or {}).get("curated_meta"):
+            if not cur.get("name"):
+                continue
+            # Still refresh empty name/url only.
+            continue
+        leaders = list(cur.get("leaders") or proj.leaders or [])
+        desc = str(cur.get("description") or proj.description)
+        store.upsert_project(
+            Project(
+                key=proj.key,
+                name=str(cur.get("name") or proj.name),
+                level=str(cur.get("level") or proj.level),
+                description=desc,
+                url=str(cur.get("url") or proj.url),
+                tags=list(cur.get("tags") or proj.tags or []),
+                leaders=leaders,
+                source=str(cur.get("source") or proj.source),
+                raw=dict(cur.get("raw") or proj.raw or {}),
+            )
+        )
+        n += 1
+    return n
 
 
 @dataclass
@@ -281,5 +419,9 @@ def sync_all(
         ) as exc:  # noqa: BLE001 — surface unexpected crawl errors in report
             report.errors.append(f"github: {exc}")
             store.log_sync("github", "error", str(exc))
+
+    curated_n = ensure_known_meta_projects(store)
+    if curated_n:
+        store.log_sync("curated_meta", "ok", f"projects={curated_n}")
 
     return report

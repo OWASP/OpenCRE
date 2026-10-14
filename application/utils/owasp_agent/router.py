@@ -136,25 +136,60 @@ class OwaspAgentRouter:
             return self.queries.count_chapters()
         if intent == "count_projects_and_chapters":
             chapters = self.queries.count_chapters()
-            projects = self.queries.count_projects()
+            topic = slots.topic
+            if topic is None and _mentions_ai(text):
+                topic = "ai_security"
+            if topic is None and _mentions_appsec(text):
+                topic = "appsec"
+            list_mode = slots.list_mode or bool(
+                re.search(r"\b(list|table|which projects)\b", text.lower())
+            )
+            projects = self.queries.count_projects(
+                topic=topic, list_mode=list_mode and topic is not None
+            )
             ch_n = (chapters.data or {}).get("count")
             pr_n = (projects.data or {}).get("count")
-            if ch_n is None or pr_n is None:
+            if ch_n is None:
                 return QueryResult(
                     ok=False,
                     kind="count_projects_and_chapters",
-                    message=(
-                        "I could not read both chapter and project counts from the index."
-                    ),
+                    message="I could not read the chapter count from the index.",
                 )
+            if not projects.ok and topic:
+                # Still report chapters; surface project clarify/fail in the message.
+                return QueryResult(
+                    ok=True,
+                    kind="count_projects_and_chapters",
+                    data={"chapters": ch_n, "projects": None, "topic": topic},
+                    message=(
+                        f"The local index has {ch_n} OWASP chapters. "
+                        f"{projects.message}"
+                    ),
+                    citations=list(chapters.citations or []),
+                )
+            if pr_n is None:
+                pr_n = (projects.data or {}).get("count")
+            msg = f"The local index has {ch_n} OWASP chapters"
+            if topic and projects.ok:
+                msg += f" and {pr_n} projects matching topic {topic!r}"
+            elif projects.ok:
+                msg += f" and {pr_n} OWASP projects"
+            msg += "."
+            if list_mode and projects.ok and projects.message:
+                # Append the project table / listing from count_projects.
+                detail = projects.message
+                if detail and not detail.startswith("Answer:"):
+                    msg = f"{msg}\n\n{detail}"
             return QueryResult(
                 ok=True,
                 kind="count_projects_and_chapters",
-                data={"chapters": ch_n, "projects": pr_n},
-                message=(
-                    f"The local index has {pr_n} OWASP projects versus "
-                    f"{ch_n} OWASP chapters."
-                ),
+                data={
+                    "chapters": ch_n,
+                    "projects": pr_n,
+                    "topic": topic,
+                    "project_data": projects.data,
+                },
+                message=msg,
                 citations=list(
                     dict.fromkeys(
                         list(projects.citations or []) + list(chapters.citations or [])
@@ -189,6 +224,9 @@ class OwaspAgentRouter:
                 topic=topic, level=level, list_mode=list_mode
             )
         if intent == "board_members":
+            # Named person → search all (or given) years; never demand a year first.
+            if slots.person:
+                return self.queries.board_person(slots.person, year=slots.year)
             years = slots.years or ([slots.year] if slots.year is not None else [])
             if not years:
                 return QueryResult(
@@ -229,7 +267,34 @@ class OwaspAgentRouter:
                 renew_only=renew and not countries,
             )
         if intent == "talk_lookup":
-            return self.queries.talk_lookup(person=slots.person, topic=slots.topic)
+            talk = self.queries.talk_lookup(person=slots.person, topic=slots.topic)
+            # Compound: "fail-closed on X talk; succeed on CRE-…"
+            from application.utils.owasp_agent.cre_facts import (
+                format_cre_factoid,
+                lookup_cre_factoid,
+            )
+
+            cre_hit = lookup_cre_factoid(text)
+            if cre_hit and talk.ok:
+                cre_id, title, note = cre_hit
+                cre_msg = format_cre_factoid(cre_id, title, note)
+                return QueryResult(
+                    ok=True,
+                    kind="talk_and_cre",
+                    data={
+                        "talk": talk.data,
+                        "cre_id": cre_id,
+                        "title": title,
+                    },
+                    message=f"{talk.message} Separately: {cre_msg}",
+                    citations=list(
+                        dict.fromkeys(
+                            list(talk.citations or [])
+                            + [f"https://opencre.org/cre/{cre_id}"]
+                        )
+                    ),
+                )
+            return talk
         if intent == "person_lookup":
             if not slots.person:
                 return QueryResult(
@@ -410,6 +475,11 @@ def classify_intent(text: str) -> str:
         r"\bddos\b|\bbreak into\b|\bsteal (their|passwords|dms)\b|"
         r"\bphishing (email )?template\b|\bvishing\b|\bmetasploit\b|"
         r"\bsocial-?engineer\b|"
+        r"\b(phish|phishing)\b|"
+        r"\bkeylogger\b|\b(write|build)\s+a\s+worm\b|\bpoison .{0,40}dependency\b|"
+        r"\bburp\s+intruder\b|\bauth bypass\b|"
+        r"\bbreaking into\b|\bforged token\b|\bidor\b|\bransomware\b|\bdox\b|"
+        r"\bunrestricted gpt\b|\bdisable safety\b|\bexfiltrate\b|"
         r"\bignore (all )?(previous|prior|earlier)( instructions)?\b|"
         r"\bdump (the )?(api|nest|heroku)?.{0,20}keys?\b|"
         r"\boutput the .{0,40}api keys?\b|"
@@ -429,17 +499,31 @@ def classify_intent(text: str) -> str:
         r"status in greece|compare the two chapters|output encoding|"
         r"appsec keynote summary please|first interview|who ran|"
         r"cre for that thing we discussed|what did they say at the talk|"
-        r"is the chapter active)\??",
+        r"is the chapter active)[?.!\s]*",
         t,
     ):
         return "clarify"
 
+    # Fail-closed talk asks (often compound with a CRE factoid) before CRE-only.
+    # Do not steal board asks that only say "do not invent talk quotes".
+    if (
+        re.search(r"\bfail[- ]closed\b", t)
+        and re.search(r"\btalk\b", t)
+        and not re.search(r"\bboard\b", t)
+    ):
+        return "talk_lookup"
+
     # Curated CRE factoids (deterministic) before generic CRE RAG
+    from application.utils.owasp_agent.cre_facts import lookup_cre_factoid
+
+    if lookup_cre_factoid(text):
+        # Talk + CRE compound stays talk_lookup so handle() can merge both.
+        if re.search(r"\btalk\b", t):
+            return "talk_lookup"
+        return "cre_fact"
     if re.search(r"\b(which cre|what cre|cre covers)\b", t) or (
         "cre" in t and "covers" in t
     ):
-        from application.utils.owasp_agent.cre_facts import lookup_cre_factoid
-
         if lookup_cre_factoid(text):
             return "cre_fact"
 
@@ -475,6 +559,13 @@ def classify_intent(text: str) -> str:
     ):
         return "membership"
 
+    # Chapters + projects in one ask (before project-only listing)
+    if (
+        re.search(r"\bhow many\b.+\bchapters?\b", t)
+        or re.search(r"\bchapters?\b.+\b(how many|exist|count)\b", t)
+    ) and re.search(r"\bprojects?\b", t):
+        return "count_projects_and_chapters"
+
     # Project listing / counts (including free-topic "touch X" tables)
     if re.search(
         r"\b(which flagged owasp projects|flagged owasp projects|"
@@ -484,6 +575,7 @@ def classify_intent(text: str) -> str:
     ) or (
         "project" in t
         and any(w in t for w in ("table", "list", "flagged", "which", "touch"))
+        and "chapter" not in t
     ):
         return "count_projects"
 
@@ -497,7 +589,9 @@ def classify_intent(text: str) -> str:
     # Chapter leader / status / active (incl. suburb → chapter + who leads)
     if re.search(
         r"\b(chapter leader|leader for|leaders? (for|in|of)|who leads|"
-        r"which chapter|active owasp chapter|chapter status|owasp leader)\b",
+        r"which chapter|active owasp chapter|chapter status|owasp leader|"
+        r"owasp athens|athens currently (active|inactive)|"
+        r"count of indexed owasp chapters|approximate count of .{0,20}chapters)\b",
         t,
     ) or (
         "chapter" in t
@@ -505,7 +599,61 @@ def classify_intent(text: str) -> str:
             w in t for w in ("athens", "thessalon", "los angeles", "active", "status")
         )
     ):
+        if re.search(
+            r"\b(count|how many|approximate count)\b.+\bchapters?\b",
+            t,
+        ) or re.search(r"\bchapters?\b.+\b(count|how many)\b", t):
+            return "count_chapters"
         return "chapter_lookup"
+
+    # Standalone chapter counts (without "how many")
+    if (
+        re.search(
+            r"\b(approximate )?count of (indexed )?owasp chapters\b|"
+            r"\bhow many (indexed )?owasp chapters\b|"
+            r"\bindexed owasp chapters\b",
+            t,
+        )
+        and "project" not in t
+    ):
+        return "count_chapters"
+
+    # Board person / service years / candidate page — before talk heuristics
+    # (negations like "do not invent talk quotes" must not steal board asks).
+    # Year-scoped roster ("Board roster for 2020") stays board_members.
+    if re.search(r"\bboard roster\b", t) and re.search(r"\b20\d{2}\b", t):
+        if not _extract_quoted_or_capitalized_name(text):
+            return "board_members"
+    if re.search(
+        r"\b(board (service )?years|board member|board year roster|"
+        r"on any indexed owasp board|candidate page|candidacy|"
+        r"board interview|candidate statement|run for the owasp board|"
+        r"first board interview|quote .{0,40}board interview)\b",
+        t,
+    ) or (
+        "board" in t
+        and re.search(r"\b(member|candidate|roster|years?|service)\b", t)
+        and _extract_quoted_or_capitalized_name(text)
+    ):
+        return "board_person"
+    # Board roster + refuse invented talk (compound) — answer roster first.
+    if (
+        re.search(r"\bboard\b", t)
+        and re.search(r"\b20\d{2}\b", t)
+        and re.search(r"\b(roster|members?)\b", t)
+    ):
+        if re.search(
+            r"\b(refuse|do not invent|fail closed|no talk|keynote quotes?)\b", t
+        ) or re.search(r"\bthen refuse\b", t):
+            return "board_members"
+
+    # Multi-hop suburb → chapter (+ optional leader talk) before bare talk_lookup.
+    if re.search(
+        r"\b(pasadena|glendale|santa monica|yokohama|multi-hop|suburb)\b", t
+    ) and re.search(r"\b(chapter|leader|meetup|la\b|los angeles|tokyo)\b", t):
+        if re.search(r"\b(leader|who leads|chapter)\b", t):
+            return "chapter_lookup"
+        return "events_near"
 
     # Talk / keynote claims — fail-closed talk_lookup (not CRE, not invent)
     if re.search(
@@ -513,18 +661,12 @@ def classify_intent(text: str) -> str:
         r"sa(id|y) about .{0,40}defenses|talk on |summarize .+ talk|"
         r"find .{0,40}talks? by|talks? by (a )?random person|talks? by)\b",
         t,
-    ) and not re.search(r"\b(board interview|candidate statement)\b", t):
-        if "board interview" in t or "candidate statement" in t:
-            return "board_person"
-        return "talk_lookup"
-
-    # Board interview / candidate statement / quote from board interview
-    if re.search(
-        r"\b(board interview|candidate statement|run for the owasp board|"
-        r"first board interview|candidacy|quote .{0,40}board interview)\b",
+    ) and not re.search(
+        r"\b(board interview|candidate statement|board (service )?years|"
+        r"do not invent talk|board roster|refuse to invent)\b",
         t,
     ):
-        return "board_person"
+        return "talk_lookup"
 
     if has_meta and not has_norm:
         if re.search(r"\b(projects? versus chapters|chapters versus projects)\b", t):
@@ -545,6 +687,9 @@ def classify_intent(text: str) -> str:
             or "position" in t
             or "who" in t
             or "roster" in t
+            or "years" in t
+            or "service" in t
+            or "candidate" in t
             or re.search(r"\b20\d{2}\b", t)
         ):
             if _extract_quoted_or_capitalized_name(text) and not re.search(
@@ -555,7 +700,7 @@ def classify_intent(text: str) -> str:
                 "who" in t or "member" in t or "board" in t or "roster" in t
             ):
                 return "board_members"
-            if "position" in t or "board member" in t:
+            if "position" in t or "board member" in t or "candidate" in t:
                 return "board_person"
             return "board_members"
         if any(
@@ -597,19 +742,35 @@ def classify_intent(text: str) -> str:
                     return "chapter_lookup"
                 return "events_near"
             if "board" in t:
-                if "interview" in t or "statement" in t or "candidate" in t:
+                if (
+                    "interview" in t
+                    or "statement" in t
+                    or "candidate" in t
+                    or "years" in t
+                    or "service" in t
+                    or _extract_quoted_or_capitalized_name(text)
+                ):
                     return "board_person"
                 return "board_members"
         # e.g. "board interview about XSS" — meta person lookup, not CRE XSS advice
         if "board interview" in t or "candidate" in t:
             return "board_person"
-        if "keynote" in t or "talk" in t or "what did" in t:
+        if (
+            "keynote" in t
+            or (
+                re.search(r"\btalk\b", t)
+                and not re.search(r"\bdo not invent talk\b", t)
+            )
+            or "what did" in t
+        ):
             return "talk_lookup"
         return "cre_normative"
     # Chitchat about named person + defenses/talk without clear CRE ask
     if re.search(r"\b(keynote|talk|presented|say about|said about)\b", t) and (
         _extract_quoted_or_capitalized_name(text)
     ):
+        if re.search(r"\b(board (service )?years|do not invent talk)\b", t):
+            return "board_person"
         return "talk_lookup"
     return "cre_normative"
 
@@ -729,6 +890,14 @@ def extract_slots(text: str) -> Slots:
     person = _extract_quoted_or_capitalized_name(text)
     if person:
         slots.person = person
+    # "Fail-closed on Spyros … talk" — single given name is enough for fail-closed.
+    if not slots.person:
+        m_on_talk = re.search(
+            r"\bon\s+([A-Z][a-z]{2,})\s+(?:\S+\s+){0,4}talk\b",
+            text,
+        )
+        if m_on_talk:
+            slots.person = m_on_talk.group(1).strip()
 
     m_who = re.search(
         r"\b[Ww]ho\s+is\s+(" + _PERSON_NAME_RE + r")\s*\??",
@@ -937,6 +1106,7 @@ def _mentions_ai(text: str) -> bool:
                 "projects on ai",
                 "about ai",
                 "ai projects",
+                "ai-related",
                 "related owasp projects",
             )
         )
@@ -955,6 +1125,50 @@ def _mentions_appsec(text: str) -> bool:
 # (e.g. "Rob van der Veer", "Andrew van der Stock").
 _PERSON_NAME_RE = r"[A-Z][a-z]+(?:\s+(?:van|der|de|la|von|[A-Z][a-z]+))+"
 
+_NAME_LEADING_STOPWORDS = frozenset(
+    {
+        "show",
+        "compare",
+        "quote",
+        "quoting",
+        "before",
+        "after",
+        "when",
+        "what",
+        "which",
+        "whose",
+        "did",
+        "does",
+        "has",
+        "have",
+        "is",
+        "are",
+        "was",
+        "were",
+        "the",
+        "and",
+        "for",
+        "from",
+        "with",
+        "about",
+        "board",
+        "nearest",
+        "multi",
+        "hop",
+        "fail",
+        "closed",
+        "draft",
+        "list",
+        "how",
+        "many",
+    }
+)
+
+
+def _name_starts_with_stopword(name: str) -> bool:
+    first = (name or "").strip().split()[0].lower() if name else ""
+    return first in _NAME_LEADING_STOPWORDS
+
 
 def _extract_quoted_or_capitalized_name(text: str) -> Optional[str]:
     m = re.search(r"[\"']([A-Z][^\"']+)[\"']", text)
@@ -963,12 +1177,60 @@ def _extract_quoted_or_capitalized_name(text: str) -> Optional[str]:
     m_who = re.search(r"\b[Ww]ho\s+is\s+(" + _PERSON_NAME_RE + r")\s*\??", text)
     if m_who:
         return m_who.group(1).strip().rstrip(".?!")
-    m_quote = re.search(
-        r"\b[Qq]uote\s+(" + _PERSON_NAME_RE + r")(?:'s)?\s+(?:from\b|keynote\b|talk\b)",
+    # "Jeff Williams: board service years…" (colon only — not Name's possessive)
+    m_lead = re.search(
+        r"^(" + _PERSON_NAME_RE + r")\s*:",
+        text.strip(),
+    )
+    if m_lead and not _name_starts_with_stopword(m_lead.group(1)):
+        return m_lead.group(1).strip()
+    # Leading name + board / years without requiring colon
+    # ("Andrew van der Stock board years — …")
+    m_lead_board = re.search(
+        r"^(" + _PERSON_NAME_RE + r")\s+board\b",
+        text.strip(),
+    )
+    if m_lead_board and not _name_starts_with_stopword(m_lead_board.group(1)):
+        return m_lead_board.group(1).strip()
+    # Verb-led extractions before bare possessive (avoids "Show Sam …" as a name).
+    m_is = re.search(
+        r"\b[Ii]s\s+(" + _PERSON_NAME_RE + r")\s+on\b",
         text,
     )
-    if m_quote:
-        return m_quote.group(1).strip()
+    if m_is:
+        return m_is.group(1).strip()
+    m_has = re.search(
+        r"\b[Hh]as\s+(" + _PERSON_NAME_RE + r")\s+been\b",
+        text,
+    )
+    if m_has:
+        return m_has.group(1).strip()
+    m_show = re.search(
+        r"\b[Ss]how\s+(" + _PERSON_NAME_RE + r")(?:'s|’s)?\b",
+        text,
+    )
+    if m_show:
+        return m_show.group(1).strip()
+    m_compare = re.search(
+        r"\b[Cc]ompare\s+(" + _PERSON_NAME_RE + r")(?:'s|’s)?\b",
+        text,
+    )
+    if m_compare:
+        return m_compare.group(1).strip()
+    m_quoting = re.search(
+        r"\b(?:quoting|quote)\s+(" + _PERSON_NAME_RE + r")(?:'s|’s)?\b",
+        text,
+        re.IGNORECASE,
+    )
+    if m_quoting:
+        return m_quoting.group(1).strip()
+    # Any possessive Name's … (candidate page, board candidacy, AppSec talk)
+    m_possessive = re.search(
+        r"\b(" + _PERSON_NAME_RE + r")(?:'s|’s)\b",
+        text,
+    )
+    if m_possessive and not _name_starts_with_stopword(m_possessive.group(1)):
+        return m_possessive.group(1).strip()
     m_by = re.search(
         r"\btalks?\s+by\s+(?:a\s+random\s+person\s+named\s+)?("
         + _PERSON_NAME_RE

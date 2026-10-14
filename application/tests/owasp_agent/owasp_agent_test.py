@@ -19,7 +19,11 @@ from application.utils.owasp_agent.github_crawler import (
     parse_board_history_yaml,
     project_leaders_from_site_data,
 )
-from application.utils.owasp_agent.index_store import IndexStore
+from application.utils.owasp_agent.index_store import (
+    IndexStore,
+    app_db_url_and_key,
+    default_db_path,
+)
 from application.utils.owasp_agent.models import Chapter, Event, Project
 from application.utils.owasp_agent.queries import MetaQueries
 from application.utils.owasp_agent.router import (
@@ -591,6 +595,66 @@ class TestProbeGapFixes(unittest.TestCase):
         assert resp is not None
         self.assertIn("no indexed", resp["response"].lower())
 
+    def test_board_service_years_not_clarify(self) -> None:
+        q = "Jeff Williams: board service years if indexed (do not invent talk quotes)."
+        self.assertEqual(classify_intent(q), "board_person")
+        slots = extract_slots(q)
+        self.assertEqual(slots.person, "Jeff Williams")
+        resp = self.router.handle(q)
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        self.assertIn("jeff williams", resp["response"].lower())
+        self.assertNotIn("which board year", resp["response"].lower())
+
+    def test_board_roster_named_person_searches_all_years(self) -> None:
+        q = "Is Steve Springett on any indexed OWASP board year roster?"
+        self.assertEqual(classify_intent(q), "board_person")
+        slots = extract_slots(q)
+        self.assertEqual(slots.person, "Steve Springett")
+        # Fixture has no Springett — fail-closed still names the person path.
+        resp = self.router.handle(q)
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        body = resp["response"].lower()
+        self.assertTrue(
+            "steve springett" in body or "no board" in body or "no indexed" in body
+        )
+        self.assertNotIn("which board year should i look up", body)
+
+    def test_candidate_page_url_extracts_person(self) -> None:
+        q = "Show Sam Stepanyan's 2023 candidate page URL if indexed."
+        self.assertEqual(classify_intent(q), "board_person")
+        slots = extract_slots(q)
+        self.assertEqual(slots.person, "Sam Stepanyan")
+        self.assertEqual(slots.year, 2023)
+
+    def test_chapters_and_ai_projects_compound_intent(self) -> None:
+        q = "How many chapters exist, and list AI-related projects in a table."
+        self.assertEqual(classify_intent(q), "count_projects_and_chapters")
+        resp = self.router.handle(q)
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        self.assertRegex(resp["response"], r"\b\d{1,4}\b")
+        self.assertIn("chapter", resp["response"].lower())
+
+    def test_events_near_geocode_fail_falls_back_to_chapter(self) -> None:
+        from application.utils.owasp_agent.geocode import GeocodeError
+
+        def boom(_place: str):
+            raise GeocodeError("network down")
+
+        queries = MetaQueries(self.store, geocode_fn=boom)
+        router = OwaspAgentRouter(store=self.store, queries=queries)
+        resp = router.handle(
+            "Nearest OWASP meetup on AI security; I am in Pasadena, California."
+        )
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        body = resp["response"].lower()
+        self.assertTrue(
+            "los angeles" in body or "pasadena" in body or "chapter" in body
+        )
+
     def test_pasadena_place_not_swallow_topic(self) -> None:
         slots = extract_slots(
             "When is the next OWASP meetup near Pasadena about AI security?"
@@ -622,6 +686,20 @@ class TestProbeGapFixes(unittest.TestCase):
         body = resp["response"].lower()
         self.assertIn("no indexed", body)
         self.assertIn("will not invent", body)
+
+    def test_spyros_talk_fail_closed_plus_cre_844(self) -> None:
+        q = "Fail-closed on Spyros excesses-defenses talk; succeed on CRE-844-486."
+        self.assertNotEqual(classify_intent(q), "clarify")
+        resp = self.router.handle(q)
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        body = resp["response"].lower()
+        self.assertTrue(
+            "no indexed" in body or "fail closed" in body,
+            msg=body,
+        )
+        self.assertIn("cre-844-486", body)
+        self.assertNotIn("which city are you in", body)
 
     def test_live_in_santa_monica_place(self) -> None:
         slots = extract_slots(
@@ -754,7 +832,6 @@ class TestProbeGapFixes(unittest.TestCase):
         self.assertRegex(resp["response"], r"\b\d{1,4}\b")
 
 
-
 class TestEntityAndChatMemoryFixes(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
@@ -818,7 +895,6 @@ class TestEntityAndChatMemoryFixes(unittest.TestCase):
         self.assertNotIn("do not appear to be commonly recognized", text)
         self.assertNotIn("facilitate the sharing, discovery", text)
 
-
     def test_clarify_followup_uses_history(self) -> None:
         history = [
             {
@@ -839,6 +915,94 @@ class TestEntityAndChatMemoryFixes(unittest.TestCase):
         self.assertIn(kind, ("membership", "clarify"))
         if kind == "membership":
             self.assertIn("morocco", resp["response"].lower())
+
+
+class TestIndexStoreDefaults(unittest.TestCase):
+    def test_override_env_wins_over_app_db(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "OWASP_AGENT_DB": "sqlite:////tmp/agent-override.sqlite",
+                "DATABASE_URL": "postgresql://cre:pw@127.0.0.1:5432/cre",
+            },
+        ):
+            self.assertEqual(default_db_path(), "sqlite:////tmp/agent-override.sqlite")
+
+    def test_falls_back_to_main_database_url(self) -> None:
+        env = {
+            k: v
+            for k, v in os.environ.items()
+            if k
+            not in {
+                "OWASP_AGENT_DB",
+                "DATABASE_URL",
+                "DEV_DATABASE_URL",
+                "PROD_DATABASE_URL",
+                "SQLALCHEMY_DATABASE_URI",
+                "FLASK_CONFIG",
+            }
+        }
+        env["DATABASE_URL"] = "postgresql://cre:pw@127.0.0.1:5432/cre"
+        env["FLASK_CONFIG"] = "development"
+        with patch.dict(os.environ, env, clear=True):
+            self.assertEqual(
+                default_db_path(), "postgresql://cre:pw@127.0.0.1:5432/cre"
+            )
+
+    def test_dev_url_wins_in_development_when_both_set(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "FLASK_CONFIG": "development",
+                "DEV_DATABASE_URL": "postgresql://dev/db",
+                "DATABASE_URL": "postgresql://prod/db",
+            },
+        ):
+            os.environ.pop("OWASP_AGENT_DB", None)
+            self.assertEqual(default_db_path(), "postgresql://dev/db")
+            self.assertEqual(app_db_url_and_key()[1], "DEV_DATABASE_URL")
+
+    def test_prod_url_ignored_outside_production(self) -> None:
+        env = {
+            k: v
+            for k, v in os.environ.items()
+            if k
+            not in {
+                "OWASP_AGENT_DB",
+                "DATABASE_URL",
+                "DEV_DATABASE_URL",
+                "PROD_DATABASE_URL",
+                "SQLALCHEMY_DATABASE_URI",
+                "FLASK_CONFIG",
+            }
+        }
+        env["PROD_DATABASE_URL"] = "postgresql://prod-only/db"
+        env["FLASK_CONFIG"] = "development"
+        with patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(RuntimeError):
+                default_db_path()
+
+    def test_engine_url_rewrites_postgres_scheme(self) -> None:
+        from application.utils.owasp_agent.index_store import _engine_url
+
+        self.assertEqual(
+            _engine_url("postgres://cre:pw@host/db"),
+            "postgresql+psycopg2://cre:pw@host/db",
+        )
+
+    def test_no_sqlite_file_default_when_unset(self) -> None:
+        drop = {
+            "OWASP_AGENT_DB",
+            "DATABASE_URL",
+            "DEV_DATABASE_URL",
+            "PROD_DATABASE_URL",
+            "SQLALCHEMY_DATABASE_URI",
+        }
+        env = {k: v for k, v in os.environ.items() if k not in drop}
+        with patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(RuntimeError):
+                default_db_path()
+
 
 if __name__ == "__main__":
     unittest.main()

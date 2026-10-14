@@ -783,24 +783,78 @@ class MetaQueries:
                 clarify="Which city or place are you in?",
                 message="I don't know where you are. Please tell me which city you are in.",
             )
+        origin = None
+        geocode_err: Optional[str] = None
         try:
             origin = self.geocode_fn(place.strip())
         except GeocodeError as exc:
+            geocode_err = str(exc)
+
+        chapters = [
+            c
+            for c in (self._safe_entities("chapter") or [])
+            if isinstance(c, dict) and not c.get("_conflict")
+        ]
+
+        def _chapter_name_fallback() -> Optional[QueryResult]:
+            """Suburb / city string match when Nominatim is down or coords missing."""
+            tokens = _place_city_tokens(place)
+            alias = _metro_chapter_alias(place)
+            targets = list(tokens)
+            if alias and alias not in targets:
+                targets.append(alias)
+            hits = []
+            for c in chapters:
+                cn = _norm(str(c.get("name") or "") + " " + str(c.get("city") or ""))
+                if any(t and t in cn for t in targets):
+                    hits.append(c)
+            if not hits:
+                return None
+            top = hits[0]
+            alias_note = ""
+            if alias:
+                alias_note = f" (mapped {place.strip()} → {alias.title()} chapter)"
+            geo_note = (
+                f" Geocoding was unavailable ({geocode_err}); used chapter name match."
+                if geocode_err
+                else " Used chapter name / metro alias match."
+            )
+            return QueryResult(
+                ok=True,
+                kind="events_near",
+                data={
+                    "place": place,
+                    "nearest_chapter": _public_entity(top),
+                    "events": [],
+                    "geocode_fallback": True,
+                },
+                message=(
+                    f"You told me you are in {place}. The nearest indexed OWASP chapter is "
+                    f"{top.get('name')}{alias_note}.{geo_note} "
+                    "I do not have upcoming meetup details indexed yet (fail closed on talks)."
+                ),
+                citations=_citations([top]),
+            )
+
+        if origin is None:
+            fb = _chapter_name_fallback()
+            if fb is not None:
+                return fb
             return QueryResult(
                 ok=False,
                 kind="events_near",
-                message=f"I could not geocode {place!r} ({exc}). Please try another place name.",
+                message=(
+                    f"I could not geocode {place!r}"
+                    + (f" ({geocode_err})" if geocode_err else "")
+                    + " and found no matching indexed chapter name. "
+                    "Please try another place name."
+                ),
                 clarify="Which city should I use?",
             )
 
         events = self._safe_entities("event")
         if not isinstance(events, list):
             # Fall back to chapters when events missing.
-            chapters = [
-                c
-                for c in (self._safe_entities("chapter") or [])
-                if isinstance(c, dict) and not c.get("_conflict")
-            ]
             if not chapters:
                 return QueryResult(
                     ok=False,
@@ -809,6 +863,9 @@ class MetaQueries:
                 )
             nearest_ch = nearest_by_coords(origin, chapters, limit=3)
             if not nearest_ch:
+                fb = _chapter_name_fallback()
+                if fb is not None:
+                    return fb
                 return QueryResult(
                     ok=False,
                     kind="events_near",
@@ -868,6 +925,12 @@ class MetaQueries:
                     key = str(ch.get("key") or "").lower()
                     name = str(ch.get("name") or "").lower()
                     if alias in key or alias in name:
+                        place_bits = _place_city_tokens(place)
+                        metro = (
+                            "Tokyo"
+                            if any(t in ("yokohama", "tokyo") for t in place_bits)
+                            else alias.title()
+                        )
                         return QueryResult(
                             ok=True,
                             kind="events_near",
@@ -877,8 +940,10 @@ class MetaQueries:
                                 "events": [],
                             },
                             message=(
-                                f"You told me you are in {place}. Nearest indexed OWASP chapter is "
-                                f"{ch.get('name')}. No matching upcoming events indexed"
+                                f"You told me you are in {place}. Nearest indexed OWASP chapter for "
+                                f"the {metro} metro area is {ch.get('name')} "
+                                f"(mapped via {alias}). "
+                                "No matching upcoming events indexed"
                                 + (f" for topic {topic!r}." if topic else ".")
                             ),
                             citations=_citations([ch]),
@@ -901,6 +966,9 @@ class MetaQueries:
                     ),
                     citations=_citations([ch]),
                 )
+            fb = _chapter_name_fallback()
+            if fb is not None:
+                return fb
             return QueryResult(
                 ok=False,
                 kind="events_near",
@@ -1142,9 +1210,27 @@ def _match_project(
     return exact or partial
 
 
+def _place_city_tokens(place: str) -> List[str]:
+    """Normalize place to candidate city keys (strip country/state tails)."""
+    p = _norm(place or "")
+    if not p:
+        return []
+    out = [p]
+    # "pasadena, california" / "yokohama japan" → leading city
+    head = re.split(r"\s*,\s*|\s+", p)[0]
+    if head and head not in out:
+        out.append(head)
+    # two-word cities before a comma ("santa monica, california")
+    m = re.match(r"^([a-z]+(?:\s+[a-z]+)?)\b", p)
+    if m:
+        cand = m.group(1).strip()
+        if cand and cand not in out:
+            out.append(cand)
+    return out
+
+
 def _metro_chapter_alias(place: str) -> Optional[str]:
     """Map well-known localities to chapter key/name fragments without geocoding."""
-    p = _norm(place)
     aliases = {
         "pasadena": "los angeles",
         "santa monica": "los angeles",
@@ -1156,9 +1242,14 @@ def _metro_chapter_alias(place: str) -> Optional[str]:
         "croydon": "london",
         "peckham": "london",
         "potsdam": "berlin",
-        "yokohama": "tokyo",
+        # Nest/site often indexes "OWASP Japan" rather than a Tokyo chapter key.
+        "yokohama": "japan",
+        "tokyo": "japan",
         "brooklyn": "new york",
         "manhattan": "new york",
         "cambridge": "boston",
     }
-    return aliases.get(p)
+    for token in _place_city_tokens(place):
+        if token in aliases:
+            return aliases[token]
+    return None

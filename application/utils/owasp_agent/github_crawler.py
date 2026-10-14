@@ -269,9 +269,9 @@ def parse_leaders_from_markdown(text: str) -> List[str]:
     for line in (text or "").splitlines():
         if "open position" in line.lower():
             continue
-        m = _LEADER_BULLET_RE.match(line)
-        if m:
-            name = m.group(1).strip().rstrip("]")
+        matched = _LEADER_BULLET_RE.match(line)
+        if matched:
+            name = matched.group(1).strip().rstrip("]")
             if name and name not in leaders:
                 leaders.append(name)
     return leaders
