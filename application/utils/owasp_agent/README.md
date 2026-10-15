@@ -73,7 +73,9 @@ make install-python   # or: pip install -r requirements.txt -r requirements-dev.
 | Variable | Required for | Notes |
 | --- | --- | --- |
 | `OWASP_AGENT_ENABLED=1` | Agent + MCP meta tools | Off by default |
-| `OWASP_AGENT_DB` | Index path or Postgres URL | Default: `./tmp/owasp_agent.sqlite`. Scheduled runs (`--run_scheduled`) fall back to the app database when unset, so set the same value for web/MCP processes |
+| `OWASP_AGENT_SIM_ROUTER` | Multi-lane embedding gate (cre_graph / corpus / owasp_agent_meta) before structural intents | `1` default |
+| `OWASP_AGENT_EMBED_META=1` | During sync, embed meta (+ evidence notes) into shared `embeddings` | Off |
+| `OWASP_AGENT_DB` | Index path | Default: `./tmp/owasp_agent.sqlite` |
 | `NEST_API_KEY` | Nest sync (chapters/events/projects) | From [nest.owasp.org](https://nest.owasp.org) while logged in |
 | `NEST_API_BASE` | Nest sync | Default `https://nest.owasp.org/api/v0` |
 | `GITHUB_TOKEN` | GitHub sync / board-history crawl | Optional but raises rate limits; board YAML needs GitHub |
@@ -185,7 +187,9 @@ script stdout or the `summary` key in the results JSON.
 
 ## Isolation rules (do not break)
 
-- Data only in `OWASP_AGENT_DB` — never CRE / Node / embeddings tables.
+- Meta only in agent index / `meta_*` — never CRE graph nodes. May write
+  `embeddings` with `source_channel=owasp_agent_meta` only (lane routing).
+  Embed: `PYTHONPATH=. python scripts/owasp_agent_embed_meta.py`
 - Never expose meta entities via CRE REST (`tags`, `text_search`, standards, graph UI).
 - Chat responses keep CRE `table` citations empty for meta answers.
 - Reachable only from chat completion (flag on) and MCP `owasp_meta_*`.
