@@ -249,7 +249,11 @@ OPENAPI_PATHS: List[PathSpec] = [
         summary="Gap analysis background job status/result",
         query_schema=schemas.JobResultsQuerySchema,
         response_schema=schemas.JobStatusResponseSchema,
-        extra_responses={"500": {"description": "Job failed"}},
+        extra_responses={
+            "400": {"description": "Missing id parameter"},
+            "500": {"description": "Job failed"},
+            "503": {"description": "Job queue unavailable"},
+        },
     ),
     PathSpec(
         "/rest/v1/standards",
