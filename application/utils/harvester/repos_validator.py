@@ -4,6 +4,7 @@ from cre_logging import get_logger
 logger = get_logger(__name__)
 
 from .schemas import ReposFile
+from .github_sources import parse_github_source
 
 
 class RepositoryValidationError(Exception):
@@ -13,6 +14,14 @@ class RepositoryValidationError(Exception):
 def validate_repositories(config: ReposFile) -> None:
     seen_ids: set[str] = set()
     seen_repositories: set[tuple[str, str]] = set()
+    seen_sources: set[str] = set()
+
+    for src in config.sources:
+        source = parse_github_source(src.url)
+        key = source.canonical.casefold()
+        if key in seen_sources:
+            raise RepositoryValidationError(f"Duplicate source: {source.canonical}")
+        seen_sources.add(key)
 
     for repository in config.repositories:
         repo_id_key = repository.id.casefold()

@@ -177,6 +177,47 @@ class DocumentChunkPipelineIntegrationTests(unittest.TestCase):
 
 
 class OieOrchestratorTests(unittest.TestCase):
+    def test_result_exposes_flags_engine_and_graph_path(self) -> None:
+        def ok_summary(*args, **kwargs):
+            summary = Mock()
+            summary.status = "ok"
+            summary.to_json.return_value = (
+                '{"status":"ok","chunks_written":0,"repositories":1,'
+                '"files_seen":0,"files_retained":0,"documents_emitted":0,'
+                '"repository_ids":["owasp-asvs"]}'
+            )
+            return summary
+
+        result = run_oie_pipeline(
+            cache_file="sqlite://",
+            pipeline_run_id="run-trace",
+            dry_run=True,
+            sync_repos=False,
+            skip_b=True,
+            skip_c=True,
+            skip_c1=True,
+            max_repos=1,
+            run_harvester_fn=ok_summary,
+            run_noise_filter_fn=ok_summary,
+            run_librarian_queue_fn=lambda *a, **k: {"status": "ok"},
+            use_langgraph=False,
+        )
+        payload = result.to_dict()
+        self.assertEqual(payload["engine"], "sequential")
+        self.assertTrue(payload["flags"]["skip_b"])
+        self.assertTrue(payload["flags"]["skip_c"])
+        self.assertTrue(payload["flags"]["skip_c1"])
+        self.assertEqual(payload["flags"]["max_repos"], 1)
+        self.assertIn("module_a_harvester", payload["graph_path"])
+        self.assertIn("module_c1_graph_filer", payload["graph_path"])
+        visited = {v["name"]: v for v in payload["visited"]}
+        self.assertTrue(visited["module_a_harvester"]["invoked"])
+        self.assertFalse(visited["module_b_noise_filter"]["invoked"])
+        self.assertFalse(visited["module_c1_graph_filer"]["invoked"])
+        self.assertIn("skip_b=True", visited["module_b_noise_filter"]["detail"])
+        self.assertIn("not invoked", visited["module_b_noise_filter"]["detail"])
+        self.assertIn("already at HEAD", visited["module_a_harvester"]["detail"])
+
     def test_sequences_a_b_c_and_stops_on_a_error(self) -> None:
         a_calls = []
 
@@ -210,12 +251,50 @@ class OieOrchestratorTests(unittest.TestCase):
         self.assertFalse(result.to_dict()["ok"])
         self.assertEqual(result.stages[0].status, "error")
 
+    def test_module_c_safety_path_degraded_is_non_fatal(self) -> None:
+        def ok_summary(*args, **kwargs):
+            summary = Mock()
+            summary.status = "ok"
+            summary.to_json.return_value = '{"status":"ok"}'
+            return summary
+
+        def c_summary(*args, **kwargs):
+            return {
+                "status": "degraded: 3 decided without the safety path",
+                "safety_unevaluated": 3,
+            }
+
+        result = run_oie_pipeline(
+            cache_file="sqlite://",
+            pipeline_run_id="run-safe",
+            dry_run=True,
+            sync_repos=False,
+            skip_c1=True,
+            run_harvester_fn=ok_summary,
+            run_noise_filter_fn=ok_summary,
+            run_librarian_queue_fn=c_summary,
+        )
+        self.assertTrue(result.to_dict()["ok"])
+        by_name = {s.name: s for s in result.stages}
+        self.assertEqual(by_name["module_c_librarian"].status, "degraded")
+
     def test_runs_all_stages_when_ok(self) -> None:
         def ok_summary(*args, **kwargs):
             summary = Mock()
             summary.status = "ok"
             summary.to_json.return_value = '{"status":"ok"}'
             return summary
+
+        c1_calls = []
+
+        def file_graph(**kwargs):
+            c1_calls.append(kwargs)
+            return {
+                "enabled": True,
+                "filed": 0,
+                "links_added": 0,
+                "graph_changed": False,
+            }
 
         result = run_oie_pipeline(
             cache_file="sqlite://",
@@ -225,6 +304,7 @@ class OieOrchestratorTests(unittest.TestCase):
             run_harvester_fn=ok_summary,
             run_noise_filter_fn=ok_summary,
             run_librarian_queue_fn=lambda *a, **k: {"status": "ok"},
+            run_file_graph_fn=file_graph,
         )
         self.assertTrue(result.to_dict()["ok"])
         self.assertEqual(
@@ -233,8 +313,35 @@ class OieOrchestratorTests(unittest.TestCase):
                 "module_a_harvester",
                 "module_b_noise_filter",
                 "module_c_librarian",
+                "module_c1_graph_filer",
             ],
         )
+        self.assertEqual(len(c1_calls), 1)
+        self.assertTrue(c1_calls[0].get("dry_run"))
+
+    def test_passes_repos_yaml_to_harvester(self) -> None:
+        seen = {}
+
+        def run_a(session, run_id, **kwargs):
+            seen.update(kwargs)
+            summary = Mock()
+            summary.status = "ok"
+            summary.to_json.return_value = '{"status":"ok"}'
+            return summary
+
+        result = run_oie_pipeline(
+            cache_file="sqlite://",
+            pipeline_run_id="run-yaml",
+            dry_run=True,
+            sync_repos=False,
+            skip_b=True,
+            skip_c=True,
+            skip_c1=True,
+            run_harvester_fn=run_a,
+            repos_yaml="/tmp/custom-repos.yaml",
+        )
+        self.assertEqual(seen.get("repos_yaml"), "/tmp/custom-repos.yaml")
+        self.assertTrue(result.to_dict()["ok"])
 
 
 if __name__ == "__main__":

@@ -45,7 +45,8 @@ class SchedulerConfig:
     harvest_max_repos: int = 25
     metadata_max_repos: int = 50
     file_floor: float = 0.9
-    filing_enabled: bool = True
+    # Default off: Module C decisions stay for review until an operator enables filing.
+    filing_enabled: bool = False
     repos_yaml: Optional[str] = None
     agent_db: Optional[str] = None
 
@@ -56,12 +57,12 @@ class SchedulerConfig:
         # Filing below the Librarian's own link threshold would file links the
         # Librarian itself would not have called links.
         floor = max(floor, link_threshold)
+        raw_filing = os.getenv("OIE_GRAPH_FILING_ENABLED", "0").strip().lower()
         return cls(
             harvest_max_repos=int(os.getenv("OIE_HARVEST_MAX_REPOS", "25")),
             metadata_max_repos=int(os.getenv("OIE_METADATA_MAX_REPOS", "50")),
             file_floor=floor,
-            filing_enabled=os.getenv("OIE_GRAPH_FILING_ENABLED", "1").strip().lower()
-            not in ("0", "false", "no", "off"),
+            filing_enabled=raw_filing in ("1", "true", "yes", "on"),
             repos_yaml=os.getenv("OIE_REPOS_YAML") or None,
             agent_db=os.getenv("OWASP_AGENT_DB") or None,
         )
@@ -151,10 +152,7 @@ def stage_agent_sync(ctx: JobContext) -> StageResult:
 
     target = _agent_index_target(ctx)
     if not ctx.config.agent_db:
-        logger.warning(
-            "OWASP_AGENT_DB is unset: the agent index is written to the app "
-            "database; chat/MCP processes must set OWASP_AGENT_DB to the same URL"
-        )
+        logger.info("Writing agent index to the main app database")
     store = IndexStore(target)
     report = sync_all(
         store=store,
