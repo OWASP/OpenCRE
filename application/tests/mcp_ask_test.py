@@ -99,6 +99,35 @@ class McpAskToolTest(unittest.TestCase):
         self.assertIn("https://nest.example/la", out["citations"])
         router_cls.return_value.handle.assert_called_once()
 
+    @patch("application.mcp.ask.OwaspAgentRouter")
+    def test_meta_runs_before_cre_normative_defer(self, router_cls: MagicMock) -> None:
+        """AIX/meta evidence must win even when intent is cre_normative."""
+        router_cls.return_value.handle.return_value = {
+            "response": "Answer: lethal trifecta …",
+            "accurate": True,
+            "owasp_agent": {
+                "ok": True,
+                "kind": "evidence",
+                "citations": ["https://owaspai.org/docs/ai_security_overview/"],
+            },
+        }
+        with patch.dict(os.environ, {"OWASP_AGENT_ENABLED": "1"}, clear=False):
+            with patch(
+                "application.mcp.ask.classify_intent", return_value="cre_normative"
+            ):
+                with patch(
+                    "application.mcp.ask._ensure_app",
+                    side_effect=RuntimeError("no app in unit test"),
+                ):
+                    out = ask(
+                        "lethal trifecta according to OWASP AI Exchange",
+                        corpus=CORPUS_AUTO,
+                    )
+        self.assertTrue(out["ok"])
+        self.assertEqual(out["channel"], CORPUS_OWASP_META)
+        self.assertIn("trifecta", out["message"].lower())
+        router_cls.return_value.handle.assert_called_once()
+
     @patch("application.prompt_client.prompt_client.PromptHandler.generate_text")
     def test_auto_security_never_calls_generate_text(
         self, generate_text: MagicMock
