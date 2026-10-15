@@ -177,9 +177,11 @@ class TestOwaspAgentScenarios(unittest.TestCase):
         )
         self.router = OwaspAgentRouter(store=self.store, queries=self.queries)
         os.environ["OWASP_AGENT_ENABLED"] = "1"
+        os.environ["OWASP_AGENT_SIM_ROUTER"] = "0"
 
     def tearDown(self) -> None:
         os.environ.pop("OWASP_AGENT_ENABLED", None)
+        os.environ.pop("OWASP_AGENT_SIM_ROUTER", None)
         self.tmp.cleanup()
 
     def test_nearest_ai_meetup_pasadena(self) -> None:
@@ -516,9 +518,11 @@ class TestProbeGapFixes(unittest.TestCase):
         )
         self.router = OwaspAgentRouter(store=self.store, queries=self.queries)
         os.environ["OWASP_AGENT_ENABLED"] = "1"
+        os.environ["OWASP_AGENT_SIM_ROUTER"] = "0"
 
     def tearDown(self) -> None:
         os.environ.pop("OWASP_AGENT_ENABLED", None)
+        os.environ.pop("OWASP_AGENT_SIM_ROUTER", None)
         self.tmp.cleanup()
 
     def test_athens_inactive_leaders(self) -> None:
@@ -595,6 +599,66 @@ class TestProbeGapFixes(unittest.TestCase):
         assert resp is not None
         self.assertIn("no indexed", resp["response"].lower())
 
+    def test_board_service_years_not_clarify(self) -> None:
+        q = "Jeff Williams: board service years if indexed (do not invent talk quotes)."
+        self.assertEqual(classify_intent(q), "board_person")
+        slots = extract_slots(q)
+        self.assertEqual(slots.person, "Jeff Williams")
+        resp = self.router.handle(q)
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        self.assertIn("jeff williams", resp["response"].lower())
+        self.assertNotIn("which board year", resp["response"].lower())
+
+    def test_board_roster_named_person_searches_all_years(self) -> None:
+        q = "Is Steve Springett on any indexed OWASP board year roster?"
+        self.assertEqual(classify_intent(q), "board_person")
+        slots = extract_slots(q)
+        self.assertEqual(slots.person, "Steve Springett")
+        # Fixture has no Springett — fail-closed still names the person path.
+        resp = self.router.handle(q)
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        body = resp["response"].lower()
+        self.assertTrue(
+            "steve springett" in body or "no board" in body or "no indexed" in body
+        )
+        self.assertNotIn("which board year should i look up", body)
+
+    def test_candidate_page_url_extracts_person(self) -> None:
+        q = "Show Sam Stepanyan's 2023 candidate page URL if indexed."
+        self.assertEqual(classify_intent(q), "board_person")
+        slots = extract_slots(q)
+        self.assertEqual(slots.person, "Sam Stepanyan")
+        self.assertEqual(slots.year, 2023)
+
+    def test_chapters_and_ai_projects_compound_intent(self) -> None:
+        q = "How many chapters exist, and list AI-related projects in a table."
+        self.assertEqual(classify_intent(q), "count_projects_and_chapters")
+        resp = self.router.handle(q)
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        self.assertRegex(resp["response"], r"\b\d{1,4}\b")
+        self.assertIn("chapter", resp["response"].lower())
+
+    def test_events_near_geocode_fail_falls_back_to_chapter(self) -> None:
+        from application.utils.owasp_agent.geocode import GeocodeError
+
+        def boom(_place: str):
+            raise GeocodeError("network down")
+
+        queries = MetaQueries(self.store, geocode_fn=boom)
+        router = OwaspAgentRouter(store=self.store, queries=queries)
+        resp = router.handle(
+            "Nearest OWASP meetup on AI security; I am in Pasadena, California."
+        )
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        body = resp["response"].lower()
+        self.assertTrue(
+            "los angeles" in body or "pasadena" in body or "chapter" in body
+        )
+
     def test_pasadena_place_not_swallow_topic(self) -> None:
         slots = extract_slots(
             "When is the next OWASP meetup near Pasadena about AI security?"
@@ -606,7 +670,7 @@ class TestProbeGapFixes(unittest.TestCase):
         resp = self.router.handle("List AI security related OWASP projects.")
         self.assertIsNotNone(resp)
         assert resp is not None
-        self.assertIn("| project |", resp["response"])
+        self.assertIn("| Project |", resp["response"])
 
     def test_sam_candidate_statement_did_run(self) -> None:
         resp = self.router.handle(
@@ -626,6 +690,20 @@ class TestProbeGapFixes(unittest.TestCase):
         body = resp["response"].lower()
         self.assertIn("no indexed", body)
         self.assertIn("will not invent", body)
+
+    def test_spyros_talk_fail_closed_plus_cre_844(self) -> None:
+        q = "Fail-closed on Spyros excesses-defenses talk; succeed on CRE-844-486."
+        self.assertNotEqual(classify_intent(q), "clarify")
+        resp = self.router.handle(q)
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        body = resp["response"].lower()
+        self.assertTrue(
+            "no indexed" in body or "fail closed" in body,
+            msg=body,
+        )
+        self.assertIn("cre-844-486", body)
+        self.assertNotIn("which city are you in", body)
 
     def test_live_in_santa_monica_place(self) -> None:
         slots = extract_slots(
@@ -730,7 +808,7 @@ class TestProbeGapFixes(unittest.TestCase):
         )
         self.assertIsNotNone(resp)
         assert resp is not None
-        self.assertIn("| project |", resp["response"])
+        self.assertIn("| Project |", resp["response"])
 
     def test_suburb_glendale_chapter_leader(self) -> None:
         resp = self.router.handle(
@@ -758,7 +836,6 @@ class TestProbeGapFixes(unittest.TestCase):
         self.assertRegex(resp["response"], r"\b\d{1,4}\b")
 
 
-
 class TestEntityAndChatMemoryFixes(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
@@ -769,9 +846,12 @@ class TestEntityAndChatMemoryFixes(unittest.TestCase):
         )
         self.router = OwaspAgentRouter(store=self.store, queries=self.queries)
         os.environ["OWASP_AGENT_ENABLED"] = "1"
+        # Structural/agent unit tests: disable embedding gate (no pgvector in CI).
+        os.environ["OWASP_AGENT_SIM_ROUTER"] = "0"
 
     def tearDown(self) -> None:
         os.environ.pop("OWASP_AGENT_ENABLED", None)
+        os.environ.pop("OWASP_AGENT_SIM_ROUTER", None)
         self.tmp.cleanup()
 
     def test_project_leaders_from_site_keeps_projects(self) -> None:
@@ -780,7 +860,28 @@ class TestEntityAndChatMemoryFixes(unittest.TestCase):
         self.assertTrue(any(r["name"] == "Rob van der Veer" for r in rows))
         self.assertTrue(any(r["group"] == "OWASP AI Exchange" for r in rows))
 
+    def test_chapter_in_city_intent(self) -> None:
+        q = "Does OWASP have a chapter in London?"
+        self.assertEqual(classify_intent(q), "chapter_lookup")
+        resp = self.router.handle(q)
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        self.assertIn("london", resp["response"].lower())
+
+    def test_project_who_leads_not_chapter(self) -> None:
+        q = "Who leads the OWASP Juice Shop project?"
+        self.assertEqual(classify_intent(q), "project_lookup")
+        slots = extract_slots(q)
+        self.assertEqual(slots.project_name, "Juice Shop")
+        resp = self.router.handle(q)
+        self.assertIsNotNone(resp)
+        assert resp is not None
+        text = resp["response"].lower()
+        self.assertIn("juice shop", text)
+        self.assertNotIn("which chapter or city", text)
+
     def test_who_is_rob_van_der_veer(self) -> None:
+
         self.assertEqual(classify_intent("Who is Rob van der Veer?"), "person_lookup")
         slots = extract_slots("Who is Rob van der Veer?")
         self.assertEqual(slots.person, "Rob van der Veer")
@@ -793,19 +894,23 @@ class TestEntityAndChatMemoryFixes(unittest.TestCase):
         cites = resp["owasp_agent"]["citations"]
         self.assertTrue(any("owasp" in c.lower() for c in cites))
 
-    def test_lethal_trifecta_aix_fact(self) -> None:
+    def test_lethal_trifecta_no_brand_classifier(self) -> None:
+        """Brand/AIX keyword routing is gone — falls through to CRE without sim."""
         q = "what does the AI Exchange say about the lethal trifecta?"
-        self.assertEqual(classify_intent(q), "aix_fact")
+        self.assertNotEqual(classify_intent(q), "aix_fact")
+        self.assertEqual(classify_intent(q), "cre_normative")
         resp = self.router.handle(q)
-        self.assertIsNotNone(resp)
-        assert resp is not None
-        text = resp["response"].lower()
-        self.assertIn("trifecta", text)
-        self.assertIn("exfiltration", text)
-        self.assertNotIn("does not appear to be about cybersecurity", text)
-        self.assertTrue(
-            any("owaspai.org" in c for c in resp["owasp_agent"]["citations"])
+        self.assertIsNone(resp)
+
+    def test_aix_content_ask_defers_not_clarify(self) -> None:
+        q = (
+            "What does the OWASP AI Exchange say about multiple layers "
+            "of prompt injection protection?"
         )
+        self.assertEqual(classify_intent(q), "cre_normative")
+        resp = self.router.handle(q)
+        # Without embedded evidence, agent returns None so CRE RAG can answer.
+        self.assertIsNone(resp)
 
     def test_genai_vs_ai_exchange(self) -> None:
         q = (
@@ -842,6 +947,8 @@ class TestEntityAndChatMemoryFixes(unittest.TestCase):
         self.assertIn(kind, ("membership", "clarify"))
         if kind == "membership":
             self.assertIn("morocco", resp["response"].lower())
+
+
 
 
 
