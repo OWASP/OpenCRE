@@ -104,12 +104,12 @@ else:
     git_log = recover_or_restart(checkpoint)
 ```
 
-**Why this matters:** Nightly runs are **idempotent**. If a 3am run crashes, the 4am retry doesn't restart from zero. It picks up from the last successful commit.
+**Why this matters:** Checkpoints allow runs to resume from a stored commit. However, the current pipeline advances the checkpoint before chunk construction and output persistence, so failures afterward can cause changes to be skipped on retry.
 
 **Week 1-2 learnings:**
 - ✅ Extensible config schema prevents rework later
 - ✅ Shallow clones cut repo size by 95%+
-- ✅ Checkpoint tracking makes nightly runs resumable
+- ✅ Checkpoint tracking supports resumption, but advancing the checkpoint before output persistence can cause changes to be skipped after a failure
 - ❌ Shallow clones break some git operations; need careful command selection
 
 ---
@@ -122,37 +122,39 @@ else:
 
 ### How Change Detection Actually Works
 
-**Not** what the RFC planned (diff parsing):
+The current pipeline compares the stored checkpoint with `HEAD` using `git diff --name-only`. On the first run, it uses the empty tree as the comparison point.
+
+It reads complete file contents rather than diffs because heading extraction and downstream processing require full-file context.
 
 ```python
-# NOT the live path:
-# git diff HEAD~1 → parse diffs → extract lines → normalize
+# Illustrative flow; see ChangeDetector and pipeline.py for implementation.
+changed_files = detect_changed_files(checkpoint_commit, head_commit)
 
-# ACTUAL live path:
-# 1. git log HEAD~1..HEAD --name-only → list of changed files
-# 2. For each changed file: git show HEAD:file_path → read complete file
-# 3. Store complete file content (not diffs)
-```
-
-Why? Because **diffs only show changes**, but we need **full file context** for heading extraction and semantic understanding.
-
-```python
-# Week 3: Detect changed files
-changed_files = subprocess.run(
-    ["git", "log", "--since=24h", "--name-only", "--oneline"],
-    capture_output=True,
-    text=True
-)
-# Output: list of file paths modified in last 24h
-
-# Week 4-6: Read complete file at HEAD
 for file_path in changed_files:
-    complete_file_content = subprocess.run(
-        ["git", "show", f"HEAD:{file_path}"],
-        capture_output=True,
-        text=True
-    )
-    # We now have the full file, not just the diff
+    complete_file_content = read_file_at_commit(head_commit, file_path)
+
+
+Replace the `is_noise()` example with:
+
+```python
+deny_extensions = [".css", ".scss", ".png", ".lock", ".map"]
+deny_filenames = ["package-lock.json", "_config.yml", ".gitignore"]
+deny_paths = ["node_modules/**", "dist/**", "tests/**"]
+
+def is_noise(file_path: str) -> bool:
+    """Reject files matching configured noise patterns."""
+    filename = file_path.rsplit("/", 1)[-1]
+
+    if filename in deny_filenames:
+        return True
+
+    if any(file_path.endswith(ext) for ext in deny_extensions):
+        return True
+
+    if any(fnmatch.fnmatch(file_path, pattern) for pattern in deny_paths):
+        return True
+
+    return False
 ```
 
 ### Regex Filtering: The 90% Win
@@ -184,7 +186,7 @@ def is_noise(file_path: str) -> bool:
 **Testing showed:** Regex filters catch most noise early, reducing computational load downstream.
 
 **Week 3-4 learnings:**
-- ✅ Change detection via git log is reliable
+- ✅ Checkpoint-to-HEAD change detection identifies changed files
 - ✅ Regex filtering at config time (not runtime) is efficient
 - ✅ Reading complete files (not diffs) enables full-file understanding
 - ❌ Had to reconsider RFC diff parsing section; actual pipeline reads files at HEAD
@@ -226,7 +228,12 @@ def should_process_file(artifact_id: str, file_content: str) -> bool:
         return False  # Identical content, skip
     
     return True  # Content changed, reprocess
+
 ```
+
+
+**Important:** `should_process_file()` only decides whether to process a file; it does not update the registry. The caller records the artifact's new content hash after processing succeeds.
+
 
 **Why keep artifact-level hashing?**
 - Detects when file content is identical despite cosmetic changes
@@ -258,23 +265,13 @@ After reading a complete file, we extract structure:
 # Week 6: Document builder
 @dataclass
 class Document:
-    artifact_id: str  # "art:OWASP/ASVS:4.0/en/0x12-V3-Authentication.md"
-    pipeline_run_id: str  # "20260201T020000Z"
-    schema_version: str  # "0.2.0"
-    
+    artifact_id: str
+    pipeline_run_id: str
+    schema_version: str
     source: SourceInfo
-        type: str = "github"
-        repo: str  # "OWASP/ASVS"
-        commit_sha: str  # 40-char commit hash
-        committed_at: str  # ISO-8601 timestamp
-    
     locator: LocatorInfo
-        kind: str = "repo_path"
-        id: str  # File path
-        path: str  # File path
-    
-    full_text: str  # Normalized Markdown content
-    heading_structure: List[HeadingNode]  # Parsed heading hierarchy
+    full_text: str
+    heading_structure: List[HeadingNode]
 
 def build_document(
     file_path: str,
@@ -406,7 +403,7 @@ for doc in documents:
 db.session.commit()
 ```
 
-This is the **handoff point** to Week 8. Week 8 reads from `harvest_input`, chunks the documents, and writes to the next stage.
+This describes the intended staged handoff. In the current implementation, `_harvest_repository` chunks documents before calling `write_harvest_input()`.
 
 **Week 6 learnings:**
 - ✅ Database-backed handoff (not JSONL) enables traceability
@@ -428,7 +425,7 @@ By end of Week 6:
          ↓ shallow clone + checkpoint resume
     
     Week 3-4: Change Detection, Filtering
-         ↓ git log + regex filters
+         ↓ checkpoint-to-HEAD comparison + regex filters
     
     Week 5: Content Hashing, Artifact Registry
          ↓ dedup at artifact level (in-memory)
@@ -441,7 +438,7 @@ By end of Week 6:
 
 **Current scope:**
 - 2 repositories configured: ASVS, CheatSheetSeries
-- Incremental detection: changed files in last 24h
+- Incremental detection: changed files between the stored checkpoint and HEAD
 - Noise filtering: ~90% rejection via regex
 - Content hashing: artifact-level dedup within run
 - Database: harvest_input table persists documents
@@ -480,7 +477,7 @@ By end of Week 6:
 |---------|--------|----------|
 | Config schema | ✅ Locked | Extensible YAML with sources |
 | Git operations | ✅ Working | Shallow clone + checkpoints |
-| Change detection | ✅ Working | git log --since |
+| Change detection | ✅ Working | Checkpoint-to-HEAD comparison |
 | Noise filtering | ✅ Working | Regex patterns at config |
 | File reading | ✅ Working | git show HEAD:path |
 | Document structure | ✅ Working | Heading extraction |
@@ -488,6 +485,6 @@ By end of Week 6:
 
 ---
 
-Looking ahead: [Week 7-12: From Documents to Chunks →](#blog2)
+Looking ahead: [Week 7–12: From Documents to Chunks →](../Final_eval_blog_gsoc2026/module_A_final_blog.md)
 
-*Next: Semantic chunking with LlamaIndex, content-addressed chunk_id generation (index-based, not hash-based), and database-backed storage.*
+*Next: Config-driven chunking, index-based `chunk_id` generation, and database-backed storage.*

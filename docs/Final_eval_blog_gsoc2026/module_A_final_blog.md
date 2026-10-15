@@ -5,7 +5,7 @@
 **Timeline:** July 13 – Aug 31, 2026  
 **Status:** Ready for Module B integration testing
 
-**Prerequisite:** Read Week 1-6: Building the Foundation first.
+**Prerequisite:** Read [Week 1-6: Building the Foundation](../Mid_eval_blog_gsoc2026/module_A_mideval_blog.md) first.
 
 ---
 
@@ -65,7 +65,7 @@ checkpoint_store.save(RepositoryCheckpoint(
 ))
 ```
 
-> In the current runner, `IncrementalPipeline.process()` advances this repository checkpoint before chunk construction and the `harvest_input` commit. It records the source commit cursor, not end-to-end completion; a later write failure does not roll the checkpoint back.
+> **Checkpointing caveat:** The current runner advances this repository checkpoint before chunk construction and the `harvest_input` commit. If that handoff fails, the checkpoint can move past source changes that were not persisted, and the next run may skip them. The checkpoint must represent successfully handed-off work: persist it only after `write_harvest_input()` commits, or keep the failed handoff retryable before advancing the cursor.
 
 ### Artifact Registry: In-Memory Only
 
@@ -394,8 +394,8 @@ LIMIT 100;  -- Batch processing
 Three tiers of testing:
 
 **Tier 1: Unit Tests**
-- Test individual functions in isolation
-- Mock external dependencies (git, database)
+- Test individual functions and their behavior
+- Follow repository conventions; avoid mocks unless explicitly requested
 - Focus: correctness of logic
 
 **Tier 2: Integration Tests**
@@ -441,7 +441,7 @@ def test_e2e_pipeline():
     assert len(records) == results.chunks_generated
 ```
 
-**Current test status:** 126 passing tests (unit + integration)
+**Author-reported test status:** 126 passing tests (unit + integration).
 
 ### Structured Logging
 
@@ -485,7 +485,7 @@ Structured logs enable:
 ## Current Architecture (Week 12)
 
 ```
-GitHub Actions (nightly)
+GitHub Actions (nightly, as described in the project configuration)
     ↓
 Week 1-2: Config, Clone, Checkpoints
     ↓ git log + checkpoint resume
@@ -527,7 +527,7 @@ sources:
 - ✅ Config-driven chunking respects document structure and size limits
 - ✅ Index-based chunk_id is simpler than content-addressed
 - ✅ Database-backed storage enables Module B integration
-- ✅ Checkpoint persistence makes nightly runs resilient
+- ✅ Checkpoint persistence supports resumption, but failures after checkpoint advancement can skip unpersisted changes
 - ✅ RFC validation gates catch issues early
 - ✅ Testing tiers (unit → integration → E2E) build confidence
 
@@ -543,11 +543,11 @@ sources:
 
 ---
 
-## Metrics (Actual)
+## Metrics (Author-Reported)
 
 ```
 Testing:
-  Unit + Integration tests: 126 passing
+  Unit + Integration tests: 126 passing (author-reported)
   Test coverage: TBD (measure in final)
   
 Repositories configured: 2 (ASVS, CheatSheetSeries)
