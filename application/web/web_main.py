@@ -15,6 +15,7 @@ import re
 import urllib.parse
 from typing import Any
 
+from redis.exceptions import RedisError
 from rq import job, exceptions
 from rq import Queue
 
@@ -500,14 +501,11 @@ def fetch_job() -> Any:
     jobid = request.args.get("id")
     if not jobid:
         abort(400, "id parameter is required")
+    conn = redis.connect()
     try:
-        conn = redis.connect()
         res = job.Job.fetch(id=jobid, connection=conn)
     except exceptions.NoSuchJobError:
         abort(404, "No such job")
-    except Exception as exc:
-        logger.warning("Job queue unavailable while fetching job %s: %s", jobid, exc)
-        abort(503, "Job queue unavailable")
 
     logger.debug("job exists")
     if res.get_status() == job.JobStatus.FAILED:
@@ -728,6 +726,12 @@ def find_root_cres() -> Any:
 @app.errorhandler(404)
 def page_not_found(e) -> Any:
     return "Resource Not found", 404
+
+
+@app.errorhandler(RedisError)
+def job_queue_unavailable(e) -> Any:
+    logger.warning("Job queue unavailable: %s", e)
+    return "Job queue unavailable", 503
 
 
 _REPO_ROOT = os.path.abspath(
