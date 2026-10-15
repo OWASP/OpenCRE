@@ -611,6 +611,19 @@ def _similarity_gate(prompt: str):
         return None
 
 
+def _hint_in(text: str, hint: str) -> bool:
+    """Match multi-word hints as substrings; single tokens on word boundaries.
+
+    Prevents false meta hits like ``"event" in "prevent"``.
+    """
+    h = hint.lower().strip()
+    if not h:
+        return False
+    if " " in h or "-" in h:
+        return h in text
+    return re.search(rf"\b{re.escape(h)}\b", text) is not None
+
+
 def classify_intent(text: str) -> str:
     t = text.lower().strip()
     # Who-is / tell-me-about person lookup from leaders.json (not CRE bios)
@@ -634,7 +647,11 @@ def classify_intent(text: str) -> str:
     # Project-vs-chapter counts before project-vs-project compares.
     if re.search(r"\b(projects? versus chapters|chapters versus projects)\b", t):
         return "count_projects_and_chapters"
-    if "how many" in t and "chapter" in t and "project" in t:
+    if (
+        "how many" in t
+        and re.search(r"\bchapters?\b", t)
+        and re.search(r"\bprojects?\b", t)
+    ):
         return "count_projects_and_chapters"
     # Project compare / definition — structural phrasing only (no brand lists).
     if re.search(
@@ -643,7 +660,11 @@ def classify_intent(text: str) -> str:
         t,
     ) and re.search(r"\bprojects?\b", t):
         # "projects versus chapters" already handled; bare chapter compare stays out.
-        if "chapter" in t and "project" in t and "difference" not in t:
+        if (
+            re.search(r"\bchapters?\b", t)
+            and re.search(r"\bprojects?\b", t)
+            and "difference" not in t
+        ):
             return "count_projects_and_chapters"
         return "compare_projects"
     if re.search(r"\b(what is|what's|describe)\b.+\bowasp project\b", t) or re.search(
@@ -657,11 +678,13 @@ def classify_intent(text: str) -> str:
     normative_hints = (
         "how should i",
         "how do i secure",
+        "how do i prevent",
         "password storage",
         "password hashing",
         "encryption",
         "csrf",
         "xss",
+        "ssrf",
         "sqli",
         "sql injection",
         "asvs",
@@ -676,11 +699,13 @@ def classify_intent(text: str) -> str:
         "cre covers",
         "related cres",
     )
+    # Do NOT include bare "chapter" — it is too ambiguous for meta gating.
+    # Chapter asks use structured phrases below (owasp … chapter, chapter in …).
     meta_hints = (
-        "chapter",
         "meetup",
         "meeting",
         "event",
+        "events",
         "how many",
         "board",
         "candidate",
@@ -693,7 +718,6 @@ def classify_intent(text: str) -> str:
         "projects on",
         "flagged",
         "nearest",
-        "pasadena",
         "staff",
         "membership",
         "member dues",
@@ -711,8 +735,8 @@ def classify_intent(text: str) -> str:
         "suburb",
         "who is",
     )
-    has_meta = any(h in t for h in meta_hints)
-    has_norm = any(h in t for h in normative_hints)
+    has_meta = any(_hint_in(t, h) for h in meta_hints)
+    has_norm = any(_hint_in(t, h) for h in normative_hints)
 
     # Malicious / unauthorized help — refuse before any meta routing so
     # compound prompts ("dump keys + chapter leader") cannot skip the gate.
@@ -819,10 +843,10 @@ def classify_intent(text: str) -> str:
         r"projects touch|list .+ projects|projects? in a table|"
         r"ai-related projects|related owasp projects)\b",
         t,
-    ) or (
+    )     or (
         "project" in t
         and any(w in t for w in ("table", "list", "flagged", "which", "touch"))
-        and "chapter" not in t
+        and not re.search(r"\bchapters?\b", t)
     ):
         return "count_projects"
 
@@ -839,6 +863,17 @@ def classify_intent(text: str) -> str:
     ):
         return "project_lookup"
 
+    # Named / what-is OWASP chapter cards (phrase-shaped — not bare "chapter").
+    if re.search(
+        r"\b(what is|what's|whats|tell me about|describe)\b.{0,60}\bchapters?\b",
+        t,
+    ):
+        return "chapter_lookup"
+    if re.search(r"\bowasp\b.{0,40}\bchapters?\b", t) and not re.search(
+        r"\b(how many|count of|versus|vs\.?)\b", t
+    ):
+        return "chapter_lookup"
+
     # Chapter existence / "chapter in {city}" before general clarify.
     if re.search(r"\bchapters?\b", t) and re.search(r"\b(in|near|for|at|around)\b", t):
         if not re.search(r"\b(how many|count of)\b", t):
@@ -849,18 +884,15 @@ def classify_intent(text: str) -> str:
     ):
         return "chapter_lookup"
 
-    # Chapter leader / status / active (incl. suburb → chapter + who leads)
+    # Chapter leader / status / active — structural cues only (no city hardcodes).
     if re.search(
         r"\b(chapter leader|leader for|leaders? (for|in|of)|who leads|"
         r"which chapter|active owasp chapter|chapter status|owasp leader|"
-        r"owasp athens|athens currently (active|inactive)|"
         r"count of indexed owasp chapters|approximate count of .{0,20}chapters)\b",
         t,
     ) or (
-        "chapter" in t
-        and any(
-            w in t for w in ("athens", "thessalon", "los angeles", "active", "status")
-        )
+        re.search(r"\bchapters?\b", t)
+        and re.search(r"\b(active|inactive|status)\b", t)
     ):
         if re.search(
             r"\b(count|how many|approximate count)\b.+\bchapters?\b",
@@ -911,9 +943,10 @@ def classify_intent(text: str) -> str:
             return "board_members"
 
     # Multi-hop suburb → chapter (+ optional leader talk) before bare talk_lookup.
-    if re.search(
-        r"\b(pasadena|glendale|santa monica|yokohama|multi-hop|suburb)\b", t
-    ) and re.search(r"\b(chapter|leader|meetup|la\b|los angeles|tokyo)\b", t):
+    # No city-name hardcodes — only structural suburb/meetup cues.
+    if re.search(r"\b(multi-hop|suburb|commuting)\b", t) and re.search(
+        r"\b(chapter|leader|meetup)\b", t
+    ):
         if re.search(r"\b(leader|who leads|chapter)\b", t):
             return "chapter_lookup"
         return "events_near"
@@ -934,9 +967,13 @@ def classify_intent(text: str) -> str:
     if has_meta and not has_norm:
         if re.search(r"\b(projects? versus chapters|chapters versus projects)\b", t):
             return "count_projects_and_chapters"
-        if "how many" in t and "chapter" in t and "project" in t:
+        if (
+            "how many" in t
+            and re.search(r"\bchapters?\b", t)
+            and re.search(r"\bprojects?\b", t)
+        ):
             return "count_projects_and_chapters"
-        if "how many" in t and "chapter" in t:
+        if "how many" in t and re.search(r"\bchapters?\b", t):
             return "count_chapters"
         if ("how many" in t and "project" in t) or (
             "project" in t
@@ -967,19 +1004,19 @@ def classify_intent(text: str) -> str:
                 return "board_person"
             return "board_members"
         if any(
-            w in t
+            _hint_in(t, w)
             for w in (
                 "nearest",
                 "meetup",
                 "meeting",
                 "event",
-                "chapter near",
+                "events",
                 "commuting",
                 "suburb",
             )
-        ):
+        ) or "chapter near" in t:
             # Named chapter + meetup/contact → chapter card, not geo clarify.
-            if "chapter" in t and re.search(
+            if re.search(r"\bchapters?\b", t) and re.search(
                 r"\b(owasp\s+)?[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ .'-]{1,40}\s+chapter\b",
                 text,
             ):
@@ -998,10 +1035,16 @@ def classify_intent(text: str) -> str:
             w in t for w in ("table", "list", "flagged", "which", "touch")
         ):
             return "count_projects"
-        if any(w in t for w in ("meetup", "chapter", "board", "how many", "leader")):
-            if "how many" in t and "chapter" in t and "project" in t:
+        if any(
+            _hint_in(t, w) for w in ("meetup", "board", "how many", "leader")
+        ) or re.search(r"\bchapters?\b", t):
+            if (
+                "how many" in t
+                and re.search(r"\bchapters?\b", t)
+                and re.search(r"\bprojects?\b", t)
+            ):
                 return "count_projects_and_chapters"
-            if "how many" in t and "chapter" in t:
+            if "how many" in t and re.search(r"\bchapters?\b", t):
                 return "count_chapters"
             if "leader" in t or "who leads" in t or "chapter status" in t:
                 return "chapter_lookup"
