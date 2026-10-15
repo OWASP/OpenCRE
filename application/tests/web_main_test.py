@@ -13,6 +13,7 @@ import tempfile
 from types import SimpleNamespace
 from unittest.mock import patch, Mock
 
+import redis
 import rq
 import os
 import networkx as nx
@@ -1173,6 +1174,32 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(200, response.status_code)
             self.assertEqual(["ASVS", "CAPEC", "OpenCRE"], json.loads(response.data))
+
+    def test_ma_job_results_requires_id(self) -> None:
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/ma_job_results")
+            self.assertEqual(400, response.status_code)
+
+    @patch.object(rq.job.Job, "fetch")
+    @patch.object(app_redis, "connect")
+    def test_ma_job_results_redis_unreachable(
+        self, redis_conn_mock, fetch_mock
+    ) -> None:
+        fetch_mock.side_effect = redis.exceptions.ConnectionError(
+            "Error 111 connecting to localhost:6379"
+        )
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/ma_job_results?id=ABC")
+            self.assertEqual(503, response.status_code)
+            self.assertNotIn("6379", response.get_data(as_text=True))
+
+    @patch.object(rq.job.Job, "fetch")
+    @patch.object(app_redis, "connect")
+    def test_ma_job_results_unknown_job(self, redis_conn_mock, fetch_mock) -> None:
+        fetch_mock.side_effect = rq.exceptions.NoSuchJobError()
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/ma_job_results?id=ABC")
+            self.assertEqual(404, response.status_code)
 
     def test_gap_analysis_weak_links_no_cache(self) -> None:
         with self.app.test_client() as client:

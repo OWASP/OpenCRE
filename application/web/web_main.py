@@ -498,14 +498,16 @@ def map_analysis_weak_links() -> Any:
 def fetch_job() -> Any:
     logger.debug("fetching job results")
     jobid = request.args.get("id")
+    if not jobid:
+        abort(400, "id parameter is required")
     try:
         conn = redis.connect()
-    except Exception as exc:
-        abort(503, f"Job queue unavailable: {exc}")
-    try:
         res = job.Job.fetch(id=jobid, connection=conn)
-    except exceptions.NoSuchJobError as nje:
+    except exceptions.NoSuchJobError:
         abort(404, "No such job")
+    except Exception as exc:
+        logger.warning("Job queue unavailable while fetching job %s: %s", jobid, exc)
+        abort(503, "Job queue unavailable")
 
     logger.debug("job exists")
     if res.get_status() == job.JobStatus.FAILED:
