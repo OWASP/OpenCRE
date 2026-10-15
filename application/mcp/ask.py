@@ -66,6 +66,44 @@ ASK_TOOL: Dict[str, Any] = {
 }
 
 
+_APP = None
+
+
+def _ensure_app():
+    """Flask app for pgvector similarity / IndexStore (MCP stdio has no request ctx)."""
+    global _APP
+    if _APP is not None:
+        return _APP
+    from application import create_app
+
+    _APP = create_app(mode="production")
+    return _APP
+
+
+def _router_handle(prompt: str) -> Optional[Dict[str, Any]]:
+    """Run OwaspAgentRouter inside an app context so the sim gate can use pgvector.
+
+    MCP stdio has no request context; unit tests may call without Flask — fall
+    back to a bare handle() if app bootstrap is unavailable.
+    """
+    try:
+        from flask import has_app_context
+
+        if has_app_context():
+            return OwaspAgentRouter().handle(prompt)
+    except Exception:
+        pass
+    try:
+        app = _ensure_app()
+        with app.app_context():
+            return OwaspAgentRouter().handle(prompt)
+    except Exception:
+        try:
+            return OwaspAgentRouter().handle(prompt)
+        except Exception:
+            return None
+
+
 def ask(
     prompt: str,
     *,
@@ -127,28 +165,20 @@ def _owasp_meta_facts(
             ),
         }
 
-    if intent == "cre_normative" and not allow_cre_defer:
-        return {
-            "ok": False,
-            "channel": CORPUS_OWASP_META,
-            "intent": intent,
-            "message": (
-                "That looks like a CRE/security question. "
-                "Call ask with corpus=security or use get_cre_by_id / text_search."
-            ),
-        }
-
-    if intent == "cre_normative" and allow_cre_defer:
-        return {
-            "ok": False,
-            "channel": "none",
-            "intent": intent,
-            "defer_to_security": True,
-            "message": "CRE/security question; deferring to CRE fact pack.",
-        }
-
-    resp = OwaspAgentRouter().handle(prompt)
+    # Always try the meta/sim router first — AIX evidence and community cards can
+    # answer prompts that keyword intent labels as cre_normative.
+    resp = _router_handle(prompt)
     if resp is None:
+        if intent == "cre_normative" and not allow_cre_defer:
+            return {
+                "ok": False,
+                "channel": CORPUS_OWASP_META,
+                "intent": intent,
+                "message": (
+                    "That looks like a CRE/security question. "
+                    "Call ask with corpus=security or use get_cre_by_id / text_search."
+                ),
+            }
         if allow_cre_defer:
             return {
                 "ok": False,
