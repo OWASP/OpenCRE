@@ -66,6 +66,12 @@ HARNESSES: List[Dict[str, Any]] = [
         "pr": 960,
     },
     {
+        "fixture_name": "owasp_asvs_5_0_provisional",
+        "gold_file": "owasp_asvs_5_0_provisional.json",
+        "label": "OWASP ASVS 5.0 (provisional)",
+        "pr": 960,
+    },
+    {
         "fixture_name": "owasp_kubernetes_top10_2025",
         "gold_file": "owasp_kubernetes_top10_2025.json",
         "label": "OWASP Kubernetes Top 10 2025",
@@ -124,12 +130,14 @@ def _load_dotenv() -> None:
             if not line or line.startswith("#") or "=" not in line:
                 continue
             k, _, v = line.partition("=")
-            if env_path.name == "oie.env" and (
-                k.startswith("CRE_LIBRARIAN_") or k.startswith("DEV_DATABASE")
-            ):
-                os.environ[k.strip()] = v.strip()
+            # Librarian flags from oie.env win. DEV_DATABASE_URL must NOT — parallel
+            # matrix workers set cre_al_wN; clobbering them scores an empty `cre`.
+            key = k.strip()
+            val = v.strip().strip('"').strip("'")
+            if env_path.name == "oie.env" and key.startswith("CRE_LIBRARIAN_"):
+                os.environ[key] = val
             else:
-                os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+                os.environ.setdefault(key, val)
 
 
 def normalize_source_url(url: str) -> str:
@@ -471,7 +479,16 @@ def run_pipeline(
     pipeline = DocumentChunkPipeline(chunking=chunking)
 
     def run_harvester(
-        session: Any, rid: str, *, dry_run: bool = False, sync_repos: bool = True
+        session: Any,
+        rid: str,
+        *,
+        dry_run: bool = False,
+        sync_repos: bool = True,
+        # LangGraph always forwards orchestrator kwargs; B2 sources are local
+        # fixtures, so repos_yaml / max_repos are intentionally unused.
+        repos_yaml: Any = None,
+        max_repos: Any = None,
+        **_kwargs: Any,
     ):
         summary = RunSummary(run_id=rid, dry_run=dry_run, repositories=0)
         all_records = []
@@ -739,6 +756,16 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--exclude-fixtures",
+        nargs="*",
+        default=[],
+        metavar="STEM",
+        help=(
+            "Drop these fixture stems from scoring/harvest. "
+            "Example: --exclude-fixtures owasp_agentic_ai_stub"
+        ),
+    )
+    parser.add_argument(
         "--out",
         type=Path,
         default=ART / "b2_accuracy_report.json",
@@ -756,6 +783,9 @@ def main() -> int:
     only_fixtures = {
         str(s).strip() for s in (args.only_fixtures or []) if str(s).strip()
     }
+    exclude_fixtures = {
+        str(s).strip() for s in (args.exclude_fixtures or []) if str(s).strip()
+    }
     if only_fixtures:
         HARNESSES[:] = [
             h
@@ -767,6 +797,20 @@ def main() -> int:
             print(
                 "no harnesses match --only-fixtures:",
                 sorted(only_fixtures),
+                file=sys.stderr,
+            )
+            return 2
+    if exclude_fixtures:
+        HARNESSES[:] = [
+            h
+            for h in HARNESSES
+            if str(h.get("fixture_name") or "") not in exclude_fixtures
+            and gold_stem(h) not in exclude_fixtures
+        ]
+        if not HARNESSES:
+            print(
+                "no harnesses left after --exclude-fixtures:",
+                sorted(exclude_fixtures),
                 file=sys.stderr,
             )
             return 2

@@ -1,6 +1,7 @@
 import importlib.util
 import unittest
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 from application.utils import mapping_fixtures
 
@@ -32,6 +33,50 @@ class TestOieB2GoldLoader(unittest.TestCase):
                 mapping_fixtures.load_owasp_mapping_fixture(harness["fixture_name"]),
             )
         self.assertGreaterEqual(shared, 6)
+
+
+class TestOieB2HarvesterLanggraphKwargs(unittest.TestCase):
+    def test_inner_harvester_accepts_repos_yaml(self) -> None:
+        """LangGraph always passes repos_yaml; B2 must not TypeError (mac arms)."""
+        mod = _load_run_b2()
+        captured = {}
+
+        class _FakeResult:
+            def to_json(self) -> str:
+                return '{"ok": true}'
+
+        def fake_pipeline(**kwargs):
+            captured["fn"] = kwargs["run_harvester_fn"]
+            return _FakeResult()
+
+        hi = MagicMock(__tablename__="harvest_input")
+        kq = MagicMock(__tablename__="knowledge_queue")
+        dq = MagicMock(__tablename__="decision_queue")
+        with patch(
+            "application.utils.oie_orchestrator.run_oie_pipeline", fake_pipeline
+        ), patch("application.cmd.cre_main.db_connect"), patch(
+            "application.database.db.HarvestInput", hi
+        ), patch(
+            "application.database.db.KnowledgeQueueItem", kq
+        ), patch(
+            "application.database.db.DecisionQueueItem", dq
+        ), patch(
+            "application.sqla"
+        ) as sqla:
+            sqla.session.query.return_value.delete.return_value = 0
+            mod.run_pipeline("rid-test", "sqlite://", keep_all_knowledge=False)
+
+        fn = captured["fn"]
+        # Same kwargs langgraph_pipeline._run_a forwards — must not TypeError.
+        summary = fn(
+            MagicMock(),
+            "rid-test",
+            dry_run=True,
+            sync_repos=False,
+            repos_yaml="/tmp/repos.yaml",
+            max_repos=3,
+        )
+        self.assertEqual(summary.run_id, "rid-test")
 
 
 class TestOieB2SourceIdentityPrefix(unittest.TestCase):

@@ -65,7 +65,7 @@ describe('Admin', () => {
       </MemoryRouter>
     );
     expect(getByText(/CRE_ALLOW_IMPORT/)).toBeTruthy();
-    expect(queryByText('Dashboard')).toBeNull();
+    expect(queryByText('Overview')).toBeNull();
   });
 
   it('asks anonymous users to log in', () => {
@@ -81,7 +81,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    expect(getByText('Sign in to continue.')).toBeTruthy();
+    expect(getByText(/Sign in to continue/)).toBeTruthy();
   });
 
   it('loads import runs and links to MyOpenCRE', async () => {
@@ -97,7 +97,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Graph management'));
+    fireEvent.click(getByText('Review'));
     await findByText('asvs');
     fireEvent.click(getByText('MyOpenCRE'));
     expect(getByText('Open MyOpenCRE').closest('a')?.getAttribute('href')).toBe('/myopencre');
@@ -111,12 +111,17 @@ describe('Admin', () => {
           running: [],
           failed: [],
           import_runs: [],
+          needs_attention: { staged_review: 2, failed_24h: 0, blocked: 1, ingest_errors: 0 },
+          review_pulse: {
+            accepted_as_is_pct: 40,
+            adjusted_pct: 35,
+            rejected_pct: 25,
+            pending: 3,
+          },
           agent: {
             enabled: true,
             writes_cre_graph: false,
             demo_path: '/chatbot',
-            db_url: 'postgresql://cre:***@127.0.0.1:5432/opencre',
-            db_env_key: 'DEV_DATABASE_URL',
             package_present: false,
           },
         });
@@ -129,12 +134,13 @@ describe('Admin', () => {
       </MemoryRouter>
     );
     await findByText(/writes CRE graph: false/);
-    expect(getByText(/Main DB \(DEV_DATABASE_URL\):/)).toBeTruthy();
-    expect(getByText(/postgresql:\/\/cre:\*\*\*@127.0.0.1:5432\/opencre/)).toBeTruthy();
+    expect(getByText('Needs attention')).toBeTruthy();
+    expect(getByText('Review pulse')).toBeTruthy();
+    expect(getByText('40%')).toBeTruthy();
     expect(getByText('Open chat demo').closest('a')?.getAttribute('href')).toBe('/chatbot');
     expect(queryByRole('button', { name: 'OWASP agent' })).toBeNull();
-    fireEvent.click(getByText('Job management and logs'));
-    expect(await findByText('New')).toBeTruthy();
+    fireEvent.click(getByText('Open review'));
+    expect(await findByText(/Approve, deny, or relink/)).toBeTruthy();
   });
 
   it('reviews links per run and loads the changeset graph', async () => {
@@ -147,7 +153,7 @@ describe('Admin', () => {
           edges: [],
         });
       }
-      if (u.endsWith('/links') && init?.method === 'POST') {
+      if (u.includes('/links') && init?.method === 'POST') {
         return jsonRes({
           run_id: 'r1',
           links: [
@@ -161,7 +167,7 @@ describe('Admin', () => {
           ],
         });
       }
-      if (u.endsWith('/links')) {
+      if (u.includes('/links') && (!init || !init.method || init.method === 'GET')) {
         return jsonRes({
           run_id: 'r1',
           links: [
@@ -183,18 +189,19 @@ describe('Admin', () => {
       }
       return jsonRes({});
     });
-    const { getByText, findByText } = render(
+    const { getByText, findByText, getAllByText } = render(
       <MemoryRouter>
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Graph management'));
+    fireEvent.click(getByText('Review'));
     await findByText('asvs');
     fireEvent.click(getByText('Graph'));
     expect(await findByText('ASVS 1.1')).toBeTruthy();
     fireEvent.click(getByText('Changeset'));
-    expect(await findByText('Added controls and links')).toBeTruthy();
-    fireEvent.click(getByText('Approve'));
+    expect(await findByText('Staged links')).toBeTruthy();
+    const accepts = getAllByText('Accept');
+    fireEvent.click(accepts[accepts.length - 1]);
     await waitFor(() =>
       expect((global as any).fetch).toHaveBeenCalledWith(
         expect.stringContaining('/links'),
@@ -206,7 +213,11 @@ describe('Admin', () => {
   it('shows empty pipeline state', async () => {
     loggedIn();
     (global as any).fetch = jest.fn((url: string) => {
-      if (String(url).includes('/admin/pipeline')) {
+      const u = String(url);
+      if (u.includes('/admin/ingest/status')) {
+        return jsonRes({ ingestions: [], active_count: 0, stuck_count: 0 });
+      }
+      if (u.includes('/admin/pipeline')) {
         return jsonRes({
           import_runs: [],
           events: [],
@@ -230,10 +241,81 @@ describe('Admin', () => {
     expect(getByText('New')).toBeTruthy();
   });
 
+  it('renders active ingestions with config progress and ETA', async () => {
+    loggedIn();
+    (global as any).fetch = jest.fn((url: string) => {
+      const u = String(url);
+      if (u.includes('/admin/ingest/status')) {
+        return jsonRes({
+          active_count: 1,
+          stuck_count: 1,
+          ingestions: [
+            {
+              run_id: 'run-abc-123',
+              source: 'owasp-asvs',
+              phase: 'oie/started',
+              stuck: true,
+              stuck_reason: 'remaining unchanged for 12m',
+              config: {
+                skip_c1: true,
+                max_repos: 0,
+                spec: { owner: 'OWASP', repo: 'ASVS', lane: 'owasp_agent' },
+              },
+              progress: {
+                harvest_pending: 2,
+                harvest_processed: 8,
+                knowledge_unconsumed: 1,
+                knowledge_consumed: 4,
+                rq_queued: 3,
+                rq_started: 1,
+                rq_failed: 0,
+                remaining: 6,
+              },
+              eta: { note: '~40m left', eta_utc: '2026-10-13T12:00:00Z' },
+            },
+          ],
+        });
+      }
+      if (u.includes('/admin/pipeline')) {
+        return jsonRes({
+          import_runs: [],
+          events: [],
+          latest_strip: [{ id: 'queued', label: 'Queued', state: 'current' }],
+          oie: { unconsumed: 0, recent: [], knowledge: [] },
+        });
+      }
+      return jsonRes({});
+    });
+    const { getByText, findByText, getAllByText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    fireEvent.click(getByText('Pipeline'));
+    expect(await findByText('owasp-asvs')).toBeTruthy();
+    expect(getByText('skip_c1')).toBeTruthy();
+    expect(getByText(/~40m left/)).toBeTruthy();
+    expect(getAllByText('Stuck').length).toBeGreaterThan(0);
+    expect(getByText(/remaining unchanged/)).toBeTruthy();
+  });
+
   it('shows config restart instructions', async () => {
     loggedIn();
     (global as any).fetch = jest.fn((url: string) => {
-      if (String(url).includes('/admin/config')) {
+      const u = String(url);
+      if (u.includes('/admin/config/diff')) {
+        return jsonRes({
+          diff: [
+            {
+              key: 'CRE_ALLOW_IMPORT',
+              status: 'match',
+              process: '1',
+              dotenv: '1',
+            },
+          ],
+        });
+      }
+      if (u.includes('/admin/config')) {
         return jsonRes({
           writable: false,
           restart_instructions: 'HTTP cannot change process env.',
@@ -248,19 +330,82 @@ describe('Admin', () => {
           ],
         });
       }
-      if (String(url).includes('/admin/repos.yaml')) {
+      if (u.includes('/admin/repos.yaml')) {
         return jsonRes({ yaml: 'sources: []\n', source: 'repos.yaml:abc' });
+      }
+      if (String(url).includes('/rest/v1/api-keys')) {
+        return jsonRes({ keys: [] });
       }
       return jsonRes({});
     });
-    const { getByText, findByText } = render(
+    const { getByText, findByText, getAllByText } = render(
       <MemoryRouter>
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Config'));
+    fireEvent.click(getByText('Config values'));
+    expect(await findByText('Environment vs .env')).toBeTruthy();
     expect(await findByText('HTTP cannot change process env.')).toBeTruthy();
-    expect(getByText('CRE_ALLOW_IMPORT')).toBeTruthy();
+    expect(getAllByText('CRE_ALLOW_IMPORT').length).toBeGreaterThan(0);
+  });
+
+  it('mints an API key from Config Manage API keys dialog', async () => {
+    loggedIn();
+    let keys: any[] = [];
+    (global as any).fetch = jest.fn((url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/rest/v1/api-keys') && init?.method === 'POST') {
+        const body = JSON.parse(String(init.body || '{}'));
+        keys = [
+          {
+            jti: 'abcd1234-eeee-ffff-0000-111122223333',
+            name: body.name || 'ci',
+            expires_at: '2026-12-01T00:00:00Z',
+            revoked_at: null,
+            created_at: '2026-10-11T00:00:00Z',
+            last_used_at: null,
+          },
+        ];
+        return jsonRes(
+          {
+            token: 'eyJhbGciOiJIUzI1NiJ9.test-token',
+            jti: keys[0].jti,
+            name: keys[0].name,
+            expires_at: keys[0].expires_at,
+          },
+          201
+        );
+      }
+      if (u.includes('/rest/v1/api-keys')) {
+        return jsonRes({ keys });
+      }
+      if (u.includes('/admin/config')) {
+        return jsonRes({ config: [], restart_instructions: '' });
+      }
+      if (u.includes('/admin/repos.yaml')) {
+        return jsonRes({ yaml: 'sources: []\n', source: 'repos.yaml:abc' });
+      }
+      return jsonRes({});
+    });
+    const { getByText, getByLabelText, findByText, findByLabelText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    fireEvent.click(getByText('Config values'));
+    fireEvent.click(await findByText('Manage API keys'));
+    expect(await findByText('No API keys yet.')).toBeTruthy();
+    fireEvent.change(getByLabelText('API key name'), { target: { value: 'staging-ci' } });
+    fireEvent.click(getByText('Mint API key'));
+    expect(await findByText('API key minted')).toBeTruthy();
+    const tokenEl = await findByLabelText('minted API token');
+    expect(tokenEl.textContent).toContain('eyJhbGciOiJIUzI1NiJ9.test-token');
+    expect(await findByText('staging-ci')).toBeTruthy();
+    expect(await findByText('2026-12-01T00:00:00Z')).toBeTruthy();
+    expect((global as any).fetch).toHaveBeenCalledWith(
+      '/rest/v1/api-keys',
+      expect.objectContaining({ method: 'POST', credentials: 'include' })
+    );
   });
 
   it('toggles Module C.1 graph filing from Config', async () => {
@@ -311,7 +456,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Config'));
+    fireEvent.click(getByText('Config values'));
     expect(await findByText(/C\.1 auto-file high-confidence links \(off/)).toBeTruthy();
     const toggle = await findByRole('checkbox');
     fireEvent.click(toggle);
@@ -348,6 +493,14 @@ describe('Admin', () => {
           last_sync: '2026-01-01T00:00:00+00:00',
         });
       }
+      if (u.includes('/admin/upstream-sync-and-ingest')) {
+        return jsonRes({
+          source: 'repos.yaml:deadbeef',
+          async: true,
+          run_id: 'u1',
+          upstream_sync: true,
+        });
+      }
       if (u.includes('/admin/ingest/start')) {
         return jsonRes({ source: 'repos.yaml:deadbeef', async: true, run_id: 'g1' });
       }
@@ -366,8 +519,19 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Config'));
+    fireEvent.click(getByText('Config values'));
     expect(await findByText(/End-to-end bootstrap/)).toBeTruthy();
+    fireEvent.click(getByText(/^Import upstream CRE \+ harvest$/));
+    await waitFor(() =>
+      expect((global as any).fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/admin/upstream-sync-and-ingest'),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ packaged: true, max_repos: 50 }),
+        })
+      )
+    );
+    expect(await findByText(/Upstream CRE sync \+ harvest started/)).toBeTruthy();
     fireEvent.click(getByText('Run golden-set harvest'));
     await waitFor(() =>
       expect((global as any).fetch).toHaveBeenCalledWith(
@@ -413,7 +577,11 @@ describe('Admin', () => {
   it('shows pipeline error state', async () => {
     loggedIn();
     (global as any).fetch = jest.fn((url: string) => {
-      if (String(url).includes('/admin/pipeline')) {
+      const u = String(url);
+      if (u.includes('/admin/ingest/status')) {
+        return jsonRes({ ingestions: [], active_count: 0, stuck_count: 0 });
+      }
+      if (u.includes('/admin/pipeline')) {
         return jsonRes({ description: 'pipeline down' }, 500);
       }
       return jsonRes({});
@@ -453,7 +621,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Graph management'));
+    fireEvent.click(getByText('Review'));
     await findByText('asvs');
     fireEvent.click(getByText('Impact'));
     await waitFor(() =>
@@ -504,11 +672,11 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Graph management'));
+    fireEvent.click(getByText('Review'));
     await findByText('asvs');
     fireEvent.click(getByText('Changeset'));
     expect(await findByText(/run not found/)).toBeTruthy();
-    expect(queryByText('Added controls and links')).toBeNull();
+    expect(queryByText('Staged links')).toBeNull();
   });
 
   it('saves repos.yaml and expands an org from config', async () => {
@@ -551,7 +719,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Config'));
+    fireEvent.click(getByText('Config values'));
     expect(await findByText('targets.yaml')).toBeTruthy();
     fireEvent.change(getByLabelText('repos.yaml'), {
       target: { value: 'repositories:\n  - id: custom\n' },
@@ -585,7 +753,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Config'));
+    fireEvent.click(getByText('Config values'));
     await findByText('targets.yaml');
     fireEvent.change(getByPlaceholderText('GitHub org'), { target: { value: 'NoSuchOrgCcdd' } });
     fireEvent.click(getByText('Add org'));
@@ -600,6 +768,9 @@ describe('Admin', () => {
       if (u.includes('/admin/ingest/start') && init?.method === 'POST') {
         startBody = JSON.parse(String(init.body || '{}'));
         return jsonRes({ run_id: 'r-new', source: 'repos.yaml:abc', dry_run: true });
+      }
+      if (u.includes('/admin/ingest/status')) {
+        return jsonRes({ ingestions: [], active_count: 0, stuck_count: 0 });
       }
       if (u.includes('/admin/pipeline')) {
         return jsonRes({
@@ -644,11 +815,11 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Graph management'));
+    fireEvent.click(getByText('Review'));
     expect(await findByText('Drop last')).toBeTruthy();
     fireEvent.click(getByText('Drop last'));
     expect(await findByText(/source is required/)).toBeTruthy();
-    fireEvent.click(getByText('Config'));
+    fireEvent.click(getByText('Config values'));
     fireEvent.click(getByText('Add target'));
     fireEvent.click(getByText('Add'));
     expect(await findByText(/owner and repo are required/)).toBeTruthy();
@@ -676,7 +847,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Graph management'));
+    fireEvent.click(getByText('Review'));
     await findByText('asvs');
     fireEvent.click(getByText('Graph'));
     expect(await findByText(/graph unavailable/)).toBeTruthy();
@@ -713,7 +884,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Config'));
+    fireEvent.click(getByText('Config values'));
     await findByText('targets.yaml');
     fireEvent.click(getByText('Add target'));
     fireEvent.change(getByPlaceholderText('OWASP'), { target: { value: 'OWASP' } });
@@ -737,6 +908,9 @@ describe('Admin', () => {
       if (u.includes('/admin/ingest/start') && init?.method === 'POST') {
         startBody = JSON.parse(String(init.body || '{}'));
         return jsonRes({ run_id: 'r-one', source: 'one-off', dry_run: true });
+      }
+      if (u.includes('/admin/ingest/status')) {
+        return jsonRes({ ingestions: [], active_count: 0, stuck_count: 0 });
       }
       if (u.includes('/admin/pipeline')) {
         return jsonRes({
@@ -769,7 +943,7 @@ describe('Admin', () => {
     loggedIn();
     (global as any).fetch = jest.fn((url: string) => {
       const u = String(url);
-      if (u.endsWith('/links')) {
+      if (u.includes('/links')) {
         return jsonRes({ run_id: 'r1', links: [] });
       }
       if (u.includes('/changeset')) {
@@ -785,7 +959,7 @@ describe('Admin', () => {
         <Admin />
       </MemoryRouter>
     );
-    fireEvent.click(getByText('Graph management'));
+    fireEvent.click(getByText('Review'));
     await findByText('asvs');
     fireEvent.click(getByText('Changeset'));
     expect(await findByText('No staged links on this run.')).toBeTruthy();

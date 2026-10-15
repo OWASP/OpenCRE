@@ -10,7 +10,10 @@ FROM python:3.11 as run
 COPY --from=build /code /code
 WORKDIR /code
 COPY ./scripts/prod-docker-entrypoint.sh /code
-RUN pip install -r requirements.txt gunicorn
+# Staging Compose may pass requirements-dev.txt (Librarian ML / OIE Module C.2).
+# Default stays prod requirements.txt for Heroku slug size.
+ARG REQUIREMENTS_FILE=requirements.txt
+RUN pip install -r "${REQUIREMENTS_FILE}" gunicorn
 
 ENV INSECURE_REQUESTS=1
 ENV FLASK_CONFIG="production"

@@ -1,6 +1,6 @@
 .ONESHELL:
 
-.PHONY: run test covers install-deps dev dev-flask docker lint frontend clean all e2e e2e-db admin-local owasp-agent-sync owasp-agent-merge-concepts owasp-agent-synth-eval
+.PHONY: run test covers install-deps dev docker lint frontend clean all e2e e2e-db admin-local owasp-agent-sync owasp-agent-merge-concepts owasp-agent-synth-eval
 
 prod-run:
 	gunicorn cre:app --log-file=-
@@ -70,23 +70,36 @@ docker-postgres:
 
 start-containers: docker-neo4j docker-redis
 
+# RQ work-horses fork after Flask/torch load. On macOS, unset device → MPS and
+# CrashReporter popups from Homebrew Python.app. Force CPU unless overridden.
+CRE_LIBRARIAN_DEVICE?=cpu
 start-worker:
-	. ./venv/bin/activate && FLASK_APP=`pwd`/cre.py python cre.py --start_worker
+	. ./venv/bin/activate && \
+	OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES \
+	CRE_LIBRARIAN_DEVICE="$(CRE_LIBRARIAN_DEVICE)" \
+	FLASK_APP=`pwd`/cre.py python cre.py --start_worker
+
+# Local OIE RQ fleet (queue ``oie``). Default 10; override with OIE_WORKER_COUNT=N.
+# Double-fork via scripts/start_oie_workers.py so workers survive make exit (SIGHUP).
+OIE_WORKER_COUNT?=10
+start-oie-workers:
+	. ./venv/bin/activate && \
+	OIE_WORKER_COUNT="$(OIE_WORKER_COUNT)" \
+	CRE_LIBRARIAN_DEVICE="$(CRE_LIBRARIAN_DEVICE)" \
+	OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES \
+	python scripts/start_oie_workers.py
 
 upstream-sync:
-	. ./venv/bin/activate &&\
-	python cre.py --upstream_sync --cache_file "$(or $(DEV_DATABASE_URL),$(CRE_CACHE_FILE),$(CURDIR)/standards_cache.sqlite)"
+	. ./venv/bin/activate && python cre.py --upstream_sync
 
 PORT?=5000
 
-# Local app against Docker Postgres: migrate, upstream-sync if cre/node empty, Flask.
-# Same entrypoint as admin showcase / OIE local (no SQLite). macOS AirPlay often
-# holds :5000 — use PORT=5001 make dev if bind fails.
-dev dev-flask admin-local:
+# Admin panel against Docker Postgres (no SQLite). Starts cre-postgres when the
+# URL is unreachable, migrates, then runs Flask on PORT (default 5000).
+admin-local:
 	bash ./scripts/run_admin_local.sh --port $(PORT) $(ADMIN_LOCAL_ARGS)
 
-# Bare Flask without Postgres bootstrap (legacy / CI helpers). Prefer `make dev`.
-dev-flask-sqlite:
+dev-flask:
 	. ./venv/bin/activate && INSECURE_REQUESTS=1 FLASK_APP=`pwd`/cre.py  FLASK_CONFIG=development flask run --port $(PORT)
 
 dev-flask-docker:
@@ -144,14 +157,7 @@ install-deps-typescript:
 install-deps: install-deps-python install-deps-typescript
 
 install-python:
-	@if [ ! -d "./venv" ]; then \
-		if command -v virtualenv >/dev/null 2>&1; then \
-			virtualenv -p python3 venv; \
-		else \
-			echo "virtualenv not on PATH — using python3 -m venv"; \
-			python3 -m venv venv; \
-		fi; \
-	fi
+	virtualenv -p python3 venv
 	. ./venv/bin/activate &&\
 	make install-deps-python &&\
 	playwright install  # Python embeddings/scraping (prompt_client); NOT frontend e2e — keep when migrating to Cypress
@@ -163,9 +169,7 @@ install-python:
 # `make install`. Rebuild with `make frontend` when you change the UI.
 install-typescript: install-deps-typescript
 
-# Deps + Docker Postgres schema + CRE upstream graph when empty (see run_admin_local.sh).
-install: install-typescript install-python
-	bash ./scripts/run_admin_local.sh --migrate-only $(ADMIN_LOCAL_ARGS)
+install: install-typescript install-python migrate-upgrade
 
 docker-dev:
 	docker build -f Dockerfile-dev -t opencre-dev:$(shell git rev-parse HEAD) .
