@@ -57,7 +57,7 @@ class TestOwaspAisvsParser(unittest.TestCase):
         self.assertEqual("AISVS12", entries[-1].sectionID)
         self.assertEqual("Monitoring, Logging & Anomaly Detection", entries[-1].section)
         self.assertEqual(
-            "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C12-Monitoring-and-Logging.md",
+            "https://github.com/OWASP/AISVS/blob/main/1.0/en/0x10-C12-Monitoring-and-Logging.md",
             entries[-1].hyperlink,
         )
         self.assertEqual(
