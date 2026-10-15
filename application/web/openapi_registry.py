@@ -105,6 +105,47 @@ class PathSpec:
         self.parameters = parameters
 
 
+_MCP_GRANT_SCOPES = ["myopencre:read", "myopencre:write"]
+
+_MCP_GRANT_REQUEST_BODY: Dict[str, Any] = {
+    "required": True,
+    "content": {
+        "application/json": {
+            "schema": {
+                "type": "object",
+                "required": ["scope"],
+                "properties": {
+                    "scope": {
+                        "type": "string",
+                        "enum": _MCP_GRANT_SCOPES,
+                        "description": "The OpenCRE scope to grant or revoke.",
+                    }
+                },
+            }
+        }
+    },
+}
+
+_MCP_GRANTS_RESPONSE: Dict[str, Any] = {
+    "200": {
+        "description": "The scopes currently granted",
+        "content": {
+            "application/json": {
+                "schema": {
+                    "type": "object",
+                    "required": ["granted"],
+                    "properties": {
+                        "granted": {
+                            "type": "array",
+                            "items": {"type": "string", "enum": _MCP_GRANT_SCOPES},
+                        }
+                    },
+                }
+            }
+        },
+    }
+}
+
 OPENAPI_PATHS: List[PathSpec] = [
     PathSpec(
         "/rest/v1/id/{creid}",
@@ -436,6 +477,54 @@ OPENAPI_PATHS: List[PathSpec] = [
                 },
             }
         },
+    ),
+    PathSpec(
+        "/rest/v1/user/mcp_grants",
+        "get_user_mcp_grants",
+        method="get",
+        tags=["User"],
+        summary="Scopes granted to the current user's MCP client",
+        description=(
+            "Requires a browser session. Google's device flow cannot carry "
+            "OpenCRE scopes, so an MCP client's permissions are recorded here "
+            "instead of in its token."
+        ),
+        not_found=False,
+        extra_responses={
+            "401": {"description": "Not authenticated"},
+            "403": {"description": "Requires a browser session"},
+        },
+        response_override=_MCP_GRANTS_RESPONSE,
+    ),
+    PathSpec(
+        "/rest/v1/user/mcp_grants",
+        "put_user_mcp_grant",
+        method="put",
+        tags=["User"],
+        summary="Grant one scope to the current user's MCP client",
+        not_found=False,
+        extra_responses={
+            "400": {"description": "Unknown or missing scope"},
+            "401": {"description": "Not authenticated"},
+            "403": {"description": "Requires a browser session"},
+        },
+        request_body=_MCP_GRANT_REQUEST_BODY,
+        response_override=_MCP_GRANTS_RESPONSE,
+    ),
+    PathSpec(
+        "/rest/v1/user/mcp_grants",
+        "delete_user_mcp_grant",
+        method="delete",
+        tags=["User"],
+        summary="Revoke one scope from the current user's MCP client",
+        not_found=False,
+        extra_responses={
+            "400": {"description": "Unknown or missing scope"},
+            "401": {"description": "Not authenticated"},
+            "403": {"description": "Requires a browser session"},
+        },
+        request_body=_MCP_GRANT_REQUEST_BODY,
+        response_override=_MCP_GRANTS_RESPONSE,
     ),
 ]
 

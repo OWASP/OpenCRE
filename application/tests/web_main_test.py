@@ -238,6 +238,18 @@ class TestMain(unittest.TestCase):
             response = client.get(f"/rest/v1/name/CW")
             self.assertEqual(404, response.status_code)
 
+            # Many CRE names contain "/" (e.g. "MFA/OTP"); the route must still match.
+            slash_cre = defs.CRE(id="555-555", description="MFA", name="MFA/OTP")
+            collection.add_cre(slash_cre)
+            for path in ("/rest/v1/name/MFA/OTP", "/rest/v1/name/MFA%2FOTP"):
+                response = client.get(path)
+                self.assertEqual(200, response.status_code, path)
+                self.assertEqual(
+                    json.loads(response.data.decode()), {"data": slash_cre.todict()}
+                )
+            response = client.get("/rest/v1/name/MFA/missing")
+            self.assertEqual(404, response.status_code)
+
             expected = {"data": cres["ca"].todict()}
             response = client.get(
                 f"/rest/v1/name/{cres['ca'].name}",
@@ -1813,3 +1825,32 @@ class TestMain(unittest.TestCase):
             body = response.data.decode()
             self.assertIn("openapi:", body)
             self.assertIn("/rest/v1/", body)
+
+    def test_per_user_endpoints_are_no_store(self) -> None:
+        """Per-user endpoints must be no-store, never publicly cacheable.
+
+        /rest/v1/auth/user returns the logged-in user's email; served with
+        Cache-Control: max-age=300 (no no-store/private/Vary:Cookie) it could be
+        stored by a shared/browser cache and disclosed to another user. This is
+        the regression test for the after_request no-store fix — it also guards
+        the alias /rest/v1/user and the already-covered /rest/v1/user/resources.
+        """
+        with patch.dict(os.environ, {"NO_LOGIN": "1"}):
+            with self.app.test_client() as client:
+                for path in (
+                    "/rest/v1/auth/user",
+                    "/rest/v1/user",
+                    "/rest/v1/user/resources",
+                ):
+                    response = client.get(path)
+                    cache_control = response.headers.get("Cache-Control", "")
+                    self.assertIn(
+                        "no-store",
+                        cache_control,
+                        msg=f"{path} must be no-store, got {cache_control!r}",
+                    )
+                    self.assertNotIn(
+                        "max-age=300",
+                        cache_control,
+                        msg=f"{path} must not be publicly cacheable, got {cache_control!r}",
+                    )

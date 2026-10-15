@@ -401,7 +401,7 @@ export const SearchPage = () => {
                 <p>
                   For more details, see this{' '}
                   <strong>
-                    <a href="https://www.youtube.com/watch?v=TwNroVARmB0">interview and demo video</a>
+                    <a href="https://www.youtube.com/watch?v=bDcWOy1AOPQ">conference talk</a>
                   </strong>
                   , read the{' '}
                   <strong>
@@ -509,7 +509,7 @@ export const SearchPage = () => {
               <div className="footer__links-column">
                 <h4 className="column-title">More Details</h4>
                 <div className="links-list">
-                  <a href="https://www.youtube.com/watch?v=TwNroVARmB0">Demo Video</a>
+                  <a href="https://www.youtube.com/watch?v=bDcWOy1AOPQ">Presentation</a>
                   <a href="https://github.com/OWASP/www-project-integration-standards/raw/master/writeups/opencredcslides.pdf">
                     Slides OWASP DC
                   </a>

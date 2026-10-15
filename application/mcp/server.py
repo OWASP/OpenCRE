@@ -13,8 +13,8 @@ import mcp.types as types
 from mcp.server.lowlevel import Server
 from mcp.server.stdio import stdio_server
 
-from application.mcp.catalog import PUBLIC_TOOLS
-from application.mcp.openapi_loader import all_tool_input_schemas
+from application.mcp.catalog import active_tools, auth_tools_enabled
+from application.mcp.openapi_loader import input_schemas_for
 from application.mcp.rest_client import (
     RestClient,
     RestClientError,
@@ -25,17 +25,35 @@ from application.mcp.rest_client import (
 
 SERVER_NAME = "opencre"
 SERVER_VERSION = "0.1.0"
-SERVER_INSTRUCTIONS = (
-    "OpenCRE MCP v1 exposes public JSON REST reads only. "
-    "Authenticated MyOpenCRE, chat, and admin tools are out of scope."
-)
+
+
+def server_instructions() -> str:
+    """Describe the live tool surface (v1 public-only vs v2 with auth tools)."""
+    if not auth_tools_enabled():
+        return (
+            "OpenCRE MCP v1 exposes public JSON REST reads only. "
+            "Authenticated MyOpenCRE, chat, and admin tools are out of scope."
+        )
+    served = active_tools()
+    has_write = any(not tool.read_only for tool in served)
+    if has_write:
+        return (
+            "OpenCRE MCP v2 exposes public JSON REST reads plus authenticated "
+            "MyOpenCRE tools (including set_my_resources for writes). "
+            "Chat and admin tools remain out of scope."
+        )
+    return (
+        "OpenCRE MCP v2 exposes public JSON REST reads plus authenticated "
+        "MyOpenCRE read tools. Chat and admin tools remain out of scope."
+    )
 
 
 def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
     """Create an MCP Server with OpenAPI-derived tool schemas and REST dispatch."""
     client = rest_client or RestClient()
+    served = active_tools()
     # Resolve schemas once at startup so OpenAPI drift fails before serving.
-    schemas = all_tool_input_schemas()
+    schemas = input_schemas_for(served)
 
     async def on_list_tools(
         ctx: Any, params: types.PaginatedRequestParams | None
@@ -47,13 +65,13 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
                 description=tool.summary,
                 input_schema=schemas[tool.name],
                 annotations=types.ToolAnnotations(
-                    read_only_hint=True,
-                    destructive_hint=False,
+                    read_only_hint=tool.read_only,
+                    destructive_hint=not tool.read_only,
                     idempotent_hint=True,
                     open_world_hint=True,
                 ),
             )
-            for tool in PUBLIC_TOOLS
+            for tool in served
         ]
         return types.ListToolsResult(tools=tools)
 
@@ -109,7 +127,7 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
     return Server(
         SERVER_NAME,
         version=SERVER_VERSION,
-        instructions=SERVER_INSTRUCTIONS,
+        instructions=server_instructions(),
         on_list_tools=on_list_tools,
         on_call_tool=on_call_tool,
     )
