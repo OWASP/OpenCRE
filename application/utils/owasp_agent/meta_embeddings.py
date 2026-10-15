@@ -206,6 +206,11 @@ def evidence_documents() -> List[Tuple[str, str, List[str]]]:
             "sensitive data",
             "data leakage",
             "three things together",
+            # Terse / paraphrase probes (no brand, "legs" wording).
+            "three legs",
+            "just the three legs",
+            "legs of the trifecta",
+            "trifecta three legs no preamble",
         ]
         embed_text = message + "\n\nTopics: " + ", ".join(dict.fromkeys(topic_bits))
         out.append((slug, embed_text, list(citations)))

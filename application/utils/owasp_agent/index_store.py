@@ -188,8 +188,11 @@ class IndexStore:
         )
 
     def upsert_project(self, project: Project) -> None:
+        from application.utils.owasp_agent.project_aliases import ensure_project_aliases
+
+        payload = ensure_project_aliases(project.to_dict())
         self.upsert_entity(
-            "project", project.key, project.name, project.source, project.to_dict()
+            "project", project.key, project.name, project.source, payload
         )
 
     def upsert_event(self, event: Event) -> None:

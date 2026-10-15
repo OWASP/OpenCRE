@@ -24,6 +24,7 @@ Env:
                                 (default http://127.0.0.1:15001)
   OWASP_AGENT_ENABLED           default 1
   OWASP_ADV_CORPUS              auto | owasp_meta | security (default auto)
+  OWASP_ADV_CATS                comma-separated case.cat allowlist (optional)
 """
 
 from __future__ import annotations
@@ -948,6 +949,16 @@ def main() -> int:
     os.environ.setdefault("OWASP_AGENT_ENABLED", "1")
 
     bank = _bank(rng)
+    cats_raw = (os.environ.get("OWASP_ADV_CATS") or "").strip()
+    if cats_raw:
+        allow = {c.strip() for c in cats_raw.split(",") if c.strip()}
+        bank = [c for c in bank if c.cat in allow]
+        if not bank:
+            print(
+                json.dumps({"error": "empty bank after OWASP_ADV_CATS filter", "cats": sorted(allow)}),
+                flush=True,
+            )
+            return 2
     failures: List[Dict[str, Any]] = _load_prior_failures(out_path) if append else []
     ok_n = fail_n = infra_n = substantive_n = 0
     for r in failures:
@@ -964,6 +975,7 @@ def main() -> int:
                 "start_turn": start_turn,
                 "append": append,
                 "bank": len(bank),
+                "cats": cats_raw or None,
                 "mode": mode,
                 "mcp_transport": os.environ.get(
                     "OWASP_ADV_MCP_TRANSPORT", "staging_ssh"

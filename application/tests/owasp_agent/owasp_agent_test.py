@@ -600,9 +600,14 @@ class TestProbeGapFixes(unittest.TestCase):
         self.assertIn("no indexed", resp["response"].lower())
 
     def test_board_service_years_not_clarify(self) -> None:
+        from application.utils.owasp_agent.person_resolve import (
+            list_indexed_person_names,
+        )
+
+        people = list_indexed_person_names(self.store)
         q = "Jeff Williams: board service years if indexed (do not invent talk quotes)."
-        self.assertEqual(classify_intent(q), "board_person")
-        slots = extract_slots(q)
+        self.assertEqual(classify_intent(q, known_people=people), "board_person")
+        slots = extract_slots(q, known_people=people)
         self.assertEqual(slots.person, "Jeff Williams")
         resp = self.router.handle(q)
         self.assertIsNotNone(resp)
@@ -611,9 +616,14 @@ class TestProbeGapFixes(unittest.TestCase):
         self.assertNotIn("which board year", resp["response"].lower())
 
     def test_board_roster_named_person_searches_all_years(self) -> None:
+        from application.utils.owasp_agent.person_resolve import (
+            list_indexed_person_names,
+        )
+
+        people = list_indexed_person_names(self.store)
         q = "Is Steve Springett on any indexed OWASP board year roster?"
-        self.assertEqual(classify_intent(q), "board_person")
-        slots = extract_slots(q)
+        self.assertEqual(classify_intent(q, known_people=people), "board_person")
+        slots = extract_slots(q, known_people=people)
         self.assertEqual(slots.person, "Steve Springett")
         # Fixture has no Springett — fail-closed still names the person path.
         resp = self.router.handle(q)
@@ -626,9 +636,14 @@ class TestProbeGapFixes(unittest.TestCase):
         self.assertNotIn("which board year should i look up", body)
 
     def test_candidate_page_url_extracts_person(self) -> None:
+        from application.utils.owasp_agent.person_resolve import (
+            list_indexed_person_names,
+        )
+
+        people = list_indexed_person_names(self.store)
         q = "Show Sam Stepanyan's 2023 candidate page URL if indexed."
-        self.assertEqual(classify_intent(q), "board_person")
-        slots = extract_slots(q)
+        self.assertEqual(classify_intent(q, known_people=people), "board_person")
+        slots = extract_slots(q, known_people=people)
         self.assertEqual(slots.person, "Sam Stepanyan")
         self.assertEqual(slots.year, 2023)
 
@@ -879,9 +894,16 @@ class TestEntityAndChatMemoryFixes(unittest.TestCase):
         self.assertNotIn("which chapter or city", text)
 
     def test_who_is_rob_van_der_veer(self) -> None:
+        from application.utils.owasp_agent.person_resolve import (
+            list_indexed_person_names,
+        )
 
-        self.assertEqual(classify_intent("Who is Rob van der Veer?"), "person_lookup")
-        slots = extract_slots("Who is Rob van der Veer?")
+        people = list_indexed_person_names(self.store)
+        self.assertEqual(
+            classify_intent("Who is Rob van der Veer?", known_people=people),
+            "person_lookup",
+        )
+        slots = extract_slots("Who is Rob van der Veer?", known_people=people)
         self.assertEqual(slots.person, "Rob van der Veer")
         resp = self.router.handle("Who is Rob van der Veer?")
         self.assertIsNotNone(resp)

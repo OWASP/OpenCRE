@@ -204,25 +204,41 @@ class GitHubCrawler:
         return []
 
     def parse_project_markdown(self, repo_name: str, text: str) -> Project:
+        from application.utils.owasp_agent.project_aliases import derive_project_aliases
+
         meta, body = split_frontmatter(text)
         key = repo_name.replace("OWASP/", "").replace("www-project-", "")
         tags = meta.get("tags") or []
         if isinstance(tags, str):
-            tags = [t.strip() for t in tags.split(",") if t.strip()]
+            tags = [t.strip() for t in re.split(r"[\s,]+", tags) if t.strip()]
         desc = str(meta.get("pitch") or meta.get("description") or "")
         if not desc:
             desc = body.strip().split("\n\n")[0][:500] if body.strip() else ""
+        url = (
+            f"https://owasp.org/{repo_name.split('/')[-1]}/" if "/" in repo_name else ""
+        )
+        name = str(meta.get("title") or key)
+        fm_aliases = meta.get("aliases") or meta.get("alias") or []
+        if isinstance(fm_aliases, str):
+            fm_aliases = [
+                a.strip() for a in re.split(r"[\s,]+", fm_aliases) if a.strip()
+            ]
+        aliases = derive_project_aliases(
+            name,
+            key,
+            list(tags) if isinstance(tags, list) else [],
+            extra=list(fm_aliases) if isinstance(fm_aliases, list) else [],
+            url=url,
+            description=f"{desc}\n{body[:800]}",
+        )
         return Project(
             key=key,
-            name=str(meta.get("title") or key),
+            name=name,
             level=str(meta.get("level") or ""),
             description=desc,
-            url=(
-                f"https://owasp.org/{repo_name.split('/')[-1]}/"
-                if "/" in repo_name
-                else ""
-            ),
+            url=url,
             tags=list(tags) if isinstance(tags, list) else [],
+            aliases=aliases,
             source="github",
             raw=meta,
         )

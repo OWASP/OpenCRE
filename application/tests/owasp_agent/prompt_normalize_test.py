@@ -26,6 +26,19 @@ class TestNormalizePrompt(unittest.TestCase):
         self.assertEqual(normalize_prompt(""), "")
         self.assertEqual(normalize_prompt("   "), "")
 
+    def test_casefolds_and_strips_metadata_wrapper(self) -> None:
+        out = normalize_prompt(
+            "(METADATA ONLY) LETHAL TRIFECTA — JUST THE THREE LEGS, NO PREAMBLE"
+        )
+        low = out.lower()
+        self.assertIn("lethal", low)
+        self.assertIn("trifecta", low)
+        self.assertIn("legs", low)
+        self.assertNotIn("metadata", low)
+        self.assertNotIn("preamble", low)
+        # Embed path must not stay ALL CAPS.
+        self.assertEqual(out, out.lower())
+
 
 class TestCleanProjectName(unittest.TestCase):
     def test_please_suffix(self) -> None:

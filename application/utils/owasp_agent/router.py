@@ -162,7 +162,12 @@ class OwaspAgentRouter:
             return None
 
         effective = _effective_prompt(text, history)
+        from application.utils.owasp_agent.person_resolve import (
+            list_indexed_person_names,
+        )
         from application.utils.owasp_agent.prompt_normalize import normalize_prompt
+
+        known_people = list_indexed_person_names(self.store)
 
         # NLP normalize (filler/paraphrase strip) before embed + retrieve.
         normalized = normalize_prompt(effective) or effective
@@ -170,7 +175,7 @@ class OwaspAgentRouter:
         # Multi-lane embedding gate: retrieve top-k agent candidates, pick by
         # score margin or constrained LLM — prefer this over intent/match_*.
         sim_decision = _similarity_gate(normalized)
-        intent_preview = classify_intent(effective)
+        intent_preview = classify_intent(effective, known_people=known_people)
         if sim_decision is not None:
             from application.utils.owasp_agent.candidate_picker import (
                 default_completion_fn,
@@ -346,7 +351,7 @@ class OwaspAgentRouter:
             )
             return format_chat_response(result)
 
-        slots = extract_slots(effective)
+        slots = extract_slots(effective, known_people=known_people)
         result = self._dispatch(intent, slots, effective)
         return format_chat_response(result)
 
@@ -611,21 +616,20 @@ def _similarity_gate(prompt: str):
         return None
 
 
-def classify_intent(text: str) -> str:
+def classify_intent(text: str, *, known_people: Optional[List[str]] = None) -> str:
+    from application.utils.owasp_agent.person_resolve import match_indexed_person
+
     t = text.lower().strip()
-    # Who-is / tell-me-about person lookup from leaders.json (not CRE bios)
+    person_hit = match_indexed_person(text, known_people)
+    # Who-is / tell-me-about person lookup from indexed leaders/board (not CRE bios)
     if re.search(r"\bwho is\b", t) and not re.search(r"\bwho is (the|on|a|an)\b", t):
-        if _extract_quoted_or_capitalized_name(text):
-            return "person_lookup"
-    if re.search(
-        r"\b(tell me about|what about)\b", t
-    ) and _extract_quoted_or_capitalized_name(text):
-        # "Tell me about Rob van der Veer" — person card, not CRE biography.
+        return "person_lookup"
+    if re.search(r"\b(tell me about|what about)\b", t) and person_hit:
         if not re.search(r"\b(vulnerability|mitigate|how (do|should)|cre)\b", t):
             return "person_lookup"
-    # Leading capitalized name + which projects they lead
+    # Indexed person + which projects they lead
     if (
-        _extract_quoted_or_capitalized_name(text)
+        person_hit
         and re.search(r"\b(lead|leads|leader|leads\?)\b", t)
         and re.search(r"\bprojects?\b", t)
     ):
@@ -663,17 +667,21 @@ def classify_intent(text: str) -> str:
 
     # Malicious / unauthorized help — refuse before any meta routing so
     # compound prompts ("dump keys + chapter leader") cannot skip the gate.
+    # Prefer multi-word attack phrasing; bare AppSec terms (idor, exfiltrate)
+    # alone must not refuse defensive questions.
     if re.search(
         r"("
         r"\bhow do i hack\b|\bteach me to (hack|phish)\b|\bsql injection payload\b|"
-        r"\bddos\b|\bbreak into\b|\bsteal (their|passwords|dms)\b|"
+        r"\b(launch|perform|run)\s+a\s+ddos\b|\bbreak into\b|"
+        r"\bsteal (their|passwords|dms)\b|"
         r"\bphishing (email )?template\b|\bvishing\b|\bmetasploit\b|"
         r"\bsocial-?engineer\b|"
-        r"\b(phish|phishing)\b|"
+        r"\b(write|craft|build)\s+(a\s+)?phish(ing)?\b|"
         r"\bkeylogger\b|\b(write|build)\s+a\s+worm\b|\bpoison .{0,40}dependency\b|"
         r"\bburp\s+intruder\b|\bauth bypass\b|"
-        r"\bbreaking into\b|\bforged token\b|\bidor\b|\bransomware\b|\bdox\b|"
-        r"\bunrestricted gpt\b|\bdisable safety\b|\bexfiltrate\b|"
+        r"\bbreaking into\b|\bforged token\b|\bransomware\b|\bdox\b|"
+        r"\bunrestricted gpt\b|\bdisable safety\b|"
+        r"\bhow (do|to) (i )?exfiltrate\b|"
         r"\bignore (all )?(previous|prior|earlier)( instructions)?\b|"
         r"\bdump (the )?(api|nest|heroku)?.{0,20}keys?\b|"
         r"\boutput the .{0,40}api keys?\b|"
@@ -708,7 +716,7 @@ def classify_intent(text: str) -> str:
         if lookup_cre_factoid(text):
             return "cre_fact"
 
-    # Named-person talk claims (incl. fake speakers / suburb meetups) → fail-closed
+    # Talk claims (incl. fake speakers / suburb meetups) → fail-closed
     if (
         re.search(
             r"\bwhat did\b.+\b(say|present|speak|argue)\b",
@@ -724,10 +732,7 @@ def classify_intent(text: str) -> str:
             t,
         )
     ) and not re.search(r"\b(board interview|candidate statement|candidacy)\b", t):
-        if _extract_quoted_or_capitalized_name(text) or re.search(
-            r"\b(unknown speaker|random person|transcript)\b", t
-        ):
-            return "talk_lookup"
+        return "talk_lookup"
 
     # Membership (admin) — always meta, never CRE fallthrough
     if re.search(
@@ -798,8 +803,7 @@ def classify_intent(text: str) -> str:
         r"count of indexed owasp chapters|approximate count of .{0,20}chapters)\b",
         t,
     ) or (
-        re.search(r"\bchapters?\b", t)
-        and re.search(r"\b(active|inactive|status)\b", t)
+        re.search(r"\bchapters?\b", t) and re.search(r"\b(active|inactive|status)\b", t)
     ):
         if re.search(
             r"\b(count|how many|approximate count)\b.+\bchapters?\b",
@@ -824,7 +828,7 @@ def classify_intent(text: str) -> str:
     # (negations like "do not invent talk quotes" must not steal board asks).
     # Year-scoped roster ("Board roster for 2020") stays board_members.
     if re.search(r"\bboard roster\b", t) and re.search(r"\b20\d{2}\b", t):
-        if not _extract_quoted_or_capitalized_name(text):
+        if not person_hit:
             return "board_members"
     if re.search(
         r"\b(board (service )?years|board member|board year roster|"
@@ -835,9 +839,10 @@ def classify_intent(text: str) -> str:
     ) or (
         "board" in t
         and re.search(r"\b(member|candidate|roster|years?|service)\b", t)
-        and _extract_quoted_or_capitalized_name(text)
+        and person_hit
     ):
         return "board_person"
+
     # Board roster + refuse invented talk (compound) — answer roster first.
     if (
         re.search(r"\bboard\b", t)
@@ -884,15 +889,14 @@ def classify_intent(text: str) -> str:
         re.search(r"\b(members?|roster|who (is|are) on)\b", t)
         or re.search(r"\b20\d{2}\b", t)
     ):
-        if _extract_quoted_or_capitalized_name(text) and not re.search(
-            r"\bwho (is|are) on the\b", t
-        ):
+        if person_hit and not re.search(r"\bwho (is|are) on the\b", t):
             return "board_person"
         return "board_members"
 
-    # Chitchat about named person + defenses/talk without clear CRE ask
-    if re.search(r"\b(keynote|talk|presented|say about|said about)\b", t) and (
-        _extract_quoted_or_capitalized_name(text)
+    # Chitchat about indexed person + defenses/talk without clear CRE ask
+    if (
+        re.search(r"\b(keynote|talk|presented|say about|said about)\b", t)
+        and person_hit
     ):
         if re.search(r"\b(board (service )?years|do not invent talk)\b", t):
             return "board_person"
@@ -903,7 +907,9 @@ def classify_intent(text: str) -> str:
     return "cre_normative"
 
 
-def extract_slots(text: str) -> Slots:
+def extract_slots(text: str, *, known_people: Optional[List[str]] = None) -> Slots:
+    from application.utils.owasp_agent.person_resolve import match_indexed_person
+
     slots = Slots()
     t = text.lower()
 
@@ -949,6 +955,20 @@ def extract_slots(text: str) -> Slots:
     )
     if m_place:
         slots.place = m_place.group(1).strip().rstrip(".?!")
+    # "leader for Athens" / "chapter status in X" / "Suburb Glendale meetup"
+    m_leader_place = re.search(
+        r"\b(?:leader|leaders|chapter|status)\s+(?:for|in)\s+"
+        r"([A-Z][A-Za-z .'-]+?)(?=\s*[?,.!]| versus | vs\.?\s|$)",
+        text,
+    )
+    if m_leader_place:
+        slots.place = m_leader_place.group(1).strip().rstrip(".?!")
+    m_suburb = re.search(
+        r"\b[Ss]uburb\s+([A-Z][A-Za-z .'-]+?)(?=\s+(?:meetup|chapter|→|,)|\s*$)",
+        text,
+    )
+    if m_suburb:
+        slots.place = m_suburb.group(1).strip().rstrip(".?!")
 
     m_place2 = re.search(
         r"\b(?:i(?:'m| am)|we are)\s+(?:in|near)\s+([A-Za-z .',-]+)",
@@ -974,36 +994,7 @@ def extract_slots(text: str) -> Slots:
     )
     if m_dist:
         slots.place = m_dist.group(1).strip().rstrip(".?!;→")
-    # Chapter / suburb mentions without in/near
-    for city in (
-        "Athens",
-        "Thessaloniki",
-        "Los Angeles",
-        "Pasadena",
-        "Santa Monica",
-        "Glendale",
-        "Burbank",
-        "Long Beach",
-        "Croydon",
-        "Peckham",
-        "Potsdam",
-        "Yokohama",
-        "London",
-        "Berlin",
-        "Tokyo",
-        "New York",
-        "San Francisco",
-        "Seattle",
-        "Chicago",
-        "Toronto",
-        "Sydney",
-    ):
-        if re.search(rf"\b{re.escape(city)}\b", text, re.IGNORECASE):
-            if city not in slots.places:
-                slots.places.append(city)
-            if not slots.place:
-                slots.place = city
-    # versus / vs comparisons — city-sized tokens only
+    # versus / vs comparisons — city-sized tokens only (no city allowlist)
     m_vs = re.search(
         r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:versus|vs\.?)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)",
         text,
@@ -1014,25 +1005,12 @@ def extract_slots(text: str) -> Slots:
             m_vs.group(2).strip().rstrip(".?!"),
         ]
         slots.place = slots.places[0]
+    if slots.place and slots.place not in slots.places:
+        slots.places.append(slots.place)
 
-    person = _extract_quoted_or_capitalized_name(text)
+    person = match_indexed_person(text, known_people)
     if person:
         slots.person = person
-    # "Fail-closed on Spyros … talk" — single given name is enough for fail-closed.
-    if not slots.person:
-        m_on_talk = re.search(
-            r"\bon\s+([A-Z][a-z]{2,})\s+(?:\S+\s+){0,4}talk\b",
-            text,
-        )
-        if m_on_talk:
-            slots.person = m_on_talk.group(1).strip()
-
-    m_who = re.search(
-        r"\b[Ww]ho\s+is\s+(" + _PERSON_NAME_RE + r")\s*\??",
-        text,
-    )
-    if m_who:
-        slots.person = m_who.group(1).strip().rstrip(".?!")
 
     m_diff = re.search(
         r"\b(?:difference between|differ(?:ence)? between|compare)\s+"
@@ -1252,195 +1230,23 @@ def _sanitize_result_data(data: Any) -> Any:
 
 def _mentions_ai(text: str) -> bool:
     t = text.lower()
-    return (
-        any(
-            k in t
-            for k in (
-                "ai security",
-                "ai-security",
-                "machine learning",
-                " llm",
-                "genai",
-                "artificial intelligence",
-                " ai ",
-                "ai system",
-                "projects on ai",
-                "about ai",
-                "ai projects",
-                "ai-related",
-                "related owasp projects",
-            )
+    return bool(
+        re.search(
+            r"("
+            r"\bai[- ]security\b|\bmachine learning\b|\bgenai\b|\bllms?\b|"
+            r"\bartificial intelligence\b|\bai systems?\b|\bai projects?\b|"
+            r"\bai-related\b|\bprojects on ai\b|\babout ai\b|\blist ai\b|"
+            r"\brelated owasp projects\b"
+            r")",
+            t,
         )
-        or t.strip().startswith("ai ")
-        or " on ai" in t
-        or "list ai" in t
+        or re.search(r"(^|\s)ai(\s|$)", t)
     )
 
 
 def _mentions_appsec(text: str) -> bool:
     t = text.lower()
     return "appsec" in t or "application security" in t
-
-
-# Capitalized personal names, including multi-particle Dutch/German forms
-# (e.g. "Rob van der Veer", "Andrew van der Stock").
-_PERSON_NAME_RE = r"[A-Z][a-z]+(?:\s+(?:van|der|de|la|von|[A-Z][a-z]+))+"
-
-_NAME_LEADING_STOPWORDS = frozenset(
-    {
-        "show",
-        "compare",
-        "quote",
-        "quoting",
-        "before",
-        "after",
-        "when",
-        "what",
-        "which",
-        "whose",
-        "did",
-        "does",
-        "has",
-        "have",
-        "is",
-        "are",
-        "was",
-        "were",
-        "the",
-        "and",
-        "for",
-        "from",
-        "with",
-        "about",
-        "board",
-        "nearest",
-        "multi",
-        "hop",
-        "fail",
-        "closed",
-        "draft",
-        "list",
-        "how",
-        "many",
-    }
-)
-
-
-def _name_starts_with_stopword(name: str) -> bool:
-    first = (name or "").strip().split()[0].lower() if name else ""
-    return first in _NAME_LEADING_STOPWORDS
-
-
-def _extract_quoted_or_capitalized_name(text: str) -> Optional[str]:
-    m = re.search(r"[\"']([A-Z][^\"']+)[\"']", text)
-    if m:
-        return m.group(1).strip()
-    m_who = re.search(r"\b[Ww]ho\s+is\s+(" + _PERSON_NAME_RE + r")\s*\??", text)
-    if m_who:
-        return m_who.group(1).strip().rstrip(".?!")
-    m_about = re.search(
-        r"\b(?:[Tt]ell me about|[Ww]hat about)\s+(" + _PERSON_NAME_RE + r")\b",
-        text,
-    )
-    if m_about and not _name_starts_with_stopword(m_about.group(1)):
-        return m_about.group(1).strip().rstrip(".?!")
-    # "Jeff Williams: board service years…" (colon only — not Name's possessive)
-    m_lead = re.search(
-        r"^(" + _PERSON_NAME_RE + r")\s*:",
-        text.strip(),
-    )
-    if m_lead and not _name_starts_with_stopword(m_lead.group(1)):
-        return m_lead.group(1).strip()
-    # Leading name before dash/em-dash ("Rob van der Veer — which projects…")
-    m_lead_dash = re.search(
-        r"^(" + _PERSON_NAME_RE + r")\s*[—–\-]\s*",
-        text.strip(),
-    )
-    if m_lead_dash and not _name_starts_with_stopword(m_lead_dash.group(1)):
-        return m_lead_dash.group(1).strip()
-    # Leading name + board / years without requiring colon
-    # ("Andrew van der Stock board years — …")
-    m_lead_board = re.search(
-        r"^(" + _PERSON_NAME_RE + r")\s+board\b",
-        text.strip(),
-    )
-    if m_lead_board and not _name_starts_with_stopword(m_lead_board.group(1)):
-        return m_lead_board.group(1).strip()
-    # Verb-led extractions before bare possessive (avoids "Show Sam …" as a name).
-    m_is = re.search(
-        r"\b[Ii]s\s+(" + _PERSON_NAME_RE + r")\s+on\b",
-        text,
-    )
-    if m_is:
-        return m_is.group(1).strip()
-    m_has = re.search(
-        r"\b[Hh]as\s+(" + _PERSON_NAME_RE + r")\s+been\b",
-        text,
-    )
-    if m_has:
-        return m_has.group(1).strip()
-    m_show = re.search(
-        r"\b[Ss]how\s+(" + _PERSON_NAME_RE + r")(?:'s|’s)?\b",
-        text,
-    )
-    if m_show:
-        return m_show.group(1).strip()
-    m_compare = re.search(
-        r"\b[Cc]ompare\s+(" + _PERSON_NAME_RE + r")(?:'s|’s)?\b",
-        text,
-    )
-    if m_compare:
-        return m_compare.group(1).strip()
-    m_quoting = re.search(
-        r"\b(?:quoting|quote)\s+(" + _PERSON_NAME_RE + r")(?:'s|’s)?\b",
-        text,
-        re.IGNORECASE,
-    )
-    if m_quoting:
-        return m_quoting.group(1).strip()
-    # Any possessive Name's … (candidate page, board candidacy, AppSec talk)
-    m_possessive = re.search(
-        r"\b(" + _PERSON_NAME_RE + r")(?:'s|’s)\b",
-        text,
-    )
-    if m_possessive and not _name_starts_with_stopword(m_possessive.group(1)):
-        return m_possessive.group(1).strip()
-    m_by = re.search(
-        r"\btalks?\s+by\s+(?:a\s+random\s+person\s+named\s+)?("
-        + _PERSON_NAME_RE
-        + r")\b",
-        text,
-    )
-    if m_by:
-        return m_by.group(1).strip()
-    m_did = re.search(
-        r"\b(?:[Ww]hat\s+[Dd]id|[Dd]id)\s+(" + _PERSON_NAME_RE + r")\b",
-        text,
-    )
-    if m_did:
-        return m_did.group(1).strip()
-    m2 = re.search(
-        r"(?:position of|board member|candidate|quote)\s+(" + _PERSON_NAME_RE + r")",
-        text,
-    )
-    if m2:
-        return m2.group(1).strip()
-    m3 = re.search(
-        r"\b(" + _PERSON_NAME_RE + r")\s+(?:say|said|run|ever|present|give|from)\b",
-        text,
-    )
-    if m3:
-        name = m3.group(1).strip()
-        first = name.split()[0].lower()
-        if first not in ("did", "what", "who", "how", "when", "where", "is", "the"):
-            return name
-    m4 = re.search(
-        r"\b(?:for|by|of)\s+(" + _PERSON_NAME_RE + r")\s*\??\s*$",
-        text,
-    )
-    if m4:
-        return m4.group(1).strip()
-    return None
 
 
 def _clean_project_name(raw: str) -> str:

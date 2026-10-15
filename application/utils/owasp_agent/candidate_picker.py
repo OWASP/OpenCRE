@@ -109,16 +109,13 @@ def narrow_candidates(prompt: str, candidates: List[LaneHit]) -> List[LaneHit]:
     for h in candidates:
         by_kind.setdefault(_url_kind(h), []).append(h)
 
+    # Structural kind cues only (not topic/brand keyword dumps).
     if re.search(r"\bchapters?\b", t) and by_kind.get("chapter"):
         return by_kind["chapter"]
     if re.search(r"\bboard\b", t) and (
         by_kind.get("board_roster") or by_kind.get("board_member")
     ):
         return by_kind.get("board_roster") or by_kind["board_member"]
-    if re.search(
-        r"\b(trifecta|ai exchange|owaspai|exfiltration|prompt injection)\b", t
-    ) and by_kind.get("evidence"):
-        return by_kind["evidence"]
     return candidates
 
 

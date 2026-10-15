@@ -43,7 +43,7 @@ class TestNarrowCandidates(unittest.TestCase):
         self.assertEqual(len(narrowed), 1)
         self.assertIn("chapter", narrowed[0].url)
 
-    def test_evidence_prompt_restricts_to_evidence(self) -> None:
+    def test_evidence_prompt_does_not_keyword_narrow(self) -> None:
         from application.utils.owasp_agent.candidate_picker import narrow_candidates
         from application.utils.owasp_agent.meta_embeddings import evidence_url
 
@@ -61,11 +61,11 @@ class TestNarrowCandidates(unittest.TestCase):
                 content="trifecta",
             ),
         ]
+        # Topic keywords must not dump-gate to evidence; sim/margin picks instead.
         narrowed = narrow_candidates(
             "lethal trifecta according to OWASP AI Exchange", pool
         )
-        self.assertEqual(len(narrowed), 1)
-        self.assertTrue(narrowed[0].url.startswith("owasp-agent://evidence/"))
+        self.assertEqual(len(narrowed), 2)
 
 
 class TestSelectAgentHit(unittest.TestCase):

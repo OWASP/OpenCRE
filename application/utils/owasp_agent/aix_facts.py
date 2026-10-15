@@ -1,11 +1,13 @@
-"""Curated OWASP AI Exchange factoids (deterministic Q&A with citations)."""
+"""Curated OWASP AI Exchange evidence text (seeded into meta embeddings).
+
+Runtime answers come from similarity retrieve of evidence rows — not keyword dumps.
+"""
 
 from __future__ import annotations
 
-import re
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
-# (match predicates on lowercase question) -> (message, citations)
+# (topic keys for embedding Topics line) -> (message, citations)
 AIX_FACTOIDS: List[Tuple[Tuple[str, ...], str, List[str]]] = [
     (
         ("lethal trifecta",),
@@ -21,19 +23,3 @@ AIX_FACTOIDS: List[Tuple[Tuple[str, ...], str, List[str]]] = [
         ["https://owaspai.org/docs/ai_security_overview/"],
     ),
 ]
-
-
-def lookup_aix_factoid(question: str) -> Optional[Tuple[str, List[str]]]:
-    t = (question or "").lower()
-    if not t:
-        return None
-    # Prefer AIX-attributed or explicit trifecta asks.
-    aix_hint = bool(
-        re.search(r"\b(ai exchange|owaspai|aix)\b", t) or "lethal trifecta" in t
-    )
-    if not aix_hint:
-        return None
-    for keys, message, citations in AIX_FACTOIDS:
-        if all(k in t for k in keys):
-            return message, list(citations)
-    return None

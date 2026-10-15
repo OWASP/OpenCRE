@@ -531,11 +531,24 @@ class MetaQueries:
         found_any = False
         for target in targets:
             hit = _match_chapter(chapters, target)
-            alias = _metro_chapter_alias(target) if not hit else None
-            via_alias = False
-            if not hit and alias:
-                hit = _match_chapter(chapters, alias)
-                via_alias = bool(hit)
+            via_geo = False
+            geo_km: Optional[float] = None
+            if not hit:
+                # Nearest chapter by geocode — not suburb→metro word maps.
+                try:
+                    origin = self.geocode_fn(target)
+                except GeocodeError:
+                    origin = None
+                if origin is not None:
+                    near = nearest_by_coords(origin, chapters, limit=1)
+                    if near:
+                        hit = near[0]
+                        via_geo = True
+                        raw_km = hit.get("distance_km")
+                        try:
+                            geo_km = float(raw_km) if raw_km is not None else None
+                        except (TypeError, ValueError):
+                            geo_km = None
             if not hit:
                 messages.append(
                     f"No OWASP chapter is indexed for {target!r} "
@@ -548,11 +561,12 @@ class MetaQueries:
             active = hit.get("active")
             name = hit.get("name") or hit.get("key")
             url = hit.get("url") or ""
-            suburb_bit = (
-                f" For {target}, the nearest indexed chapter is {name}."
-                if via_alias
-                else ""
-            )
+            geo_bit = ""
+            if via_geo:
+                dist = f" (~{geo_km:.0f} km)" if geo_km is not None else ""
+                geo_bit = (
+                    f" Nearest indexed chapter to {target} by geocode is {name}{dist}."
+                )
             if active is False:
                 leader_bit = (
                     f" Last known leaders: {', '.join(leaders)}."
@@ -563,7 +577,7 @@ class MetaQueries:
                     f"There is no active OWASP chapter for {name}. "
                     f"A chapter page is indexed but marked inactive "
                     f"(site data: Needs Website Update / no pages).{leader_bit}"
-                    + suburb_bit
+                    + geo_bit
                     + (f" Page: {url}." if url else "")
                 )
             else:
@@ -575,7 +589,7 @@ class MetaQueries:
                 status = "active" if active is True else "indexed"
                 messages.append(
                     f"OWASP chapter {name} is {status}.{leader_bit}"
-                    + suburb_bit
+                    + geo_bit
                     + (f" Page: {url}." if url else "")
                 )
             if url:
@@ -587,7 +601,7 @@ class MetaQueries:
                     "chapter": _public_entity(hit),
                     "leaders": leaders,
                     "active": active,
-                    "via_suburb_alias": via_alias,
+                    "via_geocode": via_geo,
                 }
             )
         return QueryResult(
@@ -842,27 +856,20 @@ class MetaQueries:
         ]
 
         def _chapter_name_fallback() -> Optional[QueryResult]:
-            """Suburb / city string match when Nominatim is down or coords missing."""
+            """City string match when Nominatim is down (no suburb→metro hardcodes)."""
             tokens = _place_city_tokens(place)
-            alias = _metro_chapter_alias(place)
-            targets = list(tokens)
-            if alias and alias not in targets:
-                targets.append(alias)
             hits = []
             for c in chapters:
                 cn = _norm(str(c.get("name") or "") + " " + str(c.get("city") or ""))
-                if any(t and t in cn for t in targets):
+                if any(t and t in cn for t in tokens):
                     hits.append(c)
             if not hits:
                 return None
             top = hits[0]
-            alias_note = ""
-            if alias:
-                alias_note = f" (mapped {place.strip()} → {alias.title()} chapter)"
             geo_note = (
                 f" Geocoding was unavailable ({geocode_err}); used chapter name match."
                 if geocode_err
-                else " Used chapter name / metro alias match."
+                else " Used chapter name match."
             )
             return QueryResult(
                 ok=True,
@@ -875,7 +882,7 @@ class MetaQueries:
                 },
                 message=(
                     f"You told me you are in {place}. The nearest indexed OWASP chapter is "
-                    f"{top.get('name')}{alias_note}.{geo_note} "
+                    f"{top.get('name')}.{geo_note} "
                     "I do not have upcoming meetup details indexed yet (fail closed on talks)."
                 ),
                 citations=_citations([top]),
@@ -963,36 +970,6 @@ class MetaQueries:
                 for c in self.store.prefer_source_entities("chapter")
                 if not c.get("_conflict")
             ]
-            # Prefer chapters with coords; for a short metro alias list, map place→chapter.
-            alias = _metro_chapter_alias(place)
-            if alias:
-                for ch in chapters:
-                    key = str(ch.get("key") or "").lower()
-                    name = str(ch.get("name") or "").lower()
-                    if alias in key or alias in name:
-                        place_bits = _place_city_tokens(place)
-                        metro = (
-                            "Tokyo"
-                            if any(t in ("yokohama", "tokyo") for t in place_bits)
-                            else alias.title()
-                        )
-                        return QueryResult(
-                            ok=True,
-                            kind="events_near",
-                            data={
-                                "place": place,
-                                "nearest_chapter": _public_entity(ch),
-                                "events": [],
-                            },
-                            message=(
-                                f"You told me you are in {place}. Nearest indexed OWASP chapter for "
-                                f"the {metro} metro area is {ch.get('name')} "
-                                f"(mapped via {alias}). "
-                                "No matching upcoming events indexed"
-                                + (f" for topic {topic!r}." if topic else ".")
-                            ),
-                            citations=_citations([ch]),
-                        )
             nearest_ch = nearest_by_coords(origin, chapters, limit=1)
             if nearest_ch:
                 ch = nearest_ch[0]
@@ -1214,45 +1191,58 @@ def _match_chapter(
     return best
 
 
+def _alias_matches_target(target: str, alias: str) -> bool:
+    """Strict alias hit — short tokens (ai, ml) only match exactly."""
+    a = _norm(alias)
+    if not a:
+        return False
+    if target == a:
+        return True
+    # Avoid "ai" ⊂ "genai security" false positives.
+    if len(a) < 4:
+        return False
+    return a in target or target in a
+
+
 def _match_project(
     projects: List[Dict[str, Any]], name: str
 ) -> Optional[Dict[str, Any]]:
+    from application.utils.owasp_agent.project_aliases import ensure_project_aliases
+
     target = _norm(name)
     if not target:
         return None
     for prefix in ("owasp ", "the ", "project "):
         if target.startswith(prefix):
             target = target[len(prefix) :].strip()
-    # Aliases for common short names.
-    aliases = {
-        "ai exchange": ("ai exchange", "ai security and privacy"),
-        "aix": ("ai exchange", "ai security and privacy"),
-        "genai security project": ("genai", "large language model", "llm top"),
-        "genai security": ("genai", "large language model", "llm top"),
-        "genai": ("genai", "large language model"),
-    }
-    alias_needles = aliases.get(target)
 
     exact = None
     partial = None
+    best_alias_len = 0
+    alias_hit: Optional[Dict[str, Any]] = None
     for p in projects:
-        key = _norm(str(p.get("key") or "").replace("-", " "))
-        pname = _norm(str(p.get("name") or ""))
-        desc = _norm(str(p.get("description") or ""))
-        hay = f"{key} {pname} {desc}"
+        enriched = ensure_project_aliases(p)
+        key = _norm(str(enriched.get("key") or "").replace("-", " "))
+        pname = _norm(str(enriched.get("name") or ""))
+        desc = _norm(str(enriched.get("description") or ""))
+        alias_list = [_norm(str(a)) for a in (enriched.get("aliases") or []) if a]
         if target == key or target == pname:
-            return p
+            return enriched
         if target in pname or pname in target or target in key:
             if exact is None:
-                exact = p
+                exact = enriched
             continue
-        if alias_needles and any(n in hay for n in alias_needles):
-            if partial is None:
-                partial = p
-            continue
+        for a in alias_list:
+            if not _alias_matches_target(target, a):
+                continue
+            score = len(a)
+            if score > best_alias_len:
+                best_alias_len = score
+                alias_hit = enriched
+        hay = f"{key} {pname} {desc}"
         if target in hay and partial is None:
-            partial = p
-    return exact or partial
+            partial = enriched
+    return exact or alias_hit or partial
 
 
 def _place_city_tokens(place: str) -> List[str]:
@@ -1272,29 +1262,3 @@ def _place_city_tokens(place: str) -> List[str]:
         if cand and cand not in out:
             out.append(cand)
     return out
-
-
-def _metro_chapter_alias(place: str) -> Optional[str]:
-    """Map well-known localities to chapter key/name fragments without geocoding."""
-    aliases = {
-        "pasadena": "los angeles",
-        "santa monica": "los angeles",
-        "glendale": "los angeles",
-        "burbank": "los angeles",
-        "oakland": "los angeles",
-        "beverly hills": "los angeles",
-        "long beach": "los angeles",
-        "croydon": "london",
-        "peckham": "london",
-        "potsdam": "berlin",
-        # Nest/site often indexes "OWASP Japan" rather than a Tokyo chapter key.
-        "yokohama": "japan",
-        "tokyo": "japan",
-        "brooklyn": "new york",
-        "manhattan": "new york",
-        "cambridge": "boston",
-    }
-    for token in _place_city_tokens(place):
-        if token in aliases:
-            return aliases[token]
-    return None

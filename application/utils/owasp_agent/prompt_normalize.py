@@ -72,6 +72,16 @@ _SOURCE_PAREN_RE = re.compile(
     r"\(\s*source\s*:[^)]*\)",
     re.IGNORECASE,
 )
+# Adversarial / probe wrappers that dilute embeddings (not factual content).
+_WRAPPER_PAREN_RE = re.compile(
+    r"\(\s*(metadata\s+only|meta\s+only|facts?\s+only)\s*\)",
+    re.IGNORECASE,
+)
+_WRAPPER_PHRASE_RE = re.compile(
+    r"\b(no preamble|be precise|answer from the owasp index|"
+    r"metadata only|cite the page if you can)\b[:\s,-]*",
+    re.IGNORECASE,
+)
 _MULTI_SPACE_RE = re.compile(r"\s+")
 
 
@@ -97,30 +107,34 @@ def _tokenize(text: str) -> list[str]:
 def normalize_prompt(prompt: str) -> str:
     """Return a filler-stripped prompt suitable for embedding / retrieve.
 
+    Casefolds content so ALL-CAPS adversarial prompts still match embeddings.
     Preserves content tokens (project names, people, topics). Empty input stays
     empty; if stripping would wipe everything, return the lightly cleaned
-    original.
+    original (also casefolded).
     """
     raw = (prompt or "").strip()
     if not raw:
         return ""
     cleaned = _SOURCE_PAREN_RE.sub(" ", raw)
+    cleaned = _WRAPPER_PAREN_RE.sub(" ", cleaned)
+    cleaned = _WRAPPER_PHRASE_RE.sub(" ", cleaned)
     cleaned = cleaned.replace("—", " ").replace("–", " ")
     cleaned = _MULTI_SPACE_RE.sub(" ", cleaned).strip()
+    light = cleaned.casefold()
 
     stops = _nltk_stopwords() or frozenset()
     drop = stops | _EXTRA_FILLERS
     tokens = _tokenize(cleaned)
     kept: list[str] = []
     for tok in tokens:
-        low = tok.lower()
+        low = tok.casefold()
         if low in _KEEP:
-            kept.append(tok)
+            kept.append(low)
             continue
         if low in drop:
             continue
         if tok in {".", ",", "?", "!", ";", ":", "(", ")", "'", '"', "''", "``"}:
             continue
-        kept.append(tok)
+        kept.append(low)
     out = _MULTI_SPACE_RE.sub(" ", " ".join(kept)).strip(" .?!")
-    return out if out else cleaned
+    return out if out else light

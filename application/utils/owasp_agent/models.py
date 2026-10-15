@@ -49,6 +49,7 @@ class Project:
     url: str = ""
     tags: List[str] = field(default_factory=list)
     leaders: List[str] = field(default_factory=list)
+    aliases: List[str] = field(default_factory=list)
     source: str = ""
     raw: Dict[str, Any] = field(default_factory=dict)
 
