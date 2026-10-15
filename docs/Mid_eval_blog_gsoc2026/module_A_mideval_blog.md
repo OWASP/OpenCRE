@@ -134,7 +134,6 @@ for file_path in changed_files:
     complete_file_content = read_file_at_commit(head_commit, file_path)
 
 
-Replace the `is_noise()` example with:
 
 ```python
 deny_extensions = [".css", ".scss", ".png", ".lock", ".map"]
@@ -151,7 +150,13 @@ def is_noise(file_path: str) -> bool:
     if any(file_path.endswith(ext) for ext in deny_extensions):
         return True
 
-    if any(fnmatch.fnmatch(file_path, pattern) for pattern in deny_paths):
+    path_parts = file_path.split("/")
+
+    if any(
+        fnmatch.fnmatch(file_path, pattern)
+        or any(fnmatch.fnmatch(part, pattern.rstrip("/**")) for part in path_parts)
+        for pattern in deny_paths
+    ):
         return True
 
     return False
@@ -425,7 +430,7 @@ By end of Week 6:
          ↓ shallow clone + checkpoint resume
     
     Week 3-4: Change Detection, Filtering
-         ↓ checkpoint-to-HEAD comparison + regex filters
+         ↓ checkpoint-to-HEAD comparison + pattern filters
     
     Week 5: Content Hashing, Artifact Registry
          ↓ dedup at artifact level (in-memory)
