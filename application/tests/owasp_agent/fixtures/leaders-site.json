@@ -1,0 +1,23 @@
+[
+  {
+    "name": "Rob van der Veer",
+    "email": "rob.vanderveer@owasp.org",
+    "group": "OWASP AI Exchange",
+    "group-type": "project",
+    "group_url": "https://owasp.org/www-project-ai-security-and-privacy-guide/"
+  },
+  {
+    "name": "Rob van der Veer",
+    "email": "rob.vanderveer@owasp.org",
+    "group": "OWASP Integration Standards",
+    "group-type": "project",
+    "group_url": "https://owasp.org/www-project-integration-standards/"
+  },
+  {
+    "name": "Alice Leader",
+    "email": "alice@owasp.org",
+    "group": "OWASP Los Angeles",
+    "group-type": "chapter",
+    "group_url": "https://owasp.org/www-chapter-los-angeles/"
+  }
+]

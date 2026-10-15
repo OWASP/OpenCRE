@@ -136,6 +136,16 @@ export const Chatbot = () => {
     return res;
   }
 
+  const HISTORY_CAP = 20;
+
+  function startNewChat() {
+    setChatMessages([]);
+    setError('');
+    setChat(DEFAULT_CHAT_STATE);
+    setModelName('');
+    setShowScrollToBottom(false);
+  }
+
   async function onSubmit() {
     if (!chat.term.trim()) return;
     shouldForceScrollRef.current = true;
@@ -143,6 +153,12 @@ export const Chatbot = () => {
     const currentTerm = chat.term;
     setChat({ ...chat, term: '' });
     setLoading(true);
+
+    const prior = chatMessages.slice(-(HISTORY_CAP - 1)).map((m) => ({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: m.message,
+    }));
+    const messages = [...prior, { role: 'user', content: currentTerm }];
 
     setChatMessages((prev) => [
       ...prev,
@@ -158,7 +174,7 @@ export const Chatbot = () => {
     fetch(`${apiUrl}/completion`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ prompt: currentTerm }),
+      body: JSON.stringify({ prompt: currentTerm, messages }),
     })
       .then(async (response) => {
         if (!response.ok) {
@@ -272,6 +288,13 @@ export const Chatbot = () => {
           <Header as="h1" className="chatbot-title">
             OWASP OpenCRE Chat
           </Header>
+          {hasMessages ? (
+            <div className="chatbot-toolbar">
+              <Button type="button" size="small" basic onClick={startNewChat}>
+                <Icon name="plus" /> New chat
+              </Button>
+            </div>
+          ) : null}
 
           <Container>
             <div className={`chat-container ${hasMessages ? 'chat-active' : 'chat-landing'}`}>

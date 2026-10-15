@@ -1,0 +1,11 @@
+---
+layout: col-sidebar
+title: OWASP Top 10 for Large Language Model Applications
+level: 3
+type: documentation
+tags: llm genai
+pitch: Legacy entry point for the OWASP Top 10 for Large Language Model Applications. Get the current release from the OWASP GenAI Security Project.
+---
+
+Active development has moved to the OWASP GenAI Security Project at https://genai.owasp.org.
+The GenAI Security Project is a global initiative for generative AI security risks including LLMs and agentic AI.
