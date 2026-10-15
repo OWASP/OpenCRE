@@ -638,7 +638,11 @@ def classify_intent(text: str, *, known_people: Optional[List[str]] = None) -> s
     # Project-vs-chapter counts before project-vs-project compares.
     if re.search(r"\b(projects? versus chapters|chapters versus projects)\b", t):
         return "count_projects_and_chapters"
-    if "how many" in t and "chapter" in t and "project" in t:
+    if (
+        "how many" in t
+        and re.search(r"\bchapters?\b", t)
+        and re.search(r"\bprojects?\b", t)
+    ):
         return "count_projects_and_chapters"
     # Project compare / definition — structural phrasing only (no brand lists).
     if re.search(
@@ -647,7 +651,11 @@ def classify_intent(text: str, *, known_people: Optional[List[str]] = None) -> s
         t,
     ) and re.search(r"\bprojects?\b", t):
         # "projects versus chapters" already handled; bare chapter compare stays out.
-        if "chapter" in t and "project" in t and "difference" not in t:
+        if (
+            re.search(r"\bchapters?\b", t)
+            and re.search(r"\bprojects?\b", t)
+            and "difference" not in t
+        ):
             return "count_projects_and_chapters"
         return "compare_projects"
     if re.search(r"\b(what is|what's|describe)\b.+\bowasp project\b", t) or re.search(
@@ -776,6 +784,17 @@ def classify_intent(text: str, *, known_people: Optional[List[str]] = None) -> s
     ):
         return "project_lookup"
 
+    # Named / what-is OWASP chapter cards (phrase-shaped — not bare "chapter").
+    if re.search(
+        r"\b(what is|what's|whats|tell me about|describe)\b.{0,60}\bchapters?\b",
+        t,
+    ):
+        return "chapter_lookup"
+    if re.search(r"\bowasp\b.{0,40}\bchapters?\b", t) and not re.search(
+        r"\b(how many|count of|versus|vs\.?)\b", t
+    ):
+        return "chapter_lookup"
+
     # Chapter existence / "chapter in {city}" before general clarify.
     if re.search(r"\bchapters?\b", t) and re.search(r"\b(in|near|for|at|around)\b", t):
         if not re.search(r"\b(how many|count of)\b", t):
@@ -786,11 +805,10 @@ def classify_intent(text: str, *, known_people: Optional[List[str]] = None) -> s
     ):
         return "chapter_lookup"
 
-    # Chapter leader / status / active (incl. suburb → chapter + who leads)
+    # Chapter leader / status / active — structural cues only (no city hardcodes).
     if re.search(
         r"\b(chapter leader|leader for|leaders? (for|in|of)|who leads|"
         r"which chapter|active owasp chapter|chapter status|owasp leader|"
-        r"owasp athens|athens currently (active|inactive)|"
         r"count of indexed owasp chapters|approximate count of .{0,20}chapters)\b",
         t,
     ) or (
