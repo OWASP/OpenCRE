@@ -68,6 +68,7 @@ def run_job(
     config: Optional[SchedulerConfig] = None,
     overrides: Optional[Dict[str, StageFn]] = None,
     ga_fn: Optional[Callable[[str], None]] = None,
+    embed_fn: Optional[Callable[[Any, List[str]], None]] = None,
 ) -> RunOutcome:
     if job_name not in JOBS:
         raise ValueError(f"unknown job {job_name!r}; expected one of {sorted(JOBS)}")
@@ -110,6 +111,7 @@ def run_job(
                 config=config or SchedulerConfig.from_env(),
                 overrides=dict(overrides or {}),
                 ga_fn=ga_fn,
+                embed_fn=embed_fn,
             )
             stages: List[StageResult] = []
             error: Optional[str] = None
