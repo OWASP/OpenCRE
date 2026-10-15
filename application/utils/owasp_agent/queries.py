@@ -46,6 +46,51 @@ class MetaQueries:
         self.store = store
         self.geocode_fn = geocode_fn
 
+    def corpus_entity(
+        self, kind: str, key: str, *, name_hint: Optional[str] = None
+    ) -> QueryResult:
+        """Return a prebuilt ontology card from ``meta_entity`` (fail closed)."""
+        kind = (kind or "").strip()
+        key = (key or "").strip()
+        rows = self._safe_entities(kind)
+        hit: Optional[Dict[str, Any]] = None
+        if key:
+            for r in rows:
+                if str(r.get("key") or "") == key:
+                    hit = r
+                    break
+        if hit is None and name_hint:
+            target = _norm(name_hint)
+            for r in rows:
+                if target and target in _norm(str(r.get("name") or "")):
+                    hit = r
+                    break
+        if hit is None and kind == "board_roster" and not key:
+            for r in rows:
+                if str(r.get("key") or "") == "overview":
+                    hit = r
+                    break
+        if hit is None:
+            return QueryResult(
+                ok=False,
+                kind=f"corpus_{kind}",
+                message=(
+                    f"No indexed {kind} card matching "
+                    f"{(key or name_hint or '')!r} (fail closed)."
+                ),
+            )
+        msg = str(hit.get("message") or hit.get("embed_text") or "").strip()
+        if not msg:
+            msg = str(hit.get("name") or key or kind)
+        url = str(hit.get("url") or "").strip()
+        return QueryResult(
+            ok=True,
+            kind=f"corpus_{kind}",
+            data={"entity": _public_entity(hit)},
+            message=msg.split("\nTopics:")[0].strip(),
+            citations=[url] if url else [],
+        )
+
     def count_chapters(self) -> QueryResult:
         items = self._safe_entities("chapter")
         if items is None:

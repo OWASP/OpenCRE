@@ -310,6 +310,14 @@ def sync_all(
                 store.upsert_board_candidate(c)
             report.board_members = len(members)
             report.board_candidates = len(candidates)
+            try:
+                from application.utils.owasp_agent.meta_embeddings import (
+                    materialize_board_ontology,
+                )
+
+                materialize_board_ontology(store)
+            except Exception as exc:
+                report.errors.append(f"board_ontology: {exc}")
 
             # Site metadata: chapters + inactive + leaders + membership countries
             try:

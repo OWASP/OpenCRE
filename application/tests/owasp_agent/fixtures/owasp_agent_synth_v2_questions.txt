@@ -430,3 +430,12 @@ OWASP agent synth suite v2 — 430 unique probes
 428. [board] Is Steve Springett on any indexed OWASP board year roster?
 429. [board] Jeff Williams: board service years if indexed (do not invent talk quotes).
 430. [chat_memory] and in Morocco?
+900054. [adversarial_chapter_whatis] What is the OWASP London chapter?
+900055. [adversarial_chapter_whatis] What is the OWASP Berlin chapter?
+900056. [adversarial_chapter_whatis] What is the OWASP Tokyo chapter?
+900057. [adversarial_chapter_whatis] What is the OWASP New York chapter?
+900058. [adversarial_chapter_whatis] What is the OWASP São Paulo chapter?
+900059. [adversarial_chapter_whatis] What is the OWASP Bangalore chapter?
+900060. [adversarial_chapter_whatis] What is the OWASP Amsterdam chapter?
+900061. [adversarial_chapter_whatis] What is the OWASP Sydney chapter?
+900062. [adversarial_chapter_whatis] What is the OWASP Toronto chapter?

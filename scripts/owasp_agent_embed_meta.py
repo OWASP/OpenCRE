@@ -230,10 +230,30 @@ def main() -> int:
             return []
 
     embed = _embed_factory()
+    # Keep litellm-style id so PromptHandler model contract stays single-valued.
     model_id = (os.environ.get("CRE_EMBED_MODEL") or "").strip() or (
-        "gemini-embedding-001"
+        "gemini/gemini-embedding-001"
     )
+    if model_id.startswith("models/"):
+        model_id = "gemini/" + model_id.split("/", 1)[-1]
+    elif not model_id.startswith("gemini/"):
+        model_id = "gemini/" + model_id
+
     engine = create_engine(_db_url(), pool_pre_ping=True)
+
+    # Build board_roster ontology cards in meta_entity before embedding.
+    try:
+        from application.utils.owasp_agent.index_store import IndexStore
+        from application.utils.owasp_agent.meta_embeddings import (
+            materialize_board_ontology,
+        )
+
+        store = IndexStore(os.environ.get("DATABASE_URL") or _db_url())
+        n_board = materialize_board_ontology(store)
+        print(f"board_ontology_cards={n_board}", flush=True)
+    except Exception as exc:
+        print(f"board_ontology_skip: {type(exc).__name__}: {exc}", flush=True)
+
     written = 0
     skipped = 0
     kinds = (
@@ -242,10 +262,15 @@ def main() -> int:
         "project_leader",
         "board_member",
         "board_candidate",
+        "board_roster",
         "event",
         "person",
         "membership_country",
     )
+    only = (os.environ.get("OWASP_AGENT_EMBED_KINDS") or "").strip()
+    if only:
+        want = {k.strip() for k in only.split(",") if k.strip()}
+        kinds = tuple(k for k in kinds if k in want)
     batch_size = max(1, int(args.batch_size))
 
     for kind in kinds:

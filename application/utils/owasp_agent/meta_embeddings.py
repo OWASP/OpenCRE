@@ -44,6 +44,10 @@ def text_for_meta_entity(row: Dict[str, Any]) -> str:
         payload = {}
     # list_entities returns the payload dict itself (fields at top level).
     merged = {**payload, **{k: v for k, v in row.items() if k != "payload"}}
+    # Prefer prebuilt ontology prose when present (board_roster cards).
+    prebuilt = str(merged.get("embed_text") or merged.get("message") or "").strip()
+    if prebuilt and kind in ("board_roster",):
+        return prebuilt
     bits = [f"OWASP {kind}: {name}".strip(), f"key={key}"]
     for field in (
         "description",
@@ -52,6 +56,7 @@ def text_for_meta_entity(row: Dict[str, Any]) -> str:
         "group",
         "city",
         "country",
+        "region",
         "role",
         "year",
         "statement",
@@ -66,7 +71,123 @@ def text_for_meta_entity(row: Dict[str, Any]) -> str:
     tags = merged.get("tags")
     if isinstance(tags, list) and tags:
         bits.append("tags: " + ", ".join(str(x) for x in tags if x))
+    # Chapter paraphrase anchors for retrieve (no keyword router at ask time).
+    if kind == "chapter":
+        city = str(merged.get("city") or "").strip()
+        country = str(merged.get("country") or "").strip()
+        short = name.replace("OWASP", "").strip() or key.replace("-", " ")
+        topics = [
+            f"OWASP {short} chapter",
+            f"What is the OWASP {short} chapter",
+            f"{short} chapter",
+        ]
+        if city:
+            topics.append(f"chapter in {city}")
+            topics.append(f"OWASP chapter {city}")
+        if country:
+            topics.append(f"OWASP chapter {country}")
+        bits.append("Topics: " + ", ".join(topics))
     return "\n".join(bits)
+
+
+_BOARD_HISTORY_URL = (
+    "https://github.com/OWASP/www-board/blob/master/_data/board-history.yml"
+)
+
+
+def materialize_board_ontology(store: IndexStore) -> int:
+    """Write board_roster cards into the agent index (ontology in data, not code).
+
+    Built from indexed ``board_member`` rows so chat/retrieve answer from corpus
+    cards instead of assembling rosters in query methods.
+    """
+    members = store.list_entities("board_member") or []
+    by_year: Dict[int, List[Dict[str, Any]]] = {}
+    for m in members:
+        try:
+            year = int(m.get("year") or 0)
+        except (TypeError, ValueError):
+            year = 0
+        if year:
+            by_year.setdefault(year, []).append(dict(m))
+    written = 0
+    for year, rows in sorted(by_year.items()):
+        names = sorted(
+            {str(r.get("name") or "").strip() for r in rows if r.get("name")}
+        )
+        if not names:
+            continue
+        msg = f"OWASP board members for {year}: " + ", ".join(names) + "."
+        embed_text = "\n".join(
+            [
+                f"OWASP board roster for {year}",
+                f"OWASP board members in {year}: {', '.join(names)}",
+                msg,
+                (
+                    "Topics: OWASP board, board roster, board members, board history, "
+                    f"board for {year}, tell me about OWASP board, "
+                    "OWASP foundation board of directors"
+                ),
+            ]
+        )
+        store.upsert_entity(
+            kind="board_roster",
+            key=str(year),
+            name=f"OWASP Board {year}",
+            source="github",
+            payload={
+                "key": str(year),
+                "name": f"OWASP Board {year}",
+                "kind": "board_roster",
+                "source": "github",
+                "year": year,
+                "members": names,
+                "message": msg,
+                "embed_text": embed_text,
+                "url": _BOARD_HISTORY_URL,
+            },
+        )
+        written += 1
+    if by_year:
+        latest = max(by_year)
+        names = sorted(
+            {str(r.get("name") or "").strip() for r in by_year[latest] if r.get("name")}
+        )
+        msg = (
+            "The OWASP board is the foundation board of directors. "
+            f"Latest indexed year {latest}: " + ", ".join(names) + "."
+        )
+        embed_text = "\n".join(
+            [
+                "OWASP board overview",
+                "Tell me about OWASP board",
+                "Tell me about the OWASP board at OWASP",
+                msg,
+                (
+                    "Topics: OWASP board, board history, board members, "
+                    "foundation board, board of directors, board roster"
+                ),
+            ]
+        )
+        store.upsert_entity(
+            kind="board_roster",
+            key="overview",
+            name="OWASP Board",
+            source="github",
+            payload={
+                "key": "overview",
+                "name": "OWASP Board",
+                "kind": "board_roster",
+                "source": "github",
+                "year": latest,
+                "members": names,
+                "message": msg,
+                "embed_text": embed_text,
+                "url": _BOARD_HISTORY_URL,
+            },
+        )
+        written += 1
+    return written
 
 
 def evidence_documents() -> List[Tuple[str, str, List[str]]]:
@@ -74,9 +195,19 @@ def evidence_documents() -> List[Tuple[str, str, List[str]]]:
     out: List[Tuple[str, str, List[str]]] = []
     for keys, message, citations in AIX_FACTOIDS:
         slug = "-".join(k.replace(" ", "-") for k in keys)
-        # Include trigger phrases in the embed text so similarity can find them
-        # without a keyword router.
-        embed_text = message + "\n\nTopics: " + ", ".join(keys)
+        # Broad paraphrase anchors so retrieve finds AIX notes without intent code.
+        topic_bits = list(keys) + [
+            "lethal trifecta",
+            "agentic AI",
+            "OWASP AI Exchange",
+            "AI Exchange",
+            "prompt injection",
+            "exfiltration",
+            "sensitive data",
+            "data leakage",
+            "three things together",
+        ]
+        embed_text = message + "\n\nTopics: " + ", ".join(dict.fromkeys(topic_bits))
         out.append((slug, embed_text, list(citations)))
     return out
 
@@ -150,6 +281,11 @@ def sync_meta_embeddings(
     include_evidence: bool = True,
 ) -> Dict[str, int]:
     """Embed all meta_entity rows (+ optional evidence) into shared embeddings."""
+    # Ensure board roster ontology cards exist before embedding.
+    try:
+        materialize_board_ontology(store)
+    except Exception:
+        pass
     written = 0
     skipped = 0
     kinds = (
@@ -158,6 +294,7 @@ def sync_meta_embeddings(
         "project_leader",
         "board_member",
         "board_candidate",
+        "board_roster",
         "event",
         "person",
     )

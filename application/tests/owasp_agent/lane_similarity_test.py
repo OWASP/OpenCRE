@@ -131,6 +131,52 @@ class TestMetaEmbeddingText(unittest.TestCase):
         blob = " ".join(d[1] for d in docs).lower()
         self.assertIn("trifecta", blob)
         self.assertIn("exfiltration", blob)
+        self.assertIn("ai exchange", blob)
+
+    def test_chapter_embed_text_has_paraphrase_topics(self) -> None:
+        text = text_for_meta_entity(
+            {
+                "kind": "chapter",
+                "key": "berlin",
+                "name": "OWASP Berlin",
+                "city": "Berlin",
+                "country": "Germany",
+                "leaders": ["Ada"],
+            }
+        )
+        low = text.lower()
+        self.assertIn("berlin chapter", low)
+        self.assertIn("chapter in berlin", low)
+
+    def test_materialize_board_ontology(self) -> None:
+        import tempfile
+        from pathlib import Path
+
+        from application.utils.owasp_agent.index_store import IndexStore
+        from application.utils.owasp_agent.meta_embeddings import (
+            materialize_board_ontology,
+        )
+        from application.utils.owasp_agent.models import BoardMember
+
+        with tempfile.TemporaryDirectory() as tmp:
+            db = str(Path(tmp) / "t.sqlite")
+            store = IndexStore(db)
+            store.upsert_board_member(
+                BoardMember(
+                    name="Alice Example",
+                    year=2020,
+                    role="member",
+                    source="github",
+                )
+            )
+            n = materialize_board_ontology(store)
+            self.assertGreaterEqual(n, 2)
+            rosters = store.list_entities("board_roster")
+            keys = {str(r.get("key")) for r in rosters}
+            self.assertIn("2020", keys)
+            self.assertIn("overview", keys)
+            overview = next(r for r in rosters if r.get("key") == "overview")
+            self.assertIn("Alice Example", overview.get("message") or "")
 
 
 if __name__ == "__main__":
