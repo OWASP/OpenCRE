@@ -611,19 +611,6 @@ def _similarity_gate(prompt: str):
         return None
 
 
-def _hint_in(text: str, hint: str) -> bool:
-    """Match multi-word hints as substrings; single tokens on word boundaries.
-
-    Prevents false meta hits like ``"event" in "prevent"``.
-    """
-    h = hint.lower().strip()
-    if not h:
-        return False
-    if " " in h or "-" in h:
-        return h in text
-    return re.search(rf"\b{re.escape(h)}\b", text) is not None
-
-
 def classify_intent(text: str) -> str:
     t = text.lower().strip()
     # Who-is / tell-me-about person lookup from leaders.json (not CRE bios)
@@ -674,70 +661,6 @@ def classify_intent(text: str) -> str:
         if not re.search(r"\b(how (do|should)|mitigate|vulnerability)\b", t):
             return "project_lookup"
 
-    # Security normative signals → defer to CRE (unless clearly meta)
-    normative_hints = (
-        "how should i",
-        "how do i secure",
-        "how do i prevent",
-        "password storage",
-        "password hashing",
-        "encryption",
-        "csrf",
-        "xss",
-        "ssrf",
-        "sqli",
-        "sql injection",
-        "asvs",
-        "threat model",
-        "mitigate",
-        "vulnerability",
-        "cwe-",
-        "wstg",
-        "samm",
-        "cheat sheet",
-        "output encoding",
-        "cre covers",
-        "related cres",
-    )
-    # Do NOT include bare "chapter" — it is too ambiguous for meta gating.
-    # Chapter asks use structured phrases below (owasp … chapter, chapter in …).
-    meta_hints = (
-        "meetup",
-        "meeting",
-        "event",
-        "events",
-        "how many",
-        "board",
-        "candidate",
-        "candidacy",
-        "interview",
-        "statement",
-        "nest",
-        "owasp project",
-        "owasp projects",
-        "projects on",
-        "flagged",
-        "nearest",
-        "staff",
-        "membership",
-        "member dues",
-        "dues",
-        "renew",
-        "leader",
-        "leaders",
-        "keynote",
-        "talk",
-        "spoke",
-        "presented",
-        "appsec talk",
-        "roster",
-        "commuting",
-        "suburb",
-        "who is",
-    )
-    has_meta = any(_hint_in(t, h) for h in meta_hints)
-    has_norm = any(_hint_in(t, h) for h in normative_hints)
-
     # Malicious / unauthorized help — refuse before any meta routing so
     # compound prompts ("dump keys + chapter leader") cannot skip the gate.
     if re.search(
@@ -761,19 +684,6 @@ def classify_intent(text: str) -> str:
         t,
     ):
         return "refuse_malicious"
-
-    # Bare / underspecified prompts → clarify in-agent (do not CRE-defer)
-    if re.fullmatch(
-        r"(projects?|board|membership( price)?|student discount|next meetup|"
-        r"events?|chapters?|help with owasp|tell me about owasp|"
-        r"who is the leader|regional or standard|ai stuff|near me|"
-        r"status in greece|compare the two chapters|output encoding|"
-        r"appsec keynote summary please|first interview|who ran|"
-        r"cre for that thing we discussed|what did they say at the talk|"
-        r"is the chapter active)[?.!\s]*",
-        t,
-    ):
-        return "clarify"
 
     # Fail-closed talk asks (often compound with a CRE factoid) before CRE-only.
     # Do not steal board asks that only say "do not invent talk quotes".
@@ -837,16 +747,13 @@ def classify_intent(text: str) -> str:
     ) and re.search(r"\bprojects?\b", t):
         return "count_projects_and_chapters"
 
-    # Project listing / counts (including free-topic "touch X" tables)
+    # Project listing / counts — phrase-shaped only (no loose "project"+table dump).
     if re.search(
         r"\b(which flagged owasp projects|flagged owasp projects|"
         r"projects touch|list .+ projects|projects? in a table|"
-        r"ai-related projects|related owasp projects)\b",
+        r"ai-related projects|related owasp projects|"
+        r"how many (indexed )?owasp projects)\b",
         t,
-    )     or (
-        "project" in t
-        and any(w in t for w in ("table", "list", "flagged", "which", "touch"))
-        and not re.search(r"\bchapters?\b", t)
     ):
         return "count_projects"
 
@@ -964,119 +871,25 @@ def classify_intent(text: str) -> str:
     ):
         return "talk_lookup"
 
-    if has_meta and not has_norm:
-        if re.search(r"\b(projects? versus chapters|chapters versus projects)\b", t):
-            return "count_projects_and_chapters"
-        if (
-            "how many" in t
-            and re.search(r"\bchapters?\b", t)
-            and re.search(r"\bprojects?\b", t)
+    # Geo event/meetup asks — word-bounded events/meetups + place cue only.
+    if re.search(r"\b(events?|meetups?)\b", t) and re.search(
+        r"\b(near|nearby|around|closest|nearest)\b", t
+    ):
+        return "events_near"
+
+    # Board roster / candidate stats without the old meta/normative dump gate.
+    if re.search(r"\bhow many\b", t) and re.search(r"\bcandidates?\b", t):
+        return "board_candidate_stats"
+    if re.search(r"\bboard\b", t) and (
+        re.search(r"\b(members?|roster|who (is|are) on)\b", t)
+        or re.search(r"\b20\d{2}\b", t)
+    ):
+        if _extract_quoted_or_capitalized_name(text) and not re.search(
+            r"\bwho (is|are) on the\b", t
         ):
-            return "count_projects_and_chapters"
-        if "how many" in t and re.search(r"\bchapters?\b", t):
-            return "count_chapters"
-        if ("how many" in t and "project" in t) or (
-            "project" in t
-            and ("list" in t or "ai" in t or "appsec" in t or "table" in t)
-        ):
-            return "count_projects"
-        if "candidate" in t and ("how many" in t or "times" in t):
-            return "board_candidate_stats"
-        if "board" in t and (
-            "member" in t
-            or "position" in t
-            or "who" in t
-            or "roster" in t
-            or "years" in t
-            or "service" in t
-            or "candidate" in t
-            or re.search(r"\b20\d{2}\b", t)
-        ):
-            if _extract_quoted_or_capitalized_name(text) and not re.search(
-                r"\bwho (is|are) on the\b", t
-            ):
-                return "board_person"
-            if re.search(r"\b20\d{2}\b", t) and (
-                "who" in t or "member" in t or "board" in t or "roster" in t
-            ):
-                return "board_members"
-            if "position" in t or "board member" in t or "candidate" in t:
-                return "board_person"
-            return "board_members"
-        if any(
-            _hint_in(t, w)
-            for w in (
-                "nearest",
-                "meetup",
-                "meeting",
-                "event",
-                "events",
-                "commuting",
-                "suburb",
-            )
-        ) or "chapter near" in t:
-            # Named chapter + meetup/contact → chapter card, not geo clarify.
-            if re.search(r"\bchapters?\b", t) and re.search(
-                r"\b(owasp\s+)?[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ .'-]{1,40}\s+chapter\b",
-                text,
-            ):
-                return "chapter_lookup"
-            return "events_near"
-        if "project" in t and ("ai" in t or "appsec" in t):
-            return "count_projects"
-        return "clarify"
-    if has_norm and not has_meta:
-        return "cre_normative"
-    if has_norm and has_meta:
-        # Prefer meta when clearly community; else CRE
-        if any(w in t for w in ("membership", "dues", "reside in", "billing country")):
-            return "membership"
-        if "project" in t and any(
-            w in t for w in ("table", "list", "flagged", "which", "touch")
-        ):
-            return "count_projects"
-        if any(
-            _hint_in(t, w) for w in ("meetup", "board", "how many", "leader")
-        ) or re.search(r"\bchapters?\b", t):
-            if (
-                "how many" in t
-                and re.search(r"\bchapters?\b", t)
-                and re.search(r"\bprojects?\b", t)
-            ):
-                return "count_projects_and_chapters"
-            if "how many" in t and re.search(r"\bchapters?\b", t):
-                return "count_chapters"
-            if "leader" in t or "who leads" in t or "chapter status" in t:
-                return "chapter_lookup"
-            if "meetup" in t or "nearest" in t or "commuting" in t or "suburb" in t:
-                # Person+say already handled; suburb meetup + who leads → chapter
-                if "who leads" in t or "which chapter" in t:
-                    return "chapter_lookup"
-                return "events_near"
-            if "board" in t:
-                if (
-                    "interview" in t
-                    or "statement" in t
-                    or "candidate" in t
-                    or "years" in t
-                    or "service" in t
-                    or _extract_quoted_or_capitalized_name(text)
-                ):
-                    return "board_person"
-                return "board_members"
-        # e.g. "board interview about XSS" — meta person lookup, not CRE XSS advice
-        if "board interview" in t or "candidate" in t:
             return "board_person"
-        if (
-            "keynote" in t
-            or (
-                re.search(r"\btalk\b", t)
-                and not re.search(r"\bdo not invent talk\b", t)
-            )
-            or "what did" in t
-        ):
-            return "talk_lookup"
-        return "cre_normative"
+        return "board_members"
+
     # Chitchat about named person + defenses/talk without clear CRE ask
     if re.search(r"\b(keynote|talk|presented|say about|said about)\b", t) and (
         _extract_quoted_or_capitalized_name(text)
@@ -1084,6 +897,9 @@ def classify_intent(text: str) -> str:
         if re.search(r"\b(board (service )?years|do not invent talk)\b", t):
             return "board_person"
         return "talk_lookup"
+
+    # Default: CRE path. Community/meta answers come from sim-first retrieve above
+    # classify_intent — not from keyword dump lists.
     return "cre_normative"
 
 

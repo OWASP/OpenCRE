@@ -771,14 +771,12 @@ class TestProbeGapFixes(unittest.TestCase):
         )
         self.assertNotIn("maryam", body)
 
-    def test_underspecified_projects_clarifies(self) -> None:
+    def test_underspecified_projects_defers_without_keyword_dump(self) -> None:
+        # Bare "Projects?" used to hit a keyword clarify dump; that gate is gone.
+        # Without sim retrieve, defer to CRE rather than inventing a meta clarify.
+        self.assertEqual(classify_intent("Projects?"), "cre_normative")
         resp = self.router.handle("Projects?")
-        self.assertIsNotNone(resp)
-        assert resp is not None
-        body = resp["response"].lower()
-        self.assertTrue(
-            any(w in body for w in ("which", "clarify", "help", "owasp", "project"))
-        )
+        self.assertIsNone(resp)
 
     def test_board_roster_year(self) -> None:
         resp = self.router.handle(
