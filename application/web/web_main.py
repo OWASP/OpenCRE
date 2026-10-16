@@ -1064,8 +1064,13 @@ def admin_imports_enabled_required(f):
 @admin_imports_enabled_required
 def admin_import_runs() -> Any:
     source = request.args.get("source")
-    limit = int(request.args.get("limit") or 50)
-    offset = int(request.args.get("offset") or 0)
+    try:
+        limit = int(request.args.get("limit") or 50)
+        offset = int(request.args.get("offset") or 0)
+    except ValueError:
+        abort(400, description="limit and offset must be integers")
+    if limit < 0 or offset < 0:
+        abort(400, description="limit and offset must not be negative")
     runs = db.list_import_runs(source=source, limit=limit, offset=offset)
     out = []
     for r in runs:
