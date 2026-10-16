@@ -38,6 +38,10 @@ OPENAPI_GUARDRAIL_EXEMPT_RULES: Set[str] = {
     "/rest/v1/user",
     "/rest/v1/completion",
     "/rest/v1/cre_csv_import",
+    # Admin-only JWT API-key management (Google session); not public REST.
+    "/rest/v1/api-keys",
+    "/rest/v1/api-keys/<jti>",
+    "/rest/v1/api-keys/<jti>/audit",
     "/api/capabilities",
     "/docs/faq.md",
     "/",
