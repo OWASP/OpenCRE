@@ -1280,11 +1280,9 @@ def chat_cre() -> Any:
                 ),
                 503,
             )
+        logger.exception("Chat completion failed")
         status_code = _llm_error_status_code(e) or 500
-        return (
-            jsonify({"error": f"AI Service Error: {str(e)}"}),
-            status_code,
-        )
+        return jsonify({"error": "AI Service Error"}), status_code
     return jsonify(response)
 
 
