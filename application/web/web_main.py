@@ -462,9 +462,9 @@ def map_analysis() -> Any:
         )
         try:
             return jsonify(_compute_ga_without_redis(database, standards))
-        except Exception as fallback_exc:
+        except Exception:
             logger.exception("Synchronous GA fallback failed for %s", cache_key)
-            abort(503, f"Gap analysis unavailable: {fallback_exc}")
+            abort(503, "Gap analysis unavailable")
 
 
 @openapi_documented("map_analysis_weak_links")
