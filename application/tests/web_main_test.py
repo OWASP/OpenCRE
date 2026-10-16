@@ -904,6 +904,7 @@ class TestMain(unittest.TestCase):
                     headers={"Content-Type": "application/json"},
                 )
             self.assertEqual(503, response.status_code)
+            self.assertNotIn(b"neo unavailable", response.data)
             db_gap_analysis_mock.assert_called_once()
 
     @patch.dict(os.environ, {"HEROKU": "True"}, clear=False)
