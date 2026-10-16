@@ -1239,6 +1239,9 @@ def admin_import_run_apply(run_id: str) -> Any:
 @login_required
 def chat_cre() -> Any:
     message = request.get_json(force=True)
+    prompt_text = message.get("prompt") if isinstance(message, dict) else None
+    if not isinstance(prompt_text, str) or not prompt_text.strip():
+        abort(400, description="Body must be a JSON object with a non-empty 'prompt'")
     if posthog:
         posthog.capture("chat_cre", "")
 
@@ -1263,7 +1266,7 @@ def chat_cre() -> Any:
         )
 
     try:
-        response = prompt.generate_text(message.get("prompt"))
+        response = prompt.generate_text(prompt_text)
     except Exception as e:
         if llm_error_utils.is_rate_limit_error(e):
             return (
