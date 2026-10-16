@@ -13,7 +13,7 @@ from application.prompt_client import embed_alignment, litellm_router
 
 from scipy import sparse
 from sklearn.metrics.pairwise import cosine_similarity
-from typing import Dict, List, Any, Tuple, Optional, Mapping, Sequence
+from typing import Dict, List, Any, Tuple, Optional, Mapping, Sequence, NamedTuple
 from pydantic import ValidationError
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
@@ -37,6 +37,16 @@ PROMPT_TEMPLATE_ENV = Environment(
     trim_blocks=True,
     lstrip_blocks=True,
 )
+
+
+class NearestStandardHit(NamedTuple):
+    """Result of embedding similarity against stored Standard nodes (chatbot path)."""
+
+    node_id: str
+    similarity: float
+    node: Any
+    embeddings_content: str
+    embeddings_url: str
 
 
 def _safe_truncate_for_log(text: str, limit: int = 600) -> str:
@@ -1431,6 +1441,53 @@ class PromptHandler:
             return None, None
         return most_similar_id, max_similarity
 
+    def retrieve_nearest_standard_for_prompt(
+        self,
+        prompt: str,
+        *,
+        similarity_threshold: float = SIMILARITY_THRESHOLD,
+    ) -> Optional[NearestStandardHit]:
+        """Embed ``prompt`` and return the nearest Standard node above threshold.
+
+        Shared by the chatbot (``generate_text``) and MCP ``ask`` security facts
+        so retrieval cannot drift between the two surfaces.
+        """
+        text = (prompt or "").strip()
+        if not text:
+            return None
+        logger.debug(f"getting embeddings for {text}")
+        question_embedding = self.ai_client.get_text_embeddings(text)
+        logger.debug(f"retrieved embeddings for {text}")
+        closest_id, similarity = self.get_id_of_most_similar_node_paginated(
+            question_embedding,
+            similarity_threshold=similarity_threshold,
+        )
+        if not closest_id or similarity is None:
+            return None
+        nodes = self.database.get_nodes(db_id=closest_id) or []
+        if not nodes:
+            return None
+        closest_object = nodes[0]
+        logger.info(
+            f"The prompt {text}, was most similar to object \n{closest_object}\n, "
+            f"with similarity:{similarity}"
+        )
+        embeddings_content = ""
+        embeddings_url = ""
+        emb_rows: List[Any] = list(self.database.get_embedding(closest_id) or [])
+        if emb_rows:
+            embeddings_content = emb_rows[0].embeddings_content or ""
+            embeddings_url = (
+                getattr(emb_rows[0], "embeddings_url", None) or ""
+            ).strip()
+        return NearestStandardHit(
+            node_id=str(closest_id),
+            similarity=float(similarity),
+            node=closest_object,
+            embeddings_content=embeddings_content,
+            embeddings_url=embeddings_url,
+        )
+
     def generate_text(
         self,
         prompt: str,
@@ -1451,42 +1508,21 @@ class PromptHandler:
         timestamp = datetime.now().strftime("%I:%M:%S %p")
         if not prompt:
             return {"response": "", "table": "", "timestamp": timestamp}
-        logger.debug(f"getting embeddings for {prompt}")
-        question_embedding = self.ai_client.get_text_embeddings(prompt)
-        logger.debug(f"retrieved embeddings for {prompt}")
 
-        # Find the closest area in the existing embeddings
-        closest_id, similarity = self.get_id_of_most_similar_node_paginated(
-            question_embedding,
-            similarity_threshold=SIMILARITY_THRESHOLD,
-        )
-        closest_object = None
-        if closest_id:
-            closest_object = self.database.get_nodes(db_id=closest_id)
-            if len(closest_object) > 0:
-                closest_object = closest_object[0]
-            logger.info(
-                f"The prompt {prompt}, was most similar to object \n{closest_object}\n, with similarity:{similarity}"
-            )
+        hit = self.retrieve_nearest_standard_for_prompt(prompt)
 
         answer = ""
-        closest_content = ""
         accurate = False
         table: List[Any] = []
-        if closest_object:
-            emb = None
-            if closest_id and getattr(closest_object, "hyperlink", None):
-                emb = self.database.get_embedding(closest_id)
-                if emb:
-                    closest_content = emb[0].embeddings_content or ""
-
+        if hit is not None:
+            closest_object = hit.node
+            closest_content = hit.embeddings_content
             url_hint = ""
-            if emb and getattr(emb[0], "embeddings_url", None):
-                narrow = (emb[0].embeddings_url or "").strip()
-                if narrow:
-                    url_hint = (
-                        f"Embeddings_URL (scoped source, for citations): {narrow}\n"
-                    )
+            if hit.embeddings_url:
+                url_hint = (
+                    f"Embeddings_URL (scoped source, for citations): "
+                    f"{hit.embeddings_url}\n"
+                )
 
             closest_object_str = (
                 url_hint
@@ -1506,11 +1542,9 @@ class PromptHandler:
             accurate = True
 
             row: Any = closest_object
-            if emb and getattr(emb[0], "embeddings_url", None):
-                narrow = (emb[0].embeddings_url or "").strip()
-                if narrow:
-                    row = closest_object.shallow_copy().todict()
-                    row["embeddingsUrl"] = narrow
+            if hit.embeddings_url:
+                row = closest_object.shallow_copy().todict()
+                row["embeddingsUrl"] = hit.embeddings_url
             table.append(row)
         else:
             answer = self.ai_client.query_llm(prompt, history=history)
