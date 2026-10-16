@@ -1663,9 +1663,7 @@ def import_from_cre_csv() -> Any:
         from application.utils.external_project_parsers.parsers import myopencre_parser
 
         parse_result = myopencre_parser.parse_rows_to_documents(rows)
-    except cre_exceptions.DuplicateLinkException as dle:
-        abort(500, f"error during parsing of the incoming CSV, err:{dle}")
-    except ValueError as ve:
+    except (cre_exceptions.DuplicateLinkException, ValueError) as ve:
         abort(400, f"invalid CSV contents: {ve}")
 
     if not parse_result or not parse_result.results:
