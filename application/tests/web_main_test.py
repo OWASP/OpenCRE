@@ -1627,6 +1627,24 @@ class TestMain(unittest.TestCase):
                 self.assertEqual(400, response.status_code)
                 self.assertIn(b"triple-quoted", response.data)
 
+    def test_import_from_cre_csv_rejects_duplicate_rows(self) -> None:
+        workspace = tempfile.mkdtemp()
+        path = os.path.join(workspace, "duplicate.csv")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("CRE 0,standard|name,standard|id\n")
+            f.write("123-456|A,ASVS,1.1.1\n")
+            f.write("123-456|A,ASVS,1.1.1\n")
+        with patch.dict(os.environ, {"CRE_ALLOW_IMPORT": "True"}):
+            with self.app.test_client() as client:
+                response = client.post(
+                    "/rest/v1/cre_csv_import",
+                    data={"cre_csv": open(path, "rb")},
+                    buffered=True,
+                    content_type="multipart/form-data",
+                )
+                self.assertEqual(400, response.status_code)
+                self.assertIn(b"Cannot link the same document twice", response.data)
+
     def test_get_cre_csv(self) -> None:
         # empty string means temporary db
         collection = db.Node_collection().with_graph()
