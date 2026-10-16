@@ -108,6 +108,15 @@ class TestChatCompletion(unittest.TestCase):
                 )
         self.assertEqual(503, response.status_code)
 
+    def test_completion_rejects_body_without_prompt(self) -> None:
+        os.environ["NO_LOGIN"] = "1"
+        with patch("application.prompt_client.prompt_client.PromptHandler") as mock_ph:
+            with self.app.test_client() as client:
+                for body in (["test"], {}, {"prompt": "  "}, {"prompt": 1}):
+                    response = client.post("/rest/v1/completion", json=body)
+                    self.assertEqual(400, response.status_code, body)
+        mock_ph.return_value.generate_text.assert_not_called()
+
     def test_completion_propagates_unrelated_runtime_error(self) -> None:
         os.environ["NO_LOGIN"] = "1"
         with patch(
