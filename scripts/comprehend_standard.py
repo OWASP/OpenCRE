@@ -34,6 +34,7 @@ def main() -> int:
         default=0,
         help="with --like: only the N repos with most chunks",
     )
+    ap.add_argument("--exclude", nargs="*", default=[], help="source_repos to skip (held-out)")
     ap.add_argument("--profile", choices=["standard", "people"], default="standard")
     ap.add_argument("--dry-run", action="store_true", help="no embeddings/DB writes")
     ap.add_argument("--limit-docs", type=int, default=0)
@@ -68,6 +69,7 @@ def main() -> int:
             if a.top:
                 q = q.limit(a.top)
             repos += [r[0] for r in q]
+        repos = [r for r in dict.fromkeys(repos) if r not in set(a.exclude)]
         handler = prompt_client.PromptHandler(database, load_all_embeddings=False)
         system = digest.PEOPLE_SYSTEM if a.profile == "people" else digest.DOC_SYSTEM
         for repo in repos:
