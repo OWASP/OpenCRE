@@ -29,6 +29,16 @@ DOC_SYSTEM = (
     "If the document has no substantive content return an empty claims list."
 )
 
+PEOPLE_SYSTEM = (
+    "You read ONE page about an OWASP event, conference, chapter meeting or team. Extract who/what/when/where. "
+    "Respond with JSON only: "
+    '{"summary": "<2-3 sentences>", "claims": [{"statement": "<self-contained fact such as '
+    "<Person> gave the talk <Title> at <Event>, <City>, <Date>, or <Person> leads <Project or Chapter>; "
+    'always include the full date and venue when the page gives them>", "quote": "<verbatim text from the page supporting it>"}]}. '
+    "Only record people, talks, dates, venues and roles the page states. Never use outside knowledge. "
+    "At most 30 claims. If the page has no such facts return an empty claims list."
+)
+
 OVERVIEW_SYSTEM = (
     "You are given verified per-document summaries and claims for ONE standard or "
     "resource. Write what a newcomer needs to understand its overall structure. "
@@ -91,8 +101,10 @@ def quote_supported(quote: str, text: str) -> bool:
     return len(q) >= 12 and q in _norm(text)
 
 
-def digest_doc(doc: SourceDoc, llm: LlmFn, *, max_chars: int = 400_000) -> DocDigest:
-    data = parse_json(llm(DOC_SYSTEM, f"Path: {doc.path}\n\n{doc.text[:max_chars]}"))
+def digest_doc(
+    doc: SourceDoc, llm: LlmFn, *, max_chars: int = 400_000, system: str = DOC_SYSTEM
+) -> DocDigest:
+    data = parse_json(llm(system, f"Path: {doc.path}\n\n{doc.text[:max_chars]}"))
     claims: List[Claim] = []
     dropped = 0
     for c in data.get("claims") or []:
@@ -113,10 +125,11 @@ def digest_standard(
     overview_llm: LlmFn,
     *,
     workers: int = 8,
+    system: str = DOC_SYSTEM,
     max_overview_chars: int = 3_000_000,
 ) -> StandardDigest:
     with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
-        digests = list(pool.map(lambda d: digest_doc(d, bulk_llm), docs))
+        digests = list(pool.map(lambda d: digest_doc(d, bulk_llm, system=system), docs))
     digests = [d for d in digests if d.summary or d.claims]
     parts: List[str] = []
     for d in digests:
