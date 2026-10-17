@@ -232,6 +232,25 @@ class OwaspAgentRouter:
             # Prefer answering from agent candidates whenever a viable pick
             # exists — even if the CRE lane scored higher (shared names like
             # ASVS). Intent/match_* remains a fallback below.
+            # Ingestion-time comprehension docs: combine top hits with an LLM and
+            # answer only when the sources support it (UNKNOWN falls through).
+            from application.utils.comprehension.answer import answer_from_candidates
+
+            comp = answer_from_candidates(normalized, cands, default_completion_fn())
+            if comp is not None:
+                return format_chat_response(
+                    QueryResult(
+                        ok=True,
+                        kind="evidence",
+                        message=comp[0],
+                        citations=comp[1],
+                        data={
+                            "lane_scores": sim_decision.scores,
+                            "pick_reason": "comprehension_synthesis",
+                        },
+                    )
+                )
+
             picked = select_agent_hit(
                 normalized,
                 cands,
