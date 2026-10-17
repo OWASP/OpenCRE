@@ -186,6 +186,34 @@ class OwaspAgentRouter:
                 resp["owasp_agent"]["also_cre"] = True
         return resp
 
+    def _index_chapter_intent(self, intent: str, text: str) -> str:
+        """Route 'who leads/runs OWASP <any indexed place>' to chapter_lookup."""
+        if intent not in ("cre_normative", "clarify"):
+            return intent
+        if not _CHAPTER_CUE_RE.search(text) or _mentions_known_project(text):
+            return intent
+        if re.search(r"\bprojects?\b", text, re.I):
+            return intent
+        try:
+            if self.queries.find_chapter_places(text):
+                return "chapter_lookup"
+        except Exception:
+            pass
+        return intent
+
+    def _refusal_response(self) -> Dict[str, Any]:
+        return format_chat_response(
+            QueryResult(
+                ok=True,
+                kind="refuse_malicious",
+                message=(
+                    "I cannot provide instructions or assistance for illegal or unauthorized "
+                    "access, phishing, DDoS, or similar attacks. I can help with OWASP chapters, "
+                    "projects, board history, membership, and defensive AppSec questions."
+                ),
+            )
+        )
+
     def handle(
         self,
         prompt: str,
@@ -198,9 +226,24 @@ class OwaspAgentRouter:
         """
         if not is_owasp_agent_enabled():
             return None
-        text = (prompt or "").strip()
+        text = fix_key_typos((prompt or "").strip()[:MAX_PROMPT_CHARS])
         if not text:
             return None
+
+        # Refusal is decided on the CURRENT turn only: a malicious earlier turn
+        # must not poison a later benign one, and an attack clause inside a
+        # compound turn must not drop the legitimate clause.
+        if is_malicious_request(text):
+            benign = _strip_malicious_clauses(text)
+            if not benign:
+                return self._refusal_response()
+            resp = self.handle(benign, history=None)
+            if resp is not None:
+                resp["response"] = (
+                    "(I skipped the part of your message asking for unauthorized "
+                    "or attack help.) " + str(resp.get("response") or "")
+                )
+            return resp
 
         effective = _effective_prompt(text, history)
         from application.utils.owasp_agent.prompt_normalize import normalize_prompt
@@ -212,6 +255,10 @@ class OwaspAgentRouter:
         # score margin or constrained LLM — prefer this over intent/match_*.
         sim_decision = _similarity_gate(normalized)
         intent_preview = classify_intent(effective)
+        if intent_preview == "refuse_malicious":
+            # Current turn is clean (checked above); the match came from history.
+            intent_preview = classify_intent(text)
+        intent_preview = self._index_chapter_intent(intent_preview, text)
         if sim_decision is not None:
             from application.utils.owasp_agent.candidate_picker import (
                 default_completion_fn,
@@ -429,16 +476,7 @@ class OwaspAgentRouter:
             )
             return format_chat_response(result)
         if intent == "refuse_malicious":
-            result = QueryResult(
-                ok=True,
-                kind="refuse_malicious",
-                message=(
-                    "I cannot provide instructions or assistance for illegal or unauthorized "
-                    "access, phishing, DDoS, or similar attacks. I can help with OWASP chapters, "
-                    "projects, board history, membership, and defensive AppSec questions."
-                ),
-            )
-            return format_chat_response(result)
+            return self._refusal_response()
 
         slots = extract_slots(effective)
         result = self._dispatch(intent, slots, effective)
@@ -656,6 +694,17 @@ class OwaspAgentRouter:
             places = list(slots.places or [])
             if slots.place and slots.place not in places:
                 places = [slots.place] + places
+            resolved = self.queries.find_chapter_places(text)
+            if resolved:
+                # Index-resolved chapters win; keep short unresolved extras so
+                # "London or Atlantis" still reports Atlantis as missing.
+                def _covered(p: str) -> bool:
+                    n = p.lower()
+                    return any(n in r.lower() or r.lower() in n for r in resolved)
+
+                places = resolved + [
+                    p for p in places if len(p.split()) <= 3 and not _covered(p)
+                ]
             # Multi-city compare / negation: look up all named places.
             if len(places) >= 2:
                 return self.queries.chapter_lookup(places=places)
@@ -833,8 +882,96 @@ def _similarity_gate(prompt: str):
         return None
 
 
+MAX_PROMPT_CHARS = 4096
+
+_CHAPTER_CUE_RE = re.compile(
+    r"\b(leads?|leaders?|runs?|organi[sz]\w*|chapter|group|meetups?|president|chair)\b",
+    re.I,
+)
+_TYPO_VOCAB = ("chapters", "chapter", "projects", "leaders", "membership")
+_TYPO_VALID = frozenset(_TYPO_VOCAB) | {"project", "leader", "leaded", "leading"}
+
+
+def fix_key_typos(text: str) -> str:
+    """Repair one-or-two-letter typos of the routing vocabulary ('chaptrs')."""
+    import difflib
+
+    def _fix(m: "re.Match[str]") -> str:
+        w = m.group(0)
+        lw = w.lower()
+        if lw in _TYPO_VALID or len(lw) < 6:
+            return w
+        close = difflib.get_close_matches(lw, _TYPO_VOCAB, n=1, cutoff=0.85)
+        if close and close[0][0] == lw[0] and abs(len(close[0]) - len(lw)) <= 1:
+            return close[0]
+        return w
+
+    return re.sub(r"[A-Za-z]+", _fix, text)
+
+
+_CLAUSE_SPLIT_RE = re.compile(r"[;\n]+|(?<=[.!?])\s+|\b(?:and\s+)?also,?\s+", re.I)
+
+
+_INJECTION_ONLY_RE = re.compile(
+    r"^\W*(?:please\s+)?(?:ignore|disregard)\b[^.;]{0,60}\b(instructions?|rules|above)\W*$",
+    re.I,
+)
+
+
+def _strip_malicious_clauses(text: str) -> str:
+    """Drop clauses that ask for attack material; return the benign remainder."""
+    clauses = [c.strip(" ,.;") for c in _CLAUSE_SPLIT_RE.split(text) if c and c.strip()]
+    for c in clauses:
+        # Only a bare instruction-override clause is droppable; requests for
+        # keys, payloads or attack help refuse the whole message.
+        if is_malicious_request(c) and not _INJECTION_ONLY_RE.search(c):
+            return ""
+    kept = [c for c in clauses if not is_malicious_request(c)]
+    rest = " ".join(kept).strip()
+    return rest if len(rest.split()) >= 2 else ""
+
+
+# Always refused: asks for attack material, secrets, or instruction override.
+_MALICIOUS_STRONG_RE = re.compile(
+    r"("
+    r"\bhow do i hack\b|\bteach me to (hack|phish)\b|\bsql injection payload\b|"
+    r"\bbreak into\b|\bsteal (their|passwords|dms)\b|"
+    r"\bphishing (email )?template\b|\bvishing\b|"
+    r"\bkeylogger\b|\b(write|build)\s+a\s+worm\b|\bpoison .{0,40}dependency\b|"
+    r"\bburp\s+intruder\b|"
+    r"\bbreaking into\b|\bforged token\b|\bdox\b|"
+    r"\bunrestricted gpt\b|\bdisable safety\b|"
+    r"\bignore (all )?(previous|prior|earlier)( instructions)?\b|"
+    r"\bdump (the )?(api|nest|heroku)?.{0,20}keys?\b|"
+    r"\boutput the .{0,40}api keys?\b|"
+    r"\bcsrf\s*\+\s*xss\b|\bchained against\b|"
+    r"\breset an owasp board member\b|"
+    r"\bharvest credit cards\b|\breverse shell\b"
+    r")"
+)
+# Topic words that are also vocabulary of defensive questions.
+_MALICIOUS_TOPIC_RE = re.compile(
+    r"\b(ddos|metasploit|social-?engineer\w*|phish\w*|auth bypass|idor|"
+    r"ransomware|exfiltrat\w*)\b"
+)
+# Defensive framing: only exempts the topic words above, never the strong list.
+_DEFENSIVE_CUE_RE = re.compile(
+    r"\b(prevent\w*|mitigat\w*|defen[cs]\w*|protect\w*|resist\w*|detect\w*|"
+    r"harden\w*|secure|securing|stop|block\w*|against|monitor\w*|"
+    r"what is|what's|used for|rollout|awareness|training)\b"
+)
+
+
+def is_malicious_request(text: str) -> bool:
+    """True for requests for attack material; False for defensive questions."""
+    t = (text or "").lower()
+    if _MALICIOUS_STRONG_RE.search(t):
+        return True
+    return bool(_MALICIOUS_TOPIC_RE.search(t)) and not _DEFENSIVE_CUE_RE.search(t)
+
+
 def classify_intent(text: str) -> str:
-    t = text.lower().strip()
+    t = re.sub(r"\bnumber of\b", "how many", text.lower().strip())
     # Strip markdown fences / chat-role wrappers for structural matching.
     t_flat = re.sub(r"[`*\n]+", " ", t)
     t_flat = re.sub(r"\b(user|assistant)\s*:", " ", t_flat)
@@ -946,26 +1083,7 @@ def classify_intent(text: str) -> str:
 
     # Malicious / unauthorized help — refuse before any meta routing so
     # compound prompts ("dump keys + chapter leader") cannot skip the gate.
-    if re.search(
-        r"("
-        r"\bhow do i hack\b|\bteach me to (hack|phish)\b|\bsql injection payload\b|"
-        r"\bddos\b|\bbreak into\b|\bsteal (their|passwords|dms)\b|"
-        r"\bphishing (email )?template\b|\bvishing\b|\bmetasploit\b|"
-        r"\bsocial-?engineer\b|"
-        r"\b(phish|phishing)\b|"
-        r"\bkeylogger\b|\b(write|build)\s+a\s+worm\b|\bpoison .{0,40}dependency\b|"
-        r"\bburp\s+intruder\b|\bauth bypass\b|"
-        r"\bbreaking into\b|\bforged token\b|\bidor\b|\bransomware\b|\bdox\b|"
-        r"\bunrestricted gpt\b|\bdisable safety\b|\bexfiltrate\b|"
-        r"\bignore (all )?(previous|prior|earlier)( instructions)?\b|"
-        r"\bdump (the )?(api|nest|heroku)?.{0,20}keys?\b|"
-        r"\boutput the .{0,40}api keys?\b|"
-        r"\bcsrf\s*\+\s*xss\b|\bchained against\b|"
-        r"\breset an owasp board member\b|"
-        r"\bharvest credit cards\b|\breverse shell\b"
-        r")",
-        t,
-    ):
+    if is_malicious_request(t):
         return "refuse_malicious"
 
     # Fail-closed talk asks (often compound with a CRE factoid) before CRE-only.
@@ -1108,7 +1226,7 @@ def classify_intent(text: str) -> str:
     if (
         re.search(
             r"\b(approximate )?count of (indexed )?owasp chapters\b|"
-            r"\bhow many (indexed )?owasp chapters\b|"
+            r"\bhow many (indexed )?(owasp )?chapters\b|"
             r"\bindexed owasp chapters\b",
             t,
         )

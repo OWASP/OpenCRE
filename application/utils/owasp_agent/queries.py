@@ -12,7 +12,7 @@ from application.utils.owasp_agent.geocode import (
     nearest_by_coords,
 )
 from application.utils.owasp_agent.index_store import IndexStore
-from application.utils.owasp_agent.models import QueryResult
+from application.utils.owasp_agent.models import QueryResult, clean_leaders
 
 # Topic keyword sets — require explicit evidence in tags/description/name.
 TOPIC_KEYWORDS: Dict[str, Sequence[str]] = {
@@ -513,6 +513,68 @@ class MetaQueries:
             citations=citations,
         )
 
+    def find_chapter_places(self, text: str) -> List[str]:
+        """Chapters named in ``text``, resolved against the index (no city list).
+
+        Returns display phrases in mention order. A trailing ", Qualifier"
+        (``Athens, Georgia``) is kept so ``chapter_lookup`` can refuse to
+        silently answer for a different place of the same name.
+        """
+        low = " " + re.sub(r"[^a-z0-9]+", " ", (text or "").lower()) + " "
+        chapters = self._merged_chapters()
+        countries = {
+            _norm(str(c.get("country") or "")) for c in chapters if c.get("country")
+        }
+        aliases: List[Tuple[str, Dict[str, Any]]] = []
+        for ch in chapters:
+            names = {
+                _norm(str(ch.get("city") or "")),
+                _norm(str(ch.get("key") or "").replace("-", " ")),
+                _norm(re.sub(r"^owasp\s+", "", str(ch.get("name") or ""), flags=re.I)),
+            }
+            for n in list(names):
+                if n.endswith(" city"):
+                    names.add(n[: -len(" city")])
+            for n in names:
+                n = re.sub(r"[^a-z0-9]+", " ", n).strip()
+                if len(n) >= 3 and n not in _CHAPTER_ALIAS_STOP:
+                    aliases.append((n, ch))
+        for short, full in _CHAPTER_ABBREVIATIONS.items():
+            if short == "la" and not re.search(r"\bLA\b", text or ""):
+                continue
+            aliases.extend(
+                (short, ch) for ch in chapters if _norm(ch.get("city")) == full
+            )
+        aliases.sort(key=lambda a: -len(a[0]))
+        found: List[Tuple[int, str]] = []
+        used = low
+        for alias, ch in aliases:
+            needle = f" {alias} "
+            idx = used.find(needle)
+            if idx < 0:
+                continue
+            # Blank the span so a shorter alias cannot re-match inside it.
+            used = used[: idx + 1] + " " * len(alias) + used[idx + 1 + len(alias) :]
+            phrase = str(ch.get("name") or ch.get("key") or alias)
+            tail = re.search(r"^,?\s*([a-z]+(?: [a-z]+)?)", low[idx + len(needle) :])
+            m_comma = re.search(
+                re.escape(alias) + r"\s*,\s*([A-Za-z]+(?: [A-Za-z]+)?)",
+                text or "",
+                re.I,
+            )
+            qual = ""
+            if m_comma:
+                qual = m_comma.group(1)
+            elif tail and tail.group(1) in countries:
+                qual = tail.group(1)
+            found.append((idx, f"{phrase}, {qual}" if qual else phrase))
+        found.sort()
+        out: List[str] = []
+        for _, phrase in found:
+            if phrase not in out:
+                out.append(phrase)
+        return out
+
     def chapter_lookup(
         self, place: Optional[str] = None, places: Optional[Sequence[str]] = None
     ) -> QueryResult:
@@ -532,7 +594,17 @@ class MetaQueries:
         citations: List[str] = []
         found_any = False
         for target in targets:
+            target, _, qualifier = target.partition(",")
+            target, qualifier = target.strip(), qualifier.strip()
             hit = _match_chapter(chapters, target)
+            if hit and qualifier and not _qualifier_matches(hit, qualifier):
+                where = hit.get("country") or hit.get("region") or "another place"
+                messages.append(
+                    f"No OWASP chapter is indexed for {target}, {qualifier}. "
+                    f"The indexed {hit.get('name') or target} chapter is in {where}."
+                )
+                rows.append({"query": f"{target}, {qualifier}", "found": False})
+                continue
             alias = _metro_chapter_alias(target) if not hit else None
             via_alias = False
             if not hit and alias:
@@ -718,7 +790,10 @@ class MetaQueries:
             ):
                 if item.get("source") == "site" or not cur.get("name"):
                     cur["name"] = item.get("name")
-        return list(by_key.values())
+        out = list(by_key.values())
+        for item in out:
+            item["leaders"] = clean_leaders(item.get("leaders"))
+        return out
 
     def _merged_projects(self) -> List[Dict[str, Any]]:
         """Merge project fields across nest/github/site for leaders/description."""
@@ -1141,7 +1216,6 @@ _PUBLIC_FIELDS = (
     "notes",
     "group",
     "group_url",
-    "email",
 )
 
 
@@ -1192,6 +1266,41 @@ def _format_person(
     return " ".join(parts) + "."
 
 
+_CHAPTER_ALIAS_STOP = frozenset(
+    "example global project chapter chapters owasp the top ten security web app "
+    "application test new all".split()
+)
+_CHAPTER_ABBREVIATIONS = {
+    "la": "los angeles",
+    "sf": "san francisco",
+    "nyc": "new york city",
+    "bay area": "san francisco",
+}
+_COUNTRY_SYNONYMS = {
+    "uk": "united kingdom",
+    "england": "united kingdom",
+    "us": "usa",
+    "united states": "usa",
+    "america": "usa",
+}
+
+
+def _qualifier_matches(chapter: Dict[str, Any], qualifier: str) -> bool:
+    """Does ", Georgia" / ", UK" agree with the indexed chapter's location?"""
+    q = _norm(qualifier)
+    q = _COUNTRY_SYNONYMS.get(q, q)
+    hay = " ".join(
+        _norm(str(chapter.get(f) or "")) for f in ("country", "region", "name", "city")
+    )
+    return bool(q) and q in hay
+
+
+def _is_qualified_extension(target: str, hay: str) -> bool:
+    """'oakland' vs 'owasp oakland county': a different, narrower place."""
+    m = re.search(rf"\b{re.escape(target)}\s+(county|state|valley|district)\b", hay)
+    return bool(m)
+
+
 def _match_chapter(
     chapters: List[Dict[str, Any]], place: str
 ) -> Optional[Dict[str, Any]]:
@@ -1207,11 +1316,15 @@ def _match_chapter(
         name = _norm(str(ch.get("name") or ""))
         city = _norm(str(ch.get("city") or ""))
         hay = f"{key} {name} {city}"
-        if target == key or target == city or target in name or name.endswith(target):
+        if target == key or target == city:
+            return ch
+        if (target in name or name.endswith(target)) and not _is_qualified_extension(
+            target, name
+        ):
             return ch
         if target.replace(" ", "") == key.replace(" ", ""):
             return ch
-        if target in hay and best is None:
+        if target in hay and best is None and not _is_qualified_extension(target, hay):
             best = ch
     return best
 
@@ -1345,7 +1458,7 @@ def _metro_chapter_alias(place: str) -> Optional[str]:
         "santa monica": "los angeles",
         "glendale": "los angeles",
         "burbank": "los angeles",
-        "oakland": "los angeles",
+        "oakland": "san francisco",
         "beverly hills": "los angeles",
         "long beach": "los angeles",
         "croydon": "london",
