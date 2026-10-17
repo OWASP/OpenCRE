@@ -91,7 +91,14 @@ class TestAdminImportsApi(unittest.TestCase):
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_admin_import_runs_rejects_bad_limit_and_offset(self) -> None:
         with self.app.test_client() as c:
-            for query in ("limit=abc", "offset=abc", "limit=-1", "offset=-1"):
+            for query in (
+                "limit=abc",
+                "offset=abc",
+                "limit=",
+                "offset=",
+                "limit=-1",
+                "offset=-1",
+            ):
                 r = c.get(f"/admin/imports/runs?{query}")
                 self.assertEqual(r.status_code, 400, query)
 
