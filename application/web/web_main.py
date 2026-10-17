@@ -1065,8 +1065,8 @@ def admin_imports_enabled_required(f):
 def admin_import_runs() -> Any:
     source = request.args.get("source")
     try:
-        limit = int(request.args.get("limit") or 50)
-        offset = int(request.args.get("offset") or 0)
+        limit = int(request.args.get("limit", 50))
+        offset = int(request.args.get("offset", 0))
     except ValueError:
         abort(400, description="limit and offset must be integers")
     if limit < 0 or offset < 0:
