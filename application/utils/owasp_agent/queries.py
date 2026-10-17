@@ -543,7 +543,9 @@ class MetaQueries:
             if short == "la" and not re.search(r"\bLA\b", text or ""):
                 continue
             aliases.extend(
-                (short, ch) for ch in chapters if _norm(ch.get("city")) == full
+                (short, ch)
+                for ch in chapters
+                if _norm(str(ch.get("city") or "")) == full
             )
         aliases.sort(key=lambda a: -len(a[0]))
         found: List[Tuple[int, str]] = []
