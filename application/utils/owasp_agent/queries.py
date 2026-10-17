@@ -568,6 +568,12 @@ class MetaQueries:
             elif tail and tail.group(1) in countries:
                 qual = tail.group(1)
             found.append((idx, f"{phrase}, {qual}" if qual else phrase))
+        if not found:
+            # Localities the index only covers through a metro chapter.
+            for place in _METRO_PLACES:
+                if f" {place} " in low:
+                    found.append((low.index(f" {place} "), place))
+                    break
         found.sort()
         out: List[str] = []
         for _, phrase in found:
@@ -917,6 +923,97 @@ class MetaQueries:
             ],
         )
 
+    def find_events(
+        self, text: str, now: Optional[datetime] = None
+    ) -> List[Dict[str, Any]]:
+        """Indexed events the prompt names; nearest upcoming edition first.
+
+        Matches on the event series (``Global AppSec USA``), its location
+        (``San Francisco``) and a year when given. With no year, upcoming
+        editions sort before past ones, soonest first.
+        """
+        q = " " + re.sub(r"[^a-z0-9]+", " ", (text or "").lower()) + " "
+        for pat, rep in _EVENT_QUERY_ALIASES:
+            q = q.replace(pat, rep)
+        qtok = set(q.split())
+        if "conference" in qtok and "appsec" not in qtok:
+            qtok |= {"global", "appsec"}
+        if "appsec" not in qtok and not (qtok & {"event", "events", "conference"}):
+            return []
+        year_m = re.search(r"\b(20\d{2})\b", q)
+        qspec = {
+            t
+            for t in qtok - _EVENT_GENERIC_TOKENS - _EVENT_NOISE
+            if not re.fullmatch(r"20\d{2}", t)
+        }
+        scored: List[Tuple[int, Dict[str, Any]]] = []
+        for ev in self._safe_entities("event") or []:
+            series, _, loc = str(ev.get("name") or "").lower().partition(" - ")
+            tok = lambda v: set(re.sub(r"[^a-z0-9]+", " ", v).split())  # noqa: E731
+            series_tok = {t for t in tok(series) if not re.fullmatch(r"20\d{2}", t)}
+            series_tok -= {"owasp"}
+            ev_tok = series_tok | (tok(loc) - _EVENT_LOC_STOP)
+            if "appsec" not in series_tok:
+                continue
+            hits = len(qspec & (ev_tok - _EVENT_GENERIC_TOKENS))
+            if qspec and not hits:
+                continue
+            if not qspec and "global" not in series_tok:
+                continue
+            scored.append((hits, ev))
+        if not scored:
+            return []
+        best = max(sc for sc, _ in scored)
+        cands = [ev for sc, ev in scored if sc == best]
+        if year_m:
+            yr = year_m.group(1)
+            same = [e for e in cands if yr in str(e.get("start_date") or "")]
+            cands = same or cands
+        today = (now or datetime.now(timezone.utc)).date()
+
+        def _order(ev: Dict[str, Any]) -> Tuple[int, str]:
+            start = _parse_dt(str(ev.get("start_date") or ""))
+            if start is None:
+                return (2, "")
+            if start.date() >= today:
+                return (0, start.date().isoformat())
+            # Past editions: most recent first.
+            return (1, "".join(chr(255 - ord(c)) for c in start.date().isoformat()))
+
+        return sorted(cands, key=_order)
+
+    def event_lookup(self, text: str, now: Optional[datetime] = None) -> QueryResult:
+        events = self.find_events(text, now=now)
+        if not events:
+            return QueryResult(
+                ok=False,
+                kind="event_lookup",
+                message="No indexed OWASP event matches that name.",
+            )
+        ev = events[0]
+        start, end = str(ev.get("start_date") or ""), str(ev.get("end_date") or "")
+        when = start if not end or end == start else f"{start} to {end}"
+        url = str(ev.get("url") or "")
+        msg = f"{ev.get('name')} takes place {when}."
+        if url:
+            msg += f" Details and registration: {url}."
+        if re.search(
+            r"\b(speak\w*|speaker|talk|agenda|schedule|session|what time)\b",
+            text or "",
+            re.I,
+        ):
+            msg += (
+                " Speakers, talks and the agenda are not indexed here; "
+                "check the event page."
+            )
+        return QueryResult(
+            ok=True,
+            kind="event_lookup",
+            data={"event": _public_entity(ev)},
+            message=msg,
+            citations=[url] if url else [],
+        )
+
     def events_near(
         self,
         place: Optional[str],
@@ -1260,11 +1357,10 @@ _CHAPTER_ALIAS_STOP = frozenset(
     "example global project chapter chapters owasp the top ten security web app "
     "application test new all".split()
 )
+_METRO_PLACES = ("palo alto", "san francisco", "san mateo", "berkeley", "oakland", "sf")
 _CHAPTER_ABBREVIATIONS = {
     "la": "los angeles",
-    "sf": "san francisco",
     "nyc": "new york city",
-    "bay area": "san francisco",
 }
 _COUNTRY_SYNONYMS = {
     "uk": "united kingdom",
@@ -1283,6 +1379,21 @@ def _qualifier_matches(chapter: Dict[str, Any], qualifier: str) -> bool:
         _norm(str(chapter.get(f) or "")) for f in ("country", "region", "name", "city")
     )
     return bool(q) and q in hay
+
+
+_EVENT_QUERY_ALIASES = (
+    (" san fran ", " san francisco "),
+    (" sf ", " san francisco "),
+    (" us ", " usa "),
+    (" u s ", " usa "),
+)
+_EVENT_LOC_STOP = frozenset({"ca", "ga", "dc", "usa"})
+_EVENT_GENERIC_TOKENS = frozenset({"global", "appsec"})
+_EVENT_NOISE = frozenset(
+    "when where is the what whens whats s are there an a of in at on this next "
+    "big owasp event events conference held dates date location happening week "
+    "month nov november time i m am do does for to and or about".split()
+)
 
 
 def _is_qualified_extension(target: str, hay: str) -> bool:
@@ -1445,7 +1556,12 @@ def _metro_chapter_alias(place: str) -> Optional[str]:
         "santa monica": "los angeles",
         "glendale": "los angeles",
         "burbank": "los angeles",
-        "oakland": "san francisco",
+        "oakland": "bay area",
+        "san francisco": "bay area",
+        "sf": "bay area",
+        "palo alto": "bay area",
+        "berkeley": "bay area",
+        "san mateo": "bay area",
         "beverly hills": "los angeles",
         "long beach": "los angeles",
         "croydon": "london",
