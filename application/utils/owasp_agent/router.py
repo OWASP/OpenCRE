@@ -220,6 +220,7 @@ class OwaspAgentRouter:
         if sim_decision is not None:
             from application.utils.owasp_agent.candidate_picker import (
                 default_completion_fn,
+                is_structure_ask,
                 select_agent_hit,
             )
             from application.utils.owasp_agent.lane_similarity import (
@@ -241,6 +242,8 @@ class OwaspAgentRouter:
                 cands,
                 get_completion_fn=default_completion_fn,
             )
+            structure_ask = is_structure_ask(normalized)
+
             # Slot-heavy intents (board year, events near, ambiguous chapter…)
             # must not be overridden by a mismatched sim meta card.
             early_slots = extract_slots(effective)
@@ -301,11 +304,22 @@ class OwaspAgentRouter:
                     resp["owasp_agent"]["lane_reason"] = sim_decision.reason
                 return resp
             if picked is not None and is_meta_hit(picked) and _allow_sim_meta(picked):
+                # Fail-closed: never answer level/layer/maturity asks via Nest
+                # project_lookup (Leaders: / indexed OWASP project).
+                meta_kind = ""
+                u = picked.url or ""
+                if u.startswith("owasp-agent://meta/"):
+                    meta_kind = u[len("owasp-agent://meta/") :].split("/", 1)[0]
+                if structure_ask and meta_kind == "project":
+                    return None
                 meta_resp = self._response_from_meta_hit(
                     picked, sim_decision=sim_decision
                 )
                 if meta_resp is not None:
                     return meta_resp
+            elif structure_ask and not any(is_evidence_hit(h) for h in cands):
+                # Structure ask, no evidence in top-k, no viable pick → defer.
+                return None
 
             # CRE-dominant must not erase a mid+ agent evidence / chapter / board card.
             if sim_decision.action == "cre" and cands:
@@ -396,21 +410,27 @@ class OwaspAgentRouter:
         if intent == "cre_normative":
             return None
         if intent == "cre_fact":
-            from application.utils.owasp_agent.cre_facts import (
-                format_cre_factoid,
-                lookup_cre_factoid,
+            # Metadata facts by CRE id only — no keyword factoid gate.
+            from application.utils.owasp_agent.node_facts import (
+                extract_cre_id_from_text,
+                facts_for_cre_id,
+                format_facts_message,
             )
 
-            cre_hit = lookup_cre_factoid(effective)
-            if not cre_hit:
+            cre_id = extract_cre_id_from_text(effective)
+            facts = facts_for_cre_id(cre_id or "")
+            if not facts:
                 return None  # fall through to CRE RAG
-            cre_id, title, note = cre_hit
+            message, citations = format_facts_message(facts)
+            if not message:
+                return None
             result = QueryResult(
                 ok=True,
                 kind="cre_fact",
-                data={"cre_id": cre_id, "title": title},
-                message=format_cre_factoid(cre_id, title, note),
-                citations=[f"https://opencre.org/cre/{cre_id}"],
+                data={"cre_id": cre_id, "facts": facts},
+                message=message,
+                citations=citations
+                or ([f"https://opencre.org/cre/{cre_id}"] if cre_id else []),
             )
             return format_chat_response(result)
         if intent == "refuse_malicious":
@@ -672,32 +692,39 @@ class OwaspAgentRouter:
             )
         if intent == "talk_lookup":
             talk = self.queries.talk_lookup(person=slots.person, topic=slots.topic)
-            # Compound: "fail-closed on X talk; succeed on CRE-…"
-            from application.utils.owasp_agent.cre_facts import (
-                format_cre_factoid,
-                lookup_cre_factoid,
+            # Compound: fail-closed talk + CRE id with metadata facts (no keywords).
+            from application.utils.owasp_agent.node_facts import (
+                extract_cre_id_from_text,
+                facts_for_cre_id,
+                format_facts_message,
             )
 
-            cre_hit = lookup_cre_factoid(text)
-            if cre_hit and talk.ok:
-                cre_id, title, note = cre_hit
-                cre_msg = format_cre_factoid(cre_id, title, note)
-                return QueryResult(
-                    ok=True,
-                    kind="talk_and_cre",
-                    data={
-                        "talk": talk.data,
-                        "cre_id": cre_id,
-                        "title": title,
-                    },
-                    message=f"{talk.message} Separately: {cre_msg}",
-                    citations=list(
-                        dict.fromkeys(
-                            list(talk.citations or [])
-                            + [f"https://opencre.org/cre/{cre_id}"]
-                        )
-                    ),
-                )
+            cre_id = extract_cre_id_from_text(text)
+            facts = facts_for_cre_id(cre_id or "") if cre_id else {}
+            if facts and talk.ok:
+                cre_msg, cre_cites = format_facts_message(facts)
+                if cre_msg:
+                    return QueryResult(
+                        ok=True,
+                        kind="talk_and_cre",
+                        data={
+                            "talk": talk.data,
+                            "cre_id": cre_id,
+                            "facts": facts,
+                        },
+                        message=f"{talk.message} Separately: {cre_msg}",
+                        citations=list(
+                            dict.fromkeys(
+                                list(talk.citations or [])
+                                + list(cre_cites)
+                                + (
+                                    [f"https://opencre.org/cre/{cre_id}"]
+                                    if cre_id
+                                    else []
+                                )
+                            )
+                        ),
+                    )
             return talk
         if intent == "person_lookup":
             if not slots.person:
@@ -709,6 +736,19 @@ class OwaspAgentRouter:
                 )
             return self.queries.person_lookup(slots.person)
         if intent == "project_lookup":
+            from application.utils.owasp_agent.candidate_picker import is_structure_ask
+
+            # Fail-closed: structural level/layer/maturity asks must not Nest-steal.
+            if is_structure_ask(text):
+                return QueryResult(
+                    ok=False,
+                    kind="clarify",
+                    message=(
+                        "I do not have curated structure evidence for that question "
+                        "in the agent index. Try again after evidence is seeded, "
+                        "or ask via CRE/standards tools."
+                    ),
+                )
             name = slots.project_name or slots.topic
             if not name:
                 return QueryResult(
@@ -748,30 +788,7 @@ class OwaspAgentRouter:
                     clarify="Name both projects (e.g. AI Exchange vs GenAI Security Project).",
                 )
             return self.queries.compare_projects(a, b)
-        if intent == "cre_fact":
-            from application.utils.owasp_agent.cre_facts import (
-                format_cre_factoid,
-                lookup_cre_factoid,
-            )
-
-            hit = lookup_cre_factoid(text)
-            if not hit:
-                return QueryResult(
-                    ok=False,
-                    kind="cre_fact",
-                    message=(
-                        "I do not have a curated CRE factoid for that control. "
-                        "Falling back is handled by CRE RAG."
-                    ),
-                )
-            cre_id, title, note = hit
-            return QueryResult(
-                ok=True,
-                kind="cre_fact",
-                data={"cre_id": cre_id, "title": title},
-                message=format_cre_factoid(cre_id, title, note),
-                citations=[f"https://opencre.org/cre/{cre_id}"],
-            )
+        # cre_fact is handled in handle() before _dispatch.
         if intent == "events_near":
             upcoming_only = not slots.include_past
             return self.queries.events_near(
@@ -968,28 +985,18 @@ def classify_intent(text: str, *, known_people: Optional[List[str]] = None) -> s
     ):
         return "talk_lookup"
 
-    # Fail-closed talk asks (often compound with a CRE factoid) before CRE-only.
-    # Do not steal board asks that only say "do not invent talk quotes".
-    if (
-        re.search(r"\bfail[- ]closed\b", t)
-        and re.search(r"\btalk\b", t)
-        and not re.search(r"\bboard\b", t)
-    ):
-        return "talk_lookup"
+    # CRE id with curated metadata facts (no keyword factoid gate).
+    from application.utils.owasp_agent.node_facts import (
+        extract_cre_id_from_text,
+        facts_for_cre_id,
+    )
 
-    # Curated CRE factoids (deterministic) before generic CRE RAG
-    from application.utils.owasp_agent.cre_facts import lookup_cre_factoid
-
-    if lookup_cre_factoid(text):
+    cre_id_hint = extract_cre_id_from_text(text)
+    if cre_id_hint and facts_for_cre_id(cre_id_hint):
         # Talk + CRE compound stays talk_lookup so handle() can merge both.
         if re.search(r"\btalk\b", t):
             return "talk_lookup"
         return "cre_fact"
-    if re.search(r"\b(which cre|what cre|cre covers)\b", t) or (
-        "cre" in t and "covers" in t
-    ):
-        if lookup_cre_factoid(text):
-            return "cre_fact"
 
     # Talk claims (incl. fake speakers / suburb meetups) → fail-closed
     if (
