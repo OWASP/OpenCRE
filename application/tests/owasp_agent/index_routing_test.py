@@ -415,6 +415,37 @@ class TestCompoundQuestions(unittest.TestCase):
         self.assertEqual(extract_slots("Nearest OWASP meetup to Paris").place, "Paris")
 
 
+class TestEntityDisambiguation(unittest.TestCase):
+    def test_whole_name_project_beats_substring(self) -> None:
+        r = _router()
+        for key, name in (
+            ("agentic-skills-top-10", "OWASP Agentic Skills Top 10"),
+            ("top-ten", "OWASP Top Ten"),
+        ):
+            r.store.upsert_project(
+                Project(key=key, name=name, level="flagship", source="nest")
+            )
+        a = r.handle("What is the OWASP Top 10 project?")["response"]
+        self.assertIn("Top Ten", a)
+        self.assertNotIn("Agentic", a)
+
+    def test_bare_first_name_lists_candidates(self) -> None:
+        r = _router()
+        r.store.upsert_board_member(BoardMember(year=2024, name="Sam Stepanyan"))
+        r.store.upsert_board_member(BoardMember(year=2024, name="Sam Li"))
+        a = r.handle("Is Sam on the OWASP board?")["response"]
+        self.assertIn("Sam Stepanyan", a)
+        self.assertIn("Sam Li", a)
+        self.assertIn("Which one", a)
+
+    def test_full_name_still_answers(self) -> None:
+        r = _router()
+        r.store.upsert_board_member(BoardMember(year=2024, name="Sam Stepanyan"))
+        r.store.upsert_board_member(BoardMember(year=2024, name="Sam Li"))
+        a = r.handle("Is Sam Stepanyan on the OWASP board?")["response"]
+        self.assertIn("2024", a)
+
+
 class TestLeaderPayloads(unittest.TestCase):
     def test_email_not_in_public_entity(self) -> None:
         from application.utils.owasp_agent.queries import _public_entity
