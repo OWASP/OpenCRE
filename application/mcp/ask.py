@@ -18,7 +18,11 @@ from application.mcp.rest_client import (
 )
 from application.utils.gap_analysis import OPENCRE_STANDARD_NAME
 from application.utils.owasp_agent import is_owasp_agent_enabled
-from application.utils.owasp_agent.router import OwaspAgentRouter, classify_intent
+from application.utils.owasp_agent.router import (
+    NOT_SURE_FALLBACK,
+    OwaspAgentRouter,
+    classify_intent,
+)
 
 CORPUS_AUTO = "auto"
 CORPUS_SECURITY = "security"
@@ -190,7 +194,9 @@ def _owasp_meta_facts(
             "channel": CORPUS_OWASP_META,
             "intent": intent,
             "message": (
-                "No OWASP metadata match. " "Try corpus=security or CRE MCP tools."
+                "No OWASP metadata match. "
+                + NOT_SURE_FALLBACK
+                + " For security questions use corpus=security or CRE MCP tools."
             ),
         }
 

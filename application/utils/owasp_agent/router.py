@@ -219,6 +219,36 @@ class OwaspAgentRouter:
             pass
         return intent
 
+    def _handle_compound(
+        self, clauses: List[str], history: Optional[List[Dict[str, Any]]]
+    ) -> Optional[Dict[str, Any]]:
+        """Answer every clause the agent can; say which ones it handed back."""
+        answered: List[Dict[str, Any]] = []
+        handed_back: List[str] = []
+        for clause in clauses:
+            resp = self.handle(clause, history=history, _clause=True)
+            if resp is None:
+                handed_back.append(clause)
+            else:
+                answered.append(resp)
+        if not answered:
+            return None
+        parts = [
+            re.sub(r"^Answer:\s*", "", str(r.get("response") or "")).strip()
+            for r in answered
+        ]
+        text = "\n\n".join(p for p in parts if p)
+        if handed_back:
+            quoted = "; ".join(f'"{c}"' for c in handed_back)
+            text += (
+                f"\n\nI did not answer {quoted}: that part is a separate "
+                "security-guidance question, so please ask it on its own."
+            )
+        out = dict(answered[0])
+        out["response"] = text
+        out["compound"] = {"answered": len(answered), "handed_back": handed_back}
+        return out
+
     def _refusal_response(self) -> Dict[str, Any]:
         return format_chat_response(
             QueryResult(
@@ -236,6 +266,7 @@ class OwaspAgentRouter:
         self,
         prompt: str,
         history: Optional[List[Dict[str, Any]]] = None,
+        _clause: bool = False,
     ) -> Optional[Dict[str, Any]]:
         """Return a chat response dict, or None to defer to CRE RAG.
 
@@ -257,13 +288,18 @@ class OwaspAgentRouter:
             benign = _strip_malicious_clauses(text)
             if not benign:
                 return self._refusal_response()
-            resp = self.handle(benign, history=None)
+            resp = self.handle(benign, history=None, _clause=_clause)
             if resp is not None:
                 resp["response"] = (
                     "(I skipped the part of your message asking for unauthorized "
                     "or attack help.) " + str(resp.get("response") or "")
                 )
             return resp
+
+        if not _clause:
+            clauses = _split_compound(text)
+            if len(clauses) > 1 and classify_intent(text) not in _COMPOUND_AWARE:
+                return self._handle_compound(clauses, history)
 
         effective = _effective_prompt(text, history)
         from application.utils.owasp_agent.prompt_normalize import normalize_prompt
@@ -315,6 +351,10 @@ class OwaspAgentRouter:
                 kind, key = _meta_kind_key(getattr(hit, "url", "") or "")
                 if not kind:
                     return True
+                if not meta_hit_answers_prompt(
+                    hit, kind, key, effective, intent_preview
+                ):
+                    return False
                 return _sim_meta_ok_for_intent(
                     intent_preview, kind, key, effective, early_slots
                 )
@@ -949,6 +989,39 @@ _INJECTION_ONLY_RE = re.compile(
 )
 
 
+# Intents that already answer both halves of a two-part ask.
+_COMPOUND_AWARE = frozenset(
+    {
+        "count_projects_and_chapters",
+        "project_and_board",
+        "compare_projects",
+        "cre_community_bait",
+    }
+)
+_QUESTION_START_RE = re.compile(
+    r"^(who|what|whats|when|where|which|why|how|is|are|do|does|can|explain|tell|"
+    r"list|show|describe|give)\b",
+    re.I,
+)
+
+
+def _split_compound(text: str) -> List[str]:
+    """Split a two-question prompt into clauses; [text] when it is not one."""
+    parts = [
+        c.strip(" ,.;")
+        for c in re.split(
+            r"(?<=[?!.])\s+|;\s*|,?\s+(?:and\s+)?also,?\s+|,?\s+and\s+(?=(?:how|what|who|when|where|which|explain|tell|list)\b)",
+            text,
+        )
+        if c and c.strip(" ,.;")
+    ]
+    parts = [re.sub(r"^also,?\s+", "", p, flags=re.I) for p in parts]
+    parts = [p for p in parts if len(p.split()) >= 2]
+    if len(parts) < 2 or not all(_QUESTION_START_RE.match(p) for p in parts):
+        return [text]
+    return parts[:4]
+
+
 def _strip_malicious_clauses(text: str) -> str:
     """Drop clauses that ask for attack material; return the benign remainder."""
     clauses = [c.strip(" ,.;") for c in _CLAUSE_SPLIT_RE.split(text) if c and c.strip()]
@@ -1410,6 +1483,13 @@ def extract_slots(text: str) -> Slots:
     )
     if m_place:
         slots.place = m_place.group(1).strip().rstrip(".?!")
+
+    m_nearest_to = re.search(
+        r"\b(?i:nearest)\b.{0,40}?\bto\s+([A-Z][A-Za-z .'-]+?)(?=\s+(?:about|for|on|with)\b|[?,.!;]|$)",
+        text,
+    )
+    if m_nearest_to:
+        slots.place = m_nearest_to.group(1).strip().rstrip(".?!")
 
     m_place2 = re.search(
         r"\b(?:i(?:'m| am)|we are)\s+(?:in|near)\s+([A-Za-z .',-]+)",
@@ -2015,6 +2095,74 @@ def _mentions_known_project(text: str) -> bool:
     if re.search(r"\bjuiceshop\b|\bjuice\s*shop\b|\btop\s*ten\b|\btop\s*10\b", t):
         return True
     return False
+
+
+NOT_SURE_FALLBACK = (
+    "I'm not sure what you're asking. I can answer questions about OWASP chapters "
+    "(who leads one, whether a city has one), projects and their leaders, events "
+    "such as Global AppSec, board members and history, and membership pricing, "
+    "and OpenCRE security standards. Could you rephrase or name one of those?"
+)
+
+# Prompt shapes that want a number, comparison or list, never one entity card.
+_AGGREGATE_SHAPE_RE = re.compile(
+    r"\b(how many|number of|count of|compare|comparison|difference between|"
+    r"versus|vs\.?|list (all|the|every)|all (the )?(owasp )?(projects|chapters)|"
+    r"which (owasp )?(projects|chapters))\b",
+    re.I,
+)
+_SINGLE_ENTITY_KINDS = frozenset(
+    {"project", "chapter", "person", "project_leader", "board_member"}
+)
+_GROUNDING_GENERIC = frozenset(
+    "owasp www project chapter the and for of top ten security application "
+    "applications app web what who how when where is are does do tell about "
+    "me please".split()
+)
+
+
+def _norm_tokens(text: str) -> List[str]:
+    return re.sub(r"[^a-z0-9]+", " ", (text or "").lower()).split()
+
+
+def _token_matches(t: str, ptoks: set) -> bool:
+    """Exact, or a near-variant (plural/suffix) - never 'open' ~ 'opencre'."""
+    if t in ptoks:
+        return True
+    return any(
+        len(p) >= 4
+        and len(t) >= 4
+        and abs(len(p) - len(t)) <= 2
+        and (p.startswith(t) or t.startswith(p))
+        for p in ptoks
+    )
+
+
+def meta_hit_answers_prompt(
+    hit: Any, kind: str, key: str, prompt: str, intent: str
+) -> bool:
+    """Floor for the meta lane: a single-entity card must be about the prompt.
+
+    Embedding similarity alone returns the nearest entity for anything
+    ("What is OpenCRE?" -> Open SAMMY). Require (a) the prompt is not a
+    count/compare/list/refusal and (b) at least one distinctive token of the
+    entity's name appears in the prompt.
+    """
+    if kind not in _SINGLE_ENTITY_KINDS:
+        return True
+    if intent in ("refuse_malicious", "clarify") or intent.startswith("count_"):
+        return False
+    if intent == "compare_projects" or _AGGREGATE_SHAPE_RE.search(prompt or ""):
+        return False
+    ptoks = set(_norm_tokens(prompt))
+    name_toks = {
+        t
+        for t in _norm_tokens(key.replace("-", " "))
+        if t not in _GROUNDING_GENERIC and (len(t) >= 3 or t.isdigit())
+    }
+    if not name_toks:
+        return True
+    return any(_token_matches(t, ptoks) for t in name_toks)
 
 
 def _sim_meta_ok_for_intent(
