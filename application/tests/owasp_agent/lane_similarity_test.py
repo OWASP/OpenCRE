@@ -124,6 +124,10 @@ class TestMetaEmbeddingText(unittest.TestCase):
         )
         self.assertIn("Rob van der Veer", text)
         self.assertIn("AI Exchange", text)
+        # Nest project embeds must not carry structure/facts appendix.
+        self.assertNotIn("seven protection layers", text.lower())
+        self.assertNotIn("verification levels", text.lower())
+        self.assertNotIn("Topics:", text)
 
     def test_evidence_documents_include_trifecta_prose(self) -> None:
         docs = evidence_documents()

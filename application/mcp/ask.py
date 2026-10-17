@@ -163,8 +163,8 @@ def _owasp_meta_facts(
             ),
         }
 
-    # Always try the meta/sim router first — AIX evidence and community cards can
-    # answer prompts that keyword intent labels as cre_normative.
+    # Always try the meta/sim router first — evidence and community cards can
+    # answer prompts that classify_intent labels as cre_normative.
     resp = _router_handle(prompt)
     if resp is None:
         if intent == "cre_normative" and not allow_cre_defer:
@@ -306,6 +306,9 @@ def _security_facts(
     selection, standards_filter = _myopencre_selection(client)
     items: List[Dict[str, Any]] = []
     citations: List[str] = []
+    from application.utils.owasp_agent.candidate_picker import is_structure_ask
+
+    structural_prompt = is_structure_ask(prompt)
 
     emb_url = matched.get("embeddings_url") or ""
     if isinstance(emb_url, str) and emb_url.startswith(("http://", "https://")):
@@ -340,15 +343,32 @@ def _security_facts(
             if isinstance(link, str) and link.startswith(("http://", "https://")):
                 citations.append(link)
 
-        items.append(
-            {
-                "cre_id": cre_id,
-                "name": enriched.get("name"),
-                "description": enriched.get("description"),
-                "url": cre_url,
-                "standards": standards,
-            }
+        # Keep curated facts on items only — never prepend into message for
+        # unrelated CRE hits. Surface linked-standard structure only for
+        # structural question shapes (levels / layers / maturity).
+        node_facts = _collect_metadata_facts(
+            enriched, standards, include_linked_standards=structural_prompt
         )
+        item: Dict[str, Any] = {
+            "cre_id": cre_id,
+            "name": enriched.get("name"),
+            "description": enriched.get("description"),
+            "url": cre_url,
+            "standards": standards,
+        }
+        if node_facts:
+            item["facts"] = node_facts
+            from application.utils.owasp_agent.node_facts import format_facts_message
+
+            _msg, fact_cites = format_facts_message(node_facts)
+            for cite in fact_cites:
+                citations.append(cite)
+        items.append(item)
+
+    message = (
+        f"Nearest standard match (similarity={matched['similarity']:.3f}); "
+        f"{len(items)} linked CRE fact item(s)."
+    )
 
     return {
         "ok": True,
@@ -356,10 +376,7 @@ def _security_facts(
         "intent": intent,
         "matched_standard": matched,
         "items": items,
-        "message": (
-            f"Nearest standard match (similarity={matched['similarity']:.3f}); "
-            f"{len(items)} linked CRE fact item(s)."
-        ),
+        "message": message,
         "citations": _dedupe_preserve(citations),
         "standards_filter": standards_filter,
     }
@@ -384,15 +401,46 @@ def _extract_standards(cre_doc: Mapping[str, Any]) -> List[Dict[str, Any]]:
         name = doc.get("name")
         if not isinstance(name, str) or not name.strip():
             continue
-        out.append(
-            {
-                "name": name.strip(),
-                "section": doc.get("section"),
-                "subsection": doc.get("subsection"),
-                "hyperlink": doc.get("hyperlink"),
-            }
-        )
+        entry: Dict[str, Any] = {
+            "name": name.strip(),
+            "section": doc.get("section"),
+            "subsection": doc.get("subsection"),
+            "hyperlink": doc.get("hyperlink"),
+        }
+        meta = doc.get("metadata")
+        if isinstance(meta, dict) and meta.get("facts"):
+            entry["metadata"] = {"facts": meta["facts"]}
+        out.append(entry)
     return out
+
+
+def _collect_metadata_facts(
+    cre_doc: Mapping[str, Any],
+    standards: List[Dict[str, Any]],
+    *,
+    include_linked_standards: bool = False,
+) -> Dict[str, Any]:
+    """Collect metadata.facts from the CRE; optionally merge linked standards.
+
+    Linked-standard structure facts (ASVS levels, etc.) are only merged when
+    ``include_linked_standards`` is True so unrelated CRE hits do not inherit
+    family structure prose.
+    """
+    merged: Dict[str, Any] = {}
+    cre_meta = cre_doc.get("metadata")
+    if isinstance(cre_meta, dict):
+        facts = cre_meta.get("facts")
+        if isinstance(facts, dict):
+            merged.update(facts)
+    if include_linked_standards:
+        for std in standards:
+            meta = std.get("metadata")
+            if not isinstance(meta, dict):
+                continue
+            facts = meta.get("facts")
+            if isinstance(facts, dict):
+                merged.update(facts)
+    return merged
 
 
 def _myopencre_selection(

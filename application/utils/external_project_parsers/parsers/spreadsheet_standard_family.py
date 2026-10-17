@@ -126,6 +126,9 @@ class SpreadsheetStandardFamilyParser:
             source=source,
             extra=std.tags,
         )
+        # Do not stamp metadata.facts onto every requirement row — there is no
+        # family-root Standard here. Seed family/overview nodes via
+        # scripts/seed_node_facts.py and serve structure via evidence embeds.
         return std
 
     def parse_rows(

@@ -243,12 +243,56 @@ class McpAskToolTest(unittest.TestCase):
         self.assertTrue(out["ok"])
         self.assertEqual(out["matched_standard"]["name"], "ASVS")
 
+    @patch("application.mcp.ask._retrieve_nearest_standard")
+    def test_security_message_not_polluted_by_linked_standard_facts(
+        self, retrieve: MagicMock
+    ) -> None:
+        """Unrelated CRE asks must not prepend ASVS structure into message."""
+        from application.utils.owasp_agent.node_facts import facts_for_name
+
+        asvs_facts = facts_for_name("ASVS")
+        enriched = {
+            "data": {
+                "id": "111-111",
+                "name": "Password Storage",
+                "doctype": "CRE",
+                "links": [
+                    {
+                        "document": {
+                            "name": "ASVS",
+                            "doctype": "Standard",
+                            "section": "2.4.1",
+                            "hyperlink": "https://example/asvs",
+                            "metadata": {"facts": asvs_facts},
+                        },
+                        "ltype": "Linked To",
+                    }
+                ],
+            }
+        }
+        retrieve.return_value = _fake_hit(cre_ids=("111-111",))
+        client = _FakeRestClient(cres={"111-111": enriched})
+        with patch.dict(os.environ, {"OWASP_AGENT_ENABLED": "0"}, clear=False):
+            out = ask(
+                "How should I store passwords?",
+                corpus=CORPUS_SECURITY,
+                rest_client=client,  # type: ignore[arg-type]
+            )
+        self.assertTrue(out["ok"])
+        self.assertNotIn("facts", out["items"][0])
+        self.assertNotIn("Leaders:", out["message"])
+        self.assertNotIn("indexed OWASP project", out["message"])
+
     def test_corpus_owasp_meta_rejects_cre_looking(self) -> None:
+        # Router may answer from a seeded local DB; force defer so corpus=owasp_meta
+        # still refuses CRE-looking prompts when meta has no match.
         with patch.dict(os.environ, {"OWASP_AGENT_ENABLED": "1"}, clear=False):
             with patch(
                 "application.mcp.ask.classify_intent", return_value="cre_normative"
             ):
-                out = ask("How should I store passwords?", corpus=CORPUS_OWASP_META)
+                with patch("application.mcp.ask.OwaspAgentRouter") as router_cls:
+                    router_cls.return_value.handle.return_value = None
+                    out = ask("How should I store passwords?", corpus=CORPUS_OWASP_META)
         self.assertFalse(out["ok"])
         self.assertEqual(out["channel"], CORPUS_OWASP_META)
         self.assertIn("corpus=security", out["message"])
