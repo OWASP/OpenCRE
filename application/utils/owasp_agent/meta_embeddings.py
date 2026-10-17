@@ -12,9 +12,9 @@ import json
 import os
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
-from application.utils.owasp_agent.aix_facts import AIX_FACTOIDS
 from application.utils.owasp_agent.index_store import IndexStore
 from application.utils.owasp_agent.lane_similarity import CHANNEL_AGENT
+from application.utils.owasp_agent.node_facts import evidence_docs_from_facts
 
 EmbedFn = Callable[[str], Sequence[float]]
 
@@ -87,6 +87,8 @@ def text_for_meta_entity(row: Dict[str, Any]) -> str:
         if country:
             topics.append(f"OWASP chapter {country}")
         bits.append("Topics: " + ", ".join(topics))
+    # Do NOT append metadata.facts / structure prose onto Nest project embeds —
+    # structure answers come from evidence docs only (see evidence_documents).
     return "\n".join(bits)
 
 
@@ -191,25 +193,8 @@ def materialize_board_ontology(store: IndexStore) -> int:
 
 
 def evidence_documents() -> List[Tuple[str, str, List[str]]]:
-    """Return (slug, embed_text, citations) for optional evidence notes."""
-    out: List[Tuple[str, str, List[str]]] = []
-    for keys, message, citations in AIX_FACTOIDS:
-        slug = "-".join(k.replace(" ", "-") for k in keys)
-        # Broad paraphrase anchors so retrieve finds AIX notes without intent code.
-        topic_bits = list(keys) + [
-            "lethal trifecta",
-            "agentic AI",
-            "OWASP AI Exchange",
-            "AI Exchange",
-            "prompt injection",
-            "exfiltration",
-            "sensitive data",
-            "data leakage",
-            "three things together",
-        ]
-        embed_text = message + "\n\nTopics: " + ", ".join(dict.fromkeys(topic_bits))
-        out.append((slug, embed_text, list(citations)))
-    return out
+    """Return (slug, embed_text, citations) from curated node_facts registry."""
+    return evidence_docs_from_facts()
 
 
 def upsert_channel_embedding(

@@ -100,6 +100,33 @@ def _url_kind(hit: LaneHit) -> str:
     return ""
 
 
+# Structural / concept cues only — never bare brand tokens (asvs|masvs|samm|…).
+# Legitimate "Who leads the OWASP ASVS project?" must still reach Nest project_lookup.
+_EVIDENCE_NARROW_RE = re.compile(
+    r"\b("
+    r"trifecta|exfiltration|prompt injection|"
+    r"how many|levels?|maturity|layers?|verification"
+    r")\b",
+    re.IGNORECASE,
+)
+
+
+def prefers_evidence_narrowing(prompt: str) -> bool:
+    """True when the prompt is structure/concept-shaped (not a Nest project ask)."""
+    return bool(_EVIDENCE_NARROW_RE.search(prompt or ""))
+
+
+def is_structure_ask(prompt: str) -> bool:
+    """Level / layer / maturity / verification structure questions (Nest-steal risk)."""
+    return bool(
+        re.search(
+            r"\b(how many|levels?|maturity|layers?|verification)\b",
+            prompt or "",
+            re.IGNORECASE,
+        )
+    )
+
+
 def narrow_candidates(prompt: str, candidates: List[LaneHit]) -> List[LaneHit]:
     """When the question clearly targets a kind present in top-k, restrict to it."""
     if not candidates:
@@ -115,9 +142,8 @@ def narrow_candidates(prompt: str, candidates: List[LaneHit]) -> List[LaneHit]:
         by_kind.get("board_roster") or by_kind.get("board_member")
     ):
         return by_kind.get("board_roster") or by_kind["board_member"]
-    if re.search(
-        r"\b(trifecta|ai exchange|owaspai|exfiltration|prompt injection)\b", t
-    ) and by_kind.get("evidence"):
+    # Prefer evidence cards for structure / concept facts over Nest project stage.
+    if by_kind.get("evidence") and prefers_evidence_narrowing(prompt):
         return by_kind["evidence"]
     return candidates
 
