@@ -12,7 +12,7 @@ from application.utils.owasp_agent.geocode import (
     nearest_by_coords,
 )
 from application.utils.owasp_agent.index_store import IndexStore
-from application.utils.owasp_agent.models import QueryResult
+from application.utils.owasp_agent.models import QueryResult, clean_leaders
 
 # Topic keyword sets — require explicit evidence in tags/description/name.
 TOPIC_KEYWORDS: Dict[str, Sequence[str]] = {
@@ -239,6 +239,9 @@ class MetaQueries:
                 clarify="Which board member or candidate name should I look up?",
                 message="I need a person's name to look up board or candidate history.",
             )
+        amb = self._ambiguous_first_name(target)
+        if amb:
+            return amb
         members = self.store.list_entities("board_member")
         candidates = self.store.list_entities("board_candidate")
         hit_m = [m for m in members if target in _norm(str(m.get("name") or ""))]
@@ -297,6 +300,30 @@ class MetaQueries:
             citations=citations,
         )
 
+    def _ambiguous_first_name(self, target: str) -> Optional[QueryResult]:
+        """A bare first name matching several people: list them, don't guess."""
+        if not target or " " in target:
+            return None
+        names: set = set()
+        for kind in ("board_member", "board_candidate", "project_leader"):
+            for r in self.store.list_entities(kind):
+                n = str(r.get("name") or "").strip()
+                if n.lower().split()[:1] == [target]:
+                    names.add(n)
+        if len(names) < 2:
+            return None
+        shown = sorted(names)[:8]
+        return QueryResult(
+            ok=False,
+            kind="person_lookup",
+            data={"candidates": shown},
+            message=(
+                f"Several people are named {target.title()}: {', '.join(shown)}. "
+                "Which one do you mean? Please give the full name."
+            ),
+            clarify="Please give the person's full name.",
+        )
+
     def person_lookup(self, name: str) -> QueryResult:
         """Who-is lookup: project/chapter leaders + optional board history."""
         target = _norm(name)
@@ -307,6 +334,9 @@ class MetaQueries:
                 message="Which person should I look up in OWASP metadata?",
                 clarify="Please give the person's full name.",
             )
+        amb = self._ambiguous_first_name(target)
+        if amb:
+            return amb
         leader_rows = [
             r
             for r in self.store.list_entities("project_leader")
@@ -513,6 +543,76 @@ class MetaQueries:
             citations=citations,
         )
 
+    def find_chapter_places(self, text: str) -> List[str]:
+        """Chapters named in ``text``, resolved against the index (no city list).
+
+        Returns display phrases in mention order. A trailing ", Qualifier"
+        (``Athens, Georgia``) is kept so ``chapter_lookup`` can refuse to
+        silently answer for a different place of the same name.
+        """
+        low = " " + re.sub(r"[^a-z0-9]+", " ", (text or "").lower()) + " "
+        chapters = self._merged_chapters()
+        countries = {
+            _norm(str(c.get("country") or "")) for c in chapters if c.get("country")
+        }
+        aliases: List[Tuple[str, Dict[str, Any]]] = []
+        for ch in chapters:
+            names = {
+                _norm(str(ch.get("city") or "")),
+                _norm(str(ch.get("key") or "").replace("-", " ")),
+                _norm(re.sub(r"^owasp\s+", "", str(ch.get("name") or ""), flags=re.I)),
+            }
+            for n in list(names):
+                if n.endswith(" city"):
+                    names.add(n[: -len(" city")])
+            for n in names:
+                n = re.sub(r"[^a-z0-9]+", " ", n).strip()
+                if len(n) >= 3 and n not in _CHAPTER_ALIAS_STOP:
+                    aliases.append((n, ch))
+        for short, full in _CHAPTER_ABBREVIATIONS.items():
+            if short == "la" and not re.search(r"\bLA\b", text or ""):
+                continue
+            aliases.extend(
+                (short, ch)
+                for ch in chapters
+                if _norm(str(ch.get("city") or "")) == full
+            )
+        aliases.sort(key=lambda a: -len(a[0]))
+        found: List[Tuple[int, str]] = []
+        used = low
+        for alias, ch in aliases:
+            needle = f" {alias} "
+            idx = used.find(needle)
+            if idx < 0:
+                continue
+            # Blank the span so a shorter alias cannot re-match inside it.
+            used = used[: idx + 1] + " " * len(alias) + used[idx + 1 + len(alias) :]
+            phrase = str(ch.get("name") or ch.get("key") or alias)
+            tail = re.search(r"^,?\s*([a-z]+(?: [a-z]+)?)", low[idx + len(needle) :])
+            m_comma = re.search(
+                re.escape(alias) + r"\s*,\s*([A-Za-z]+(?: [A-Za-z]+)?)",
+                text or "",
+                re.I,
+            )
+            qual = ""
+            if m_comma:
+                qual = m_comma.group(1)
+            elif tail and tail.group(1) in countries:
+                qual = tail.group(1)
+            found.append((idx, f"{phrase}, {qual}" if qual else phrase))
+        if not found:
+            # Localities the index only covers through a metro chapter.
+            for place in _METRO_PLACES:
+                if f" {place} " in low:
+                    found.append((low.index(f" {place} "), place))
+                    break
+        found.sort()
+        out: List[str] = []
+        for _, phrase in found:
+            if phrase not in out:
+                out.append(phrase)
+        return out
+
     def chapter_lookup(
         self, place: Optional[str] = None, places: Optional[Sequence[str]] = None
     ) -> QueryResult:
@@ -532,7 +632,17 @@ class MetaQueries:
         citations: List[str] = []
         found_any = False
         for target in targets:
+            target, _, qualifier = target.partition(",")
+            target, qualifier = target.strip(), qualifier.strip()
             hit = _match_chapter(chapters, target)
+            if hit and qualifier and not _qualifier_matches(hit, qualifier):
+                where = hit.get("country") or hit.get("region") or "another place"
+                messages.append(
+                    f"No OWASP chapter is indexed for {target}, {qualifier}. "
+                    f"The indexed {hit.get('name') or target} chapter is in {where}."
+                )
+                rows.append({"query": f"{target}, {qualifier}", "found": False})
+                continue
             alias = _metro_chapter_alias(target) if not hit else None
             via_alias = False
             if not hit and alias:
@@ -718,7 +828,10 @@ class MetaQueries:
             ):
                 if item.get("source") == "site" or not cur.get("name"):
                     cur["name"] = item.get("name")
-        return list(by_key.values())
+        out = list(by_key.values())
+        for item in out:
+            item["leaders"] = clean_leaders(item.get("leaders"))
+        return out
 
     def _merged_projects(self) -> List[Dict[str, Any]]:
         """Merge project fields across nest/github/site for leaders/description."""
@@ -813,6 +926,97 @@ class MetaQueries:
             citations=[
                 "https://github.com/OWASP/www-board/blob/master/_data/board-history.yml"
             ],
+        )
+
+    def find_events(
+        self, text: str, now: Optional[datetime] = None
+    ) -> List[Dict[str, Any]]:
+        """Indexed events the prompt names; nearest upcoming edition first.
+
+        Matches on the event series (``Global AppSec USA``), its location
+        (``San Francisco``) and a year when given. With no year, upcoming
+        editions sort before past ones, soonest first.
+        """
+        q = " " + re.sub(r"[^a-z0-9]+", " ", (text or "").lower()) + " "
+        for pat, rep in _EVENT_QUERY_ALIASES:
+            q = q.replace(pat, rep)
+        qtok = set(q.split())
+        if "conference" in qtok and "appsec" not in qtok:
+            qtok |= {"global", "appsec"}
+        if "appsec" not in qtok and not (qtok & {"event", "events", "conference"}):
+            return []
+        year_m = re.search(r"\b(20\d{2})\b", q)
+        qspec = {
+            t
+            for t in qtok - _EVENT_GENERIC_TOKENS - _EVENT_NOISE
+            if not re.fullmatch(r"20\d{2}", t)
+        }
+        scored: List[Tuple[int, Dict[str, Any]]] = []
+        for ev in self._safe_entities("event") or []:
+            series, _, loc = str(ev.get("name") or "").lower().partition(" - ")
+            tok = lambda v: set(re.sub(r"[^a-z0-9]+", " ", v).split())  # noqa: E731
+            series_tok = {t for t in tok(series) if not re.fullmatch(r"20\d{2}", t)}
+            series_tok -= {"owasp"}
+            ev_tok = series_tok | (tok(loc) - _EVENT_LOC_STOP)
+            if "appsec" not in series_tok:
+                continue
+            hits = len(qspec & (ev_tok - _EVENT_GENERIC_TOKENS))
+            if qspec and not hits:
+                continue
+            if not qspec and "global" not in series_tok:
+                continue
+            scored.append((hits, ev))
+        if not scored:
+            return []
+        best = max(sc for sc, _ in scored)
+        cands = [ev for sc, ev in scored if sc == best]
+        if year_m:
+            yr = year_m.group(1)
+            same = [e for e in cands if yr in str(e.get("start_date") or "")]
+            cands = same or cands
+        today = (now or datetime.now(timezone.utc)).date()
+
+        def _order(ev: Dict[str, Any]) -> Tuple[int, str]:
+            start = _parse_dt(str(ev.get("start_date") or ""))
+            if start is None:
+                return (2, "")
+            if start.date() >= today:
+                return (0, start.date().isoformat())
+            # Past editions: most recent first.
+            return (1, "".join(chr(255 - ord(c)) for c in start.date().isoformat()))
+
+        return sorted(cands, key=_order)
+
+    def event_lookup(self, text: str, now: Optional[datetime] = None) -> QueryResult:
+        events = self.find_events(text, now=now)
+        if not events:
+            return QueryResult(
+                ok=False,
+                kind="event_lookup",
+                message="No indexed OWASP event matches that name.",
+            )
+        ev = events[0]
+        start, end = str(ev.get("start_date") or ""), str(ev.get("end_date") or "")
+        when = start if not end or end == start else f"{start} to {end}"
+        url = str(ev.get("url") or "")
+        msg = f"{ev.get('name')} takes place {when}."
+        if url:
+            msg += f" Details and registration: {url}."
+        if re.search(
+            r"\b(speak\w*|speaker|talk|agenda|schedule|session|what time)\b",
+            text or "",
+            re.I,
+        ):
+            msg += (
+                " Speakers, talks and the agenda are not indexed here; "
+                "check the event page."
+            )
+        return QueryResult(
+            ok=True,
+            kind="event_lookup",
+            data={"event": _public_entity(ev)},
+            message=msg,
+            citations=[url] if url else [],
         )
 
     def events_near(
@@ -1141,7 +1345,6 @@ _PUBLIC_FIELDS = (
     "notes",
     "group",
     "group_url",
-    "email",
 )
 
 
@@ -1192,6 +1395,55 @@ def _format_person(
     return " ".join(parts) + "."
 
 
+_CHAPTER_ALIAS_STOP = frozenset(
+    "example global project chapter chapters owasp the top ten security web app "
+    "application test new all".split()
+)
+_METRO_PLACES = ("palo alto", "san francisco", "san mateo", "berkeley", "oakland", "sf")
+_CHAPTER_ABBREVIATIONS = {
+    "la": "los angeles",
+    "nyc": "new york city",
+}
+_COUNTRY_SYNONYMS = {
+    "uk": "united kingdom",
+    "england": "united kingdom",
+    "us": "usa",
+    "united states": "usa",
+    "america": "usa",
+}
+
+
+def _qualifier_matches(chapter: Dict[str, Any], qualifier: str) -> bool:
+    """Does ", Georgia" / ", UK" agree with the indexed chapter's location?"""
+    q = _norm(qualifier)
+    q = _COUNTRY_SYNONYMS.get(q, q)
+    hay = " ".join(
+        _norm(str(chapter.get(f) or "")) for f in ("country", "region", "name", "city")
+    )
+    return bool(q) and q in hay
+
+
+_EVENT_QUERY_ALIASES = (
+    (" san fran ", " san francisco "),
+    (" sf ", " san francisco "),
+    (" us ", " usa "),
+    (" u s ", " usa "),
+)
+_EVENT_LOC_STOP = frozenset({"ca", "ga", "dc", "usa"})
+_EVENT_GENERIC_TOKENS = frozenset({"global", "appsec"})
+_EVENT_NOISE = frozenset(
+    "when where is the what whens whats s are there an a of in at on this next "
+    "big owasp event events conference held dates date location happening week "
+    "month nov november time i m am do does for to and or about".split()
+)
+
+
+def _is_qualified_extension(target: str, hay: str) -> bool:
+    """'oakland' vs 'owasp oakland county': a different, narrower place."""
+    m = re.search(rf"\b{re.escape(target)}\s+(county|state|valley|district)\b", hay)
+    return bool(m)
+
+
 def _match_chapter(
     chapters: List[Dict[str, Any]], place: str
 ) -> Optional[Dict[str, Any]]:
@@ -1207,11 +1459,15 @@ def _match_chapter(
         name = _norm(str(ch.get("name") or ""))
         city = _norm(str(ch.get("city") or ""))
         hay = f"{key} {name} {city}"
-        if target == key or target == city or target in name or name.endswith(target):
+        if target == key or target == city:
+            return ch
+        if (target in name or name.endswith(target)) and not _is_qualified_extension(
+            target, name
+        ):
             return ch
         if target.replace(" ", "") == key.replace(" ", ""):
             return ch
-        if target in hay and best is None:
+        if target in hay and best is None and not _is_qualified_extension(target, hay):
             best = ch
     return best
 
@@ -1291,9 +1547,22 @@ def _match_project(
         target = "juice shop"
     alias_needles = aliases.get(target)
 
+    # Whole-name match first ("top 10" -> "OWASP Top 10"/"Top Ten", never
+    # "Agentic Skills Top 10").
+    forms = {target} | set(alias_needles or ())
+    forms |= {f.replace("10", "ten") for f in list(forms)} | {
+        f.replace("ten", "10") for f in list(forms)
+    }
+    for p in projects:
+        pn = re.sub(r"^owasp\s+", "", _norm(str(p.get("name") or "")))
+        pk = re.sub(
+            r"^www project ", "", _norm(str(p.get("key") or "").replace("-", " "))
+        )
+        if pn in forms or pk in forms:
+            return p
     exact = None
     partial = None
-    for p in projects:
+    for p in sorted(projects, key=lambda x: len(str(x.get("name") or ""))):
         key = _norm(str(p.get("key") or "").replace("-", " "))
         pname = _norm(str(p.get("name") or ""))
         desc = _norm(str(p.get("description") or ""))
@@ -1345,7 +1614,12 @@ def _metro_chapter_alias(place: str) -> Optional[str]:
         "santa monica": "los angeles",
         "glendale": "los angeles",
         "burbank": "los angeles",
-        "oakland": "los angeles",
+        "oakland": "bay area",
+        "san francisco": "bay area",
+        "sf": "bay area",
+        "palo alto": "bay area",
+        "berkeley": "bay area",
+        "san mateo": "bay area",
         "beverly hills": "los angeles",
         "long beach": "los angeles",
         "croydon": "london",

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -130,3 +131,33 @@ class QueryResult:
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
+
+
+# Template/placeholder text that chapter pages put in the "leaders" list.
+_NON_NAME_TOKENS = frozenset(
+    "location everyone welcome speaker name mailing list calendar google corporate "
+    "supporter sponsor exhibit become usual meeting meetings chapter owasp global "
+    "join contact email newsletter slack twitter linkedin youtube meetup tbd none "
+    "volunteer volunteers needed website update the our your".split()
+)
+
+
+def is_plausible_person_name(value: str) -> bool:
+    """True when a leader string looks like a real person (2-5 name-like words)."""
+    text = (value or "").strip()
+    if not text or re.search(r"[\d@/:_]", text):
+        return False
+    words = text.replace(".", " ").split()
+    if not 2 <= len(words) <= 5:
+        return False
+    return not any(w.lower().strip(",'") in _NON_NAME_TOKENS for w in words)
+
+
+def clean_leaders(names: Any) -> List[str]:
+    """Drop template noise ('Meeting Location', 'Everyone is welcome') and dupes."""
+    out: List[str] = []
+    for n in names or []:
+        n = str(n).strip()
+        if is_plausible_person_name(n) and n not in out:
+            out.append(n)
+    return out
