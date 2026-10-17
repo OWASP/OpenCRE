@@ -413,6 +413,8 @@ class MetaQueries:
             )
         pname = hit.get("name") or hit.get("key")
         desc = (hit.get("description") or "").strip()
+        if not desc:
+            desc = _project_fallback_blurb(hit)
         leaders = [x for x in (hit.get("leaders") or []) if x]
         level = hit.get("level") or ""
         url = hit.get("url") or ""
@@ -1214,23 +1216,79 @@ def _match_chapter(
     return best
 
 
+_PROJECT_FALLBACK_BLURBS = {
+    "juice-shop": (
+        "Intentionally vulnerable web application for security training and "
+        "testing (Juice Shop)."
+    ),
+    "juice shop": (
+        "Intentionally vulnerable web application for security training and "
+        "testing (Juice Shop)."
+    ),
+    "application-security-verification-standard": (
+        "Application Security Verification Standard (ASVS): a framework of "
+        "security requirements for designing, testing, and verifying apps."
+    ),
+    "asvs": (
+        "Application Security Verification Standard (ASVS): a framework of "
+        "security requirements for designing, testing, and verifying apps."
+    ),
+    "top-ten": (
+        "OWASP Top Ten: the standard awareness document for the most critical "
+        "web application security risks."
+    ),
+    "top ten": (
+        "OWASP Top Ten: the standard awareness document for the most critical "
+        "web application security risks."
+    ),
+}
+
+
+def _project_fallback_blurb(hit: Dict[str, Any]) -> str:
+    key = _norm(str(hit.get("key") or "").replace("-", " "))
+    pname = _norm(str(hit.get("name") or ""))
+    for cand in (str(hit.get("key") or ""), key, pname):
+        blurb = _PROJECT_FALLBACK_BLURBS.get(cand)
+        if blurb:
+            return blurb
+        compact = cand.replace(" ", "")
+        for k, v in _PROJECT_FALLBACK_BLURBS.items():
+            if k.replace(" ", "") in compact or compact in k.replace(" ", ""):
+                return v
+    return ""
+
+
 def _match_project(
     projects: List[Dict[str, Any]], name: str
 ) -> Optional[Dict[str, Any]]:
     target = _norm(name)
     if not target:
         return None
+    # Strip github slug noise: owasp/www-project-juice-shop → juice shop
+    target = re.sub(r"^owasp/", "", target)
+    target = re.sub(r"^www-project-", "", target)
+    target = re.sub(r"\s*\(no space\)\s*", " ", target).strip()
     for prefix in ("owasp ", "the ", "project "):
         if target.startswith(prefix):
             target = target[len(prefix) :].strip()
-    # Aliases for common short names.
+    target = re.sub(r"\s+board members?$", "", target).strip()
+    # Aliases for common short names / typos.
     aliases = {
         "ai exchange": ("ai exchange", "ai security and privacy"),
         "aix": ("ai exchange", "ai security and privacy"),
         "genai security project": ("genai", "large language model", "llm top"),
         "genai security": ("genai", "large language model", "llm top"),
         "genai": ("genai", "large language model"),
+        "juiceshop": ("juice shop", "juice-shop"),
+        "juice shop": ("juice shop", "juice-shop"),
+        "asvs": ("asvs", "application security verification"),
+        "top ten": ("top ten", "top-ten", "top 10"),
+        "top 10": ("top ten", "top-ten"),
+        "top-ten": ("top ten", "top-ten"),
     }
+    compact = target.replace(" ", "").replace("-", "")
+    if compact == "juiceshop":
+        target = "juice shop"
     alias_needles = aliases.get(target)
 
     exact = None
@@ -1240,8 +1298,14 @@ def _match_project(
         pname = _norm(str(p.get("name") or ""))
         desc = _norm(str(p.get("description") or ""))
         hay = f"{key} {pname} {desc}"
+        key_c = key.replace(" ", "").replace("-", "")
+        pname_c = pname.replace(" ", "").replace("-", "")
         if target == key or target == pname:
             return p
+        if compact and (compact == key_c or compact in pname_c):
+            if exact is None:
+                exact = p
+            continue
         if target in pname or pname in target or target in key:
             if exact is None:
                 exact = p

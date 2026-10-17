@@ -46,6 +46,9 @@ def main() -> int:
         "OWASP_AGENT_ENABLED": "1",
         "PYTHONUNBUFFERED": "1",
     }
+    qfile = (os.environ.get("OWASP_ADV_QUESTIONS_FILE") or "").strip()
+    if qfile:
+        env_base["OWASP_ADV_QUESTIONS_FILE"] = qfile
 
     with log_path.open("a") as log:
         t = start
@@ -82,9 +85,7 @@ def main() -> int:
             log.flush()
             print(done, end="", flush=True)
             t = batch_end + 1
-        log.write(
-            f"ALL_BATCHES_DONE {time.strftime('%H:%M:%S', time.gmtime())}\n"
-        )
+        log.write(f"ALL_BATCHES_DONE {time.strftime('%H:%M:%S', time.gmtime())}\n")
         log.flush()
     print("ALL_BATCHES_DONE", flush=True)
     return 0

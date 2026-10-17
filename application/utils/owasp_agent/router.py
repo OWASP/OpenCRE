@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from application.utils.owasp_agent.index_store import IndexStore
@@ -19,6 +20,46 @@ def is_owasp_agent_enabled() -> bool:
         "yes",
         "on",
     )
+
+
+# Intents with structured slots — do not let a mismatched sim meta card win.
+_STRUCTURED_INTENTS = frozenset(
+    {
+        "events_near",
+        "board_members",
+        "board_person",
+        "board_candidate_stats",
+        "project_lookup",
+        "compare_projects",
+        "person_lookup",
+        "membership",
+        "chapter_lookup",
+        "count_chapters",
+        "count_projects",
+        "count_projects_and_chapters",
+        "talk_lookup",
+        "cre_fact",
+        "cre_community_bait",
+        "project_and_board",
+        "clarify",
+        "refuse_malicious",
+    }
+)
+
+# Well-known project tokens that are not the foundation board.
+_PROJECT_BOARD_ALIASES = (
+    "asvs",
+    "masvs",
+    "samm",
+    "juice shop",
+    "juiceshop",
+    "zap",
+    "top ten",
+    "top-ten",
+    "top 10",
+    "ai exchange",
+    "aix",
+)
 
 
 @dataclass
@@ -174,6 +215,7 @@ class OwaspAgentRouter:
         if sim_decision is not None:
             from application.utils.owasp_agent.candidate_picker import (
                 default_completion_fn,
+                is_structure_ask,
                 select_agent_hit,
             )
             from application.utils.owasp_agent.lane_similarity import (
@@ -195,7 +237,32 @@ class OwaspAgentRouter:
                 cands,
                 get_completion_fn=default_completion_fn,
             )
-            if picked is not None and is_evidence_hit(picked):
+            structure_ask = is_structure_ask(normalized)
+
+            # Slot-heavy intents (board year, events near, ambiguous chapter…)
+            # must not be overridden by a mismatched sim meta card.
+            early_slots = extract_slots(effective)
+
+            def _allow_sim_meta(hit: Any) -> bool:
+                kind, key = _meta_kind_key(getattr(hit, "url", "") or "")
+                if not kind:
+                    return True
+                return _sim_meta_ok_for_intent(
+                    intent_preview, kind, key, effective, early_slots
+                )
+
+            if (
+                picked is not None
+                and is_evidence_hit(picked)
+                and intent_preview
+                not in (
+                    "events_near",
+                    "board_members",
+                    "clarify",
+                    "cre_community_bait",
+                    "project_and_board",
+                )
+            ):
                 cites = (
                     [
                         c.strip()
@@ -231,12 +298,23 @@ class OwaspAgentRouter:
                     resp["owasp_agent"]["also_cre"] = True
                     resp["owasp_agent"]["lane_reason"] = sim_decision.reason
                 return resp
-            if picked is not None and is_meta_hit(picked):
+            if picked is not None and is_meta_hit(picked) and _allow_sim_meta(picked):
+                # Fail-closed: never answer level/layer/maturity asks via Nest
+                # project_lookup (Leaders: / indexed OWASP project).
+                meta_kind = ""
+                u = picked.url or ""
+                if u.startswith("owasp-agent://meta/"):
+                    meta_kind = u[len("owasp-agent://meta/") :].split("/", 1)[0]
+                if structure_ask and meta_kind == "project":
+                    return None
                 meta_resp = self._response_from_meta_hit(
                     picked, sim_decision=sim_decision
                 )
                 if meta_resp is not None:
                     return meta_resp
+            elif structure_ask and not any(is_evidence_hit(h) for h in cands):
+                # Structure ask, no evidence in top-k, no viable pick → defer.
+                return None
 
             # CRE-dominant must not erase a mid+ agent evidence / chapter / board card.
             if sim_decision.action == "cre" and cands:
@@ -253,7 +331,17 @@ class OwaspAgentRouter:
                     if kind in ("evidence", "chapter", "board_roster") and (
                         hit.score >= t_rescue
                     ):
+                        if not _allow_sim_meta(hit) and kind != "evidence":
+                            continue
                         if kind == "evidence" and is_evidence_hit(hit):
+                            if intent_preview in (
+                                "events_near",
+                                "board_members",
+                                "clarify",
+                                "cre_community_bait",
+                                "project_and_board",
+                            ):
+                                continue
                             message = (
                                 (hit.content or "").split("\n\nTopics:")[0].strip()
                             )
@@ -317,21 +405,27 @@ class OwaspAgentRouter:
         if intent == "cre_normative":
             return None
         if intent == "cre_fact":
-            from application.utils.owasp_agent.cre_facts import (
-                format_cre_factoid,
-                lookup_cre_factoid,
+            # Metadata facts by CRE id only — no keyword factoid gate.
+            from application.utils.owasp_agent.node_facts import (
+                extract_cre_id_from_text,
+                facts_for_cre_id,
+                format_facts_message,
             )
 
-            cre_hit = lookup_cre_factoid(effective)
-            if not cre_hit:
+            cre_id = extract_cre_id_from_text(effective)
+            facts = facts_for_cre_id(cre_id or "")
+            if not facts:
                 return None  # fall through to CRE RAG
-            cre_id, title, note = cre_hit
+            message, citations = format_facts_message(facts)
+            if not message:
+                return None
             result = QueryResult(
                 ok=True,
                 kind="cre_fact",
-                data={"cre_id": cre_id, "title": title},
-                message=format_cre_factoid(cre_id, title, note),
-                citations=[f"https://opencre.org/cre/{cre_id}"],
+                data={"cre_id": cre_id, "facts": facts},
+                message=message,
+                citations=citations
+                or ([f"https://opencre.org/cre/{cre_id}"] if cre_id else []),
             )
             return format_chat_response(result)
         if intent == "refuse_malicious":
@@ -459,11 +553,123 @@ class OwaspAgentRouter:
                 return self.queries.person_lookup(slots.person)
             years = slots.years or ([slots.year] if slots.year is not None else [])
             if years:
-                return self.queries.corpus_entity("board_roster", str(years[0]))
+                hit = self.queries.corpus_entity("board_roster", str(years[0]))
+                if hit.ok:
+                    return hit
+                # Explicit year with no card — fail closed (do not substitute latest).
+                members = self.queries.board_members(int(years[0]))
+                if members.ok:
+                    return members
+                return QueryResult(
+                    ok=False,
+                    kind="board_members",
+                    message=(
+                        f"No OWASP board roster is indexed for year {years[0]} "
+                        "(fail closed). I will not substitute another year's members."
+                    ),
+                )
             return self.queries.corpus_entity("board_roster", "overview")
+        if intent == "project_and_board":
+            proj_name = slots.project_name or ""
+            # Slot extract may swallow "… AND who is on the board".
+            if " and " in proj_name.lower():
+                proj_name = re.split(r"\s+and\s+", proj_name, maxsplit=1, flags=re.I)[
+                    0
+                ].strip()
+            if not proj_name or not _mentions_known_project(proj_name):
+                if re.search(r"\bjuice\s*shop\b|\bjuiceshop\b", text, re.I):
+                    proj_name = "Juice Shop"
+                elif re.search(r"\basvs\b", text, re.I):
+                    proj_name = "ASVS"
+                else:
+                    proj_name = proj_name or "Juice Shop"
+            proj = self.queries.project_lookup(proj_name)
+            board = self.queries.corpus_entity("board_roster", "overview")
+            parts = []
+            cites: List[str] = []
+            if proj.ok:
+                parts.append(proj.message)
+                cites.extend(proj.citations or [])
+            if board.ok:
+                parts.append(board.message)
+                cites.extend(board.citations or [])
+            if not parts:
+                return QueryResult(
+                    ok=False,
+                    kind="project_and_board",
+                    message="I could not find Juice Shop leaders or board roster in the index.",
+                )
+            return QueryResult(
+                ok=True,
+                kind="project_and_board",
+                data={
+                    "project": (proj.data or {}).get("project") if proj.ok else None,
+                    "board": (board.data or {}).get("entity") if board.ok else None,
+                },
+                message=" ".join(parts),
+                citations=list(dict.fromkeys(cites)),
+            )
+        if intent == "cre_community_bait":
+            name = slots.project_name or slots.place or slots.topic
+            if name and (
+                "chapter" in text.lower()
+                or (slots.place and "project" not in text.lower())
+            ):
+                ch = self.queries.chapter_lookup(
+                    place=slots.place, places=slots.places or None
+                )
+                base = ch.message if ch.ok else f"OWASP community entity {name!r}"
+                return QueryResult(
+                    ok=True,
+                    kind="cre_community_bait",
+                    data=ch.data if ch.ok else {"name": name},
+                    message=(
+                        f"{base} OWASP chapters and meetup policies are community "
+                        "metadata, not Common Requirements (CREs) — there is no CRE ID "
+                        "that 'covers' a chapter meetup policy."
+                    ),
+                    citations=list(ch.citations or []) if ch.ok else [],
+                )
+            proj = self.queries.project_lookup(name or "Juice Shop")
+            base = proj.message if proj.ok else f"{name or 'That OWASP project'}"
+            return QueryResult(
+                ok=True,
+                kind="cre_community_bait",
+                data=proj.data if proj.ok else {"name": name},
+                message=(
+                    f"{base} OWASP projects are community/metadata entities, not CRE "
+                    "nodes — there is no single CRE ID that maps an entire project."
+                ),
+                citations=list(proj.citations or []) if proj.ok else [],
+            )
+        if intent == "clarify":
+            return QueryResult(
+                ok=False,
+                kind="clarify",
+                message=(
+                    "Which OWASP chapter or city do you mean? "
+                    "I need a place name to look up chapter leaders or the next meetup."
+                ),
+                clarify="Please name a city or chapter (e.g. London, Berlin).",
+            )
         if intent == "chapter_lookup":
-            places = slots.places or ([slots.place] if slots.place else [])
-            return self.queries.chapter_lookup(place=slots.place, places=places or None)
+            places = list(slots.places or [])
+            if slots.place and slots.place not in places:
+                places = [slots.place] + places
+            # Multi-city compare / negation: look up all named places.
+            if len(places) >= 2:
+                return self.queries.chapter_lookup(places=places)
+            if not places:
+                return QueryResult(
+                    ok=False,
+                    kind="clarify",
+                    message=(
+                        "Which OWASP chapter or city should I look up? "
+                        "Please name one (e.g. London, Berlin)."
+                    ),
+                    clarify="Please name a city or chapter.",
+                )
+            return self.queries.chapter_lookup(place=places[0], places=places)
         if intent == "membership":
             renew = bool(
                 re.search(r"\b(renew|renewal|how do i (join|become))\b", text.lower())
@@ -481,32 +687,39 @@ class OwaspAgentRouter:
             )
         if intent == "talk_lookup":
             talk = self.queries.talk_lookup(person=slots.person, topic=slots.topic)
-            # Compound: "fail-closed on X talk; succeed on CRE-…"
-            from application.utils.owasp_agent.cre_facts import (
-                format_cre_factoid,
-                lookup_cre_factoid,
+            # Compound: fail-closed talk + CRE id with metadata facts (no keywords).
+            from application.utils.owasp_agent.node_facts import (
+                extract_cre_id_from_text,
+                facts_for_cre_id,
+                format_facts_message,
             )
 
-            cre_hit = lookup_cre_factoid(text)
-            if cre_hit and talk.ok:
-                cre_id, title, note = cre_hit
-                cre_msg = format_cre_factoid(cre_id, title, note)
-                return QueryResult(
-                    ok=True,
-                    kind="talk_and_cre",
-                    data={
-                        "talk": talk.data,
-                        "cre_id": cre_id,
-                        "title": title,
-                    },
-                    message=f"{talk.message} Separately: {cre_msg}",
-                    citations=list(
-                        dict.fromkeys(
-                            list(talk.citations or [])
-                            + [f"https://opencre.org/cre/{cre_id}"]
-                        )
-                    ),
-                )
+            cre_id = extract_cre_id_from_text(text)
+            facts = facts_for_cre_id(cre_id or "") if cre_id else {}
+            if facts and talk.ok:
+                cre_msg, cre_cites = format_facts_message(facts)
+                if cre_msg:
+                    return QueryResult(
+                        ok=True,
+                        kind="talk_and_cre",
+                        data={
+                            "talk": talk.data,
+                            "cre_id": cre_id,
+                            "facts": facts,
+                        },
+                        message=f"{talk.message} Separately: {cre_msg}",
+                        citations=list(
+                            dict.fromkeys(
+                                list(talk.citations or [])
+                                + list(cre_cites)
+                                + (
+                                    [f"https://opencre.org/cre/{cre_id}"]
+                                    if cre_id
+                                    else []
+                                )
+                            )
+                        ),
+                    )
             return talk
         if intent == "person_lookup":
             if not slots.person:
@@ -518,6 +731,19 @@ class OwaspAgentRouter:
                 )
             return self.queries.person_lookup(slots.person)
         if intent == "project_lookup":
+            from application.utils.owasp_agent.candidate_picker import is_structure_ask
+
+            # Fail-closed: structural level/layer/maturity asks must not Nest-steal.
+            if is_structure_ask(text):
+                return QueryResult(
+                    ok=False,
+                    kind="clarify",
+                    message=(
+                        "I do not have curated structure evidence for that question "
+                        "in the agent index. Try again after evidence is seeded, "
+                        "or ask via CRE/standards tools."
+                    ),
+                )
             name = slots.project_name or slots.topic
             if not name:
                 return QueryResult(
@@ -526,7 +752,26 @@ class OwaspAgentRouter:
                     message="Which OWASP project should I look up?",
                     clarify="Please name a project.",
                 )
-            return self.queries.project_lookup(name)
+            result = self.queries.project_lookup(name)
+            if (
+                result.ok
+                and re.search(r"\bboard\b", text.lower())
+                and _mentions_known_project(text)
+            ):
+                note = (
+                    " It does not have a separate foundation board; "
+                    "indexed project leaders are listed."
+                )
+                if "does not have a separate foundation board" not in result.message:
+                    result = QueryResult(
+                        ok=result.ok,
+                        kind=result.kind,
+                        data=result.data,
+                        message=result.message.rstrip(".") + "." + note,
+                        citations=result.citations,
+                        clarify=result.clarify,
+                    )
+            return result
         if intent == "compare_projects":
             a = slots.project_a
             b = slots.project_b
@@ -538,30 +783,7 @@ class OwaspAgentRouter:
                     clarify="Name both projects (e.g. AI Exchange vs GenAI Security Project).",
                 )
             return self.queries.compare_projects(a, b)
-        if intent == "cre_fact":
-            from application.utils.owasp_agent.cre_facts import (
-                format_cre_factoid,
-                lookup_cre_factoid,
-            )
-
-            hit = lookup_cre_factoid(text)
-            if not hit:
-                return QueryResult(
-                    ok=False,
-                    kind="cre_fact",
-                    message=(
-                        "I do not have a curated CRE factoid for that control. "
-                        "Falling back is handled by CRE RAG."
-                    ),
-                )
-            cre_id, title, note = hit
-            return QueryResult(
-                ok=True,
-                kind="cre_fact",
-                data={"cre_id": cre_id, "title": title},
-                message=format_cre_factoid(cre_id, title, note),
-                citations=[f"https://opencre.org/cre/{cre_id}"],
-            )
+        # cre_fact is handled in handle() before _dispatch.
         if intent == "events_near":
             upcoming_only = not slots.include_past
             return self.queries.events_near(
@@ -613,6 +835,57 @@ def _similarity_gate(prompt: str):
 
 def classify_intent(text: str) -> str:
     t = text.lower().strip()
+    # Strip markdown fences / chat-role wrappers for structural matching.
+    t_flat = re.sub(r"[`*\n]+", " ", t)
+    t_flat = re.sub(r"\b(user|assistant)\s*:", " ", t_flat)
+    t_flat = re.sub(r"\s+", " ", t_flat).strip()
+
+    # Ambiguous chapter/meetup with no place — clarify before sim can invent one.
+    if re.search(
+        r"\b(who is the chapter leader|chapter leader\b|when is the next meetup|"
+        r"next meetup\b)\b",
+        t_flat,
+    ) and not re.search(
+        r"\b(in|near|around|for)\s+[a-z]",
+        t_flat,
+    ):
+        # Allow "London chapter leader" etc. via place cues below.
+        if not re.search(
+            r"\b(london|berlin|athens|tokyo|paris|nyc|new york|bangalore|"
+            r"los angeles|san francisco|seattle|chicago|toronto|sydney)\b",
+            t_flat,
+        ):
+            return "clarify"
+
+    # CRE-bait on community entities (project/chapter) — answer meta, no CRE id.
+    if re.search(r"\b(map .+ to (a )?cre|what cre covers|cre covers|cre id)\b", t_flat):
+        if re.search(
+            r"\b(juice\s*shop|juiceshop|chapter|meetup|asvs|project|berlin|london)\b",
+            t_flat,
+        ):
+            return "cre_community_bait"
+
+    # Dual: project leaders + foundation board in one ask.
+    if re.search(r"\b(juice\s*shop|juiceshop|asvs|zap|top\s*ten)\b", t_flat) and (
+        re.search(r"\b(leads?|leaders?|who leads)\b", t_flat)
+        and re.search(r"\b(owasp )?board\b", t_flat)
+        and re.search(r"\b(and|who is on)\b", t_flat)
+    ):
+        return "project_and_board"
+
+    # Project-named "board members" (ASVS board) → project leaders, not foundation.
+    if re.search(r"\bboard\b", t_flat) and re.search(
+        r"\b(members?|roster|who (is|are))\b", t_flat
+    ):
+        if any(alias in t_flat for alias in _PROJECT_BOARD_ALIASES):
+            return "project_lookup"
+
+    # GitHub-style www-project-* slug / what-is project.
+    if re.search(r"\bwww-project-[a-z0-9-]+\b", t_flat) or re.search(
+        r"\bowasp/[a-z0-9._/-]+\b", t_flat
+    ):
+        return "project_lookup"
+
     # Who-is / tell-me-about person lookup from leaders.json (not CRE bios)
     if re.search(r"\bwho is\b", t) and not re.search(r"\bwho is (the|on|a|an)\b", t):
         if _extract_quoted_or_capitalized_name(text):
@@ -640,6 +913,14 @@ def classify_intent(text: str) -> str:
         and re.search(r"\bprojects?\b", t)
     ):
         return "count_projects_and_chapters"
+    # Chapter compare (London vs Berlin) before project compare.
+    if re.search(
+        r"\b(difference between|differ(?:ence)? between|compare|"
+        r"\bvs\.?\b|versus)\b",
+        t_flat,
+    ) and re.search(r"\bchapters?\b", t_flat):
+        if not re.search(r"\bprojects?\b", t_flat):
+            return "chapter_lookup"
     # Project compare / definition — structural phrasing only (no brand lists).
     if re.search(
         r"\b(difference between|differ(?:ence)? between|compare|"
@@ -654,11 +935,13 @@ def classify_intent(text: str) -> str:
         ):
             return "count_projects_and_chapters"
         return "compare_projects"
-    if re.search(r"\b(what is|what's|describe)\b.+\bowasp project\b", t) or re.search(
+    if re.search(
+        r"\b(what is|what's|describe)\b.+\bowasp project\b", t_flat
+    ) or re.search(
         r"\b(what is|what's)\b.+\bproject\b",
-        t,
+        t_flat,
     ):
-        if not re.search(r"\b(how (do|should)|mitigate|vulnerability)\b", t):
+        if not re.search(r"\b(how (do|should)|mitigate|vulnerability)\b", t_flat):
             return "project_lookup"
 
     # Malicious / unauthorized help — refuse before any meta routing so
@@ -694,19 +977,18 @@ def classify_intent(text: str) -> str:
     ):
         return "talk_lookup"
 
-    # Curated CRE factoids (deterministic) before generic CRE RAG
-    from application.utils.owasp_agent.cre_facts import lookup_cre_factoid
+    # CRE id with curated metadata facts (no keyword factoid gate).
+    from application.utils.owasp_agent.node_facts import (
+        extract_cre_id_from_text,
+        facts_for_cre_id,
+    )
 
-    if lookup_cre_factoid(text):
+    cre_id_hint = extract_cre_id_from_text(text)
+    if cre_id_hint and facts_for_cre_id(cre_id_hint):
         # Talk + CRE compound stays talk_lookup so handle() can merge both.
         if re.search(r"\btalk\b", t):
             return "talk_lookup"
         return "cre_fact"
-    if re.search(r"\b(which cre|what cre|cre covers)\b", t) or (
-        "cre" in t and "covers" in t
-    ):
-        if lookup_cre_factoid(text):
-            return "cre_fact"
 
     # Named-person talk claims (incl. fake speakers / suburb meetups) → fail-closed
     if (
@@ -764,11 +1046,12 @@ def classify_intent(text: str) -> str:
     ):
         return "count_projects_and_chapters"
 
-    # Project leaders before bare "who leads" (which otherwise steals projects).
-    if re.search(r"\b(who leads|leaders? (of|for)|project leader)\b", t) and re.search(
-        r"\bprojects?\b", t
+    # Project leaders (incl. "leaders of Top Ten" / "JuiceShop … leaders?").
+    if re.search(r"\b(who leads|leaders? (of|for)|project leaders?)\b", t_flat) or (
+        re.search(r"\bprojects?\b", t_flat) and re.search(r"\bleaders?\b", t_flat)
     ):
-        return "project_lookup"
+        if re.search(r"\bprojects?\b", t_flat) or _mentions_known_project(t_flat):
+            return "project_lookup"
 
     # Named / what-is OWASP chapter cards (phrase-shaped — not bare "chapter").
     if re.search(
@@ -781,8 +1064,10 @@ def classify_intent(text: str) -> str:
     ):
         return "chapter_lookup"
 
-    # Chapter existence / "chapter in {city}" before general clarify.
-    if re.search(r"\bchapters?\b", t) and re.search(r"\b(in|near|for|at|around)\b", t):
+    # Chapter existence / negation / "chapter in {city}" before general clarify.
+    if re.search(r"\bchapters?\b", t) and re.search(
+        r"\b(in|near|for|at|around|not exist|does not exist|doesn't exist)\b", t
+    ):
         if not re.search(r"\b(how many|count of)\b", t):
             return "chapter_lookup"
     if re.search(
@@ -790,22 +1075,33 @@ def classify_intent(text: str) -> str:
         t,
     ):
         return "chapter_lookup"
+    if re.search(r"\bwhich .{0,40}chapter .{0,20}not exist\b", t_flat) or re.search(
+        r"\bchapter does not exist\b", t_flat
+    ):
+        return "chapter_lookup"
 
-    # Chapter leader / status / active — structural cues only (no city hardcodes).
+    # Chapter leader / status / active — chapter cue, or "OWASP leader for {city}".
     if re.search(
-        r"\b(chapter leader|leader for|leaders? (for|in|of)|who leads|"
-        r"which chapter|active owasp chapter|chapter status|owasp leader|"
+        r"\b(chapter leader|leader for (the )?chapter|who leads .{0,20}chapter|"
+        r"which chapter|active owasp chapter|chapter status|owasp chapter leader|"
         r"count of indexed owasp chapters|approximate count of .{0,20}chapters)\b",
         t,
     ) or (
         re.search(r"\bchapters?\b", t)
-        and re.search(r"\b(active|inactive|status)\b", t)
+        and re.search(r"\b(active|inactive|status|leaders?|who leads)\b", t)
     ):
         if re.search(
             r"\b(count|how many|approximate count)\b.+\bchapters?\b",
             t,
         ) or re.search(r"\bchapters?\b.+\b(count|how many)\b", t):
             return "count_chapters"
+        return "chapter_lookup"
+    # "Who is the OWASP leader for Athens?" — city/place leader, not Top Ten.
+    if (
+        re.search(r"\b(owasp leader|leader for)\b", t_flat)
+        and not _mentions_known_project(t_flat)
+        and not re.search(r"\bprojects?\b", t_flat)
+    ):
         return "chapter_lookup"
 
     # Standalone chapter counts (without "how many")
@@ -911,6 +1207,13 @@ def extract_slots(text: str) -> Slots:
     if years:
         slots.years = years
         slots.year = years[0]
+    elif re.search(r"\b(this|current)\s+year\b", t) or re.search(
+        r"\bfor this year\b", t
+    ):
+        # Calendar year in UTC — "this year" must not pick a random sim year card.
+        y = datetime.now(timezone.utc).year
+        slots.year = y
+        slots.years = [y]
 
     if any(w in t for w in ("past", "previous", "last year", "history", "historical")):
         slots.include_past = True
@@ -1015,6 +1318,43 @@ def extract_slots(text: str) -> Slots:
         ]
         slots.place = slots.places[0]
 
+    # "Compare OWASP London and OWASP Berlin chapters" / "London or Atlantis"
+    m_and_ch = re.search(
+        r"\b(?:compare\s+)?(?:owasp\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)"
+        r"\s+and\s+(?:owasp\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+chapters?\b",
+        text,
+        re.IGNORECASE,
+    )
+    if m_and_ch:
+        slots.places = [
+            m_and_ch.group(1).strip().rstrip(".?!"),
+            m_and_ch.group(2).strip().rstrip(".?!"),
+        ]
+        slots.place = slots.places[0]
+    m_or_ch = re.search(
+        r"\b(?:does\s+)?not\s+exist\s*:\s*"
+        r"([A-Za-z][A-Za-z '-]+?)\s+or\s+([A-Za-z][A-Za-z '-]+?)\s*\??\s*$",
+        text,
+        re.IGNORECASE,
+    )
+    if not m_or_ch and re.search(r"\b(not exist|does not exist|doesn't exist)\b", t):
+        m_or_ch = re.search(
+            r"\b([A-Z][a-zA-Z'-]+)\s+or\s+([A-Z][a-zA-Z'-]+)\b",
+            text,
+        )
+    if m_or_ch:
+        a = m_or_ch.group(1).strip().rstrip(".?!")
+        b = m_or_ch.group(2).strip().rstrip(".?!")
+        # Drop leftover cue words ("chapter", "owasp").
+        for city in (a, b):
+            low = city.lower()
+            if low in ("chapter", "owasp", "the", "a", "an"):
+                continue
+            if city and city not in slots.places:
+                slots.places.append(city)
+        if not slots.place and slots.places:
+            slots.place = slots.places[0]
+
     person = _extract_quoted_or_capitalized_name(text)
     if person:
         slots.person = person
@@ -1054,14 +1394,22 @@ def extract_slots(text: str) -> Slots:
             slots.project_a = _clean_project_name(m_vs_proj.group(1))
             slots.project_b = _clean_project_name(m_vs_proj.group(2))
 
+    m_slug_early = re.search(
+        r"\b(?:owasp/)?www-project-([a-z0-9-]+)\b",
+        text,
+        re.IGNORECASE,
+    )
+    if m_slug_early and not slots.project_name:
+        slots.project_name = m_slug_early.group(1).replace("-", " ")
+
     m_what_proj = re.search(
         r"\b(?:what is|what's|tell me about|describe)\s+(?:the\s+)?(.+?)\s*\??\s*$",
         text,
         re.IGNORECASE,
     )
-    if m_what_proj and not slots.project_a:
+    if m_what_proj and not slots.project_a and not slots.project_name:
         cand = _clean_project_name(m_what_proj.group(1))
-        if cand and not re.match(r"^(who|how|why)\b", cand, re.I):
+        if cand and not re.match(r"^(who|how|why|it|this|that|a|an)\b", cand, re.I):
             slots.project_name = cand
 
     # "Who leads the OWASP Juice Shop project?" / "leaders of OWASP ASVS"
@@ -1072,11 +1420,18 @@ def extract_slots(text: str) -> Slots:
             text,
             re.IGNORECASE,
         )
+        if not m_leads_proj:
+            m_leads_proj = re.search(
+                r"\b(?:who leads|leaders? (?:of|for)|project leaders? (?:of|for))\s+"
+                r"(?:the\s+)?(?:owasp\s+)?(.+?)\s*\??\s*$",
+                text,
+                re.IGNORECASE,
+            )
         if m_leads_proj:
             cand = _clean_project_name(m_leads_proj.group(1))
-            if cand:
+            if cand and not re.match(r"^(the|a|an|owasp)$", cand, re.I):
                 slots.project_name = cand
-        else:
+        if not slots.project_name:
             m_owasp_proj = re.search(
                 r"\bowasp\s+(.+?)\s+project\b",
                 text,
@@ -1086,6 +1441,20 @@ def extract_slots(text: str) -> Slots:
                 cand = _clean_project_name(m_owasp_proj.group(1))
                 if cand:
                     slots.project_name = cand
+        if not slots.project_name:
+            m_slug = re.search(
+                r"\b(?:owasp/)?www-project-([a-z0-9-]+)\b",
+                text,
+                re.IGNORECASE,
+            )
+            if m_slug:
+                slots.project_name = m_slug.group(1).replace("-", " ")
+        if not slots.project_name and re.search(r"\bjuiceshop\b|\bjuice\s*shop\b", t):
+            slots.project_name = "Juice Shop"
+        if not slots.project_name and re.search(r"\basvs\b", t):
+            slots.project_name = "ASVS"
+        if not slots.project_name and re.search(r"\btop\s*ten\b|\btop\s*10\b", t):
+            slots.project_name = "Top Ten"
 
     # Membership countries — any Title Case token looked up later; seed common ones
     known_countries = (
@@ -1443,6 +1812,97 @@ def _extract_quoted_or_capitalized_name(text: str) -> Optional[str]:
     return None
 
 
+def _meta_kind_key(url: str) -> tuple[str, str]:
+    """Parse ``owasp-agent://meta/{kind}/{key}/...`` → (kind, key)."""
+    u = (url or "").strip()
+    if not u.startswith("owasp-agent://meta/"):
+        return "", ""
+    parts = u[len("owasp-agent://meta/") :].split("/")
+    if len(parts) < 2:
+        return (parts[0].strip().lower() if parts else ""), ""
+    return parts[0].strip().lower(), parts[1].strip()
+
+
+def _mentions_known_project(text: str) -> bool:
+    t = (text or "").lower()
+    if any(a in t for a in _PROJECT_BOARD_ALIASES):
+        return True
+    if re.search(r"\bwww-project-[a-z0-9-]+\b", t):
+        return True
+    if re.search(r"\bjuiceshop\b|\bjuice\s*shop\b|\btop\s*ten\b|\btop\s*10\b", t):
+        return True
+    return False
+
+
+def _sim_meta_ok_for_intent(
+    intent: str,
+    kind: str,
+    key: str,
+    text: str,
+    slots: Optional[Slots],
+) -> bool:
+    """Whether a similarity meta hit may answer ``intent`` (else fall through)."""
+    intent = (intent or "").strip()
+    kind = (kind or "").strip().lower()
+    key = (key or "").strip()
+    if intent not in _STRUCTURED_INTENTS:
+        return True
+    if intent in (
+        "clarify",
+        "refuse_malicious",
+        "cre_community_bait",
+        "project_and_board",
+    ):
+        return False
+    if intent == "events_near":
+        return kind == "event"
+    if intent == "board_members":
+        if kind != "board_roster":
+            return False
+        years: List[int] = []
+        if slots is not None:
+            years = list(slots.years or [])
+            if slots.year is not None and slots.year not in years:
+                years = [slots.year] + years
+        if years:
+            return key == str(years[0])
+        return key in ("overview", "") or bool(re.fullmatch(r"20\d{2}", key))
+    if intent == "board_person":
+        return kind in ("board_member", "board_candidate", "person", "project_leader")
+    if intent == "chapter_lookup":
+        if kind != "chapter":
+            return False
+        places: List[str] = []
+        if slots is not None:
+            places = list(slots.places or [])
+            if slots.place and slots.place not in places:
+                places = [slots.place] + places
+        if len(places) >= 2:
+            return False
+        if not places:
+            return False
+        target = re.sub(r"[^a-z0-9]+", "-", places[0].lower()).strip("-")
+        key_n = re.sub(r"[^a-z0-9]+", "-", key.lower()).strip("-")
+        return bool(target) and (target in key_n or key_n in target)
+    if intent == "project_lookup":
+        return kind == "project"
+    if intent == "person_lookup":
+        return kind in ("person", "project_leader", "board_member", "board_candidate")
+    if intent == "membership":
+        return kind in ("membership_country", "membership")
+    if intent == "compare_projects":
+        return False
+    if intent.startswith("count_"):
+        return False
+    if intent == "talk_lookup":
+        return False
+    if intent == "cre_fact":
+        return False
+    if intent == "board_candidate_stats":
+        return False
+    return True
+
+
 def _clean_project_name(raw: str) -> str:
     name = (raw or "").strip()
     name = re.sub(
@@ -1466,6 +1926,9 @@ def _clean_project_name(raw: str) -> str:
         name,
         flags=re.IGNORECASE,
     ).strip()
+    # "JuiceShop (no space)" → JuiceShop
+    name = re.sub(r"\s*\(no space\)\s*", "", name, flags=re.IGNORECASE).strip()
+    name = re.sub(r"\s+board members?$", "", name, flags=re.IGNORECASE).strip()
     return name
 
 
