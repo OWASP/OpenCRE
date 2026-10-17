@@ -1,0 +1,8 @@
+# Frozen from OpenCRE-wt-ask-embedding/tmp/mcp_edge_probe/run_20261016T124604Z
+# (product_bad_stop>100; asvs_levels dominated). Unit tests must use these exact prompts.
+# Negative answer shape (answers/00001.json): "…is an indexed OWASP project. Leaders: …"
+{"family":"asvs_levels","q":"How many levels does OWASP ASVS have?","must_any":["3","L1","L2","L3","verification"],"must_not":["indexed OWASP project","Leaders:"],"expect_count":3}
+{"family":"masvs_levels","q":"How many levels / verification levels does OWASP MASVS define?","must_any":["L1","L2","verification","2"],"must_not":["indexed OWASP project","Leaders:"],"expect_count":2}
+{"family":"samm_levels","q":"How many maturity levels does OWASP SAMM use?","must_any":["maturity","3","1","2"],"must_not":["indexed OWASP project","Leaders:"],"expect_count":3}
+{"family":"aix_layers","q":"How many layers are in the OWASP AI Exchange (AIX) model?","must_any":["7","layer"],"must_not":["indexed OWASP project","Leaders:"],"expect_count":7}
+{"family":"aix_layers","q":"What are the 7 layers of the OWASP AI Exchange?","must_any":["7","layer"],"must_not":["indexed OWASP project","Leaders:"],"expect_count":7}
