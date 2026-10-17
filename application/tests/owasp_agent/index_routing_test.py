@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 from application.utils.owasp_agent.index_store import IndexStore
-from application.utils.owasp_agent.models import Chapter
+from application.utils.owasp_agent.models import BoardMember, Chapter, Event
 from application.utils.owasp_agent.router import (
     MAX_PROMPT_CHARS,
     OwaspAgentRouter,
@@ -86,6 +86,46 @@ def _router() -> OwaspAgentRouter:
                 source="site",
             )
         )
+    for key, name, start, end in (
+        (
+            "usa-2025",
+            "OWASP Global AppSec USA 2025 - Washington, DC",
+            "2025-11-03",
+            "2025-11-07",
+        ),
+        (
+            "usa-2026",
+            "OWASP Global AppSec USA 2026 - San Francisco, CA",
+            "2026-11-02",
+            "2026-11-06",
+        ),
+        (
+            "usa-2027",
+            "OWASP Global AppSec USA 2027 - Atlanta, GA",
+            "2027-09-17",
+            "2027-09-24",
+        ),
+        (
+            "eu-2026",
+            "OWASP Global AppSec EU 2026 - Vienna, Austria",
+            "2026-06-22",
+            "2026-06-26",
+        ),
+    ):
+        store.upsert_event(
+            Event(
+                key=key,
+                name=name,
+                start_date=start,
+                end_date=end,
+                url=f"https://owasp.glueup.com/event/{key}",
+                source="nest",
+            )
+        )
+    store.upsert_board_member(BoardMember(year=2016, name="Jim Manico", role="member"))
+    store.upsert_board_member(
+        BoardMember(year=2020, name="Vandana Verma", role="member")
+    )
     return OwaspAgentRouter(store=store)
 
 
@@ -183,6 +223,79 @@ class TestChapterResolution(unittest.TestCase):
             "How many OWASP chatpers are there?",
         ):
             self.assertIn("chapters in the local index", self._ans(q), q)
+
+
+class TestBoardNameParsing(unittest.TestCase):
+    def test_aux_verb_not_part_of_name(self) -> None:
+        from application.utils.owasp_agent.router import (
+            _extract_quoted_or_capitalized_name as name,
+        )
+
+        for q, want in (
+            ("Was Jim Manico on the OWASP board?", "Jim Manico"),
+            ("Has Vandana Verma served on the OWASP board?", "Vandana Verma"),
+            ("Was Martin Knobloch ever an OWASP board member?", "Martin Knobloch"),
+            ("Did Jim Manico lead ZAP?", "Jim Manico"),
+        ):
+            self.assertEqual(name(q), want, q)
+            self.assertEqual(
+                classify_intent(q) in ("board_person", "cre_normative"), True
+            )
+
+    def test_board_history_answers_with_year(self) -> None:
+        r = _router()
+        a = r.handle("Was Jim Manico on the OWASP board?")["response"]
+        self.assertIn("2016", a)
+        self.assertNotIn("Was Jim", a)
+        a = r.handle("Has Vandana Verma served on the OWASP board?")["response"]
+        self.assertIn("2020", a)
+
+
+class TestEventLookup(unittest.TestCase):
+    NOW = None
+
+    def test_event_phrasings_hit_the_indexed_event(self) -> None:
+        r = _router()
+        for q in (
+            "When is OWASP Global AppSec USA 2026?",
+            "Where is OWASP Global AppSec USA 2026 held?",
+            "global appsec usa 2026 dates",
+            "Is AppSec USA in San Francisco or San Jose?",
+            "When is Global AppSec San Francisco?",
+            "What OWASP events are happening in SF this week?",
+            "global appsec usa 2026 san fran",
+        ):
+            resp = r.handle(q)
+            self.assertIsNotNone(resp, q)
+            self.assertIn("San Francisco", resp["response"], q)
+            self.assertIn("glueup", resp["response"], q)
+
+    def test_no_year_prefers_nearest_upcoming(self) -> None:
+        from datetime import datetime, timezone
+
+        r = _router()
+        now = datetime(2026, 10, 17, tzinfo=timezone.utc)
+        evs = r.queries.find_events("when is global appsec usa", now=now)
+        self.assertEqual(evs[0]["key"], "usa-2026")
+        self.assertEqual(evs[1]["key"], "usa-2027")  # upcoming before past
+        self.assertEqual(evs[-1]["key"], "usa-2025")
+        evs = r.queries.find_events("whens global appsec", now=now)
+        self.assertEqual(evs[0]["key"], "usa-2026")  # EU 2026 already past
+
+    def test_explicit_year_wins(self) -> None:
+        r = _router()
+        evs = r.queries.find_events("when is global appsec usa 2027")
+        self.assertEqual(evs[0]["key"], "usa-2027")
+
+    def test_speaker_questions_say_not_indexed(self) -> None:
+        r = _router()
+        a = r.handle("Who is speaking at Global AppSec USA 2026?")["response"]
+        self.assertIn("not indexed", a)
+
+    def test_unrelated_prompt_not_hijacked(self) -> None:
+        r = _router()
+        resp = r.handle("What is appsec?")
+        self.assertTrue(resp is None or "glueup" not in resp["response"])
 
 
 class TestLeaderPayloads(unittest.TestCase):

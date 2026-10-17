@@ -26,6 +26,7 @@ def is_owasp_agent_enabled() -> bool:
 _STRUCTURED_INTENTS = frozenset(
     {
         "events_near",
+        "event_lookup",
         "board_members",
         "board_person",
         "board_candidate_stats",
@@ -201,6 +202,23 @@ class OwaspAgentRouter:
             pass
         return intent
 
+    def _index_event_intent(self, intent: str, text: str) -> str:
+        """Route 'when/where is Global AppSec USA 2026' to the indexed event."""
+        if intent not in ("cre_normative", "clarify", "events_near", "talk_lookup"):
+            return intent
+        if not _EVENT_CUE_RE.search(text):
+            return intent
+        if re.search(r"\b(nearest|near me|closest)\b", text, re.I) and intent == (
+            "events_near"
+        ):
+            return intent
+        try:
+            if self.queries.find_events(text):
+                return "event_lookup"
+        except Exception:
+            pass
+        return intent
+
     def _refusal_response(self) -> Dict[str, Any]:
         return format_chat_response(
             QueryResult(
@@ -226,7 +244,9 @@ class OwaspAgentRouter:
         """
         if not is_owasp_agent_enabled():
             return None
-        text = fix_key_typos((prompt or "").strip()[:MAX_PROMPT_CHARS])
+        text = fix_key_typos(
+            (prompt or "").strip()[:MAX_PROMPT_CHARS].replace("\u2019", "'")
+        )
         if not text:
             return None
 
@@ -259,6 +279,7 @@ class OwaspAgentRouter:
             # Current turn is clean (checked above); the match came from history.
             intent_preview = classify_intent(text)
         intent_preview = self._index_chapter_intent(intent_preview, text)
+        intent_preview = self._index_event_intent(intent_preview, text)
         if sim_decision is not None:
             from application.utils.owasp_agent.candidate_picker import (
                 default_completion_fn,
@@ -833,7 +854,12 @@ class OwaspAgentRouter:
                 )
             return self.queries.compare_projects(a, b)
         # cre_fact is handled in handle() before _dispatch.
+        if intent == "event_lookup":
+            return self.queries.event_lookup(text)
         if intent == "events_near":
+            if slots.place:
+                # "Cambridge, UK - nearest OWASP meetup": keep only the place.
+                slots.place = re.split(r"\s[-–—]\s|;", slots.place)[0].strip()
             upcoming_only = not slots.include_past
             return self.queries.events_near(
                 place=slots.place,
@@ -885,7 +911,12 @@ def _similarity_gate(prompt: str):
 MAX_PROMPT_CHARS = 4096
 
 _CHAPTER_CUE_RE = re.compile(
-    r"\b(leads?|leaders?|runs?|organi[sz]\w*|chapter|group|meetups?|president|chair)\b",
+    r"\b(leads?|leaders?|runs?|organi[sz]\w*|chapter|group|meetups?|president|chair|active|inactive|status)\b",
+    re.I,
+)
+_EVENT_CUE_RE = re.compile(
+    r"\b(when|whens|where|dates?|held|location|conference|happening|speaking|"
+    r"speakers?|agenda|what is (this|the) event|next|is there|is .{0,12} in|20\d{2})\b",
     re.I,
 )
 _TYPO_VOCAB = ("chapters", "chapter", "projects", "leaders", "membership")
@@ -1290,6 +1321,15 @@ def classify_intent(text: str) -> str:
         r"\b(near|nearby|around|closest|nearest)\b", t
     ):
         return "events_near"
+
+    # "Was/Has/Is <Name> (ever) on/served on the OWASP board?" -> board_person.
+    if re.search(
+        r"\b(is|was|has|have|were|did)\b.{0,60}\b(on|served on|joined) the "
+        r"(owasp |foundation |global )?(board|gboD)\b|\bever\b.{0,40}\bboard member\b",
+        t,
+        re.I,
+    ) and _extract_quoted_or_capitalized_name(text):
+        return "board_person"
 
     # Board roster / candidate stats without the old meta/normative dump gate.
     if re.search(r"\bhow many\b", t) and re.search(r"\bcandidates?\b", t):
@@ -1818,7 +1858,24 @@ def _name_starts_with_stopword(name: str) -> bool:
     return first in _NAME_LEADING_STOPWORDS
 
 
+_LEADING_AUX_RE = re.compile(
+    r"^(?:was|has|have|is|are|were|did|does|do)\s+(?=\S)", re.IGNORECASE
+)
+
+
+def _strip_leading_aux(name: Optional[str]) -> Optional[str]:
+    """'Was Jim Manico' -> 'Jim Manico' (aux verb captured as part of the name)."""
+    if not name:
+        return name
+    cleaned = _LEADING_AUX_RE.sub("", name.strip())
+    return cleaned or None
+
+
 def _extract_quoted_or_capitalized_name(text: str) -> Optional[str]:
+    return _strip_leading_aux(_extract_name_raw(text))
+
+
+def _extract_name_raw(text: str) -> Optional[str]:
     m = re.search(r"[\"']([A-Z][^\"']+)[\"']", text)
     if m:
         return m.group(1).strip()
@@ -1855,11 +1912,19 @@ def _extract_quoted_or_capitalized_name(text: str) -> Optional[str]:
         return m_lead_board.group(1).strip()
     # Verb-led extractions before bare possessive (avoids "Show Sam …" as a name).
     m_is = re.search(
-        r"\b[Ii]s\s+(" + _PERSON_NAME_RE + r")\s+on\b",
+        r"\b(?:[Ii]s|[Ww]as|[Hh]as|[Ww]ere|[Dd]id)\s+("
+        + _PERSON_NAME_RE
+        + r")\s+(?:ever\s+|on\b|an?\b|the\b|served\b|been\b|elected\b)",
         text,
     )
     if m_is:
         return m_is.group(1).strip()
+    m_single = re.search(
+        r"\b(?:[Ii]s|[Ww]as)\s+([A-Z][a-z]{2,})\s+on\s+the\b",
+        text,
+    )
+    if m_single and m_single.group(1).lower() not in _NAME_LEADING_STOPWORDS:
+        return m_single.group(1)
     m_has = re.search(
         r"\b[Hh]as\s+(" + _PERSON_NAME_RE + r")\s+been\b",
         text,
