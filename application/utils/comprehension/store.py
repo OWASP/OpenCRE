@@ -48,6 +48,15 @@ def documents(
             )
         )
     for dd in d.docs:
+        for j, c in enumerate(dd.claims):
+            dslug = re.sub(r"[^a-z0-9]+", "-", dd.path.lower()).strip("-")[:60]
+            docs.append(
+                (
+                    f"{SLUG_PREFIX}{base}-dclaim-{dslug}-{j:02d}",
+                    f"{family} / {dd.path}: {c.statement}",
+                    cites([dd.path]),
+                )
+            )
         if dd.summary:
             slug = f"{SLUG_PREFIX}{base}-doc-{re.sub(r'[^a-z0-9]+', '-', dd.path.lower()).strip('-')[:80]}"
             docs.append((slug, f"{family} / {dd.path}: {dd.summary}", cites([dd.path])))

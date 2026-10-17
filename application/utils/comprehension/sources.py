@@ -10,7 +10,8 @@ from typing import Any, Dict, Iterable, List, Tuple
 _NOISE_NAMES = re.compile(
     r"(code[_-]?of[_-]?conduct|license|licence|contributing|security\.md|"
     r"pull_request_template|issue_template|changelog|\.github/|/archive/|"
-    r"node_modules/|authors|notice)",
+    r"node_modules/|authors|notice|"
+    r"(^|/)(es|fr|de|pt|pt-br|it|ja|ko|zh|zh-cn|zh-tw|ru|tr|ar|hi|id|nl|pl|vi|uk)/)",
     re.IGNORECASE,
 )
 

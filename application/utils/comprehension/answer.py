@@ -40,7 +40,10 @@ def answer_from_candidates(
     """Return (answer, citations) or None when no comprehension doc answers it."""
     if not enabled() or complete is None:
         return None
-    hits = [c for c in cands if is_comprehension_hit(c)][:_MAX_SOURCES]
+    hits = [c for c in cands if is_comprehension_hit(c)]
+    # Overviews first: they state structure; claims/summaries add detail.
+    hits.sort(key=lambda h: 0 if (getattr(h, "url", "") or "").endswith("-overview") else 1)
+    hits = hits[:_MAX_SOURCES]
     if not hits:
         return None
     sources = []

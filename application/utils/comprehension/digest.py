@@ -24,7 +24,8 @@ DOC_SYSTEM = (
     'fact, name the standard/practice it is about>", "quote": "<verbatim '
     'sentence or phrase from the document supporting it>"}]}. '
     "Prefer facts about STRUCTURE (levels, categories, counts, scope, editions, "
-    "how parts relate) and definitions. Never use outside knowledge. At most 12 claims. "
+    "how parts relate) and definitions. State the edition/version the document describes when it says so. "
+    "Never use outside knowledge. At most 25 claims. "
     "If the document has no substantive content return an empty claims list."
 )
 
@@ -37,7 +38,8 @@ OVERVIEW_SYSTEM = (
     'WHERE (e.g. per practice vs overall)>", "sources": ["<document path>", ...]}]}. '
     "Combine information across documents; do not invent anything not supported by "
     "the given material; every claim must list the document paths it relies on. "
-    "At most 25 claims."
+    "When documents describe different versions or editions, state the latest version's facts "
+    "and say which version each fact belongs to; never mix versions in one claim. At most 25 claims."
 )
 
 
