@@ -1138,7 +1138,8 @@ def classify_intent(text: str, *, known_people: Optional[List[str]] = None) -> s
     person_hit = match_indexed_person(text, known_people)
     # Who-is / tell-me-about person lookup from indexed leaders/board (not CRE bios)
     if re.search(r"\bwho is\b", t) and not re.search(r"\bwho is (the|on|a|an)\b", t):
-        return "person_lookup"
+        if person_hit or _extract_quoted_or_capitalized_name(text):
+            return "person_lookup"
     if re.search(r"\b(tell me about|what about)\b", t) and person_hit:
         if not re.search(r"\b(vulnerability|mitigate|how (do|should)|cre)\b", t):
             return "person_lookup"
@@ -1584,7 +1585,9 @@ def extract_slots(text: str, *, known_people: Optional[List[str]] = None) -> Slo
         if not slots.place and slots.places:
             slots.place = slots.places[0]
 
-    person = match_indexed_person(text, known_people)
+    person = match_indexed_person(
+        text, known_people
+    ) or _extract_quoted_or_capitalized_name(text)
     if person:
         slots.person = person
     # "Fail-closed on Spyros … talk" — single given name is enough for fail-closed.
