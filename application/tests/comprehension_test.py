@@ -17,6 +17,42 @@ def _row(repo, art, path, idx, text):
 
 
 class SourcesTest(unittest.TestCase):
+    def test_skips_translated_pages(self):
+        body = "x" * 100
+        docs = sources.docs_from_rows(
+            [
+                _row("O/S", "a1", "content/en/intro.md", 0, body),
+                _row("O/S", "a2", "content/es/intro.md", 0, body),
+                _row("O/S", "a3", "es/intro.md", 0, body),
+            ]
+        )
+        self.assertEqual([d.path for d in docs], ["content/en/intro.md"])
+
+    def test_people_profile_verifies_quotes_and_stores_doc_claims(self):
+        doc = sources.SourceDoc(
+            "O/e",
+            "a",
+            "e.md",
+            "Jane Roe will speak on Threat Modeling at AppSec USA, Washington DC, 2026-11-05.",
+        )
+        raw = json.dumps(
+            {
+                "summary": "event",
+                "claims": [
+                    {
+                        "statement": "Jane Roe speaks on Threat Modeling at AppSec USA, 2026-11-05",
+                        "quote": "Jane Roe will speak on Threat Modeling at AppSec USA",
+                    },
+                    {"statement": "invented", "quote": "Bob keynote"},
+                ],
+            }
+        )
+        dd = digest.digest_doc(doc, lambda s, u: raw, system=digest.PEOPLE_SYSTEM)
+        self.assertEqual((len(dd.claims), dd.dropped), (1, 1))
+        d = digest.StandardDigest("O/e", "", [], [dd])
+        slugs = [x[0] for x in store.documents(d)]
+        self.assertTrue(any("-dclaim-" in x for x in slugs))
+
     def test_orders_chunks_and_drops_noise(self):
         body = "x" * 100
         docs = sources.docs_from_rows(
