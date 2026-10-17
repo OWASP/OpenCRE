@@ -239,6 +239,9 @@ class MetaQueries:
                 clarify="Which board member or candidate name should I look up?",
                 message="I need a person's name to look up board or candidate history.",
             )
+        amb = self._ambiguous_first_name(target)
+        if amb:
+            return amb
         members = self.store.list_entities("board_member")
         candidates = self.store.list_entities("board_candidate")
         hit_m = [m for m in members if target in _norm(str(m.get("name") or ""))]
@@ -297,6 +300,30 @@ class MetaQueries:
             citations=citations,
         )
 
+    def _ambiguous_first_name(self, target: str) -> Optional[QueryResult]:
+        """A bare first name matching several people: list them, don't guess."""
+        if not target or " " in target:
+            return None
+        names: set = set()
+        for kind in ("board_member", "board_candidate", "project_leader"):
+            for r in self.store.list_entities(kind):
+                n = str(r.get("name") or "").strip()
+                if n.lower().split()[:1] == [target]:
+                    names.add(n)
+        if len(names) < 2:
+            return None
+        shown = sorted(names)[:8]
+        return QueryResult(
+            ok=False,
+            kind="person_lookup",
+            data={"candidates": shown},
+            message=(
+                f"Several people are named {target.title()}: {', '.join(shown)}. "
+                "Which one do you mean? Please give the full name."
+            ),
+            clarify="Please give the person's full name.",
+        )
+
     def person_lookup(self, name: str) -> QueryResult:
         """Who-is lookup: project/chapter leaders + optional board history."""
         target = _norm(name)
@@ -307,6 +334,9 @@ class MetaQueries:
                 message="Which person should I look up in OWASP metadata?",
                 clarify="Please give the person's full name.",
             )
+        amb = self._ambiguous_first_name(target)
+        if amb:
+            return amb
         leader_rows = [
             r
             for r in self.store.list_entities("project_leader")
@@ -1517,9 +1547,22 @@ def _match_project(
         target = "juice shop"
     alias_needles = aliases.get(target)
 
+    # Whole-name match first ("top 10" -> "OWASP Top 10"/"Top Ten", never
+    # "Agentic Skills Top 10").
+    forms = {target} | set(alias_needles or ())
+    forms |= {f.replace("10", "ten") for f in list(forms)} | {
+        f.replace("ten", "10") for f in list(forms)
+    }
+    for p in projects:
+        pn = re.sub(r"^owasp\s+", "", _norm(str(p.get("name") or "")))
+        pk = re.sub(
+            r"^www project ", "", _norm(str(p.get("key") or "").replace("-", " "))
+        )
+        if pn in forms or pk in forms:
+            return p
     exact = None
     partial = None
-    for p in projects:
+    for p in sorted(projects, key=lambda x: len(str(x.get("name") or ""))):
         key = _norm(str(p.get("key") or "").replace("-", " "))
         pname = _norm(str(p.get("name") or ""))
         desc = _norm(str(p.get("description") or ""))
