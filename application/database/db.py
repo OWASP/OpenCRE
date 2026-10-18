@@ -3214,6 +3214,66 @@ class Node_collection:
             )
             return None, None
 
+    def find_top_k_similar_embedding_ids(
+        self,
+        query_embedding: List[float],
+        *,
+        doc_type: str,
+        id_column: str,
+        k: int,
+        similarity_threshold: float,
+    ) -> List[Tuple[str, float]]:
+        """Top-K cosine matches via pgvector ``<=>`` (Postgres only). #1075.
+
+        Returns ``[(object_id, score), ...]`` rank-ordered (best first), only
+        rows with ``score >= similarity_threshold``; ``[]`` when nothing
+        clears it or on a transient query error. Refuses SQLite / missing
+        ``embedding_vec`` with ``SystemExit`` exactly like
+        :meth:`find_most_similar_embedding_id`; callers gate on
+        ``can_use_pgvector_similarity()`` and fall back to sklearn otherwise.
+        """
+        from application.database.pgvector_utils import (
+            fail_pgvector_unavailable,
+            to_pgvector_literal,
+            top_k_similar_ids_sql,
+        )
+        from sqlalchemy import text as sql_text
+
+        if k <= 0:
+            raise ValueError(f"k must be > 0, got {k}")
+        if not self.can_use_pgvector_similarity():
+            fail_pgvector_unavailable(context="find_top_k_similar_embedding_ids")
+
+        sql = top_k_similar_ids_sql(id_column)
+        bind = self.session.get_bind()
+        params = {
+            "q": to_pgvector_literal(query_embedding),
+            "doc_type": doc_type,
+            "k": int(k),
+        }
+        try:
+            if hasattr(self.session, "execute"):
+                rows = self.session.execute(sql_text(sql), params).fetchall()
+            else:
+                with bind.connect() as conn:
+                    rows = conn.execute(sql_text(sql), params).fetchall()
+            out: List[Tuple[str, float]] = []
+            for row in rows or []:
+                score = float(row.score)
+                if score < similarity_threshold:
+                    # rows are rank-ordered, so everything after is lower too
+                    break
+                out.append((str(row.object_id), score))
+            return out
+        except SystemExit:
+            raise
+        except Exception as exc:
+            logger.warning(
+                "pgvector top-k similarity query failed (%s); returning no matches",
+                exc,
+            )
+            return []
+
     def assert_embedding_contract(
         self,
         *,

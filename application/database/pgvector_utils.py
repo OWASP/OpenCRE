@@ -300,3 +300,23 @@ def most_similar_id_sql(id_column: str) -> str:
         f"ORDER BY embedding_vec <=> CAST(:q AS vector) "
         f"LIMIT 1"
     )
+
+
+def top_k_similar_ids_sql(id_column: str) -> str:
+    """SQL for top-K cosine similarity over ``embedding_vec`` (#1075).
+
+    Same shape as :func:`most_similar_id_sql` but ``LIMIT :k`` so chat can
+    pull several passages in one round trip. Rows come back rank-ordered
+    (closest first); the caller applies the threshold / break-off.
+    """
+    if id_column not in ("cre_id", "node_id"):
+        raise ValueError(f"id_column must be cre_id or node_id, got {id_column!r}")
+    return (
+        f"SELECT {id_column} AS object_id, "
+        f"1 - (embedding_vec <=> CAST(:q AS vector)) AS score "
+        f"FROM embeddings "
+        f"WHERE doc_type = :doc_type AND {id_column} IS NOT NULL "
+        f"AND embedding_vec IS NOT NULL "
+        f"ORDER BY embedding_vec <=> CAST(:q AS vector) "
+        f"LIMIT :k"
+    )
