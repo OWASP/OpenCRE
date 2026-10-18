@@ -137,3 +137,18 @@ class SynthesizeTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RetrieveScopeTest(unittest.TestCase):
+    def test_scopes_to_named_projects_only(self):
+        from application.utils.comprehension.retrieve import matched_slugs
+
+        sl = ["owasp-asvs", "owasp-www-project-top-ten", "owasp-api-security"]
+        self.assertEqual(
+            matched_slugs("How many leaders does ASVS list?", sl), ["owasp-asvs"]
+        )
+        self.assertEqual(matched_slugs("what is the weather", sl), [])
+        self.assertEqual(
+            set(matched_slugs("Compare Top Ten and API Security", sl)),
+            {"owasp-www-project-top-ten", "owasp-api-security"},
+        )
