@@ -97,7 +97,11 @@ def fetch_comprehension_hits(question: str) -> List[LaneHit]:
                     {"q": q, "channel": CHANNEL_AGENT, "limit": retrieval_k()},
                 ).fetchall()
             )
-            scoped = matched_slugs(question, _known_slugs(conn))
+            scoped = (
+                matched_slugs(question, _known_slugs(conn))
+                if os.environ.get("OWASP_COMPREHENSION_SCOPE", "1") != "0"
+                else []
+            )
             boosted = set()
             for slug in scoped:
                 part = conn.execute(
