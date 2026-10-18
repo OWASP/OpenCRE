@@ -80,3 +80,31 @@ def load_repo_docs(session: Any, source_repo: str) -> List[SourceDoc]:
         seen[key] = True
         rows.append((repo, artifact_id, payload))
     return docs_from_rows(rows)
+
+
+def chunks_for_repo(session: Any, source_repo: str) -> List[Tuple[str, int, str]]:
+    """(path, chunk_index, text) for the newest harvest of each artifact; noise and tiny chunks dropped."""
+    from application.database.db import HarvestInput
+
+    q = (
+        session.query(HarvestInput.artifact_id, HarvestInput.payload)
+        .filter(HarvestInput.source_repo == source_repo)
+        .order_by(HarvestInput.created_at.desc())
+    )
+    newest: Dict[str, str] = {}
+    out: List[Tuple[str, int, str]] = []
+    for artifact_id, payload in q:
+        run = (payload or {}).get("pipeline_run_id") or ""
+        if newest.setdefault(artifact_id, run) != run:
+            continue
+        loc = (payload or {}).get("locator") or {}
+        path = str(
+            (loc.get("path") if isinstance(loc, dict) else None)
+            or str(artifact_id).split(":", 2)[-1]
+        )
+        text = str((payload or {}).get("text") or "").strip()
+        idx = int(((payload or {}).get("span") or {}).get("index") or 0)
+        if is_noise_path(path) or len(text) < 120:
+            continue
+        out.append((path, idx, text[:3000]))
+    return out

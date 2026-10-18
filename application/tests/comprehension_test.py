@@ -152,3 +152,12 @@ class RetrieveScopeTest(unittest.TestCase):
             set(matched_slugs("Compare Top Ten and API Security", sl)),
             {"owasp-www-project-top-ten", "owasp-api-security"},
         )
+
+
+class RawDocsTest(unittest.TestCase):
+    def test_raw_chunks_become_cited_documents(self):
+        docs = store.raw_documents("O/S", [("a/b.md", 3, "x" * 200)])
+        slug, text, cites = docs[0]
+        self.assertTrue(slug.startswith("comprehension-o-s-raw-a-b-md-003"))
+        self.assertIn("S / a/b.md:", text)
+        self.assertEqual(cites, ["https://github.com/O/S/blob/HEAD/a/b.md"])

@@ -91,3 +91,62 @@ def write(
             )
         n += 1
     return n
+
+
+def raw_documents(
+    repo: str,
+    chunks: List[Tuple[str, int, str]],
+    github_base: str = "https://github.com",
+) -> List[Tuple[str, str, List[str]]]:
+    """Source chunks as retrievable documents (detail recall that summaries lose)."""
+    base = repo_slug(repo)
+    family = repo.split("/")[-1]
+    out: List[Tuple[str, str, List[str]]] = []
+    for path, idx, text in chunks:
+        pslug = re.sub(r"[^a-z0-9]+", "-", path.lower()).strip("-")[:70]
+        out.append(
+            (
+                f"{SLUG_PREFIX}{base}-raw-{pslug}-{idx:03d}",
+                f"{family} / {path}: {text}",
+                [f"{github_base}/{repo}/blob/HEAD/{path}"],
+            )
+        )
+    return out
+
+
+def write_raw(
+    database: Any,
+    repo: str,
+    chunks: List[Tuple[str, int, str]],
+    embed: Callable[[str], Any],
+    *,
+    workers: int = 8,
+    dry_run: bool = False,
+) -> int:
+    from concurrent.futures import ThreadPoolExecutor
+
+    from application.utils.owasp_agent.lane_similarity import CHANNEL_AGENT
+    from application.utils.owasp_agent.meta_embeddings import (
+        DOC_TYPE_EVIDENCE,
+        evidence_url,
+        upsert_channel_embedding,
+    )
+
+    docs = raw_documents(repo, chunks)
+    bodies = [
+        text + ("\n\nCitations: " + ", ".join(c) if c else "") for _, text, c in docs
+    ]
+    if dry_run:
+        return len(docs)
+    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+        vecs = list(pool.map(lambda b: list(embed(b)), bodies))
+    for (slug, _, _), body, vec in zip(docs, bodies, vecs):
+        upsert_channel_embedding(
+            database,
+            source_channel=CHANNEL_AGENT,
+            doc_type=DOC_TYPE_EVIDENCE,
+            embeddings_url=evidence_url(slug),
+            embedding_text=body,
+            embeddings=vec,
+        )
+    return len(docs)
