@@ -345,11 +345,13 @@ class OwaspAgentRouter:
             # answer only when the sources support it (UNKNOWN falls through).
             from application.utils.comprehension.answer import (
                 ABSTAIN_MESSAGE,
-                abstain_enabled,
+                should_abstain,
                 answer_from_candidates,
                 is_comprehension_hit,
+                merge_with_dedicated,
             )
 
+            cands = merge_with_dedicated(normalized, cands)
             comp_hits = [c for c in cands if is_comprehension_hit(c)]
             comp = answer_from_candidates(normalized, cands, default_completion_fn())
             if comp is not None:
@@ -377,7 +379,7 @@ class OwaspAgentRouter:
             if (
                 comp_hits
                 and picked is None
-                and abstain_enabled()
+                and should_abstain(normalized)
                 and intent_preview == "cre_normative"
             ):
                 return format_chat_response(
