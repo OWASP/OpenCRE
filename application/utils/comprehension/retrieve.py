@@ -22,7 +22,7 @@ def retrieval_k() -> int:
 
 
 _SLUG_RE = re.compile(
-    r"^owasp-agent://evidence/comprehension-(.+?)-(?:overview|claim|dclaim|doc)(?:-.*)?$"
+    r"^owasp-agent://evidence/comprehension-(.+?)-(?:overview|claim|dclaim|doc|raw)(?:-.*)?$"
 )
 _REPO_CACHE: dict = {"at": 0.0, "slugs": []}
 _STRIP = re.compile(r"^(?:owasp-)?(?:www-project-|www-)?")
@@ -99,7 +99,7 @@ def fetch_comprehension_hits(question: str) -> List[LaneHit]:
             )
             scoped = (
                 matched_slugs(question, _known_slugs(conn))
-                if os.environ.get("OWASP_COMPREHENSION_SCOPE", "1") != "0"
+                if os.environ.get("OWASP_COMPREHENSION_SCOPE", "0") == "1"
                 else []
             )
             boosted = set()
