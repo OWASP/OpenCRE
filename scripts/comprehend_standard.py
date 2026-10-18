@@ -34,7 +34,12 @@ def main() -> int:
         default=0,
         help="with --like: only the N repos with most chunks",
     )
-    ap.add_argument("--exclude", nargs="*", default=[], help="source_repos to skip (held-out)")
+    ap.add_argument(
+        "--exclude", nargs="*", default=[], help="source_repos to skip (held-out)"
+    )
+    ap.add_argument(
+        "--raw", action="store_true", help="embed raw source chunks (no LLM)"
+    )
     ap.add_argument("--profile", choices=["standard", "people"], default="standard")
     ap.add_argument("--dry-run", action="store_true", help="no embeddings/DB writes")
     ap.add_argument("--limit-docs", type=int, default=0)
@@ -74,6 +79,21 @@ def main() -> int:
         system = digest.PEOPLE_SYSTEM if a.profile == "people" else digest.DOC_SYSTEM
         for repo in repos:
             try:
+                if a.raw:
+                    ch = sources.chunks_for_repo(database.session, repo)
+                    n = store.write_raw(
+                        database,
+                        repo,
+                        ch,
+                        handler.get_text_embeddings,
+                        workers=a.workers,
+                        dry_run=a.dry_run,
+                    )
+                    print(
+                        f"{repo}: raw chunks {'planned' if a.dry_run else 'written'}: {n}",
+                        flush=True,
+                    )
+                    continue
                 docs = sources.load_repo_docs(database.session, repo)
                 if a.limit_docs:
                     docs = docs[: a.limit_docs]
