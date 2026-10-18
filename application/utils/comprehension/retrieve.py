@@ -175,8 +175,11 @@ def fetch_comprehension_hits(
         with sqla.session.get_bind().connect() as conn:
             slugs = _known_slugs(conn)
             rankings: List[List[LaneHit]] = []
-            for t in texts:
-                q = to_pgvector_literal(list(handler.get_text_embeddings(t)))
+            from application.utils.comprehension.embedcache import embed_many
+
+            vecs = embed_many(texts, handler.get_text_embeddings)
+            for t, vec in zip(texts, vecs):
+                q = to_pgvector_literal(list(vec))
                 dense = _dense(conn, q, _ALL, wide)
                 rankings.append(dense)
                 if flags.on("HYBRID"):
@@ -216,3 +219,18 @@ def fetch_comprehension_hits(
         return hits
     except Exception:
         return []
+
+
+def prefetch_embedding(text: str) -> None:
+    """Start embedding ``text`` in the background (best-effort)."""
+    try:
+        from application.database import db as db_mod
+        from application.prompt_client import prompt_client
+        from application.utils.comprehension.embedcache import prefetch
+
+        handler = prompt_client.PromptHandler(
+            db_mod.Node_collection(), load_all_embeddings=False
+        )
+        prefetch(text, handler.get_text_embeddings)
+    except Exception:
+        pass
