@@ -219,6 +219,7 @@ def default_completion_fn() -> Optional[CompletionFn]:
                 messages=list(messages),
                 client=handler._litellm,
                 context="OWASP agent candidate pick",
+                temperature=0,
                 max_retries=handler._llm_max_retries,
                 retry_sleep_seconds=handler._llm_retry_sleep_seconds,
             )

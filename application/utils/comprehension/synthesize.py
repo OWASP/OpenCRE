@@ -9,8 +9,9 @@ LlmFn = Callable[[str, str], str]
 
 SYSTEM = (
     "Answer the question using ONLY the numbered sources. Be precise about what is "
-    "counted and where (e.g. per practice vs overall). If the sources do not contain "
-    "the answer, reply exactly: UNKNOWN. Otherwise answer in 1-4 sentences and end "
+    "counted and where (e.g. per practice vs overall). If the sources do not state what "
+    "is asked, reply exactly: UNKNOWN. If they state only part of it, give that part and say "
+    "plainly what they do not state. Otherwise answer in 1-4 sentences and end "
     "with the source numbers you used like [1][3]. Never add facts not in the sources. "
     "If the question assumes something the sources contradict, say the premise is incorrect and give the correct fact. "
     "If sources describe different versions, answer for the latest version and name it. "
