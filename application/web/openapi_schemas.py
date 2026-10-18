@@ -57,6 +57,46 @@ class TagQuerySchema(FormatQuerySchema):
         required=True,
         metadata={"description": "Tag name(s)"},
     )
+    page = fields.Int(
+        required=False,
+        metadata={
+            "description": "Page number (1-based). Providing page or "
+            "items_per_page switches the response to the paginated shape."
+        },
+    )
+    items_per_page = fields.Int(
+        required=False,
+        metadata={
+            "description": "Items per page per result type (default 20, max 100)"
+        },
+    )
+
+
+class TagPagedCollectionSchema(Schema):
+    data = fields.List(
+        fields.Dict(keys=fields.Str(), values=fields.Raw()),
+        metadata={"description": "Documents on this page"},
+    )
+    total_pages = fields.Int(metadata={"description": "Total number of pages"})
+
+
+class TagResponseSchema(Schema):
+    data = fields.List(
+        fields.Dict(keys=fields.Str(), values=fields.Raw()),
+        required=False,
+        metadata={"description": "Unpaginated response (no page/items_per_page given)"},
+    )
+    page = fields.Int(required=False)
+    nodes = fields.Nested(
+        TagPagedCollectionSchema,
+        required=False,
+        metadata={"description": "Paginated Standards/Tools/Code matching the tag(s)"},
+    )
+    cres = fields.Nested(
+        TagPagedCollectionSchema,
+        required=False,
+        metadata={"description": "Paginated CREs matching the tag(s)"},
+    )
 
 
 class TextSearchQuerySchema(FormatQuerySchema):
