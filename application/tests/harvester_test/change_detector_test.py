@@ -21,7 +21,7 @@ class ChangeDetectorTests(unittest.TestCase):
         mock_run.side_effect = [
             MagicMock(stdout="resolved_base\n"),
             MagicMock(stdout="resolved_target\n"),
-            MagicMock(stdout="a.md\nb.md\na.md\n"),
+            MagicMock(stdout=b"a.md\0b.md\0a.md\0"),
         ]
 
         detector = ChangeDetector(client)
@@ -78,11 +78,11 @@ class ChangeDetectorTests(unittest.TestCase):
                         "repo-under-test",
                         "diff",
                         "--name-only",
+                        "-z",
                         "resolved_base",
                         "resolved_target",
                     ],
                     capture_output=True,
-                    text=True,
                     check=True,
                     timeout=60,
                 ),
