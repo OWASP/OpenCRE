@@ -351,6 +351,19 @@ class OwaspAgentRouter:
                 merge_with_dedicated,
             )
 
+            from application.utils.comprehension.answer import clarification_for
+
+            clar = clarification_for(normalized)
+            if clar:
+                return format_chat_response(
+                    QueryResult(
+                        ok=True,
+                        kind="clarify",
+                        message=clar,
+                        citations=[],
+                        data={"pick_reason": "comprehension_clarify"},
+                    )
+                )
             cands = merge_with_dedicated(normalized, cands)
             comp_hits = [c for c in cands if is_comprehension_hit(c)]
             comp = answer_from_candidates(normalized, cands, default_completion_fn())
