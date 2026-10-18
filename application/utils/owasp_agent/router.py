@@ -1004,8 +1004,9 @@ def _similarity_gate(prompt: str):
             return None
         handler = prompt_client.PromptHandler(database, load_all_embeddings=False)
 
-        def _embed(text: str):
-            return handler.get_text_embeddings(text)
+        from application.utils.comprehension.embedcache import cached
+
+        _embed = cached(handler.get_text_embeddings)
 
         bind = sqla.session.get_bind()
         with bind.connect() as conn:

@@ -17,6 +17,8 @@ NAMES = (
     "VERIFY",  # check the answer against its sources
     "PERPROJECT",  # per-project retrieval for multi-project questions
     "COUNT",  # enumerate-then-count for "how many" questions
+    "MERGED",  # one call: clean question + pick sources + answer + self-check
+    "CACHE",  # in-process answer cache (real traffic, not evals)
 )
 
 
@@ -40,8 +42,9 @@ def helper_llm() -> Optional[Callable[[str, str], str]]:
             from application.prompt_client import litellm_router
 
             _HELPER = litellm_router.system_user_fn(
-                os.environ.get("OWASP_CX_HELPER_MODEL", "gemini/gemini-2.5-flash"),
+                os.environ.get("OWASP_CX_HELPER_MODEL", "gemini/gemini-2.5-flash-lite"),
                 temperature=0.0,
+                extra_try_kwargs={"reasoning_effort": "disable"},
             )
         except Exception:
             return None

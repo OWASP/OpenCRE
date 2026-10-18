@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import time
 from typing import Any, Callable, Optional, Sequence, Tuple, List
 
 from application.utils.comprehension.store import SLUG_PREFIX
@@ -48,6 +49,7 @@ def should_abstain(question: str) -> bool:
 
 
 _PLAN: dict = {}
+_ANSWERS: dict = {}
 
 
 def _plan(question: str) -> dict:
@@ -81,6 +83,10 @@ def merge_with_dedicated(question: str, cands: Sequence[Any]) -> List[Any]:
     from application.utils.comprehension.extras import rerank_order
     from application.utils.comprehension.retrieve import fetch_comprehension_hits
 
+    if flags.on("QUERY"):
+        from application.utils.comprehension.retrieve import prefetch_embedding
+
+        prefetch_embedding(question)  # overlaps with the query-understanding call
     plan = _plan(question)
     clean = plan.get("query") or question
     extra_q = list(plan.get("parts") or [])
@@ -92,11 +98,18 @@ def merge_with_dedicated(question: str, cands: Sequence[Any]) -> List[Any]:
     if flags.on("RERANK"):
         comp = [h for h in merged if is_comprehension_hit(h)]
         llm = flags.helper_llm()
-        if llm and len(comp) > 3:
+        gap = float(os.environ.get("OWASP_CX_RERANK_GAP", "0.04"))
+        close = len(comp) > 4 and (
+            float(comp[0].score or 0.0) - float(comp[4].score or 0.0) < gap
+        )
+        if llm and close:
             pool = comp[:30]
-            order = rerank_order(
-                clean, [_split_citations(h.content)[0] for h in pool], llm
-            )
+            try:
+                order = rerank_order(
+                    clean, [_split_citations(h.content)[0] for h in pool], llm
+                )
+            except Exception:
+                order = []
             if order:
                 top = [pool[i] for i in order]
                 rest = [h for h in merged if h not in top]
@@ -123,6 +136,24 @@ def answer_from_candidates(
     """Return (answer, citations) or None when no comprehension doc answers it."""
     if not enabled() or complete is None:
         return None
+    from application.utils.comprehension import flags
+
+    ckey = (question, tuple(flags.active()))
+    if flags.on("CACHE"):
+        got = _ANSWERS.get(ckey)
+        if got and time.time() - got[0] < 3600:
+            return got[1]
+    out = _answer(question, cands, complete)
+    if flags.on("CACHE") and out is not None:
+        _ANSWERS[ckey] = (time.time(), out)
+        if len(_ANSWERS) > 512:
+            _ANSWERS.pop(next(iter(_ANSWERS)))
+    return out
+
+
+def _answer(
+    question: str, cands: Sequence[Any], complete: CompletionFn
+) -> Optional[Tuple[str, List[str]]]:
     hits = [c for c in cands if is_comprehension_hit(c)]
     # Overviews first: they state structure; claims/summaries add detail.
     from application.utils.comprehension import flags
@@ -133,7 +164,7 @@ def answer_from_candidates(
                 0 if (getattr(h, "url", "") or "").endswith("-overview") else 1
             )
         )
-    hits = hits[:_MAX_SOURCES]
+    hits = hits[: 16 if flags.on("MERGED") else _MAX_SOURCES]
     if not hits:
         return None
     sources = []
@@ -149,6 +180,29 @@ def answer_from_candidates(
     from application.utils.comprehension import extras
     from application.utils.comprehension.synthesize import COUNT_SYSTEM, SYSTEM
 
+    if flags.on("MERGED"):
+        numbered = "\n\n".join(f"[{i + 1}] {t}" for i, (t, _) in enumerate(sources))
+        data = extras.parse_json(
+            llm(extras.MERGED_SYSTEM, f"Message: {question}\n\nSources:\n{numbered}")
+        )
+        ans = str(data.get("answer") or "").strip()
+        if not ans or ans.upper().startswith("UNKNOWN"):
+            clar = str(data.get("clarify") or "").strip()
+            return (clar, []) if clar else None
+        used = sorted(
+            {
+                int(n)
+                for n in re.findall(r"\[(\d+)\]", ans)
+                if 0 < int(n) <= len(sources)
+            }
+        )
+        merged_cites: List[str] = []
+        for i in used:
+            for c in sources[i - 1][1]:
+                if c not in merged_cites:
+                    merged_cites.append(c)
+        return ans, merged_cites
+
     plan = _plan(question)
     ask = plan.get("query") or question
     if plan.get("parts"):
@@ -159,7 +213,7 @@ def answer_from_candidates(
     )
     if answer and flags.on("VERIFY"):
         hl = flags.helper_llm()
-        if hl:
+        if hl and not extras.cheap_verify(answer, [t for t, _ in sources]):
             numbered = "\n\n".join(f"[{i + 1}] {t}" for i, (t, _) in enumerate(sources))
             try:
                 _, answer = extras.verify_answer(ask, answer, numbered, hl)
