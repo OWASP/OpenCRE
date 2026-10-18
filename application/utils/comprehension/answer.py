@@ -9,7 +9,7 @@ from application.utils.comprehension.store import SLUG_PREFIX
 from application.utils.comprehension.synthesize import synthesize
 
 CompletionFn = Callable[[Sequence[dict]], str]
-_MAX_SOURCES = 6
+_MAX_SOURCES = 8
 
 
 def enabled() -> bool:
@@ -21,6 +21,16 @@ def enabled() -> bool:
         "no",
         "off",
     )
+
+
+def abstain_enabled() -> bool:
+    return (os.environ.get("OWASP_COMPREHENSION_ABSTAIN", "1") or "1").strip().lower() not in ("0", "false", "no", "off")
+
+
+ABSTAIN_MESSAGE = (
+    "I couldn't find that in the indexed OWASP sources, so I won't guess. "
+    "Try naming the project or standard, or rephrase the question."
+)
 
 
 def is_comprehension_hit(hit: Any) -> bool:
