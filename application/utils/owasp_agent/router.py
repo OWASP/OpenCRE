@@ -343,8 +343,14 @@ class OwaspAgentRouter:
             # ASVS). Intent/match_* remains a fallback below.
             # Ingestion-time comprehension docs: combine top hits with an LLM and
             # answer only when the sources support it (UNKNOWN falls through).
-            from application.utils.comprehension.answer import answer_from_candidates
+            from application.utils.comprehension.answer import (
+                ABSTAIN_MESSAGE,
+                abstain_enabled,
+                answer_from_candidates,
+                is_comprehension_hit,
+            )
 
+            comp_hits = [c for c in cands if is_comprehension_hit(c)]
             comp = answer_from_candidates(normalized, cands, default_completion_fn())
             if comp is not None:
                 return format_chat_response(
@@ -360,11 +366,32 @@ class OwaspAgentRouter:
                     )
                 )
 
+            if comp_hits:
+                # Synthesis said UNKNOWN: never surface a raw stored claim as the answer.
+                cands = [c for c in cands if not is_comprehension_hit(c)]
             picked = select_agent_hit(
                 normalized,
                 cands,
                 get_completion_fn=default_completion_fn,
             )
+            if (
+                comp_hits
+                and picked is None
+                and abstain_enabled()
+                and intent_preview == "cre_normative"
+            ):
+                return format_chat_response(
+                    QueryResult(
+                        ok=True,
+                        kind="evidence",
+                        message=ABSTAIN_MESSAGE,
+                        citations=[],
+                        data={
+                            "lane_scores": sim_decision.scores,
+                            "pick_reason": "comprehension_unknown",
+                        },
+                    )
+                )
             structure_ask = is_structure_ask(normalized)
 
             # Slot-heavy intents (board year, events near, ambiguous chapter…)
