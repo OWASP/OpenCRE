@@ -19,15 +19,26 @@ SYSTEM = (
 )
 
 
+COUNT_SYSTEM = SYSTEM + (
+    " For a how-many question: first list each distinct matching item the sources name, one per "
+    "line with its source number, then state the total on a final line. If a source states the "
+    "total, use it and mention any disagreement with the list."
+)
+
+
 def synthesize(
-    question: str, hits: Sequence[Tuple[str, List[str]]], llm: LlmFn
+    question: str,
+    hits: Sequence[Tuple[str, List[str]]],
+    llm: LlmFn,
+    *,
+    system: str = SYSTEM,
 ) -> Tuple[str, List[str]]:
     """``hits`` = (text, citations). Returns (answer, citations used); ("", []) if unknown."""
     numbered = "\n\n".join(
         f"[{i + 1}] {t.split(chr(10) + chr(10) + 'Citations:')[0]}"
         for i, (t, _) in enumerate(hits)
     )
-    out = (llm(SYSTEM, f"Question: {question}\n\nSources:\n{numbered}") or "").strip()
+    out = (llm(system, f"Question: {question}\n\nSources:\n{numbered}") or "").strip()
     if not out or out.upper().startswith("UNKNOWN"):
         return "", []
     used = sorted(
