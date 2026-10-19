@@ -490,3 +490,19 @@ class SupplementTest(unittest.TestCase):
         self.assertEqual([x.url for x in out[:6]], ["d0", "d1", "d2", "k0", "k1", "d3"])
         scores = [x.score for x in out]
         self.assertEqual(scores, sorted(scores, reverse=True))
+
+
+class DocsFilterTest(unittest.TestCase):
+    def test_docs_where_modes(self):
+        import os
+
+        from application.utils.comprehension.retrieve import docs_where
+
+        self.assertNotIn("-raw-", docs_where())
+        os.environ["OWASP_COMPREHENSION_DOCS"] = "raw"
+        try:
+            self.assertIn("LIKE '%-raw-%'", docs_where())
+            os.environ["OWASP_COMPREHENSION_DOCS"] = "digest"
+            self.assertIn("NOT LIKE '%-raw-%'", docs_where())
+        finally:
+            del os.environ["OWASP_COMPREHENSION_DOCS"]

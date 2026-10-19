@@ -90,6 +90,16 @@ _KW_SQL = """
 _ALL = "embeddings_url LIKE 'owasp-agent://evidence/comprehension-%'"
 
 
+def docs_where() -> str:
+    """Which comprehension documents to search: all (default), raw chunks only, or digests only."""
+    mode = (os.environ.get("OWASP_COMPREHENSION_DOCS") or "all").strip().lower()
+    if mode == "raw":
+        return _ALL + " AND embeddings_url LIKE '%-raw-%'"
+    if mode == "digest":
+        return _ALL + " AND embeddings_url NOT LIKE '%-raw-%'"
+    return _ALL
+
+
 def _hit(r: Any, score: float) -> LaneHit:
     return LaneHit(
         channel=CHANNEL_AGENT,
@@ -200,7 +210,7 @@ def fetch_comprehension_hits(
             vecs = embed_many(texts, handler.get_text_embeddings)
             for t, vec in zip(texts, vecs):
                 q = to_pgvector_literal(list(vec))
-                dense = _dense(conn, q, _ALL, wide)
+                dense = _dense(conn, q, docs_where(), wide)
                 rankings.append(dense)
                 if flags.on("HYBRID"):
                     keyword_hits += _keyword(conn, t, wide)
