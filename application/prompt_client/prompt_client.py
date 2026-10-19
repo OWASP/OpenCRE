@@ -9,7 +9,7 @@ from multiprocessing import Pool
 from io import BytesIO
 from urllib.parse import urlparse
 
-from application.prompt_client import embed_alignment, litellm_router
+from application.prompt_client import chat_retrieval, embed_alignment, litellm_router
 
 from scipy import sparse
 from sklearn.metrics.pairwise import cosine_similarity
@@ -1225,6 +1225,20 @@ class PromptHandler:
             return None, None
         return most_similar_id, max_similarity
 
+    def _chat_retriever(self) -> "chat_retrieval.ChatRetriever":
+        """Lazily build the #1075 top-k retriever over this handler's database.
+
+        Kept as a method so tests can inject a stub and so a reranker hook can be
+        wired from config later without touching ``generate_text``.
+        """
+        cached: Optional[chat_retrieval.ChatRetriever] = getattr(
+            self, "_chat_retriever_instance", None
+        )
+        if cached is None:
+            cached = chat_retrieval.ChatRetriever(self.database)
+            self._chat_retriever_instance = cached
+        return cached
+
     def generate_text(self, prompt: str) -> Dict[str, str]:
         """
         Generate text is a frontend method used for the chatbot
@@ -1244,63 +1258,32 @@ class PromptHandler:
         question_embedding = self.ai_client.get_text_embeddings(prompt)
         logger.debug(f"retrieved embeddings for {prompt}")
 
-        # Find the closest area in the existing embeddings
-        closest_id, similarity = self.get_id_of_most_similar_node_paginated(
-            question_embedding,
-            similarity_threshold=SIMILARITY_THRESHOLD,
-        )
-        closest_object = None
-        if closest_id:
-            closest_object = self.database.get_nodes(db_id=closest_id)
-            if len(closest_object) > 0:
-                closest_object = closest_object[0]
-            logger.info(
-                f"The prompt {prompt}, was most similar to object \n{closest_object}\n, with similarity:{similarity}"
-            )
+        # #1075: top-k over Standards + CREs through the Librarian seams,
+        # with Rob's break-off rule, instead of the single nearest Standard.
+        passages = self._chat_retriever().retrieve(prompt, question_embedding)
 
         answer = ""
-        closest_content = ""
         accurate = False
         table: List[Any] = []
-        if closest_object:
-            emb = None
-            if closest_id and getattr(closest_object, "hyperlink", None):
-                emb = self.database.get_embedding(closest_id)
-                if emb:
-                    closest_content = emb[0].embeddings_content or ""
-
-            url_hint = ""
-            if emb and getattr(emb[0], "embeddings_url", None):
-                narrow = (emb[0].embeddings_url or "").strip()
-                if narrow:
-                    url_hint = (
-                        f"Embeddings_URL (scoped source, for citations): {narrow}\n"
-                    )
-
-            closest_object_str = (
-                url_hint
-                + f"{closest_content}"
-                + "\n".join(
-                    f"{k}:{v}"
-                    for k, v in closest_object.shallow_copy().todict().items()
-                )
+        if passages:
+            logger.info(
+                "The prompt %r is grounded on %d passages: %s",
+                prompt,
+                len(passages),
+                "; ".join(f"[{p.rank}] {p.title} ({p.score:.2f})" for p in passages),
             )
-            closest_object_str = closest_object_str[:8000]
-            # vertex and openai have a model limit of 8100 characters
+            # vertex and openai have a model limit of 8100 characters; the
+            # retriever budgets CHATBOT_PROMPT_CHAR_BUDGET over the rendered
+            # block (headers and separators included), so no second cut here.
+            knowledge = chat_retrieval.render_passages(passages)
             answer = self.ai_client.create_chat_completion(
                 prompt=prompt,
-                closest_object_str=closest_object_str,
+                closest_object_str=knowledge,
             )
             accurate = True
-
-            row: Any = closest_object
-            if emb and getattr(emb[0], "embeddings_url", None):
-                narrow = (emb[0].embeddings_url or "").strip()
-                if narrow:
-                    row = closest_object.shallow_copy().todict()
-                    row["embeddingsUrl"] = narrow
-            table.append(row)
+            table = [p.table_row() for p in passages]
         else:
+            # Nothing above the floor: unchanged fallback, and we do not claim accuracy.
             answer = self.ai_client.query_llm(prompt)
 
         logger.debug(f"retrieved completion for {prompt}")
