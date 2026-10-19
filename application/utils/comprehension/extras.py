@@ -24,6 +24,37 @@ def keywords(question: str, limit: int = 12) -> List[str]:
     return seen[:limit]
 
 
+_QUOTED = re.compile(r"""['"\u2018\u201c]([^'"\u2019\u201d]{4,60})['"\u2019\u201d]""")
+_CAPS = re.compile(
+    r"\b[A-Z][A-Za-z0-9]+(?:\s+(?:of|the|and|for|to)\s+|\s+)[A-Z][A-Za-z0-9]+(?:\s+[A-Z][A-Za-z0-9]+)*\b"
+)
+
+
+def phrases(question: str) -> List[str]:
+    """Quoted spans and Title-Case word runs: names a keyword search should match exactly."""
+    out: List[str] = []
+    for m in _QUOTED.finditer(question or ""):
+        out.append(m.group(1).strip())
+    for m in _CAPS.finditer(question or ""):
+        if m.start() > 0 and m.group(0) not in out:
+            out.append(m.group(0))
+    seen: List[str] = []
+    for p in out:
+        if p.lower() not in [x.lower() for x in seen]:
+            seen.append(p)
+    return seen[:3]
+
+
+def phrase_queries(question: str, kws: Sequence[str]) -> List[str]:
+    """websearch queries that require the named phrases, then loosen to phrases alone."""
+    ph = phrases(question)
+    if not ph:
+        return []
+    quoted = " ".join(f'"{p}"' for p in ph)
+    rare = sorted(dict.fromkeys(kws), key=lambda w: -len(w))[:2]
+    return [f"{quoted} {' '.join(rare)}".strip(), quoted]
+
+
 def relaxed_and_queries(kws: Sequence[str]) -> List[str]:
     """AND-queries over the longest (usually rarest) words, from most to least selective."""
     by_len = sorted(dict.fromkeys(kws), key=lambda w: -len(w))

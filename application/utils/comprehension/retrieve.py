@@ -124,10 +124,14 @@ def _keyword(conn: Any, question: str, limit: int) -> List[LaneHit]:
     """
     from sqlalchemy import text as sql_text
 
-    from application.utils.comprehension.extras import keywords, relaxed_and_queries
+    from application.utils.comprehension.extras import (
+        keywords,
+        phrase_queries,
+        relaxed_and_queries,
+    )
 
     kws = keywords(question)
-    for kw in relaxed_and_queries(kws):
+    for kw in phrase_queries(question, kws) + relaxed_and_queries(kws):
         rows = conn.execute(
             sql_text(_KW_SQL),
             {"kw": kw, "channel": CHANNEL_AGENT, "limit": limit},

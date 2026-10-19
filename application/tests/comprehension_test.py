@@ -427,3 +427,16 @@ class EnrichTest(unittest.TestCase):
         self.assertEqual(
             store.enrich_chunks("O/S", [("a.md", 0, "x" * 200)], bad, workers=1), {}
         )
+
+
+class PhraseTest(unittest.TestCase):
+    def test_quoted_and_title_case_phrases(self):
+        from application.utils.comprehension.extras import phrase_queries, phrases
+
+        q = "What were the four requirements for a chapter during the 'Inactive Chapters' initiative at Global AppSec?"
+        ph = phrases(q)
+        self.assertIn("Inactive Chapters", ph)
+        self.assertIn("Global AppSec", ph)
+        qs = phrase_queries(q, ["requirements", "chapter"])
+        self.assertTrue(qs[0].startswith('"Inactive Chapters"'))
+        self.assertEqual(phrases("what is samm?"), [])
