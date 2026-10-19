@@ -24,6 +24,19 @@ def keywords(question: str, limit: int = 12) -> List[str]:
     return seen[:limit]
 
 
+def relaxed_and_queries(kws: Sequence[str]) -> List[str]:
+    """AND-queries over the longest (usually rarest) words, from most to least selective."""
+    by_len = sorted(dict.fromkeys(kws), key=lambda w: -len(w))
+    out: List[str] = []
+    for n in (5, 3, 2):
+        q = " ".join(by_len[:n])
+        if len(by_len) >= n and q not in out:
+            out.append(q)
+    if not out and by_len:
+        out.append(" ".join(by_len))
+    return out
+
+
 def rrf(
     rankings: Sequence[Sequence[Any]], key: Callable[[Any], str], k: int = 60
 ) -> List[Any]:
