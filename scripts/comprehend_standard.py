@@ -50,6 +50,11 @@ def main() -> int:
         action="store_true",
         help="skip repos whose comprehension overview already exists",
     )
+    ap.add_argument(
+        "--enrich",
+        action="store_true",
+        help="with --raw: add an LLM context sentence and likely questions to each chunk's embedded text",
+    )
     ap.add_argument("--profile", choices=["standard", "people"], default="standard")
     ap.add_argument("--dry-run", action="store_true", help="no embeddings/DB writes")
     ap.add_argument("--limit-docs", type=int, default=0)
@@ -121,6 +126,20 @@ def main() -> int:
             try:
                 if a.raw:
                     ch = sources.chunks_for_repo(database.session, repo)
+                    enriched = None
+                    if a.enrich and not a.dry_run:
+                        lite = litellm_router.system_user_fn(
+                            os.environ.get(
+                                "CRE_COMPREHENSION_ENRICH_MODEL",
+                                "gemini/gemini-2.5-flash-lite",
+                            ),
+                            extra_try_kwargs={"reasoning_effort": "disable"},
+                        )
+                        enriched = store.enrich_chunks(repo, ch, lite, workers=16)
+                        print(
+                            f"{repo}: enriched {len(enriched)}/{len(ch)} chunks",
+                            flush=True,
+                        )
                     n = store.write_raw(
                         database,
                         repo,
@@ -128,6 +147,7 @@ def main() -> int:
                         handler.get_text_embeddings,
                         workers=a.workers,
                         dry_run=a.dry_run,
+                        enriched=enriched,
                     )
                     print(
                         f"{repo}: raw chunks {'planned' if a.dry_run else 'written'}: {n}",

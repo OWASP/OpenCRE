@@ -399,3 +399,31 @@ class CostEstimateTest(unittest.TestCase):
         self.assertGreater(r["total"], r["raw_only"] > 0 and r["raw_only"])
         self.assertLess(r["raw_only"], r["total"])
         self.assertIn("TOTAL repos=1", report([r]))
+
+
+class EnrichTest(unittest.TestCase):
+    def test_enriched_text_has_context_and_questions_but_answer_body_strips_them(self):
+        from application.utils.comprehension.answer import _split_citations
+
+        chunks = [("a/b.md", 0, "x" * 200)]
+        llm = lambda s, u: json.dumps(
+            {"context": "About B.", "questions": ["What is B?", "Who owns B?"]}
+        )
+        enr = store.enrich_chunks("O/S", chunks, llm, workers=1)
+        self.assertEqual(
+            enr[("a/b.md", 0)], ("About B.", ["What is B?", "Who owns B?"])
+        )
+        text = store.raw_documents("O/S", chunks, enriched=enr)[0][1]
+        self.assertIn("About B.", text)
+        self.assertIn("Related questions: What is B? | Who owns B?", text)
+        body, _ = _split_citations(text + "\n\nCitations: https://x")
+        self.assertNotIn("Related questions", body)
+        self.assertIn("About B.", body)
+
+    def test_enrich_failures_are_skipped(self):
+        def bad(s, u):
+            raise RuntimeError("boom")
+
+        self.assertEqual(
+            store.enrich_chunks("O/S", [("a.md", 0, "x" * 200)], bad, workers=1), {}
+        )
