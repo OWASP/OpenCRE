@@ -158,7 +158,15 @@ class RawDocsTest(unittest.TestCase):
     def test_raw_chunks_become_cited_documents(self):
         docs = store.raw_documents("O/S", [("a/b.md", 3, "x" * 200)])
         slug, text, cites = docs[0]
-        self.assertTrue(slug.startswith("comprehension-o-s-raw-a-b-md-003"))
+        self.assertTrue(slug.startswith("comprehension-o-s-raw-a-b-md-"))
+        self.assertTrue(slug.endswith("-003"))
+        long_a = store.raw_documents(
+            "O/S", [("x/" + "a" * 80 + "/1.md", 0, "t" * 200)]
+        )[0][0]
+        long_b = store.raw_documents(
+            "O/S", [("x/" + "a" * 80 + "/2.md", 0, "t" * 200)]
+        )[0][0]
+        self.assertNotEqual(long_a, long_b)
         self.assertIn("S / a/b.md:", text)
         self.assertEqual(cites, ["https://github.com/O/S/blob/HEAD/a/b.md"])
 
