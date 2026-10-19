@@ -477,3 +477,26 @@ h1.ui.header.chatbot-title {
     transform: translateX(-50%) translateY(0);
   }
 }
+
+.rate-answer {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+
+  .rate-btn {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+
+    &:hover {
+      border-color: #c8cdd3;
+    }
+
+    &.is-selected {
+      background: #e8f0fe;
+      border-color: #7ba3f0;
+    }
+  }
+}

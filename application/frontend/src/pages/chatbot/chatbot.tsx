@@ -25,6 +25,8 @@ export const Chatbot = () => {
     data: Document[] | null;
     accurate: boolean;
     owaspCitations?: string[];
+    answerId?: string;
+    rating?: 'up' | 'down';
   };
 
   interface ChatState {
@@ -56,6 +58,8 @@ export const Chatbot = () => {
   }
 
   const hasMessages = chatMessages.length > 0;
+  // Thumbs only appear when the deployment logs answers; the privacy note must then say so.
+  const feedbackOn = chatMessages.some((m) => m.answerId);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
@@ -138,6 +142,28 @@ export const Chatbot = () => {
 
   const HISTORY_CAP = 20;
 
+  /** Thumbs up/down: show the choice at once, tell the server, and undo it if that fails. */
+  function rateAnswer(idx: number, rating: 'up' | 'down') {
+    const answerId = chatMessages[idx]?.answerId;
+    if (!answerId) return;
+    const previous = chatMessages[idx].rating;
+    const setRating = (value?: 'up' | 'down') =>
+      setChatMessages((prev) => prev.map((m, i) => (i === idx ? { ...m, rating: value } : m)));
+    setRating(rating);
+    fetch(`${apiUrl}/answer_feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ answer_id: answerId, rating }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`rating failed (${res.status})`);
+      })
+      .catch((err) => {
+        console.error(err);
+        setRating(previous);
+      });
+  }
+
   function startNewChat() {
     setChatMessages([]);
     setError('');
@@ -215,6 +241,7 @@ export const Chatbot = () => {
               : data.table,
             accurate: data.accurate,
             owaspCitations: Array.isArray(data?.owasp_agent?.citations) ? data.owasp_agent.citations : [],
+            answerId: typeof data?.answer_id === 'string' ? data.answer_id : undefined,
           },
         ]);
       })
@@ -317,6 +344,29 @@ export const Chatbot = () => {
 
                         <div className="message-body">{processResponse(m.message)}</div>
 
+                        {m.role === 'assistant' && m.answerId ? (
+                          <div className="rate-answer" role="group" aria-label="Rate this answer">
+                            <button
+                              type="button"
+                              className={`rate-btn ${m.rating === 'up' ? 'is-selected' : ''}`}
+                              aria-label="Good answer"
+                              aria-pressed={m.rating === 'up'}
+                              onClick={() => rateAnswer(idx, 'up')}
+                            >
+                              <Icon name="thumbs up outline" />
+                            </button>
+                            <button
+                              type="button"
+                              className={`rate-btn ${m.rating === 'down' ? 'is-selected' : ''}`}
+                              aria-label="Bad answer"
+                              aria-pressed={m.rating === 'down'}
+                              onClick={() => rateAnswer(idx, 'down')}
+                            >
+                              <Icon name="thumbs down outline" />
+                            </button>
+                          </div>
+                        ) : null}
+
                         {m.data && m.data.length > 0 && (
                           <div className="references">
                             <div className="references-title">References</div>
@@ -397,6 +447,14 @@ export const Chatbot = () => {
                 then to GCP, all via protected connections. Your data isn't stored on OpenCRE servers. The
                 OpenCRE team employed extensive measures to ensure privacy and security. To review the code:
                 https://github.com/owasp/OpenCRE
+                {feedbackOn && (
+                  <>
+                    <br />
+                    <br />
+                    Feedback: on this deployment the questions and answers that show thumbs up/down are stored
+                    to improve OpenCRE.
+                  </>
+                )}
               </i>
             </div>
           </Container>
