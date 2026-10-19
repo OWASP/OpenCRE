@@ -84,6 +84,44 @@ describe('Admin', () => {
     expect(getByText(/Sign in to continue/)).toBeTruthy();
   });
 
+  it('shows job schedules and saves an edited interval', async () => {
+    loggedIn();
+    const row = {
+      job: 'owasp',
+      description: 'OWASP agent sync',
+      default_interval_minutes: 10,
+      interval_minutes: 10,
+      overridden: false,
+      enabled: true,
+      next_expected: '2026-10-19T12:10:00+00:00',
+      last_run: { status: 'ok', started_at: '2026-10-19T12:00:00' },
+    };
+    const calls: { url: string; init?: any }[] = [];
+    (global as any).fetch = jest.fn((url: string, init?: any) => {
+      calls.push({ url: String(url), init });
+      if (String(url).endsWith('/admin/schedule/owasp') && init?.method === 'PUT') {
+        return jsonRes({ jobs: [{ ...row, interval_minutes: 30, overridden: true }] });
+      }
+      if (String(url).endsWith('/admin/schedule')) {
+        return jsonRes({ jobs: [row] });
+      }
+      return jsonRes({});
+    });
+    const { getByText, findByLabelText, findByText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    fireEvent.click(getByText('Schedules'));
+    const input = (await findByLabelText('owasp interval minutes')) as HTMLInputElement;
+    expect(input.value).toBe('10');
+    fireEvent.change(input, { target: { value: '30' } });
+    fireEvent.click(getByText('Save'));
+    expect(await findByText('owasp schedule saved')).toBeTruthy();
+    const put = calls.find((c) => c.init?.method === 'PUT');
+    expect(JSON.parse(put!.init.body)).toEqual({ interval_minutes: 30, enabled: true });
+  });
+
   it('loads import runs and links to MyOpenCRE', async () => {
     loggedIn();
     (global as any).fetch = jest.fn((url: string) => {
