@@ -15,9 +15,16 @@ class AnswerFeedbackTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         os.environ.pop("ANSWER_LOG_ENABLED", None)
+        os.environ.pop("ANSWER_LOG_CHAT", None)
         sqla.session.remove()
         sqla.drop_all()
         self.ctx.pop()
+
+    def test_chat_answers_are_not_logged_unless_the_deployment_opts_in(self) -> None:
+        self.assertIsNone(af.log_answer(source="chat", question="q", answer="a"))
+        self.assertTrue(af.log_answer(source="mcp", question="q", answer="a"))
+        os.environ["ANSWER_LOG_CHAT"] = "1"
+        self.assertTrue(af.log_answer(source="chat", question="q", answer="a"))
 
     def test_log_then_rate_and_change_rating(self) -> None:
         aid = af.log_answer(
@@ -39,7 +46,7 @@ class AnswerFeedbackTest(unittest.TestCase):
         self.assertEqual(af.list_feedback(rating="up"), [])
 
     def test_rejects_bad_input(self) -> None:
-        aid = af.log_answer(source="chat", question="q", answer="a")
+        aid = af.log_answer(source="mcp", question="q", answer="a")
         with self.assertRaises(ValueError):
             af.record_rating(aid, "meh")
         with self.assertRaises(ValueError):
@@ -140,6 +147,8 @@ class RestFeedbackTest(unittest.TestCase):
     def test_with_answer_id_adds_id_for_dict_responses_only(self) -> None:
         from application.web import web_main
 
+        os.environ["ANSWER_LOG_CHAT"] = "1"
+        self.addCleanup(os.environ.pop, "ANSWER_LOG_CHAT", None)
         out = web_main._with_answer_id(
             {"response": "hi", "owasp_agent": {"citations": ["c"]}}, "q?"
         )
@@ -149,7 +158,7 @@ class RestFeedbackTest(unittest.TestCase):
     def test_post_feedback_requires_valid_rating_and_known_id(self) -> None:
         from application.utils import answer_feedback as af_mod
 
-        aid = af_mod.log_answer(source="chat", question="q", answer="a")
+        aid = af_mod.log_answer(source="mcp", question="q", answer="a")
         self._login()
         bad = self.client.post(
             "/rest/v1/answer_feedback", json={"answer_id": aid, "rating": "meh"}

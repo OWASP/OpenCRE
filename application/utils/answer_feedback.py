@@ -24,6 +24,24 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
+def _truthy(name: str, default: str) -> bool:
+    return (os.environ.get(name, default) or default).strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+        "",
+    )
+
+
+def logging_enabled(source: str) -> bool:
+    """MCP answers are logged by default. Chat answers only when a deployment opts in
+    (``ANSWER_LOG_CHAT=1``): the public chat page promises not to store questions."""
+    if not _truthy("ANSWER_LOG_ENABLED", "1"):
+        return False
+    return _truthy("ANSWER_LOG_CHAT", "0") if source == "chat" else True
+
+
 def _active_flags() -> str:
     from application.utils.comprehension import flags
 
@@ -40,12 +58,7 @@ def log_answer(
     latency_ms: Optional[int] = None,
 ) -> Optional[str]:
     """Store an answer and return its id (None when logging is off or fails)."""
-    if (os.environ.get("ANSWER_LOG_ENABLED", "1") or "1").strip().lower() in (
-        "0",
-        "false",
-        "no",
-        "off",
-    ):
+    if not logging_enabled(source):
         return None
     from application import sqla
     from application.database import db
