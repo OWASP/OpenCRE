@@ -76,21 +76,44 @@ class LaneDecision:
     agent_candidates: List[LaneHit] = field(default_factory=list)
 
 
+def halfvec_enabled() -> bool:
+    """Search with the half-precision HNSW index (``idx_embeddings_agent_hnsw``)."""
+    raw = (os.environ.get("OWASP_PGVECTOR_HALFVEC") or "").strip().lower()
+    return raw in ("1", "true", "yes", "on")
+
+
+def cosine_exprs(dim: int = 3072) -> tuple:
+    """(distance_expr, score_expr) over ``embedding_vec`` and bind param ``:q``.
+
+    The halfvec form matches the partial HNSW index so Postgres can use it;
+    the plain form is an exact scan.
+    """
+    if halfvec_enabled():
+        dist = (
+            f"(embedding_vec::halfvec({dim})) <=> "
+            f"(CAST(:q AS vector)::halfvec({dim}))"
+        )
+    else:
+        dist = "embedding_vec <=> CAST(:q AS vector)"
+    return dist, f"1 - ({dist})"
+
+
 def _top_hits_pg(
     connection: Any, *, channel: str, query_vec: Sequence[float], limit: int = 1
 ) -> List[LaneHit]:
     from sqlalchemy import text as sql_text
 
     q = to_pgvector_literal(list(query_vec))
+    dist, score = cosine_exprs()
     rows = connection.execute(
         sql_text(
-            """
+            f"""
             SELECT id, doc_type, embeddings_content, embeddings_url,
-                   1 - (embedding_vec <=> CAST(:q AS vector)) AS score
+                   {score} AS score
             FROM embeddings
             WHERE source_channel = :channel
               AND embedding_vec IS NOT NULL
-            ORDER BY embedding_vec <=> CAST(:q AS vector)
+            ORDER BY {dist}
             LIMIT :limit
             """
         ),

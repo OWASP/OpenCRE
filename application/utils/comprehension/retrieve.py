@@ -63,12 +63,12 @@ def _known_slugs(conn) -> List[str]:
 
 _DENSE_SQL = """
     SELECT id, doc_type, embeddings_content, embeddings_url,
-           1 - (embedding_vec <=> CAST(:q AS vector)) AS score
+           {score} AS score
     FROM embeddings
     WHERE source_channel = :channel
       AND embedding_vec IS NOT NULL
       AND {where}
-    ORDER BY embedding_vec <=> CAST(:q AS vector)
+    ORDER BY {dist}
     LIMIT :limit
 """
 
@@ -102,8 +102,11 @@ def _dense(
 ) -> List[LaneHit]:
     from sqlalchemy import text as sql_text
 
+    from application.utils.owasp_agent.lane_similarity import cosine_exprs
+
+    dist, score = cosine_exprs()
     rows = conn.execute(
-        sql_text(_DENSE_SQL.format(where=where)),
+        sql_text(_DENSE_SQL.format(where=where, dist=dist, score=score)),
         {"q": q, "channel": CHANNEL_AGENT, "limit": limit, **(params or {})},
     ).fetchall()
     return [_hit(r, float(r.score or 0.0)) for r in rows or []]
