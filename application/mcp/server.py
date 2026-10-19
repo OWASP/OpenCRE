@@ -14,7 +14,7 @@ import mcp.types as types
 from mcp.server.lowlevel import Server
 from mcp.server.stdio import stdio_server
 
-from application.mcp.ask import ASK_TOOL, ask as run_ask
+from application.mcp.ask import ASK_TOOL, RATE_TOOL, ask as run_ask, rate_answer
 from application.mcp.catalog import active_tools, auth_tools_enabled
 from application.mcp.openapi_loader import input_schemas_for
 from application.mcp.owasp_agent_tools import (
@@ -35,6 +35,7 @@ from application.utils.owasp_agent import is_owasp_agent_enabled
 SERVER_NAME = "opencre"
 SERVER_VERSION = "0.1.0"
 ASK_TOOL_NAME = ASK_TOOL["name"]
+RATE_TOOL_NAME = RATE_TOOL["name"]
 
 
 def server_instructions() -> str:
@@ -206,6 +207,17 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
                     ),
                     is_error=False,
                 )
+            if name == RATE_TOOL_NAME:
+                data = rate_answer(
+                    str(arguments.get("answer_id") or ""),
+                    str(arguments.get("rating") or ""),
+                    str(arguments["comment"]) if arguments.get("comment") else None,
+                )
+                return types.CallToolResult(
+                    content=[types.TextContent(type="text", text=json.dumps(data))],
+                    structured_content=data,
+                    is_error=False,
+                )
             if get_owasp_meta_tool(name) is not None:
                 if name.startswith("owasp_meta_sources_"):
                     data = await run_blocking_with_app(
@@ -306,6 +318,12 @@ def dispatch_tool(
             corpus=str(args.get("corpus") or "auto"),
             place=str(args["place"]) if args.get("place") is not None else None,
             rest_client=rest_client,
+        )
+    if tool_name == RATE_TOOL_NAME:
+        return rate_answer(
+            str(args.get("answer_id") or ""),
+            str(args.get("rating") or ""),
+            str(args["comment"]) if args.get("comment") else None,
         )
     if tool_name in list_owasp_meta_tool_names() or get_owasp_meta_tool(tool_name):
         return call_owasp_meta_tool(tool_name, args)
