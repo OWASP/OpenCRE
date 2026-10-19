@@ -73,7 +73,7 @@ def log_answer(
 def record_rating(
     answer_id: str, rating: str, comment: Optional[str] = None
 ) -> Dict[str, Any]:
-    """Set (or change) the thumbs for a logged answer. Raises ValueError / LookupError."""
+    """Set (or change) the thumbs for a logged answer. Raises ValueError / KeyError."""
     from application import sqla
     from application.database import db
 
@@ -84,7 +84,7 @@ def record_rating(
         raise ValueError("answer_id is required")
     row = sqla.session.get(db.AnswerLog, answer_id)
     if row is None:
-        raise LookupError("unknown answer_id")
+        raise KeyError("unknown answer_id")
     row.rating = rating
     row.comment = (comment or "").strip()[:MAX_COMMENT] or None
     row.rated_at = _utcnow()
