@@ -2,6 +2,7 @@ import json
 import logging
 import tempfile
 import unittest
+from unittest import mock
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
@@ -64,7 +65,7 @@ class RunJobTest(SchedulerTestBase):
     def test_runs_all_stages_and_records_the_run(self) -> None:
         out = self.run_job()
         self.assertEqual(out.status, "ok")
-        self.assertEqual(out.run_id, "owasp-20261005T1000Z")
+        self.assertEqual(out.run_id, "owasp-20261005T0000Z")
         self.assertEqual([s.name for s in out.stages], ["agent_sync", "harvest"])
         row = run_log.get_run(sqla.session, out.run_id)
         self.assertEqual(row.status, "ok")
@@ -82,7 +83,7 @@ class RunJobTest(SchedulerTestBase):
 
     def test_next_slot_runs_again(self) -> None:
         self.run_job()
-        nxt = self.run_job(now=NOW + timedelta(minutes=10))
+        nxt = self.run_job(now=NOW + timedelta(days=1))
         self.assertEqual(nxt.status, "ok")
         self.assertEqual(sqla.session.query(db.OieRun).count(), 2)
 
@@ -137,7 +138,7 @@ class RunJobTest(SchedulerTestBase):
             return StageResult("agent_sync", "ok")
 
         self.run_job(overrides=dict(ALL_OK, agent_sync=probe))
-        self.assertEqual(seen[0]["run_id"], "owasp-20261005T1000Z")
+        self.assertEqual(seen[0]["run_id"], "owasp-20261005T0000Z")
         self.assertEqual(seen[0]["job"], "owasp")
         self.assertEqual(seen[0]["stage"], "agent_sync")
 
@@ -160,7 +161,17 @@ class RunDueJobsTest(SchedulerTestBase):
             config=SchedulerConfig(),
             overrides=dict(ALL_OK),
         )
-        self.assertEqual([o.status for o in second], ["ok", "skipped_already_ran"])
+        self.assertEqual(
+            [o.status for o in second], ["skipped_already_ran", "skipped_already_ran"]
+        )
+        third = run_due_jobs(
+            self.collection,
+            cache_file="unused",
+            now=NOW + timedelta(days=1),
+            config=SchedulerConfig(),
+            overrides=dict(ALL_OK),
+        )
+        self.assertEqual([o.status for o in third], ["ok", "ok"])
 
     def test_subset_of_jobs(self) -> None:
         out = run_due_jobs(
@@ -419,20 +430,38 @@ class HealthTest(SchedulerTestBase):
     def test_old_success_is_stale(self) -> None:
         for name in ("owasp", "cre_expansion"):
             self.run_job(name)
-        later = run_log.utcnow() + timedelta(hours=2)
+        later = run_log.utcnow() + timedelta(days=4)
         report = health.evaluate_health(sqla.session, later)
         self.assertEqual(report["jobs"]["owasp"]["state"], "stale")
-        self.assertEqual(report["jobs"]["cre_expansion"]["state"], "ok")
+        self.assertEqual(report["jobs"]["cre_expansion"]["state"], "stale")
         self.assertFalse(report["healthy"])
+
+    def test_staleness_follows_the_admin_set_interval(self) -> None:
+        for name in ("owasp", "cre_expansion"):
+            self.run_job(name)
+        later = run_log.utcnow() + timedelta(hours=2)
+        report = health.evaluate_health(sqla.session, later)
+        self.assertEqual(report["jobs"]["owasp"]["state"], "ok")  # daily: not due yet
+        with mock.patch.object(
+            health.schedule_settings,
+            "effective_interval_minutes",
+            side_effect=lambda job, default: 10 if job == "owasp" else default,
+        ):
+            report = health.evaluate_health(sqla.session, later)
+        self.assertEqual(report["jobs"]["owasp"]["state"], "stale")
+        self.assertEqual(report["jobs"]["owasp"]["interval_minutes"], 10)
+        self.assertEqual(report["jobs"]["cre_expansion"]["state"], "ok")
 
     def test_latest_failure_after_a_success_is_failing(self) -> None:
         self.run_job("owasp")
         self.run_job(
             "owasp",
-            now=NOW + timedelta(minutes=10),
+            now=NOW + timedelta(days=1),
             overrides={"agent_sync": _boom("a"), "harvest": _boom("h")},
         )
-        report = health.evaluate_health(sqla.session, NOW + timedelta(minutes=12))
+        report = health.evaluate_health(
+            sqla.session, NOW + timedelta(days=1, minutes=2)
+        )
         self.assertEqual(report["jobs"]["owasp"]["state"], "failing")
 
     def test_queue_depths_count_backlog(self) -> None:
