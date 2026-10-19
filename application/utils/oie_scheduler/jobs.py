@@ -1,8 +1,9 @@
 """The scheduled OIE jobs and their stages.
 
-Two jobs, both Postgres-only in production:
+Two jobs, both Postgres-only in production and both daily by default
+(the interval is editable in the admin panel):
 
-``owasp`` (every 10 minutes) -- the cheap, frequent one.
+``owasp`` (daily) -- the cheap one.
     1. ``agent_sync``: Nest + GitHub metadata into the OWASP agent index, plus
        the chapter repos that are due (the *metadata path*).
     2. ``harvest``: Module A over the harvestable repos whose polling interval
@@ -440,7 +441,7 @@ def run_stage(name: str, fn: StageFn, ctx: JobContext) -> StageResult:
 JOBS: Dict[str, JobSpec] = {
     "owasp": JobSpec(
         name="owasp",
-        interval_minutes=10,
+        interval_minutes=1440,
         description="OWASP agent Nest+GitHub sync and incremental harvest",
         stages=(("agent_sync", stage_agent_sync), ("harvest", stage_harvest)),
     ),
