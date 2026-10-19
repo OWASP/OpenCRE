@@ -1273,8 +1273,9 @@ class PromptHandler:
                 "; ".join(f"[{p.rank}] {p.title} ({p.score:.2f})" for p in passages),
             )
             # vertex and openai have a model limit of 8100 characters; the
-            # retriever already split CHATBOT_PROMPT_CHAR_BUDGET across passages.
-            knowledge = chat_retrieval.render_passages(passages)[:8000]
+            # retriever budgets CHATBOT_PROMPT_CHAR_BUDGET over the rendered
+            # block (headers and separators included), so no second cut here.
+            knowledge = chat_retrieval.render_passages(passages)
             answer = self.ai_client.create_chat_completion(
                 prompt=prompt,
                 closest_object_str=knowledge,

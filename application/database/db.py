@@ -3158,6 +3158,19 @@ class Node_collection:
         self._pgvector_similarity_ready = ready
         return ready
 
+    def _rollback_quietly(self) -> None:
+        """Best-effort ``session.rollback()`` after a failed pgvector statement.
+
+        On Postgres a failed statement aborts the open transaction; without a
+        rollback the next query on the shared session raises
+        ``InFailedSqlTransaction``. Never raises: the caller is already on the
+        degrade-to-no-match path.
+        """
+        try:
+            self.session.rollback()
+        except Exception:  # noqa: BLE001 - best effort only
+            pass
+
     def find_most_similar_embedding_id(
         self,
         query_embedding: List[float],
@@ -3208,6 +3221,9 @@ class Node_collection:
         except Exception as exc:
             # Match prior sklearn-path resilience: chat/import should degrade
             # to "no match" rather than 500 on a transient driver/query error.
+            # A failed statement leaves the Postgres transaction aborted, so
+            # roll back or every later query on this session fails too.
+            self._rollback_quietly()
             logger.warning(
                 "pgvector similarity query failed (%s); returning no match",
                 exc,
@@ -3268,6 +3284,7 @@ class Node_collection:
         except SystemExit:
             raise
         except Exception as exc:
+            self._rollback_quietly()
             logger.warning(
                 "pgvector top-k similarity query failed (%s); returning no matches",
                 exc,

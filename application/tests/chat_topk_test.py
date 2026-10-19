@@ -511,3 +511,84 @@ class SharedTopKHelperTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ReviewFollowUpsTest(unittest.TestCase):
+    """CodeRabbit follow-ups on #1161: rollback after a failed pgvector query,
+    and budget the rendered block rather than only passage content."""
+
+    def _db_with_failing_execute(self) -> Any:
+        from application.database.db import Node_collection
+
+        database = Node_collection.__new__(Node_collection)
+        session = MagicMock()
+        session.execute.side_effect = RuntimeError("different vector dimensions")
+        session.get_bind.return_value = MagicMock()
+        database.session = session
+        database._pgvector_similarity_ready = True
+        return database
+
+    def test_top_k_query_error_rolls_back_the_session(self) -> None:
+        database = self._db_with_failing_execute()
+        with patch("application.database.db.logger"):
+            rows = database.find_top_k_similar_embedding_ids(
+                [0.1],
+                doc_type="Standard",
+                id_column="node_id",
+                k=3,
+                similarity_threshold=0.7,
+            )
+        self.assertEqual(rows, [])
+        database.session.rollback.assert_called_once()
+
+    def test_top_1_query_error_rolls_back_the_session(self) -> None:
+        database = self._db_with_failing_execute()
+        with patch("application.database.db.logger"):
+            match = database.find_most_similar_embedding_id(
+                [0.1], doc_type="CRE", id_column="cre_id", similarity_threshold=0.7
+            )
+        self.assertEqual(match, (None, None))
+        database.session.rollback.assert_called_once()
+
+    def test_rollback_failure_is_swallowed(self) -> None:
+        database = self._db_with_failing_execute()
+        database.session.rollback.side_effect = RuntimeError("connection gone")
+        with patch("application.database.db.logger"):
+            rows = database.find_top_k_similar_embedding_ids(
+                [0.1], doc_type="CRE", id_column="cre_id", k=3, similarity_threshold=0.7
+            )
+        self.assertEqual(rows, [])
+
+    def test_rendered_block_fits_the_budget_including_headers(self) -> None:
+        long_title = "ASVS §" + "Verify something very specific about sessions " * 6
+        retriever, _ = ChatRetrieverPgvectorTest()._retriever(char_budget=3000)
+        for p in retriever.retrieve("q", [0.1, 0.2]):
+            pass
+        # rebuild passages with long titles and long content, then re-budget
+        passages = [
+            _passage(1, "a", long_title, "x" * 5000, "https://example.test/one"),
+            _passage(2, "b", long_title, "y" * 5000, "https://example.test/two"),
+            _passage(3, "c", long_title, "z" * 5000),
+        ]
+        per = chat_retrieval.content_budget(3000, passages)
+        for p in passages:
+            p.content = p.content[:per]
+        rendered = render_passages(passages)
+        self.assertLessEqual(len(rendered), 3000)
+        self.assertEqual(
+            len(rendered),
+            chat_retrieval.rendered_overhead(passages)
+            + sum(len(p.content) for p in passages),
+        )
+
+    def test_generate_text_sends_the_whole_rendered_block(self) -> None:
+        passages = [
+            _passage(1, "a", "SAMM", "s" * 3000, "https://samm#ta"),
+            _passage(2, "b", "Cheat Sheets", "c" * 3000),
+            _passage(3, "c", "ASVS", "a" * 3000),
+        ]
+        handler, ai = _handler_with(passages)
+        handler.generate_text("q")
+        # No second truncation in the handler: knowledge == full rendered block
+        self.assertEqual(ai.knowledge[0], render_passages(passages))
+        self.assertTrue(ai.knowledge[0].endswith("a" * 3000))

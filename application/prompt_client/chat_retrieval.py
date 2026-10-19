@@ -124,14 +124,35 @@ def split_budget(total_chars: int, n: int) -> int:
     return max(200, total_chars // n)
 
 
+def passage_header(p: ChatPassage) -> str:
+    """The ``[n] title (url)`` line that precedes a passage in the prompt."""
+    head = f"[{p.rank}] {p.title}".rstrip()
+    if p.url:
+        head += f" ({p.url})"
+    return head
+
+
+def rendered_overhead(passages: Sequence[ChatPassage]) -> int:
+    """Characters ``render_passages`` adds on top of passage content."""
+    if not passages:
+        return 0
+    per_passage = sum(len(passage_header(p)) + 1 for p in passages)  # +1 newline
+    return per_passage + 2 * (len(passages) - 1)  # blank-line separators
+
+
+def content_budget(total_chars: int, passages: Sequence[ChatPassage]) -> int:
+    """Per-passage content budget so the rendered block fits ``total_chars``."""
+    if not passages:
+        return total_chars
+    remaining = max(0, total_chars - rendered_overhead(passages))
+    return max(1, remaining // len(passages))
+
+
 def render_passages(passages: Sequence[ChatPassage]) -> str:
     """Numbered passage block for ``chat_prompt.j2`` (cite as ``[n]``)."""
     parts: List[str] = []
     for p in passages:
-        head = f"[{p.rank}] {p.title}".rstrip()
-        if p.url:
-            head += f" ({p.url})"
-        parts.append(f"{head}\n{p.content}".strip())
+        parts.append(f"{passage_header(p)}\n{p.content}".strip())
     return "\n\n".join(parts)
 
 
@@ -317,9 +338,12 @@ class ChatRetriever:
             if len(passages) >= self.top_k_prompt:
                 break
         passages = self.rerank_fn(question, passages)[: self.top_k_prompt]
-        per = split_budget(self.char_budget, len(passages))
         for i, p in enumerate(passages, start=1):
             p.rank = i
+        # Budget the *rendered* block (headers, URLs, separators included), so
+        # what the model sees is exactly what the references table advertises.
+        per = content_budget(self.char_budget, passages)
+        for p in passages:
             if len(p.content) > per:
                 p.content = p.content[:per]
         if passages:
