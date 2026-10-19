@@ -280,6 +280,10 @@ class OwaspAgentRouter:
         )
         if not text:
             return None
+        from application.utils.owasp_agent.prompt_normalize import strip_injection
+
+        # Answer the legitimate question; never follow an appended instruction.
+        text, _ = strip_injection(text)
 
         # Refusal is decided on the CURRENT turn only: a malicious earlier turn
         # must not poison a later benign one, and an attack clause inside a

@@ -138,3 +138,29 @@ def normalize_prompt(prompt: str) -> str:
         kept.append(low)
     out = _MULTI_SPACE_RE.sub(" ", " ".join(kept)).strip(" .?!")
     return out if out else light
+
+
+_INJECTION_TAIL = re.compile(
+    r"(?:^|[\s.?!;,:])(?:(?:and\s+)?(?:after|then)\s+that[,\s]+)?"
+    r"(?:ignore|disregard|forget|override)\s+(?:all\s+|any\s+|the\s+|your\s+)*"
+    r"(?:previous|prior|earlier|above|preceding)\b.*$",
+    re.IGNORECASE | re.DOTALL,
+)
+_MIN_KEEP_CHARS = 12
+
+
+def strip_injection(text: str) -> tuple[str, bool]:
+    """Drop an appended "ignore the previous instructions ..." clause from a question.
+
+    Returns ``(clean_text, stripped)``. The legitimate question before the clause is
+    kept so it can still be answered; the appended instruction is discarded, never
+    followed. If nothing meaningful precedes the clause (the whole message is the
+    injection) the text is returned unchanged so the normal refusal logic applies.
+    """
+    m = _INJECTION_TAIL.search(text or "")
+    if not m:
+        return text, False
+    head = text[: m.start()].strip()
+    if len(re.sub(r"[^A-Za-z0-9]", "", head)) < _MIN_KEEP_CHARS:
+        return text, False
+    return head, True
