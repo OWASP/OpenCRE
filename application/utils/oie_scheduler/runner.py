@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
-from application.utils.oie_scheduler import run_log
+from application.utils.oie_scheduler import run_log, schedule_settings
 from application.utils.oie_scheduler.jobs import (
     JOB_ORDER,
     JOBS,
@@ -74,8 +74,19 @@ def run_job(
     spec = JOBS[job_name]
     session = collection.session
     started = now or run_log.utcnow()
-    slot = run_log.slot_for(spec.interval_minutes, started)
+    interval = schedule_settings.effective_interval_minutes(
+        job_name, spec.interval_minutes
+    )
+    slot = run_log.slot_for(interval, started)
     run_id = run_log.run_id_for(job_name, slot)
+
+    if (
+        trigger == "scheduled"
+        and not force
+        and not schedule_settings.job_enabled(job_name)
+    ):
+        logger.info("job %s is switched off in the admin panel; skipping", job_name)
+        return RunOutcome(job_name, run_id, "skipped_disabled")
 
     with log_context(run_id=run_id, job=job_name):
         with job_lease(session, job_name) as acquired:
