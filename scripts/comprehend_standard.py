@@ -40,6 +40,16 @@ def main() -> int:
     ap.add_argument(
         "--raw", action="store_true", help="embed raw source chunks (no LLM)"
     )
+    ap.add_argument(
+        "--estimate",
+        action="store_true",
+        help="no LLM calls: count documents/tokens and print an estimated cost",
+    )
+    ap.add_argument(
+        "--skip-done",
+        action="store_true",
+        help="skip repos whose comprehension overview already exists",
+    )
     ap.add_argument("--profile", choices=["standard", "people"], default="standard")
     ap.add_argument("--dry-run", action="store_true", help="no embeddings/DB writes")
     ap.add_argument("--limit-docs", type=int, default=0)
@@ -52,8 +62,11 @@ def main() -> int:
     from application.prompt_client import litellm_router, prompt_client
     from application.utils.comprehension import digest, sources, store
 
+    # Thinking tokens bill as output; per-document extraction does not need them.
+    think_off = (os.environ.get("CRE_COMPREHENSION_THINKING", "off") or "off") != "on"
     bulk = litellm_router.system_user_fn(
-        os.environ.get("CRE_COMPREHENSION_BULK_MODEL", "gemini/gemini-2.5-flash")
+        os.environ.get("CRE_COMPREHENSION_BULK_MODEL", "gemini/gemini-2.5-flash"),
+        extra_try_kwargs={"reasoning_effort": "disable"} if think_off else None,
     )
     big = litellm_router.system_user_fn(
         os.environ.get("CRE_COMPREHENSION_OVERVIEW_MODEL", "gemini/gemini-2.5-pro")
@@ -77,6 +90,33 @@ def main() -> int:
         repos = [r for r in dict.fromkeys(repos) if r not in set(a.exclude)]
         handler = prompt_client.PromptHandler(database, load_all_embeddings=False)
         system = digest.PEOPLE_SYSTEM if a.profile == "people" else digest.DOC_SYSTEM
+        if a.skip_done:
+            from application.utils.comprehension.store import SLUG_PREFIX, repo_slug
+
+            done = {
+                r
+                for r in repos
+                if database.session.execute(
+                    __import__("sqlalchemy").text(
+                        "SELECT 1 FROM embeddings WHERE embeddings_url = :u LIMIT 1"
+                    ),
+                    {
+                        "u": f"owasp-agent://evidence/{SLUG_PREFIX}{repo_slug(r)}-overview"
+                    },
+                ).first()
+            }
+            repos = [r for r in repos if r not in done]
+            print(f"skipping {len(done)} repos already comprehended", flush=True)
+        if a.estimate:
+            from application.utils.comprehension.cost import estimate_repo, report
+
+            rows = []
+            for repo in repos:
+                docs = sources.load_repo_docs(database.session, repo)
+                ch = sources.chunks_for_repo(database.session, repo)
+                rows.append(estimate_repo(repo, docs, ch))
+            print(report(rows), flush=True)
+            return 0
         for repo in repos:
             try:
                 if a.raw:
