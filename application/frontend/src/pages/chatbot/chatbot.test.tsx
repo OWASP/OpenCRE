@@ -72,16 +72,18 @@ describe('Chatbot thumbs up/down', () => {
     await waitFor(() => expect(down.getAttribute('aria-pressed')).toBe('false'));
   });
 
-  it('shows no thumbs (and no storage notice) when the answer was not logged', async () => {
+  it('shows no thumbs and keeps the privacy paragraph when the answer was not logged', async () => {
     const { ask, queryByLabelText, queryByText } = setup(undefined);
     await ask();
     expect(queryByLabelText('Good answer')).toBeNull();
-    expect(queryByText(/stored to improve OpenCRE/)).toBeNull();
+    expect(queryByText(/Privacy & Security/)).not.toBeNull();
   });
 
-  it('tells the user answers are stored when thumbs are offered', async () => {
-    const { ask, findByText } = setup('ans-3');
+  it('hides the "not stored" privacy paragraph once answers are stored', async () => {
+    const { ask, findByText, queryByText } = setup('ans-3');
+    expect(queryByText(/Privacy & Security/)).not.toBeNull();
     await ask();
-    expect(await findByText(/stored\s+to improve OpenCRE/)).toBeTruthy();
+    await findByText(/3 maturity levels/);
+    expect(queryByText(/Privacy & Security/)).toBeNull();
   });
 });
