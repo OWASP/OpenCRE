@@ -1,8 +1,9 @@
 """Run scheduled OIE jobs: lease, slot-derived run id, stages, durable record.
 
 ``cre.py --run_scheduled all`` (cron, every 10 minutes) calls ``run_due_jobs``;
-each job decides for itself whether its current slot has already run, so the
-daily job fires on the first tick of the day and every other tick is a no-op.
+each job decides for itself whether its current slot has already run, so a daily
+job fires on the first tick of the day and every other tick is a no-op. Intervals
+come from the admin panel (``schedule_settings``) and default to the job spec.
 """
 
 from __future__ import annotations
