@@ -132,6 +132,7 @@ def is_comprehension_hit(hit: Any) -> bool:
 
 def _split_citations(content: str) -> Tuple[str, List[str]]:
     body, _, tail = (content or "").partition("\n\nCitations:")
+    body = body.partition("\n\nRelated questions:")[0]  # index-only text, not evidence
     return body.strip(), [
         c.strip() for c in tail.split(",") if c.strip().startswith("http")
     ]

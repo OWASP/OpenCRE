@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import re
-from typing import Any, Callable, List, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from application.utils.comprehension.digest import StandardDigest
 
@@ -94,10 +94,55 @@ def write(
     return n
 
 
+ENRICH_SYSTEM = (
+    "You index ONE chunk of an OWASP repository so questions about it can be found. Respond with JSON "
+    'only: {"context": "<one sentence: which project/document/section this chunk belongs to and what '
+    'it is about; use only the given text>", "questions": ["<3 specific questions a user might ask '
+    'that this chunk answers>"]}.'
+)
+RELATED = "\n\nRelated questions:"
+
+
+def enrich_chunks(
+    repo: str,
+    chunks: List[Tuple[str, int, str]],
+    llm: Callable[[str, str], str],
+    *,
+    workers: int = 16,
+) -> Dict[Tuple[str, int], Tuple[str, List[str]]]:
+    """(path, idx) -> (context sentence, likely questions), via a cheap model; failures are skipped."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from application.utils.comprehension.extras import parse_json
+
+    starts: Dict[str, str] = {}
+    for path, idx, text in sorted(chunks, key=lambda c: (c[0], c[1])):
+        starts.setdefault(path, text)
+
+    def one(c: Tuple[str, int, str]):
+        path, idx, text = c
+        try:
+            d = parse_json(
+                llm(
+                    ENRICH_SYSTEM,
+                    f"Project: {repo}\nFile: {path}\nDocument start: {starts[path][:400]}\n\nChunk:\n{text[:3500]}",
+                )
+            )
+        except Exception:
+            return (path, idx), None
+        ctx = str(d.get("context") or "").strip()
+        qs = [str(q).strip() for q in (d.get("questions") or []) if str(q).strip()][:3]
+        return (path, idx), ((ctx, qs) if ctx or qs else None)
+
+    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+        return {k: v for k, v in pool.map(one, chunks) if v}
+
+
 def raw_documents(
     repo: str,
     chunks: List[Tuple[str, int, str]],
     github_base: str = "https://github.com",
+    enriched: Optional[Dict[Tuple[str, int], Tuple[str, List[str]]]] = None,
 ) -> List[Tuple[str, str, List[str]]]:
     """Source chunks as retrievable documents (detail recall that summaries lose)."""
     base = repo_slug(repo)
@@ -111,11 +156,21 @@ def raw_documents(
         out.append(
             (
                 f"{SLUG_PREFIX}{base}-raw-{pslug}-{phash}-{idx:03d}",
-                f"{family} / {path}: {text}",
+                _raw_text(family, path, text, (enriched or {}).get((path, idx))),
                 [f"{github_base}/{repo}/blob/HEAD/{path}"],
             )
         )
     return out
+
+
+def _raw_text(
+    family: str, path: str, text: str, extra: Optional[Tuple[str, List[str]]]
+) -> str:
+    if not extra:
+        return f"{family} / {path}: {text}"
+    ctx, qs = extra
+    body = f"{family} / {path}: {ctx}\n{text}" if ctx else f"{family} / {path}: {text}"
+    return body + (RELATED + " " + " | ".join(qs) if qs else "")
 
 
 def write_raw(
@@ -126,6 +181,7 @@ def write_raw(
     *,
     workers: int = 8,
     dry_run: bool = False,
+    enriched: Optional[Dict[Tuple[str, int], Tuple[str, List[str]]]] = None,
 ) -> int:
     from concurrent.futures import ThreadPoolExecutor
 
@@ -136,7 +192,7 @@ def write_raw(
         upsert_channel_embedding,
     )
 
-    docs = raw_documents(repo, chunks)
+    docs = raw_documents(repo, chunks, enriched=enriched)
     bodies = [
         text + ("\n\nCitations: " + ", ".join(c) if c else "") for _, text, c in docs
     ]
