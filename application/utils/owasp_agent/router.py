@@ -1002,7 +1002,9 @@ def _similarity_gate(prompt: str):
         database = db_mod.Node_collection()
         if not database.can_use_pgvector_similarity():
             return None
-        handler = prompt_client.PromptHandler(database, load_all_embeddings=False)
+        from application.utils.comprehension.shared import shared_handler
+
+        handler = shared_handler(database)
 
         from application.utils.comprehension.embedcache import cached
 
