@@ -7,7 +7,7 @@ from cre_logging import get_logger
 
 logger = get_logger(__name__)
 
-from flask import jsonify, request, session
+from flask import g, jsonify, request, session
 
 from application.utils.admin_panel import service
 
@@ -342,6 +342,41 @@ def register_admin_panel_routes(
         except Exception as exc:
             logger.exception("ingest status failed")
             return _err(500, f"ingest status failed: {exc}")
+
+    @bp.route("/admin/schedule", methods=["GET"])
+    @login_required
+    @imports_enabled
+    def admin_schedule_get() -> Any:
+        from application import sqla
+        from application.utils.oie_scheduler import schedule_settings
+
+        try:
+            return jsonify({"jobs": schedule_settings.list_schedule(sqla.session)})
+        except Exception as exc:
+            logger.exception("schedule get failed")
+            return _err(500, f"schedule failed: {exc}")
+
+    @bp.route("/admin/schedule/<job>", methods=["PUT"])
+    @login_required
+    @imports_enabled
+    def admin_schedule_put(job: str) -> Any:
+        from application import sqla
+        from application.utils.oie_scheduler import schedule_settings
+
+        body = request.get_json(silent=True) or {}
+        try:
+            update = schedule_settings.validate_update(
+                job, body.get("interval_minutes"), body.get("enabled")
+            )
+        except ValueError as exc:
+            return _err(400, str(exc))
+        try:
+            actor = session.get("email") or getattr(g, "api_key_email", None)
+            schedule_settings.apply_update(job, update, actor=actor)
+            return jsonify({"jobs": schedule_settings.list_schedule(sqla.session)})
+        except Exception as exc:
+            logger.exception("schedule update failed")
+            return _err(500, f"schedule update failed: {exc}")
 
     @bp.route("/admin/oie/rq/status", methods=["GET"])
     @login_required
