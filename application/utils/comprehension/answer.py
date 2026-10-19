@@ -159,9 +159,22 @@ def answer_from_candidates(
     return out
 
 
+def synthesis_model() -> str:
+    """Model used for the final answer ('' = the default chat model)."""
+    return (os.environ.get("OWASP_COMPREHENSION_MODEL") or "").strip()
+
+
 def _answer(
     question: str, cands: Sequence[Any], complete: CompletionFn
 ) -> Optional[Tuple[str, List[str]]]:
+    model = synthesis_model()
+    if model:
+        from application.prompt_client import litellm_router
+
+        call = litellm_router.system_user_fn(model, temperature=0.0)
+        complete = lambda msgs: call(
+            msgs[0]["content"], msgs[1]["content"]
+        )  # noqa: E731
     hits = [c for c in cands if is_comprehension_hit(c)]
     # Overviews first: they state structure; claims/summaries add detail.
     from application.utils.comprehension import flags

@@ -440,3 +440,37 @@ class PhraseTest(unittest.TestCase):
         qs = phrase_queries(q, ["requirements", "chapter"])
         self.assertTrue(qs[0].startswith('"Inactive Chapters"'))
         self.assertEqual(phrases("what is samm?"), [])
+
+
+class SynthesisModelTest(unittest.TestCase):
+    def test_env_model_overrides_default_completion(self):
+        import os
+        from unittest import mock
+
+        from application.utils.comprehension import answer
+        from application.utils.owasp_agent.lane_similarity import LaneHit
+
+        hit = LaneHit(
+            channel="c",
+            score=0.9,
+            url="owasp-agent://evidence/comprehension-o-s-claim-001",
+            content="S: has 3 levels.\n\nCitations: https://x/a",
+        )
+        seen = {}
+
+        def fake_fn(model, **kw):
+            seen["model"] = model
+            return lambda system, user: "Three levels [1]."
+
+        os.environ["OWASP_COMPREHENSION_MODEL"] = "gemini/test-model"
+        try:
+            with mock.patch(
+                "application.prompt_client.litellm_router.system_user_fn", fake_fn
+            ):
+                out = answer.answer_from_candidates(
+                    "levels?", [hit], lambda m: "SHOULD NOT BE USED"
+                )
+        finally:
+            del os.environ["OWASP_COMPREHENSION_MODEL"]
+        self.assertEqual(seen["model"], "gemini/test-model")
+        self.assertEqual(out, ("Three levels [1].", ["https://x/a"]))
