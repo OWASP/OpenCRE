@@ -7,13 +7,23 @@ import { Button, Checkbox, Form, Message, Modal, Header as SUIHeader, Table } fr
 import { useCapabilities, useEnvironment } from '../../hooks';
 import { useUser } from '../../hooks/useUser';
 
-type Tab = 'dashboard' | 'config' | 'pipeline' | 'oie' | 'graph' | 'workbench' | 'myopencre' | 'profile';
+type Tab =
+  | 'dashboard'
+  | 'config'
+  | 'pipeline'
+  | 'oie'
+  | 'schedule'
+  | 'graph'
+  | 'workbench'
+  | 'myopencre'
+  | 'profile';
 
 const TAB_META: Record<Tab, { label: string; sub: string }> = {
   dashboard: { label: 'Overview', sub: 'Queue health, needs-attention, review pulse.' },
   config: { label: 'Config values', sub: 'Process env vs .env — admin only.' },
   pipeline: { label: 'Pipeline', sub: 'Jobs, stage logs, ingest.' },
   oie: { label: 'OIE queue', sub: 'RQ / OIE worker status.' },
+  schedule: { label: 'Schedules', sub: 'How often the ingestion jobs run — change or switch off.' },
   graph: { label: 'Review', sub: 'Staged links — expand section text, accept/reject.' },
   workbench: { label: 'Workbench', sub: 'Accepted targets and re-ingest.' },
   myopencre: { label: 'MyOpenCRE', sub: 'Personal CRE workspace (admin shortcut).' },
@@ -171,6 +181,7 @@ export const Admin = () => {
     { id: 'config', label: 'Config values', group: 'Ops' },
     { id: 'pipeline', label: 'Pipeline', group: 'Ops' },
     { id: 'oie', label: 'OIE queue', group: 'Ops' },
+    { id: 'schedule', label: 'Schedules', group: 'Ops' },
     { id: 'graph', label: 'Review', group: 'Ops' },
     { id: 'workbench', label: 'Workbench', group: 'Ops' },
     { id: 'myopencre', label: 'MyOpenCRE', group: 'Apps' },
@@ -222,6 +233,7 @@ export const Admin = () => {
           {tab === 'config' && <ConfigTab origin={origin} />}
           {tab === 'pipeline' && <PipelineTab origin={origin} />}
           {tab === 'oie' && <OieQueueTab origin={origin} />}
+          {tab === 'schedule' && <ScheduleTab origin={origin} />}
           {tab === 'graph' && <GraphManagementTab origin={origin} />}
           {tab === 'workbench' && <WorkbenchTab origin={origin} />}
           {tab === 'myopencre' && (
@@ -1047,6 +1059,141 @@ function ProfileTab({ user }: { user: string | null }) {
         deployment. Use <code>Authorization: Bearer</code> or <code>X-API-Key</code> for automated admin
         calls; browser session cookies remain the primary UI path.
       </p>
+    </div>
+  );
+}
+
+type ScheduleJob = {
+  job: string;
+  description: string;
+  default_interval_minutes: number;
+  interval_minutes: number;
+  overridden: boolean;
+  enabled: boolean;
+  next_expected: string | null;
+  last_run: { status?: string; started_at?: string } | null;
+};
+
+function ScheduleTab({ origin }: { origin: string }) {
+  const [jobs, setJobs] = useState<ScheduleJob[]>([]);
+  const [draft, setDraft] = useState<Record<string, { interval: string; enabled: boolean }>>({});
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const apply = useCallback((rows: ScheduleJob[]) => {
+    setJobs(rows);
+    setDraft(
+      Object.fromEntries(
+        rows.map((r) => [r.job, { interval: String(r.interval_minutes), enabled: r.enabled }])
+      )
+    );
+  }, []);
+
+  const load = useCallback(() => {
+    fetch(`${origin}/admin/schedule`)
+      .then(async (res) => {
+        const body = await readJson(res);
+        if (!res.ok) throw new Error(apiError(body, res));
+        apply(body.jobs || []);
+        setError(null);
+      })
+      .catch((err) => setError(String(err)));
+  }, [origin, apply]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const save = async (job: string) => {
+    const d = draft[job];
+    if (!d) return;
+    setBusy(job);
+    setNotice(null);
+    setError(null);
+    try {
+      const res = await fetch(`${origin}/admin/schedule/${encodeURIComponent(job)}`, {
+        method: 'PUT',
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ interval_minutes: Number(d.interval), enabled: d.enabled }),
+      });
+      const body = await readJson(res);
+      if (!res.ok) throw new Error(apiError(body, res));
+      apply(body.jobs || []);
+      setNotice(`${job} schedule saved`);
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div>
+      {error ? <Message negative content={error} /> : null}
+      {notice ? <Message positive content={notice} /> : null}
+      <p>
+        Intervals are in minutes. A change takes effect at the next scheduler tick; it does not interrupt a
+        run in progress. A switched-off job is skipped by the scheduler but can still be started by hand.
+      </p>
+      <table className="admin-table" data-testid="schedule-table">
+        <thead>
+          <tr>
+            <th>job</th>
+            <th>what it does</th>
+            <th>interval (min)</th>
+            <th>default</th>
+            <th>on</th>
+            <th>next run</th>
+            <th>last run</th>
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          {jobs.map((j) => {
+            const d = draft[j.job] || { interval: String(j.interval_minutes), enabled: j.enabled };
+            const dirty = d.interval !== String(j.interval_minutes) || d.enabled !== j.enabled;
+            return (
+              <tr key={j.job}>
+                <td className="mono">{j.job}</td>
+                <td>{j.description}</td>
+                <td>
+                  <input
+                    type="number"
+                    min={1}
+                    aria-label={`${j.job} interval minutes`}
+                    value={d.interval}
+                    onChange={(e) => setDraft({ ...draft, [j.job]: { ...d, interval: e.target.value } })}
+                  />
+                </td>
+                <td>{j.default_interval_minutes}</td>
+                <td>
+                  <Checkbox
+                    aria-label={`${j.job} enabled`}
+                    checked={d.enabled}
+                    onChange={(_e, data) =>
+                      setDraft({ ...draft, [j.job]: { ...d, enabled: !!data.checked } })
+                    }
+                  />
+                </td>
+                <td className="mono">
+                  {j.next_expected ? j.next_expected.replace('T', ' ').slice(0, 16) : '—'}
+                </td>
+                <td>
+                  {j.last_run?.status
+                    ? `${j.last_run.status} · ${(j.last_run.started_at || '').slice(0, 16)}`
+                    : '—'}
+                </td>
+                <td>
+                  <Button size="mini" primary disabled={!dirty || busy === j.job} onClick={() => save(j.job)}>
+                    Save
+                  </Button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
