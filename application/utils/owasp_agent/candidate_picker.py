@@ -211,7 +211,9 @@ def default_completion_fn() -> Optional[CompletionFn]:
         from application.prompt_client import litellm_router, prompt_client
 
         database = db_mod.Node_collection()
-        handler = prompt_client.PromptHandler(database, load_all_embeddings=False)
+        from application.utils.comprehension.shared import shared_handler
+
+        handler = shared_handler(database)
 
         def _complete(messages: Sequence[dict]) -> str:
             resp = litellm_router.completion(

@@ -171,7 +171,9 @@ def fetch_comprehension_hits(
         database = db_mod.Node_collection()
         if not database.can_use_pgvector_similarity():
             return []
-        handler = prompt_client.PromptHandler(database, load_all_embeddings=False)
+        from application.utils.comprehension.shared import shared_handler
+
+        handler = shared_handler(database)
         texts = [question] + [q for q in (queries or []) if q and q != question]
         k = retrieval_k()
         wide = k * 2 if flags.on("RERANK") else k
@@ -231,9 +233,9 @@ def prefetch_embedding(text: str) -> None:
         from application.prompt_client import prompt_client
         from application.utils.comprehension.embedcache import prefetch
 
-        handler = prompt_client.PromptHandler(
-            db_mod.Node_collection(), load_all_embeddings=False
-        )
+        from application.utils.comprehension.shared import shared_handler
+
+        handler = shared_handler(db_mod.Node_collection())
         prefetch(text, handler.get_text_embeddings)
     except Exception:
         pass
