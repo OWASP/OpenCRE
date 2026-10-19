@@ -13,7 +13,7 @@ import io
 import pathlib
 import re
 import urllib.parse
-from typing import Any
+from typing import Any, Optional
 
 from rq import job, exceptions
 from rq import Queue
@@ -1576,7 +1576,7 @@ def chat_cre() -> Any:
                 user_prompt or "", history=chat_history
             )
             if agent_response is not None:
-                return jsonify(agent_response)
+                return jsonify(_with_answer_id(agent_response, user_prompt))
     except Exception:
         logger.exception("owasp agent router failed")
         # If this looks like a meta question, do not fall through to CRE RAG.
@@ -1623,7 +1623,43 @@ def chat_cre() -> Any:
             status_code,
         )
     response = _maybe_append_cre_followups(user_prompt or "", response)
-    return jsonify(response)
+    return jsonify(_with_answer_id(response, user_prompt))
+
+
+def _with_answer_id(response: Any, question: Optional[str]) -> Any:
+    """Log a chat answer and add its ``answer_id`` so the UI can offer thumbs up/down."""
+    if not isinstance(response, dict):
+        return response
+    from application.utils.answer_feedback import log_answer
+
+    citations = (response.get("owasp_agent") or {}).get("citations") or []
+    answer_id = log_answer(
+        source="chat",
+        question=question or "",
+        answer=str(response.get("response") or ""),
+        citations=citations,
+    )
+    return {**response, "answer_id": answer_id} if answer_id else response
+
+
+@app.route("/rest/v1/answer_feedback", methods=["POST"])
+@login_required
+def answer_feedback_post() -> Any:
+    """Thumbs up/down for an answer: ``{"answer_id", "rating": "up"|"down", "comment"?}``."""
+    from application.utils.answer_feedback import record_rating
+
+    body = request.get_json(silent=True) or {}
+    try:
+        result = record_rating(
+            str(body.get("answer_id") or ""),
+            str(body.get("rating") or ""),
+            str(body["comment"]) if body.get("comment") else None,
+        )
+    except ValueError as exc:
+        abort(400, str(exc))
+    except KeyError:
+        abort(404, "unknown answer_id")
+    return jsonify(result)
 
 
 def _maybe_append_cre_followups(prompt: str, response):
