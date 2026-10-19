@@ -115,3 +115,53 @@ class McpRatingTest(unittest.TestCase):
             "rate_answer", {"answer_id": aid, "rating": "down", "comment": "wrong"}
         )
         self.assertEqual(out["rating"], "down")
+
+
+class RestFeedbackTest(unittest.TestCase):
+    def setUp(self) -> None:
+        os.environ["NO_LOAD_GRAPH_DB"] = "1"
+        self.app = create_app(mode="test")
+        self.ctx = self.app.app_context()
+        self.ctx.push()
+        sqla.create_all()
+        self.app.secret_key = "test-secret"
+        os.environ["INSECURE_REQUESTS"] = "True"
+        self.client = self.app.test_client()
+
+    def tearDown(self) -> None:
+        sqla.session.remove()
+        sqla.drop_all()
+        self.ctx.pop()
+
+    def _login(self) -> None:
+        os.environ["NO_LOGIN"] = "1"  # same bypass the chat completion tests use
+        self.addCleanup(os.environ.pop, "NO_LOGIN", None)
+
+    def test_with_answer_id_adds_id_for_dict_responses_only(self) -> None:
+        from application.web import web_main
+
+        out = web_main._with_answer_id(
+            {"response": "hi", "owasp_agent": {"citations": ["c"]}}, "q?"
+        )
+        self.assertIn("answer_id", out)
+        self.assertEqual(web_main._with_answer_id("plain", "q"), "plain")
+
+    def test_post_feedback_requires_valid_rating_and_known_id(self) -> None:
+        from application.utils import answer_feedback as af_mod
+
+        aid = af_mod.log_answer(source="chat", question="q", answer="a")
+        self._login()
+        bad = self.client.post(
+            "/rest/v1/answer_feedback", json={"answer_id": aid, "rating": "meh"}
+        )
+        self.assertEqual(bad.status_code, 400)
+        missing = self.client.post(
+            "/rest/v1/answer_feedback", json={"answer_id": "nope", "rating": "up"}
+        )
+        self.assertEqual(missing.status_code, 404)
+        ok = self.client.post(
+            "/rest/v1/answer_feedback",
+            json={"answer_id": aid, "rating": "up", "comment": "good"},
+        )
+        self.assertEqual(ok.status_code, 200)
+        self.assertEqual(ok.get_json()["rating"], "up")

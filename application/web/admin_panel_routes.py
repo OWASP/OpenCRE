@@ -378,6 +378,26 @@ def register_admin_panel_routes(
             logger.exception("schedule update failed")
             return _err(500, f"schedule update failed: {exc}")
 
+    @bp.route("/admin/feedback", methods=["GET"])
+    @login_required
+    @imports_enabled
+    def admin_feedback_list() -> Any:
+        """Rated answers, newest first; ``?rating=down&limit=50``. Source for eval sets."""
+        from application.utils.answer_feedback import RATINGS, list_feedback
+
+        rating = request.args.get("rating")
+        if rating and rating not in RATINGS:
+            return _err(400, f"rating must be one of: {', '.join(RATINGS)}")
+        try:
+            limit = int(request.args.get("limit", 100))
+        except ValueError:
+            return _err(400, "limit must be an integer")
+        try:
+            return jsonify({"items": list_feedback(rating=rating, limit=limit)})
+        except Exception as exc:
+            logger.exception("feedback list failed")
+            return _err(500, f"feedback list failed: {exc}")
+
     @bp.route("/admin/oie/rq/status", methods=["GET"])
     @login_required
     @imports_enabled
