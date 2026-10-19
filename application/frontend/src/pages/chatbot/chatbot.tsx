@@ -58,7 +58,7 @@ export const Chatbot = () => {
   }
 
   const hasMessages = chatMessages.length > 0;
-  // Thumbs only appear when the deployment logs answers; the privacy note must then say so.
+  // Thumbs only appear when the deployment stores answers; the "not stored" privacy paragraph is then hidden.
   const feedbackOn = chatMessages.some((m) => m.answerId);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
@@ -442,17 +442,13 @@ export const Chatbot = () => {
                 Model operation is generously sponsored by{' '}
                 <a href="https://www.softwareimprovementgroup.com">Software Improvement Group</a>.
                 <br />
-                <br />
-                Privacy & Security: Your question is sent to Heroku, the hosting provider for OpenCRE, and
-                then to GCP, all via protected connections. Your data isn't stored on OpenCRE servers. The
-                OpenCRE team employed extensive measures to ensure privacy and security. To review the code:
-                https://github.com/owasp/OpenCRE
-                {feedbackOn && (
+                {!feedbackOn && (
                   <>
                     <br />
-                    <br />
-                    Feedback: on this deployment the questions and answers that show thumbs up/down are stored
-                    to improve OpenCRE.
+                    Privacy & Security: Your question is sent to Heroku, the hosting provider for OpenCRE, and
+                    then to GCP, all via protected connections. Your data isn't stored on OpenCRE servers. The
+                    OpenCRE team employed extensive measures to ensure privacy and security. To review the
+                    code: https://github.com/owasp/OpenCRE
                   </>
                 )}
               </i>
