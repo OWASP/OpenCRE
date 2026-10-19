@@ -194,6 +194,7 @@ def fetch_comprehension_hits(
         with sqla.session.get_bind().connect() as conn:
             slugs = _known_slugs(conn)
             rankings: List[List[LaneHit]] = []
+            keyword_hits: List[LaneHit] = []
             from application.utils.comprehension.embedcache import embed_many
 
             vecs = embed_many(texts, handler.get_text_embeddings)
@@ -202,7 +203,7 @@ def fetch_comprehension_hits(
                 dense = _dense(conn, q, _ALL, wide)
                 rankings.append(dense)
                 if flags.on("HYBRID"):
-                    rankings.append(_keyword(conn, t, wide))
+                    keyword_hits += _keyword(conn, t, wide)
                 scoped = matched_slugs(t, slugs)
                 if flags.on("PERPROJECT") and len(scoped) >= 2:
                     for slug in scoped:
@@ -233,11 +234,34 @@ def fetch_comprehension_hits(
                 hits = rankings[0]
             else:
                 hits = rrf(rankings, key=lambda h: h.url)
+            if keyword_hits:
+                hits = supplement_with_keyword(hits, keyword_hits)
             if flags.on("EXPAND"):
                 _expand(conn, hits[: max(k, 12)])
         return hits
     except Exception:
         return []
+
+
+def supplement_with_keyword(
+    dense: List[LaneHit], keyword: List[LaneHit], head: int = 0, take: int = 0
+) -> List[LaneHit]:
+    """Keep the strongest dense hits, slot a few keyword hits right behind them.
+
+    Interleaving by rank let name-only keyword matches push real semantic answers
+    out of the top spots, so keyword hits only supplement the dense head.
+    """
+    head = head or int(os.environ.get("OWASP_CX_HYBRID_HEAD", "6"))
+    take = take or int(os.environ.get("OWASP_CX_HYBRID_TAKE", "4"))
+    first = dense[:head]
+    seen = {h.url for h in first}
+    extra = [h for h in keyword if h.url not in seen][:take]
+    seen |= {h.url for h in extra}
+    out = first + extra + [h for h in dense[head:] if h.url not in seen]
+    top = float(out[0].score) if out else 0.0
+    for i, h in enumerate(out):  # keep the order stable under later score sorts
+        h.score = top - i * 1e-4
+    return out
 
 
 def prefetch_embedding(text: str) -> None:

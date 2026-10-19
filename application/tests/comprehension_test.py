@@ -474,3 +474,19 @@ class SynthesisModelTest(unittest.TestCase):
             del os.environ["OWASP_COMPREHENSION_MODEL"]
         self.assertEqual(seen["model"], "gemini/test-model")
         self.assertEqual(out, ("Three levels [1].", ["https://x/a"]))
+
+
+class SupplementTest(unittest.TestCase):
+    def test_keyword_hits_follow_the_dense_head_without_displacing_it(self):
+        from application.utils.comprehension.retrieve import supplement_with_keyword
+        from application.utils.owasp_agent.lane_similarity import LaneHit
+
+        def h(u, s=0.5):
+            return LaneHit(channel="c", score=s, url=u)
+
+        dense = [h(f"d{i}", 0.9 - i * 0.01) for i in range(10)]
+        kw = [h("k0"), h("d2"), h("k1")]
+        out = supplement_with_keyword(dense, kw, head=3, take=2)
+        self.assertEqual([x.url for x in out[:6]], ["d0", "d1", "d2", "k0", "k1", "d3"])
+        scores = [x.score for x in out]
+        self.assertEqual(scores, sorted(scores, reverse=True))
