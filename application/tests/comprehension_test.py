@@ -376,3 +376,18 @@ class KeywordQueryTest(unittest.TestCase):
         self.assertEqual([len(q.split()) for q in qs], [5, 3, 2])
         self.assertEqual(relaxed_and_queries(["asvs"]), ["asvs"])
         self.assertEqual(relaxed_and_queries([]), [])
+
+
+class CostEstimateTest(unittest.TestCase):
+    def test_estimate_scales_with_text_and_reports_raw_only_cheaper(self):
+        from application.utils.comprehension.cost import estimate_repo, report
+
+        docs = [
+            sources.SourceDoc("O/S", f"a{i}", f"d{i}.md", "x" * 40000)
+            for i in range(10)
+        ]
+        chunks = [(f"d{i}.md", 0, "y" * 2000) for i in range(50)]
+        r = estimate_repo("O/S", docs, chunks)
+        self.assertGreater(r["total"], r["raw_only"] > 0 and r["raw_only"])
+        self.assertLess(r["raw_only"], r["total"])
+        self.assertIn("TOTAL repos=1", report([r]))
