@@ -71,3 +71,47 @@ class AnswerFeedbackTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class McpRatingTest(unittest.TestCase):
+    def setUp(self) -> None:
+        os.environ["NO_LOAD_GRAPH_DB"] = "1"
+        self.app = create_app(mode="test")
+        self.ctx = self.app.app_context()
+        self.ctx.push()
+        sqla.create_all()
+
+    def tearDown(self) -> None:
+        sqla.session.remove()
+        sqla.drop_all()
+        self.ctx.pop()
+
+    def test_ask_result_carries_id_that_rate_answer_accepts(self) -> None:
+        from unittest import mock
+
+        from application.mcp import ask as ask_mod
+
+        fake = {
+            "ok": True,
+            "channel": "owasp_meta",
+            "message": "SAMM has 3 levels",
+            "citations": ["https://x"],
+        }
+        with mock.patch.object(ask_mod, "_ask_impl", return_value=fake):
+            out = ask_mod.ask("how many levels in samm?")
+        self.assertIn("answer_id", out)
+        self.assertEqual(
+            ask_mod.rate_answer(out["answer_id"], "up", "correct")["rating"], "up"
+        )
+        with self.assertRaises(KeyError):
+            ask_mod.rate_answer("nope", "up")
+
+    def test_rate_tool_is_listed_and_dispatches(self) -> None:
+        from application.mcp import server
+        from application.utils import answer_feedback as af_mod
+
+        aid = af_mod.log_answer(source="mcp", question="q", answer="a")
+        out = server.dispatch_tool(
+            "rate_answer", {"answer_id": aid, "rating": "down", "comment": "wrong"}
+        )
+        self.assertEqual(out["rating"], "down")

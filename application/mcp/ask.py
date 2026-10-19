@@ -10,6 +10,7 @@ from cre_logging import get_logger
 
 logger = get_logger(__name__)
 
+import time
 from typing import Any, Dict, List, Mapping, Optional, Set, Tuple
 
 from application.mcp.rest_client import (
@@ -68,6 +69,24 @@ ASK_TOOL: Dict[str, Any] = {
 }
 
 
+RATE_TOOL: Dict[str, Any] = {
+    "name": "rate_answer",
+    "summary": (
+        "Give a thumbs up or down to an earlier ask answer, using its answer_id. "
+        "Optional comment says what was wrong or good. Ratings are used to improve answers."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "answer_id": {"type": "string", "description": "answer_id returned by ask"},
+            "rating": {"type": "string", "enum": ["up", "down"]},
+            "comment": {"type": "string", "description": "Optional short reason"},
+        },
+        "required": ["answer_id", "rating"],
+        "additionalProperties": False,
+    },
+}
+
 _APP = None
 
 
@@ -106,7 +125,50 @@ def _router_handle(prompt: str) -> Optional[Dict[str, Any]]:
             return None
 
 
+def _in_app_context(fn: Any) -> Any:
+    """Run ``fn`` inside a Flask app context (MCP has none); None if the app cannot start."""
+    from flask import has_app_context
+
+    if has_app_context():
+        return fn()
+    app = _ensure_app()
+    with app.app_context():
+        return fn()
+
+
 def ask(
+    prompt: str,
+    *,
+    corpus: str = CORPUS_AUTO,
+    place: Optional[str] = None,
+    rest_client: Optional[RestClient] = None,
+) -> Dict[str, Any]:
+    """Route ``prompt`` and return a fact pack; the pack carries an ``answer_id`` for rating."""
+    started = time.monotonic()
+    result = _ask_impl(prompt, corpus=corpus, place=place, rest_client=rest_client)
+    try:
+        from application.utils.answer_feedback import attach_answer_id
+
+        elapsed = int((time.monotonic() - started) * 1000)
+        return _in_app_context(
+            lambda: attach_answer_id(
+                result, question=prompt, source="mcp", latency_ms=elapsed
+            )
+        )
+    except Exception:  # noqa: BLE001 -- rating support must never break answering
+        return result
+
+
+def rate_answer(
+    answer_id: str, rating: str, comment: Optional[str] = None
+) -> Dict[str, Any]:
+    """Record a thumbs up/down for an earlier answer."""
+    from application.utils.answer_feedback import record_rating
+
+    return _in_app_context(lambda: record_rating(answer_id, rating, comment))
+
+
+def _ask_impl(
     prompt: str,
     *,
     corpus: str = CORPUS_AUTO,
