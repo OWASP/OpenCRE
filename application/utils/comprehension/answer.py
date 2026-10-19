@@ -14,6 +14,13 @@ CompletionFn = Callable[[Sequence[dict]], str]
 _MAX_SOURCES = 10
 
 
+def max_sources() -> int:
+    try:
+        return max(1, int(os.environ.get("OWASP_COMPREHENSION_SOURCES", _MAX_SOURCES)))
+    except ValueError:
+        return _MAX_SOURCES
+
+
 def enabled() -> bool:
     return (
         os.environ.get("OWASP_COMPREHENSION_ENABLED", "1") or "1"
@@ -164,7 +171,7 @@ def _answer(
                 0 if (getattr(h, "url", "") or "").endswith("-overview") else 1
             )
         )
-    hits = hits[: 16 if flags.on("MERGED") else _MAX_SOURCES]
+    hits = hits[: 16 if flags.on("MERGED") else max_sources()]
     if not hits:
         return None
     sources = []
