@@ -16,6 +16,15 @@ _NOISE_NAMES = re.compile(
 )
 
 
+# Raw chunks keep policy/process pages (SECURITY, CONTRIBUTING, CHANGELOG): users ask about them.
+_RAW_NOISE = re.compile(
+    r"(code[_-]?of[_-]?conduct|licen[cs]e|pull_request_template|issue_template|"
+    r"\.github/|/archive/|node_modules/|authors|"
+    r"(^|/)(es|fr|de|pt|pt-br|it|ja|ko|zh|zh-cn|zh-tw|ru|tr|ar|hi|id|nl|pl|vi|uk)/)",
+    re.IGNORECASE,
+)
+
+
 @dataclass(frozen=True)
 class SourceDoc:
     repo: str
@@ -92,6 +101,7 @@ def chunks_for_repo(session: Any, source_repo: str) -> List[Tuple[str, int, str]
         .order_by(HarvestInput.created_at.desc())
     )
     newest: Dict[str, str] = {}
+    seen = set()
     out: List[Tuple[str, int, str]] = []
     for artifact_id, payload in q:
         run = (payload or {}).get("pipeline_run_id") or ""
@@ -104,7 +114,10 @@ def chunks_for_repo(session: Any, source_repo: str) -> List[Tuple[str, int, str]
         )
         text = str((payload or {}).get("text") or "").strip()
         idx = int(((payload or {}).get("span") or {}).get("index") or 0)
-        if is_noise_path(path) or len(text) < 120:
+        if _RAW_NOISE.search(path or "") or len(text) < 60:
             continue
-        out.append((path, idx, text[:3000]))
+        if (path, idx) in seen:
+            continue
+        seen.add((path, idx))
+        out.append((path, idx, text[:6000]))
     return out

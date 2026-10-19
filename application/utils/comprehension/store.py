@@ -7,6 +7,7 @@ router retrieves them; synthesis (``synthesize.py``) combines the top hits.
 
 from __future__ import annotations
 
+import hashlib
 import re
 from typing import Any, Callable, List, Tuple
 
@@ -103,10 +104,13 @@ def raw_documents(
     family = repo.split("/")[-1]
     out: List[Tuple[str, str, List[str]]] = []
     for path, idx, text in chunks:
-        pslug = re.sub(r"[^a-z0-9]+", "-", path.lower()).strip("-")[:70]
+        pslug = re.sub(r"[^a-z0-9]+", "-", path.lower()).strip("-")[:50]
+        phash = hashlib.sha1(path.encode()).hexdigest()[
+            :8
+        ]  # long paths must not collide
         out.append(
             (
-                f"{SLUG_PREFIX}{base}-raw-{pslug}-{idx:03d}",
+                f"{SLUG_PREFIX}{base}-raw-{pslug}-{phash}-{idx:03d}",
                 f"{family} / {path}: {text}",
                 [f"{github_base}/{repo}/blob/HEAD/{path}"],
             )
