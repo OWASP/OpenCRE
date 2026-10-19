@@ -363,3 +363,16 @@ class SpeedFeaturesTest(unittest.TestCase):
             )
         finally:
             del os.environ["OWASP_CX_MERGED"]
+
+
+class KeywordQueryTest(unittest.TestCase):
+    def test_relaxed_and_queries_from_selective_to_loose(self):
+        from application.utils.comprehension.extras import relaxed_and_queries
+
+        qs = relaxed_and_queries(
+            ["masvs", "authentication", "control", "group", "purpose"]
+        )
+        self.assertEqual(qs[0].split()[0], "authentication")
+        self.assertEqual([len(q.split()) for q in qs], [5, 3, 2])
+        self.assertEqual(relaxed_and_queries(["asvs"]), ["asvs"])
+        self.assertEqual(relaxed_and_queries([]), [])

@@ -73,12 +73,16 @@ _DENSE_SQL = """
 """
 
 _KW_SQL = """
-    SELECT id, doc_type, embeddings_content, embeddings_url,
-           ts_rank_cd(to_tsvector('english', embeddings_content), query) AS score
-    FROM embeddings, websearch_to_tsquery('english', :kw) AS query
-    WHERE source_channel = :channel
-      AND embeddings_url LIKE 'owasp-agent://evidence/comprehension-%'
-      AND to_tsvector('english', embeddings_content) @@ query
+    SELECT c.id, c.doc_type, c.embeddings_content, c.embeddings_url,
+           ts_rank_cd(to_tsvector('english', c.embeddings_content), q.query) AS score
+    FROM (
+        SELECT id, doc_type, embeddings_content, embeddings_url
+        FROM embeddings, websearch_to_tsquery('english', :kw) AS query
+        WHERE source_channel = :channel
+          AND embeddings_url LIKE 'owasp-agent://evidence/comprehension-%'
+          AND to_tsvector('english', embeddings_content) @@ query
+        LIMIT 300
+    ) c, websearch_to_tsquery('english', :kw) AS q(query)
     ORDER BY score DESC
     LIMIT :limit
 """
@@ -113,18 +117,24 @@ def _dense(
 
 
 def _keyword(conn: Any, question: str, limit: int) -> List[LaneHit]:
+    """Full-text hits: AND the most distinctive words, relaxing until a few rows match.
+
+    An OR over common words matches thousands of rows and ranking them is slow, so
+    the candidate set is capped and the query is kept selective.
+    """
     from sqlalchemy import text as sql_text
 
-    from application.utils.comprehension.extras import keywords
+    from application.utils.comprehension.extras import keywords, relaxed_and_queries
 
     kws = keywords(question)
-    if not kws:
-        return []
-    rows = conn.execute(
-        sql_text(_KW_SQL),
-        {"kw": " or ".join(kws), "channel": CHANNEL_AGENT, "limit": limit},
-    ).fetchall()
-    return [_hit(r, float(r.score or 0.0)) for r in rows or []]
+    for kw in relaxed_and_queries(kws):
+        rows = conn.execute(
+            sql_text(_KW_SQL),
+            {"kw": kw, "channel": CHANNEL_AGENT, "limit": limit},
+        ).fetchall()
+        if len(rows) >= 3:
+            return [_hit(r, float(r.score or 0.0)) for r in rows]
+    return []
 
 
 def _expand(conn: Any, hits: List[LaneHit]) -> None:
