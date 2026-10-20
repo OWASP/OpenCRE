@@ -578,3 +578,83 @@ class LongContextTest(unittest.TestCase):
             self.assertEqual(out2[0], "From snippets [1].")
         finally:
             del os.environ["OWASP_CX_LONGCTX"]
+
+
+class FastAndDecomposeTest(unittest.TestCase):
+    def _hit(self):
+        from application.utils.owasp_agent.lane_similarity import LaneHit
+
+        return LaneHit(
+            channel="c",
+            score=0.9,
+            url="owasp-agent://evidence/comprehension-o-s-claim-001",
+            content="S: has 3 levels.\n\nCitations: https://x/a",
+        )
+
+    def test_fast_flag_turns_thinking_off_for_the_answer_model(self):
+        import os
+        from unittest import mock
+
+        from application.utils.comprehension import answer
+
+        seen = {}
+
+        def fake_fn(model, **kw):
+            seen["model"] = model
+            seen["extra"] = kw.get("extra_try_kwargs")
+            return lambda system, user: "Three levels [1]."
+
+        os.environ["OWASP_CX_FAST"] = "1"
+        try:
+            with mock.patch(
+                "application.prompt_client.litellm_router.system_user_fn", fake_fn
+            ):
+                out = answer.answer_from_candidates(
+                    "levels?", [self._hit()], lambda m: "UNUSED"
+                )
+        finally:
+            del os.environ["OWASP_CX_FAST"]
+        self.assertEqual(seen["extra"], {"reasoning_effort": "disable"})
+        self.assertEqual(out[0], "Three levels [1].")
+
+    def test_looks_multipart(self):
+        from application.utils.comprehension.answer import looks_multipart
+
+        self.assertTrue(looks_multipart("What is SAMM? And who leads it?"))
+        self.assertTrue(
+            looks_multipart("What is ASVS, and how many levels does it have")
+        )
+        self.assertTrue(looks_multipart("List the leaders; then the version"))
+        self.assertFalse(looks_multipart("How many levels does SAMM define?"))
+
+    def test_decompose_answers_each_part_and_combines(self):
+        import os
+        from unittest import mock
+
+        from application.utils.comprehension import answer, flags
+
+        helper = lambda s, u: json.dumps(
+            {"query": "q", "parts": ["What is SAMM?", "Who leads SAMM?"], "clarify": ""}
+        )
+        calls = []
+
+        def fake_answer(part, cands, complete):
+            calls.append(part)
+            return (f"answer to {part} [1]", [f"https://x/{len(calls)}"])
+
+        os.environ["OWASP_CX_DECOMPOSE"] = "1"
+        flags._HELPER = helper
+        try:
+            with mock.patch.object(answer, "_answer", fake_answer), mock.patch.object(
+                answer, "merge_with_dedicated", lambda q, c: []
+            ):
+                out = answer.answer_from_candidates(
+                    "What is SAMM? And who leads SAMM?", [], lambda m: "UNUSED"
+                )
+        finally:
+            del os.environ["OWASP_CX_DECOMPOSE"]
+            flags._HELPER = None
+        self.assertEqual(calls, ["What is SAMM?", "Who leads SAMM?"])
+        self.assertIn("1. answer to What is SAMM?", out[0])
+        self.assertIn("2. answer to Who leads SAMM?", out[0])
+        self.assertEqual(out[1], ["https://x/1", "https://x/2"])

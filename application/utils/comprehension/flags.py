@@ -19,7 +19,9 @@ NAMES = (
     "COUNT",  # enumerate-then-count for "how many" questions
     "MERGED",  # one call: clean question + pick sources + answer + self-check
     "CACHE",  # in-process answer cache (real traffic, not evals)
-    "LONGCTX",  # one-project questions: read the whole project text, not snippets
+    "LONGCTX",  # questions naming 1-3 projects: read the whole project text, not snippets
+    "FAST",  # final-answer model runs with thinking off (latency)
+    "DECOMPOSE",  # multi-part questions: answer each part separately, then combine
 )
 
 
