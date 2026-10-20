@@ -13,6 +13,7 @@ from typing import Any, Dict
 from unittest.mock import patch
 
 import networkx as nx
+import requests
 
 from application import create_app, sqla  # type: ignore
 from application.database import db
@@ -30,6 +31,7 @@ from application.mcp.openapi_loader import (
 )
 from application.mcp.rest_client import (
     RestClient,
+    RestClientError,
     RestRequestError,
     RestResponseError,
     _parse_response,
@@ -51,6 +53,16 @@ APPROVED_TOOLS = [
     "list_standards",
     "list_ga_standards",
 ]
+
+
+class _FailingSession:
+    """Stands in for requests.Session when the request gets no response."""
+
+    def __init__(self, error: Exception) -> None:
+        self.error = error
+
+    def request(self, *args: Any, **kwargs: Any) -> Any:
+        raise self.error
 
 
 class McpPublicToolsTest(unittest.TestCase):
@@ -340,6 +352,32 @@ class McpPublicToolsTest(unittest.TestCase):
             client.call_tool("get_cre_by_id", {"creid": "999-999"})
         self.assertEqual(ctx.exception.status_code, 404)
 
+    def test_send_failures_say_what_went_wrong(self) -> None:
+        """Each failure gets its own message, and URL credentials never show up."""
+        errors = requests.exceptions
+        site = "OpenCRE at http://127.0.0.1:5999"
+        unreachable = f"Could not reach {site}"
+        failed = f"Request to {site} failed"
+        cases = [
+            (errors.ConnectionError(), f"{unreachable} (ConnectionError)"),
+            (errors.SSLError(), f"{unreachable} (SSLError)"),
+            (errors.ReadTimeout(), f"{site} timed out after 2.5s"),
+            # ConnectTimeout is also a ConnectionError, but it reads as a timeout.
+            (errors.ConnectTimeout(), f"{site} timed out after 2.5s"),
+            (errors.ChunkedEncodingError(), f"{failed} (ChunkedEncodingError)"),
+            (errors.InvalidJSONError(), f"{failed} (InvalidJSONError)"),
+        ]
+        for error, expected in cases:
+            with self.subTest(error=type(error).__name__):
+                client = RestClient(
+                    base_url="http://alice:s3cr3t@127.0.0.1:5999",
+                    session=_FailingSession(error),
+                    timeout=2.5,
+                )
+                with self.assertRaises(RestClientError) as ctx:
+                    client.call_tool("list_standards", {})
+                self.assertEqual(str(ctx.exception), expected)
+
     def test_missing_required_input_fails(self) -> None:
         client = self._rest()
         with self.assertRaises(RestRequestError):
@@ -468,6 +506,39 @@ class McpPublicToolsTest(unittest.TestCase):
 
         with self.assertLogs("application.mcp.server", level="ERROR"):
             asyncio.run(_run())
+
+    def test_network_errors_are_tool_errors_not_internal_errors(self) -> None:
+        """MCP clients see why the call failed; the server log keeps the cause."""
+        error = requests.ConnectionError("Connection refused")
+        server = build_server(
+            rest_client=RestClient(
+                base_url="http://127.0.0.1:5999", session=_FailingSession(error)
+            )
+        )
+
+        async def _run() -> None:
+            call_handler = server.get_request_handler("tools/call")
+            assert call_handler is not None
+            result_raw = await call_handler.handler(
+                None,
+                types.CallToolRequestParams(name="list_standards", arguments={}),
+            )
+            assert isinstance(result_raw, types.CallToolResult)
+            self.assertTrue(result_raw.is_error)
+            first = result_raw.content[0]
+            assert isinstance(first, types.TextContent)
+            self.assertEqual(
+                first.text,
+                "Could not reach OpenCRE at http://127.0.0.1:5999 (ConnectionError)",
+            )
+
+        import asyncio
+
+        with self.assertLogs("application.mcp.server", level="ERROR") as logs:
+            asyncio.run(_run())
+        logged = logs.records[0].exc_info
+        assert logged is not None and logged[1] is not None
+        self.assertIs(logged[1].__cause__, error)
 
     def test_base_url_comes_from_env_not_tool_args(self) -> None:
         with patch.dict(os.environ, {"OPENCRE_BASE_URL": "http://example.test:9"}):

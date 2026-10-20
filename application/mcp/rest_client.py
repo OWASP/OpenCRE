@@ -24,7 +24,7 @@ from typing import (
     Set,
     Tuple,
 )
-from urllib.parse import quote, urljoin
+from urllib.parse import quote, urljoin, urlsplit
 
 import requests
 from jsonschema import Draft7Validator
@@ -189,7 +189,11 @@ class RestClient:
 
         # Credentials come from the environment only, never from arguments.
         headers, token = self._auth_headers(tool)
-        response = self._send(method, url, query_params, body, headers)
+        try:
+            response = self._send(method, url, query_params, body, headers)
+        except requests.RequestException as exc:
+            message = _send_failure_message(exc, self._base_url, self._timeout)
+            raise RestClientError(_scrub(message, token)) from exc
         # Never retain cookies across tool calls (no credential forwarding).
         if hasattr(self._session, "cookies"):
             try:
@@ -256,6 +260,21 @@ class RestClient:
 def _scrub(text: str, token: Optional[str]) -> str:
     """Keep credentials out of anything that can reach an MCP client."""
     return text.replace(token, "<redacted>") if token else text
+
+
+def _send_failure_message(
+    exc: requests.RequestException, base_url: str, timeout: float
+) -> str:
+    """Say why the request failed, leaving out request details and URL credentials."""
+    parts = urlsplit(base_url)
+    where = parts._replace(netloc=parts.netloc.rpartition("@")[2]).geturl()
+    reason = type(exc).__name__
+    # Timeout first: ConnectTimeout is also a ConnectionError.
+    if isinstance(exc, requests.Timeout):
+        return f"OpenCRE at {where} timed out after {timeout:g}s"
+    if isinstance(exc, requests.ConnectionError):
+        return f"Could not reach OpenCRE at {where} ({reason})"
+    return f"Request to OpenCRE at {where} failed ({reason})"
 
 
 def flask_test_session(flask_client: Any) -> "_FlaskTestSession":
