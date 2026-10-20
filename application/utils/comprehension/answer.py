@@ -151,12 +151,58 @@ def answer_from_candidates(
         got = _ANSWERS.get(ckey)
         if got and time.time() - got[0] < 3600:
             return got[1]
-    out = _answer(question, cands, complete)
+    out = _answer_decomposed(question, complete) if flags.on("DECOMPOSE") else None
+    if out is None:
+        out = _answer(question, cands, complete)
     if flags.on("CACHE") and out is not None:
         _ANSWERS[ckey] = (time.time(), out)
         if len(_ANSWERS) > 512:
             _ANSWERS.pop(next(iter(_ANSWERS)))
     return out
+
+
+_MULTIPART_RE = re.compile(
+    r"\?.+\?|;|\b(and also|as well as|and then|after that)\b|"
+    r",?\s+and\s+(what|how|who|when|which|where|why|is|are|does|do)\b",
+    re.I,
+)
+
+
+def looks_multipart(question: str) -> bool:
+    """Cheap check so the splitting call only runs for questions that may have several parts."""
+    return bool(_MULTIPART_RE.search(question or ""))
+
+
+def _answer_decomposed(
+    question: str, complete: CompletionFn
+) -> Optional[Tuple[str, List[str]]]:
+    """Answer each part of a multi-part question on its own, then combine (None = not multi-part)."""
+    if not looks_multipart(question):
+        return None
+    from application.utils.comprehension import flags
+    from application.utils.comprehension.extras import understand_query
+
+    helper = flags.helper_llm()
+    if helper is None:
+        return None
+    try:
+        parts = understand_query(question, helper).get("parts") or []
+    except Exception:
+        return None
+    if len(parts) < 2:
+        return None
+    lines: List[str] = []
+    cites: List[str] = []
+    found = 0
+    for i, part in enumerate(parts[:4], 1):
+        res = _answer(part, merge_with_dedicated(part, []), complete)
+        if res:
+            found += 1
+            lines.append(f"{i}. {res[0]}")
+            cites += [c for c in res[1] if c not in cites]
+        else:
+            lines.append(f"{i}. {part} - not found in the indexed sources.")
+    return ("\n".join(lines), cites) if found else None
 
 
 def _answer_from_whole_project(
@@ -186,11 +232,19 @@ def synthesis_model() -> str:
 def _answer(
     question: str, cands: Sequence[Any], complete: CompletionFn
 ) -> Optional[Tuple[str, List[str]]]:
+    from application.utils.comprehension import flags
+
     model = synthesis_model()
-    if model:
+    fast = flags.on("FAST")
+    if model or fast:
         from application.prompt_client import litellm_router
 
-        call = litellm_router.system_user_fn(model, temperature=0.0)
+        call = litellm_router.system_user_fn(
+            model or os.environ.get("CRE_LLM_CHAT_MODEL", "gemini/gemini-2.5-flash"),
+            temperature=0.0,
+            # Thinking tokens bill as output and add seconds; synthesis does not need them.
+            extra_try_kwargs={"reasoning_effort": "disable"} if fast else None,
+        )
         complete = lambda msgs: call(
             msgs[0]["content"], msgs[1]["content"]
         )  # noqa: E731
