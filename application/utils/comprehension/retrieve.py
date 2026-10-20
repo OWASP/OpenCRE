@@ -333,9 +333,9 @@ def assemble_project_sources(
 
 def longctx_max_projects() -> int:
     try:
-        return max(1, int(os.environ.get("OWASP_CX_LONGCTX_PROJECTS", "3")))
+        return max(1, int(os.environ.get("OWASP_CX_LONGCTX_PROJECTS", "1")))
     except ValueError:
-        return 3
+        return 1
 
 
 def project_sources(question: str) -> List[tuple]:
