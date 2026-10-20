@@ -159,6 +159,25 @@ def answer_from_candidates(
     return out
 
 
+def _answer_from_whole_project(
+    question: str, complete: CompletionFn
+) -> Optional[Tuple[str, List[str]]]:
+    """One-project questions: let the model read the project's whole text (None -> normal path)."""
+    from application.utils.comprehension.retrieve import project_sources
+
+    sources = project_sources(question)
+    if not sources:
+        return None
+
+    def llm(system: str, user: str) -> str:
+        return complete(
+            [{"role": "system", "content": system}, {"role": "user", "content": user}]
+        )
+
+    answer, cites = synthesize(question, sources, llm)
+    return (answer, cites) if answer else None
+
+
 def synthesis_model() -> str:
     """Model used for the final answer ('' = the default chat model)."""
     return (os.environ.get("OWASP_COMPREHENSION_MODEL") or "").strip()
@@ -175,6 +194,12 @@ def _answer(
         complete = lambda msgs: call(
             msgs[0]["content"], msgs[1]["content"]
         )  # noqa: E731
+    from application.utils.comprehension import flags
+
+    if flags.on("LONGCTX"):
+        whole = _answer_from_whole_project(question, complete)
+        if whole is not None:
+            return whole
     hits = [c for c in cands if is_comprehension_hit(c)]
     # Overviews first: they state structure; claims/summaries add detail.
     from application.utils.comprehension import flags
