@@ -331,31 +331,39 @@ def assemble_project_sources(
     return [("\n".join(by_file[c]), [c]) for c in order]
 
 
+def longctx_max_projects() -> int:
+    try:
+        return max(1, int(os.environ.get("OWASP_CX_LONGCTX_PROJECTS", "3")))
+    except ValueError:
+        return 3
+
+
 def project_sources(question: str) -> List[tuple]:
-    """The whole text of the single project the question names ([] if none/several/too big)."""
+    """Whole text of the projects the question names (1..N); [] if none, too many or too big."""
     try:
         from sqlalchemy import text as sql_text
 
         from application import sqla
 
+        limit = longctx_max_projects()
         with sqla.session.get_bind().connect() as conn:
-            slugs = matched_slugs(question, _known_slugs(conn))
-            if len(slugs) != 1:
+            slugs = matched_slugs(question, _known_slugs(conn), limit=limit + 1)
+            if not slugs or len(slugs) > limit:
                 return []
-            rows = conn.execute(
-                sql_text(
-                    "SELECT embeddings_url, embeddings_content FROM embeddings "
-                    "WHERE source_channel = :channel AND embeddings_url LIKE :pat "
-                    "ORDER BY embeddings_url"
-                ),
-                {
-                    "channel": CHANNEL_AGENT,
-                    "pat": f"owasp-agent://evidence/comprehension-{slugs[0]}-raw-%",
-                },
-            ).fetchall()
-        return assemble_project_sources(
-            [(r.embeddings_url, r.embeddings_content) for r in rows],
-            max_chars=longctx_max_chars(),
-        )
+            rows: List[tuple] = []
+            for slug in slugs:
+                found = conn.execute(
+                    sql_text(
+                        "SELECT embeddings_url, embeddings_content FROM embeddings "
+                        "WHERE source_channel = :channel AND embeddings_url LIKE :pat "
+                        "ORDER BY embeddings_url"
+                    ),
+                    {
+                        "channel": CHANNEL_AGENT,
+                        "pat": f"owasp-agent://evidence/comprehension-{slug}-raw-%",
+                    },
+                ).fetchall()
+                rows += [(r.embeddings_url, r.embeddings_content) for r in found]
+        return assemble_project_sources(rows, max_chars=longctx_max_chars())
     except Exception:
         return []
