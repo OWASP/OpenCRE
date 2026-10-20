@@ -1,5 +1,6 @@
 import os
 import unittest
+from unittest import mock
 
 from application import create_app, sqla
 from application.utils import answer_feedback as af
@@ -7,7 +8,9 @@ from application.utils import answer_feedback as af
 
 class AnswerFeedbackTest(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ["NO_LOAD_GRAPH_DB"] = "1"
+        patcher = mock.patch.dict(os.environ, {"NO_LOAD_GRAPH_DB": "1"})
+        patcher.start()
+        self.addCleanup(patcher.stop)
         self.app = create_app(mode="test")
         self.ctx = self.app.app_context()
         self.ctx.push()
@@ -82,7 +85,9 @@ if __name__ == "__main__":
 
 class McpRatingTest(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ["NO_LOAD_GRAPH_DB"] = "1"
+        patcher = mock.patch.dict(os.environ, {"NO_LOAD_GRAPH_DB": "1"})
+        patcher.start()
+        self.addCleanup(patcher.stop)
         self.app = create_app(mode="test")
         self.ctx = self.app.app_context()
         self.ctx.push()
@@ -126,7 +131,9 @@ class McpRatingTest(unittest.TestCase):
 
 class RestFeedbackTest(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ["NO_LOAD_GRAPH_DB"] = "1"
+        patcher = mock.patch.dict(os.environ, {"NO_LOAD_GRAPH_DB": "1"})
+        patcher.start()
+        self.addCleanup(patcher.stop)
         self.app = create_app(mode="test")
         self.ctx = self.app.app_context()
         self.ctx.push()
