@@ -213,7 +213,11 @@ class TestApiTokens(unittest.TestCase):
             name="admin-read",
             expires_at=datetime.now(timezone.utc) + timedelta(days=7),
         )
-        with patch.dict(os.environ, {"CRE_ALLOW_IMPORT": "1"}):
+        # This test is about bearer auth, not Redis (CI has none): stub the queue status.
+        with patch.dict(os.environ, {"CRE_ALLOW_IMPORT": "1"}), patch(
+            "application.utils.rq_dashboard_snapshot.oie_rq_status",
+            return_value={"queues": []},
+        ):
             with self.app.test_client() as client:
                 resp = client.get(
                     "/admin/oie/rq/status",

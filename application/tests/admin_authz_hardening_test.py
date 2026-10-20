@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import unittest
+from unittest import mock
 from unittest.mock import patch
 
 from application import create_app, sqla
@@ -12,8 +13,11 @@ from application.database import db
 
 class TestAdminAuthzHardening(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ["NO_LOAD_GRAPH_DB"] = "1"
-        os.environ["INSECURE_REQUESTS"] = "1"
+        patcher = mock.patch.dict(
+            os.environ, {"NO_LOAD_GRAPH_DB": "1", "INSECURE_REQUESTS": "1"}
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
         self.app = create_app(mode="test")
         self.app.secret_key = "test-secret"
         self.ctx = self.app.app_context()
