@@ -506,3 +506,75 @@ class DocsFilterTest(unittest.TestCase):
             self.assertIn("NOT LIKE '%-raw-%'", docs_where())
         finally:
             del os.environ["OWASP_COMPREHENSION_DOCS"]
+
+
+class LongContextTest(unittest.TestCase):
+    def test_assemble_groups_by_file_and_drops_index_text(self):
+        from application.utils.comprehension.retrieve import assemble_project_sources
+
+        rows = [
+            (
+                "u1",
+                "S / a.md: first part\n\nRelated questions: q?\n\nCitations: https://x/a.md",
+            ),
+            ("u2", "second part\n\nCitations: https://x/a.md"),
+            ("u3", "other file body " * 40 + "\n\nCitations: https://x/b.md"),
+        ]
+        out = assemble_project_sources(rows, max_chars=10_000, min_chars=10)
+        self.assertEqual([c for _, c in out], [["https://x/a.md"], ["https://x/b.md"]])
+        self.assertIn("first part\nsecond part", out[0][0])
+        self.assertNotIn("Related questions", out[0][0])
+
+    def test_too_big_or_too_small_projects_are_skipped(self):
+        from application.utils.comprehension.retrieve import assemble_project_sources
+
+        big = [("u", "x" * 600 + "\n\nCitations: https://x/a.md")]
+        self.assertEqual(assemble_project_sources(big, max_chars=500, min_chars=10), [])
+        self.assertEqual(
+            assemble_project_sources(big, max_chars=10_000, min_chars=5_000), []
+        )
+
+    def test_flag_reads_whole_project_and_falls_back_when_unknown(self):
+        import os
+        from unittest import mock
+
+        from application.utils.comprehension import answer
+        from application.utils.owasp_agent.lane_similarity import LaneHit
+
+        hit = LaneHit(
+            channel="c",
+            score=0.9,
+            url="owasp-agent://evidence/comprehension-o-s-claim-001",
+            content="S: snippet fact.\n\nCitations: https://x/snip",
+        )
+        whole = [("Whole project text says seven layers.", ["https://x/whole.md"])]
+        calls = []
+
+        def complete(msgs):
+            calls.append(msgs[1]["content"])
+            return (
+                "Seven layers [1]."
+                if "Whole project text" in msgs[1]["content"]
+                else "From snippets [1]."
+            )
+
+        os.environ["OWASP_CX_LONGCTX"] = "1"
+        try:
+            with mock.patch(
+                "application.utils.comprehension.retrieve.project_sources",
+                return_value=whole,
+            ):
+                out = answer.answer_from_candidates(
+                    "how many layers does the guide have?", [hit], complete
+                )
+            self.assertEqual(out, ("Seven layers [1].", ["https://x/whole.md"]))
+            with mock.patch(
+                "application.utils.comprehension.retrieve.project_sources",
+                return_value=[],
+            ):
+                out2 = answer.answer_from_candidates(
+                    "how many layers does the guide have?", [hit], complete
+                )
+            self.assertEqual(out2[0], "From snippets [1].")
+        finally:
+            del os.environ["OWASP_CX_LONGCTX"]

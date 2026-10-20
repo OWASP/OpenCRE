@@ -287,3 +287,75 @@ def prefetch_embedding(text: str) -> None:
         prefetch(text, handler.get_text_embeddings)
     except Exception:
         pass
+
+
+_CITE_TAIL = "\n\nCitations:"
+_RELATED_TAIL = "\n\nRelated questions:"
+
+
+def longctx_max_chars() -> int:
+    try:
+        return max(10_000, int(os.environ.get("OWASP_CX_LONGCTX_CHARS", "700000")))
+    except ValueError:
+        return 700_000
+
+
+def assemble_project_sources(
+    rows: List[tuple], max_chars: int = 700_000, min_chars: int = 500
+) -> List[tuple]:
+    """Group a project's raw chunks (url, content) into one source per file, in order.
+
+    Returns [(text, [file_url])]; [] when the project is too small to matter or too big
+    to read whole. Index-only text (generated questions) is dropped.
+    """
+    by_file: dict = {}
+    order: List[str] = []
+    total = 0
+    for _url, content in rows:
+        body, _, tail = (content or "").partition(_CITE_TAIL)
+        body = body.partition(_RELATED_TAIL)[0].strip()
+        cite = next(
+            (c.strip() for c in tail.split(",") if c.strip().startswith("http")), ""
+        )
+        if not body or not cite:
+            continue
+        total += len(body)
+        if total > max_chars:
+            return []
+        if cite not in by_file:
+            by_file[cite] = []
+            order.append(cite)
+        by_file[cite].append(body)
+    if total < min_chars:
+        return []
+    return [("\n".join(by_file[c]), [c]) for c in order]
+
+
+def project_sources(question: str) -> List[tuple]:
+    """The whole text of the single project the question names ([] if none/several/too big)."""
+    try:
+        from sqlalchemy import text as sql_text
+
+        from application import sqla
+
+        with sqla.session.get_bind().connect() as conn:
+            slugs = matched_slugs(question, _known_slugs(conn))
+            if len(slugs) != 1:
+                return []
+            rows = conn.execute(
+                sql_text(
+                    "SELECT embeddings_url, embeddings_content FROM embeddings "
+                    "WHERE source_channel = :channel AND embeddings_url LIKE :pat "
+                    "ORDER BY embeddings_url"
+                ),
+                {
+                    "channel": CHANNEL_AGENT,
+                    "pat": f"owasp-agent://evidence/comprehension-{slugs[0]}-raw-%",
+                },
+            ).fetchall()
+        return assemble_project_sources(
+            [(r.embeddings_url, r.embeddings_content) for r in rows],
+            max_chars=longctx_max_chars(),
+        )
+    except Exception:
+        return []
