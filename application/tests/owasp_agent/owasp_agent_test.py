@@ -969,9 +969,6 @@ class TestEntityAndChatMemoryFixes(unittest.TestCase):
             self.assertIn("morocco", resp["response"].lower())
 
 
-
-
-
 class TestIndexStoreDefaults(unittest.TestCase):
     def test_override_env_wins_over_app_db(self) -> None:
         with patch.dict(

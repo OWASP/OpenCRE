@@ -415,9 +415,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     only = {str(s).strip() for s in (args.only or []) if str(s).strip()}
     combos = all_combos()
     if worker_id is not None and workers > 1:
-        combos = [
-            c for idx, c in enumerate(combos) if idx % workers == worker_id
-        ]
+        combos = [c for idx, c in enumerate(combos) if idx % workers == worker_id]
         print(
             f"worker={worker_id}/{workers} db={parse_db_url(db_url)['dbname']} "
             f"shard_combos={len(combos)}",

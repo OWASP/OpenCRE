@@ -78,6 +78,7 @@ class LibrarianComponents:
     #: CRE id → name for experimental grounding / pairwise prompts.
     cre_names: Mapping[str, str] = field(default_factory=dict)
 
+
 def build_scaler(config: Optional[LibrarianConfig] = None) -> Scaler:
     """The C.3 calibrator at the configured temperature.
 

@@ -23,10 +23,9 @@ from sqlalchemy import create_engine, text
 
 
 def _db_url() -> str:
-    raw = (
-        (os.environ.get("DATABASE_URL") or "").strip()
-        or (os.environ.get("DEV_DATABASE_URL") or "").strip()
-    )
+    raw = (os.environ.get("DATABASE_URL") or "").strip() or (
+        os.environ.get("DEV_DATABASE_URL") or ""
+    ).strip()
     if not raw:
         raise SystemExit("DATABASE_URL / DEV_DATABASE_URL required")
     try:

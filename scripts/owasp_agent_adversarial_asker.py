@@ -614,10 +614,9 @@ def ask_inprocess(q: str) -> str:
     os.environ.setdefault("OWASP_AGENT_ENABLED", "1")
     sys.path.insert(0, str(_REPO))
     if _INPROCESS_APP is None:
-        db_url = (
-            (os.environ.get("DATABASE_URL") or "").strip()
-            or (os.environ.get("DEV_DATABASE_URL") or "").strip()
-        )
+        db_url = (os.environ.get("DATABASE_URL") or "").strip() or (
+            os.environ.get("DEV_DATABASE_URL") or ""
+        ).strip()
         if db_url and not (os.environ.get("SQLALCHEMY_DATABASE_URI") or "").strip():
             try:
                 from application.utils.postgres_url import (
@@ -773,9 +772,7 @@ class McpAskSession:
         from mcp.client.stdio import stdio_client
 
         transport = (os.environ.get("OWASP_ADV_MCP_TRANSPORT") or "staging_ssh").strip()
-        params = (
-            _local_mcp_params() if transport == "local" else _staging_ssh_params()
-        )
+        params = _local_mcp_params() if transport == "local" else _staging_ssh_params()
         self._cm_stdio = stdio_client(params)
         read, write = await self._cm_stdio.__aenter__()
         self._cm_session = ClientSession(read, write)
@@ -796,9 +793,7 @@ class McpAskSession:
 
     async def _ask_async(self, q: str) -> str:
         corpus = (os.environ.get("OWASP_ADV_CORPUS") or "auto").strip()
-        result = await self._session.call_tool(
-            "ask", {"prompt": q, "corpus": corpus}
-        )
+        result = await self._session.call_tool("ask", {"prompt": q, "corpus": corpus})
         if getattr(result, "isError", False):
             texts = []
             for c in result.content or []:
@@ -955,7 +950,12 @@ def main() -> int:
         bank = [c for c in bank if c.cat in allow]
         if not bank:
             print(
-                json.dumps({"error": "empty bank after OWASP_ADV_CATS filter", "cats": sorted(allow)}),
+                json.dumps(
+                    {
+                        "error": "empty bank after OWASP_ADV_CATS filter",
+                        "cats": sorted(allow),
+                    }
+                ),
                 flush=True,
             )
             return 2
