@@ -22,6 +22,7 @@ NAMES = (
     "LONGCTX",  # questions naming 1-3 projects: read the whole project text, not snippets
     "FAST",  # final-answer model runs with thinking off (latency)
     "PROJROUTE",  # no project named: pick one by similarity to project overviews
+    "COMPLETE",  # answer every part and every named standard; include all stated items
     "EDITION",  # answer for the edition/year/version the question names; never mix editions
     "DECOMPOSE",  # multi-part questions: answer each part separately, then combine
 )

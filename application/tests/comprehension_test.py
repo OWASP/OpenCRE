@@ -844,3 +844,21 @@ class ChangedChunksTest(unittest.TestCase):
         db = mock.Mock(session=Session())
         out = store.changed_chunks(db, "OWASP/X", chunks)
         self.assertEqual([c[:2] for c in out], [("a.md", 1), ("b.md", 0)])
+
+
+class CompleteRuleTest(unittest.TestCase):
+    def test_complete_flag_adds_rule(self):
+        from application.utils.comprehension.synthesize import COMPLETE_RULE, synthesize
+
+        seen = []
+
+        def llm(system, user):
+            seen.append(system)
+            return "A [1]"
+
+        with mock.patch.dict(os.environ, {"OWASP_CX_COMPLETE": "1"}):
+            synthesize("q", [("t", ["u"])], llm)
+        with mock.patch.dict(os.environ, {"OWASP_CX_COMPLETE": ""}):
+            synthesize("q", [("t", ["u"])], llm)
+        self.assertIn(COMPLETE_RULE, seen[0])
+        self.assertNotIn(COMPLETE_RULE, seen[1])
