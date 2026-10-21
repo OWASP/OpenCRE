@@ -757,3 +757,37 @@ class EditionRuleTest(unittest.TestCase):
             synthesize("who led Top 10 2017?", [("t", ["u"])], llm)
         self.assertIn(EDITION_RULE, seen[0])
         self.assertNotIn(EDITION_RULE, seen[1])
+
+
+class RouteProjectTest(unittest.TestCase):
+    def _route(self, scores):
+        from application.utils.comprehension import embedcache, retrieve, shared
+        from application.utils.owasp_agent.lane_similarity import LaneHit
+
+        hits = [
+            LaneHit(
+                channel="c",
+                score=s,
+                url=f"owasp-agent://evidence/comprehension-{slug}-overview",
+            )
+            for slug, s in scores
+        ]
+        with mock.patch.object(
+            retrieve, "_dense", return_value=hits
+        ), mock.patch.object(
+            embedcache, "embed_many", return_value=[[0.1]]
+        ), mock.patch.object(
+            shared, "shared_handler"
+        ), mock.patch(
+            "application.database.db.Node_collection"
+        ):
+            return retrieve.route_project(None, "q")
+
+    def test_confident_match_is_routed(self):
+        self.assertEqual(
+            self._route([("owasp-wstg", 0.8), ("owasp-asvs", 0.6)]), ["owasp-wstg"]
+        )
+
+    def test_weak_or_close_matches_are_not_routed(self):
+        self.assertEqual(self._route([("owasp-wstg", 0.5), ("owasp-asvs", 0.3)]), [])
+        self.assertEqual(self._route([("owasp-wstg", 0.8), ("owasp-asvs", 0.79)]), [])

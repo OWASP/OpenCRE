@@ -338,6 +338,32 @@ def longctx_max_projects() -> int:
         return 1
 
 
+def route_project(conn: Any, question: str) -> List[str]:
+    """Slug of the one project whose overview best matches the question ([] if unsure)."""
+    from application.database import db as db_mod
+    from application.database.pgvector_utils import to_pgvector_literal
+    from application.utils.comprehension.embedcache import embed_many
+    from application.utils.comprehension.shared import shared_handler
+
+    handler = shared_handler(db_mod.Node_collection())
+    vec = embed_many([question], handler.get_text_embeddings)[0]
+    hits = _dense(
+        conn,
+        to_pgvector_literal(list(vec)),
+        "embeddings_url LIKE 'owasp-agent://evidence/comprehension-%-overview'",
+        2,
+    )
+    if not hits:
+        return []
+    min_score = float(os.environ.get("OWASP_CX_PROJROUTE_MIN", "0.62"))
+    margin = float(os.environ.get("OWASP_CX_PROJROUTE_MARGIN", "0.03"))
+    second = hits[1].score if len(hits) > 1 else 0.0
+    if hits[0].score < min_score or hits[0].score - second < margin:
+        return []
+    m = _SLUG_RE.match(hits[0].url)
+    return [m.group(1)] if m else []
+
+
 def project_sources(question: str) -> List[tuple]:
     """Whole text of the projects the question names (1..N); [] if none, too many or too big."""
     try:
@@ -348,6 +374,11 @@ def project_sources(question: str) -> List[tuple]:
         limit = longctx_max_projects()
         with sqla.session.get_bind().connect() as conn:
             slugs = matched_slugs(question, _known_slugs(conn), limit=limit + 1)
+            if not slugs:
+                from application.utils.comprehension import flags
+
+                if flags.on("PROJROUTE"):
+                    slugs = route_project(conn, question)
             if not slugs or len(slugs) > limit:
                 return []
             rows: List[tuple] = []
