@@ -395,7 +395,20 @@ class CalibrationCoverageTest(unittest.TestCase):
         self.assertIn("reached calibration: 4/4", report)
         self.assertNotIn("denominator incomplete", report)
         self.assertIn("(calibrated, in-sample)", report)
-        self.assertEqual(status, 0 if "gate ECE<0.10: PASS" in report else 1)
+        # Expected outcome computed independently of the report text: refit T on
+        # the same calibration set and apply the 0.10 bar ourselves.
+        from application.utils.librarian.calibration.temperature import (
+            expected_calibration_error,
+            fit_temperature,
+        )
+
+        logit_sets, labels = harness.calibration_set(rows, audits)
+        scaler_check = fit_temperature(logit_sets, labels)
+        ece_check = expected_calibration_error(
+            [scaler_check.confidence(s) for s in logit_sets], labels
+        )
+        self.assertAlmostEqual(scaler.temperature, scaler_check.temperature, places=6)
+        self.assertEqual(status, 0 if ece_check < 0.10 else 1)
 
     def test_missing_audit_rows_are_counted_in_the_decision_report(self) -> None:
         from application.utils.librarian.calibration.temperature import (
@@ -424,3 +437,40 @@ class CalibrationCoverageTest(unittest.TestCase):
         self.assertEqual(status, 0, "still informational")
         self.assertIn("1 of 3 rows with an expected decision had no audit", report)
         self.assertIn("decision (C.4, 2 rows @ tau=0.80): overall 2/2", report)
+
+    def test_degenerate_set_still_reports_coverage(self) -> None:
+        rows = [
+            _golden_row("p1", "positive", "alpha", ["616-305"]),
+            _golden_row("p2", "positive", "empty", ["616-305"]),
+            _golden_row("n1", "hard_negative", "empty2", []),
+        ]
+        pipe = CountingPipeline(
+            {"alpha": [("616-305", 5.0)]}
+        )  # the other two are empty
+        audits = harness.live_audits(rows, pipe, pipe)
+        with _captured_stdout() as out:
+            status, scaler = harness.report_calibration(rows, audits)
+        report = out.getvalue()
+        self.assertEqual(status, 1)
+        self.assertIsNone(scaler)
+        self.assertIn("reached calibration: 1/3", report)
+        self.assertIn("2 of 3 eligible rows did not reach the fit", report)
+        self.assertIn("FAILED (gate did not run)", report)
+
+    def test_decision_report_names_missing_audits_when_nothing_graded(self) -> None:
+        from application.utils.librarian.calibration.temperature import (
+            TemperatureScaler,
+        )
+
+        rows = [
+            _golden_row("d1", "positive", "alpha", ["616-305"]),
+            _golden_row("d2", "positive", "alpha2", ["616-305"]),
+        ]
+        with _captured_stdout() as out:
+            status = harness.report_decision_accuracy(
+                rows, {}, TemperatureScaler(1.0), 0.80
+            )
+        report = out.getvalue()
+        self.assertEqual(status, 0)
+        self.assertIn("2 of 2 rows with an expected decision had no audit", report)
+        self.assertIn("no rows with an expected decision", report)
