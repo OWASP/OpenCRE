@@ -51,6 +51,34 @@ _CRE_STYLE = re.compile(
 )
 
 
+def closest_projects(hits: Sequence[Any], limit: int = 3) -> List[str]:
+    """Readable names of the projects behind the best comprehension hits (best first)."""
+    from application.utils.comprehension.retrieve import _SLUG_RE, alias_phrase
+
+    out: List[str] = []
+    for h in hits:
+        m = _SLUG_RE.match(getattr(h, "url", "") or "")
+        if not m:
+            continue
+        name = alias_phrase(m.group(1)).title()
+        if name and name not in out:
+            out.append(name)
+        if len(out) >= limit:
+            break
+    return out
+
+
+def abstain_message(hits: Sequence[Any]) -> str:
+    """The not-found message, asking which project is meant when the closest matches are known."""
+    near = closest_projects(hits)
+    if not near:
+        return ABSTAIN_MESSAGE
+    return (
+        "I couldn't find that in the indexed OWASP sources, so I won't guess. "
+        f"Which project or standard do you mean? Closest matches: {', '.join(near)}."
+    )
+
+
 def should_abstain(question: str) -> bool:
     return abstain_enabled() and not _CRE_STYLE.search(question or "")
 

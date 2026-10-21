@@ -708,3 +708,32 @@ class WarmUpTest(unittest.TestCase):
             del os.environ["OWASP_WARMUP"]
         # No database/app context here: must swallow the failure and report False.
         self.assertFalse(shared.warm_up())
+
+
+class AbstainMessageTest(unittest.TestCase):
+    def test_not_found_asks_which_project_with_closest_matches(self):
+        from application.utils.comprehension.answer import (
+            ABSTAIN_MESSAGE,
+            abstain_message,
+        )
+        from application.utils.owasp_agent.lane_similarity import LaneHit
+
+        def hit(slug):
+            return LaneHit(
+                channel="c",
+                score=0.5,
+                url=f"owasp-agent://evidence/comprehension-{slug}-claim-001",
+                content="x",
+            )
+
+        msg = abstain_message(
+            [
+                hit("owasp-www-project-security-culture"),
+                hit("owasp-asvs"),
+                hit("owasp-www-project-security-culture"),
+                hit("owasp-samm"),
+            ]
+        )
+        self.assertIn("Which project or standard do you mean?", msg)
+        self.assertIn("Security Culture, Asvs, Samm", msg)
+        self.assertEqual(abstain_message([]), ABSTAIN_MESSAGE)
