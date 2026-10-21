@@ -73,7 +73,7 @@ def main() -> int:
     ap.add_argument("--profile", choices=["standard", "people"], default="standard")
     ap.add_argument("--dry-run", action="store_true", help="no embeddings/DB writes")
     ap.add_argument("--limit-docs", type=int, default=0)
-    ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument("--workers", type=int, default=16)
     ap.add_argument("--dump", help="write the digest JSON here")
     a = ap.parse_args()
 
