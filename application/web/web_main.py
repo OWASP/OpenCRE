@@ -30,7 +30,7 @@ from application.feature_flags import (
 )
 from application.web import identity
 from application.utils import spreadsheet as sheet_utils
-from application.utils import mdutils, redirectors, gap_analysis
+from application.utils import mdutils, redirectors, gap_analysis, ga_upstream_fetch
 from application.web.openapi_registry import openapi_documented
 from enum import Enum
 from flask import json as flask_json
@@ -408,63 +408,15 @@ def map_analysis() -> Any:
         )
         abort(404, "No such Cache")
 
-    if os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS"):
-        logger.info(
-            f"Gap analysis calculations are disabled by CRE_NO_CALCULATE_GAP_ANALYSIS; "
-            f"refusing to schedule new job for {standards_hash}"
-        )
-        abort(404, "Gap analysis calculations are disabled")
-
-    # ----- upstream: Redis / RQ path with synchronous fallback -----
-    db_url = os.environ.get("CRE_CACHE_FILE") or os.environ.get("PROD_DATABASE_URL")
-    if not db_url:
-        db_url = str(getattr(getattr(database.session, "bind", None), "url", ""))
-    try:
-        conn = redis.connect()
-        ga_queue_name = os.environ.get("CRE_GA_QUEUE_NAME", "ga")
-        q = Queue(name=ga_queue_name, connection=conn)
-        inflight_key = f"ga:inflight:{cache_key}"
-        inflight_job_id_raw = conn.get(inflight_key)
-        inflight_job_id = (
-            inflight_job_id_raw.decode("utf-8")
-            if isinstance(inflight_job_id_raw, bytes)
-            else str(inflight_job_id_raw) if inflight_job_id_raw else ""
-        )
-        if inflight_job_id:
-            try:
-                inflight_job = job.Job.fetch(id=inflight_job_id, connection=conn)
-                if inflight_job.get_status() in (
-                    job.JobStatus.QUEUED,
-                    job.JobStatus.STARTED,
-                ):
-                    return jsonify({"job_id": inflight_job_id})
-            except exceptions.NoSuchJobError:
-                conn.delete(inflight_key)
-
-        j = q.enqueue_call(
-            description=f"{standards[0]}->{standards[1]}",
-            func="application.cmd.cre_main.run_gap_pair_job",
-            kwargs={
-                "importing_name": standards[0],
-                "peer_name": standards[1],
-                "db_connection_str": db_url,
-            },
-            timeout=gap_analysis.GAP_ANALYSIS_TIMEOUT,
-        )
-        conn.set(inflight_key, str(j.id))
-        conn.expire(inflight_key, _ga_timeout_seconds())
-        return jsonify({"job_id": str(j.id)})
-    except Exception as exc:
-        logger.warning(
-            "Redis/RQ unavailable in map_analysis for %s; using synchronous fallback: %s",
-            cache_key,
-            exc,
-        )
-        try:
-            return jsonify(_compute_ga_without_redis(database, standards))
-        except Exception as fallback_exc:
-            logger.exception("Synchronous GA fallback failed for %s", cache_key)
-            abort(503, f"Gap analysis unavailable: {fallback_exc}")
+    # Local / non-Heroku opportunistic upstream fetch (RFC #972 / #1026)
+    status_code, upstream_resp = ga_upstream_fetch.resolve_gap_analysis_pair(
+        standards, database
+    )
+    if status_code == 200:
+        return jsonify(upstream_resp)
+    if status_code == 202:
+        return jsonify(upstream_resp), 202
+    return jsonify(upstream_resp), status_code
 
 
 @openapi_documented("map_analysis_weak_links")
