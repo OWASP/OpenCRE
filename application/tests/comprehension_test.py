@@ -862,3 +862,26 @@ class CompleteRuleTest(unittest.TestCase):
             synthesize("q", [("t", ["u"])], llm)
         self.assertIn(COMPLETE_RULE, seen[0])
         self.assertNotIn(COMPLETE_RULE, seen[1])
+
+
+class ToolkitHelpersTest(unittest.TestCase):
+    def test_path_and_body_parsing(self):
+        from application.utils.comprehension import toolkit
+
+        content = "ASVS / 4.0/en/0x01-Frontispiece.md: context\ntext\n\nCitations: https://x/y"
+        self.assertEqual(toolkit.path_of(content), "4.0/en/0x01-Frontispiece.md")
+        self.assertNotIn("Citations", toolkit.body_of(content))
+        self.assertEqual(toolkit.path_of("no path here"), "")
+
+    def test_tools_are_registered(self):
+        from application.mcp.owasp_agent_tools import list_owasp_meta_tool_names
+
+        with mock.patch.dict(os.environ, {"OWASP_AGENT_ENABLED": "1"}):
+            names = list_owasp_meta_tool_names()
+        for n in (
+            "owasp_meta_sources_search",
+            "owasp_meta_sources_list",
+            "owasp_meta_sources_get",
+            "owasp_meta_sources_overview",
+        ):
+            self.assertIn(n, names)

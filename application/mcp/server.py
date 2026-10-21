@@ -207,7 +207,12 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
                     is_error=False,
                 )
             if get_owasp_meta_tool(name) is not None:
-                data = call_owasp_meta_tool(name, arguments)
+                if name.startswith("owasp_meta_sources_"):
+                    data = await run_blocking_with_app(
+                        lambda: call_owasp_meta_tool(name, arguments)
+                    )
+                else:
+                    data = call_owasp_meta_tool(name, arguments)
                 payload = json.dumps(data, ensure_ascii=False, default=str)
                 return types.CallToolResult(
                     content=[types.TextContent(type="text", text=payload)],
