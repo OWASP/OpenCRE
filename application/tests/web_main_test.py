@@ -818,15 +818,12 @@ class TestMain(unittest.TestCase):
             enqueue_call_mock.assert_not_called()
 
     @patch.object(db, "Node_collection")
-    @patch.object(rq.Queue, "enqueue_call")
-    @patch.object(app_redis, "connect")
-    def test_gap_analysis_create_job_id(
-        self, redis_conn_mock, enqueue_call_mock, db_mock
+    @patch.object(web_main.ga_upstream_fetch, "resolve_gap_analysis_pair")
+    def test_map_analysis_cache_miss_calls_upstream_resolver(
+        self, resolve_mock, db_mock
     ) -> None:
-        expected = {"job_id": "ABC"}
-        redis_conn_mock.return_value.get.return_value = None
-        enqueue_call_mock.return_value = Mock(id="ABC")
-        db_mock.return_value.get_gap_analysis_result.return_value = None
+        expected = {"result": {"standard_a": {}, "standard_b": {}}}
+        resolve_mock.return_value = (200, expected)
         db_mock.return_value.gap_analysis_exists.return_value = False
         with self.app.test_client() as client:
             response = client.get(
@@ -835,76 +832,67 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(200, response.status_code)
             self.assertEqual(expected, json.loads(response.data))
-            self.assertTrue(enqueue_call_mock.called)
-            _, kwargs = enqueue_call_mock.call_args
-            self.assertEqual("aaa->bbb", kwargs["description"])
-            self.assertEqual(
-                "application.cmd.cre_main.run_gap_pair_job", kwargs["func"]
-            )
-            self.assertEqual("aaa", kwargs["kwargs"]["importing_name"])
-            self.assertEqual("bbb", kwargs["kwargs"]["peer_name"])
-            self.assertEqual(GAP_ANALYSIS_TIMEOUT, kwargs["timeout"])
+            resolve_mock.assert_called_once()
 
     @patch.object(db, "Node_collection")
-    @patch.object(rq.Queue, "enqueue_call")
-    @patch.object(app_redis, "connect")
-    def test_map_analysis_non_material_sql_cache_triggers_job(
-        self, redis_conn_mock, enqueue_call_mock, db_mock
+    @patch.object(web_main.ga_upstream_fetch, "resolve_gap_analysis_pair")
+    def test_map_analysis_cache_miss_in_progress(
+        self, resolve_mock, db_mock
     ) -> None:
-        """SQL rows with empty ``result`` must not short-circuit map_analysis."""
-        redis_conn_mock.return_value.get.return_value = None
-        enqueue_call_mock.return_value = Mock(id="ABC")
+        expected = {
+            "status": "in_progress",
+            "cache_key": "aaa >> bbb",
+            "poll_after_seconds": 2,
+        }
+        resolve_mock.return_value = (202, expected)
         db_mock.return_value.gap_analysis_exists.return_value = False
-        db_mock.return_value.get_gap_analysis_result.return_value = '{"result": {}}'
         with self.app.test_client() as client:
             response = client.get(
                 "/rest/v1/map_analysis?standard=aaa&standard=bbb",
                 headers={"Content-Type": "application/json"},
             )
-            self.assertEqual(200, response.status_code)
-            self.assertEqual({"job_id": "ABC"}, json.loads(response.data))
-            enqueue_call_mock.assert_called_once()
+            self.assertEqual(202, response.status_code)
+            self.assertEqual(expected, json.loads(response.data))
 
     @patch.object(db, "Node_collection")
-    @patch.object(db, "gap_analysis")
-    @patch.object(app_redis, "connect")
-    def test_gap_analysis_fallback_without_redis(
-        self, redis_conn_mock, db_gap_analysis_mock, db_mock
+    @patch.object(web_main.ga_upstream_fetch, "resolve_gap_analysis_pair")
+    def test_map_analysis_cache_miss_upstream_unavailable_returns_503(
+        self, resolve_mock, db_mock
     ) -> None:
-        redis_conn_mock.side_effect = RuntimeError("redis down")
-        db_mock.return_value.get_gap_analysis_result.side_effect = [
-            None,
-            json.dumps({"result": {"k": {}}}),
-        ]
+        expected = {
+            "error_code": "ga_upstream_unavailable",
+            "message": "Could not reach opencre.org",
+            "try_again": True,
+        }
+        resolve_mock.return_value = (503, expected)
+        db_mock.return_value.gap_analysis_exists.return_value = False
         with self.app.test_client() as client:
             response = client.get(
                 "/rest/v1/map_analysis?standard=aaa&standard=bbb",
                 headers={"Content-Type": "application/json"},
             )
-            self.assertEqual(200, response.status_code)
-            self.assertEqual({"result": {"k": {}}}, json.loads(response.data))
-            db_gap_analysis_mock.assert_called_once()
-
-    @patch.object(db, "Node_collection")
-    @patch.object(db, "gap_analysis")
-    @patch.object(app_redis, "connect")
-    def test_gap_analysis_fallback_backend_failure_returns_503(
-        self, redis_conn_mock, db_gap_analysis_mock, db_mock
-    ) -> None:
-        redis_conn_mock.side_effect = RuntimeError("redis down")
-        db_gap_analysis_mock.side_effect = RuntimeError("neo unavailable")
-        db_mock.return_value.get_gap_analysis_result.return_value = None
-        db_mock.return_value.gap_analysis_exists.return_value = False
-        with self.app.test_client() as client:
-            with patch.dict(os.environ, {}, clear=False):
-                os.environ.pop("DYNO", None)
-                os.environ.pop("HEROKU", None)
-                response = client.get(
-                    "/rest/v1/map_analysis?standard=aaa&standard=bbb",
-                    headers={"Content-Type": "application/json"},
-                )
             self.assertEqual(503, response.status_code)
-            db_gap_analysis_mock.assert_called_once()
+            self.assertEqual(expected, json.loads(response.data))
+
+    @patch.object(db, "Node_collection")
+    @patch.object(web_main.ga_upstream_fetch, "resolve_gap_analysis_pair")
+    def test_map_analysis_cache_miss_returns_404(
+        self, resolve_mock, db_mock
+    ) -> None:
+        expected = {
+            "error_code": "ga_cache_miss",
+            "message": "Not found",
+            "try_again": False,
+        }
+        resolve_mock.return_value = (404, expected)
+        db_mock.return_value.gap_analysis_exists.return_value = False
+        with self.app.test_client() as client:
+            response = client.get(
+                "/rest/v1/map_analysis?standard=aaa&standard=bbb",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(404, response.status_code)
+            self.assertEqual(expected, json.loads(response.data))
 
     @patch.dict(os.environ, {"HEROKU": "True"}, clear=False)
     @patch.object(db, "Node_collection")
