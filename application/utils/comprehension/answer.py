@@ -224,6 +224,12 @@ def _answer_from_whole_project(
     return (answer, cites) if answer else None
 
 
+def think_effort() -> str:
+    """OWASP_CX_THINK_EFFORT: '' (model default), low, medium or high thinking budget."""
+    v = (os.environ.get("OWASP_CX_THINK_EFFORT") or "").strip().lower()
+    return v if v in ("low", "medium", "high") else ""
+
+
 def synthesis_model() -> str:
     """Model used for the final answer ('' = the default chat model)."""
     return (os.environ.get("OWASP_COMPREHENSION_MODEL") or "").strip()
@@ -235,15 +241,15 @@ def _answer(
     from application.utils.comprehension import flags
 
     model = synthesis_model()
-    fast = flags.on("FAST")
-    if model or fast:
+    effort = "disable" if flags.on("FAST") else think_effort()
+    if model or effort:
         from application.prompt_client import litellm_router
 
         call = litellm_router.system_user_fn(
             model or os.environ.get("CRE_LLM_CHAT_MODEL", "gemini/gemini-2.5-flash"),
             temperature=0.0,
-            # Thinking tokens bill as output and add seconds; synthesis does not need them.
-            extra_try_kwargs={"reasoning_effort": "disable"} if fast else None,
+            # Thinking tokens bill as output and add seconds: off, or a small budget.
+            extra_try_kwargs={"reasoning_effort": effort} if effort else None,
         )
         complete = lambda msgs: call(
             msgs[0]["content"], msgs[1]["content"]
