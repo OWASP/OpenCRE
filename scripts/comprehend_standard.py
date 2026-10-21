@@ -72,6 +72,19 @@ def main() -> int:
     ap.add_argument("--dump", help="write the digest JSON here")
     a = ap.parse_args()
 
+    usage = {"calls": 0, "in": 0, "out": 0, "cost": 0.0}
+
+    def _meter(kwargs, response, start, end):  # litellm success callback
+        u = getattr(response, "usage", None)
+        usage["calls"] += 1
+        usage["in"] += int(getattr(u, "prompt_tokens", 0) or 0)
+        usage["out"] += int(getattr(u, "completion_tokens", 0) or 0)
+        usage["cost"] += float((kwargs or {}).get("response_cost") or 0.0)
+
+    import litellm
+
+    litellm.success_callback = [_meter]
+
     from application import create_app
     from application.database import db as db_mod
     from application.prompt_client import litellm_router, prompt_client
@@ -203,6 +216,11 @@ def main() -> int:
                 )
             except Exception as exc:  # noqa: BLE001
                 print(f"{repo}: FAILED {str(exc)[:200]}", flush=True)
+    print(
+        f"METERED llm_calls={usage['calls']} tokens_in={usage['in']} tokens_out={usage['out']} "
+        f"llm_cost_usd={usage['cost']:.4f}",
+        flush=True,
+    )
     return 0
 
 
