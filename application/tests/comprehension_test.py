@@ -1,5 +1,7 @@
 import json
+import os
 import unittest
+from unittest import mock
 
 from application.utils.comprehension import digest, sources, store, synthesize
 from application.utils.comprehension.answer import (
@@ -737,3 +739,21 @@ class AbstainMessageTest(unittest.TestCase):
         self.assertIn("Which project or standard do you mean?", msg)
         self.assertIn("Security Culture, Asvs, Samm", msg)
         self.assertEqual(abstain_message([]), ABSTAIN_MESSAGE)
+
+
+class EditionRuleTest(unittest.TestCase):
+    def test_edition_flag_adds_rule_to_system_prompt(self):
+        from application.utils.comprehension.synthesize import EDITION_RULE, synthesize
+
+        seen = []
+
+        def llm(system, user):
+            seen.append(system)
+            return "Answer [1]"
+
+        with mock.patch.dict(os.environ, {"OWASP_CX_EDITION": "1"}):
+            synthesize("who led Top 10 2017?", [("t", ["u"])], llm)
+        with mock.patch.dict(os.environ, {"OWASP_CX_EDITION": ""}):
+            synthesize("who led Top 10 2017?", [("t", ["u"])], llm)
+        self.assertIn(EDITION_RULE, seen[0])
+        self.assertNotIn(EDITION_RULE, seen[1])
