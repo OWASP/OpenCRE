@@ -327,6 +327,14 @@ def calibration_set(
     return logit_sets, labels
 
 
+def calibration_eligible(rows: List[GoldenDatasetRow]) -> int:
+    """Rows the C.3 fit is *supposed* to draw on: the positive + hard_negative
+    slices of the selection. ``calibration_set`` may return fewer (no audit, or an
+    empty reranked shortlist); the gate counts against this number so a drop is
+    never silent (#1166, same class as the explicit-gate fix in #1140)."""
+    return sum(1 for r in rows if r.slice.value in ("positive", "hard_negative"))
+
+
 def report_calibration(
     rows: List[GoldenDatasetRow],
     audits: Dict[str, Any],
@@ -352,6 +360,16 @@ def report_calibration(
     )
 
     logit_sets, labels = calibration_set(rows, audits)
+    # Coverage first, so the degenerate path below also says how many of the
+    # eligible rows reached the fit instead of only "need both outcomes".
+    eligible = calibration_eligible(rows)
+    used = len(labels)
+    print(f"calibration (C.3): reached calibration: {used}/{eligible}")
+    if used < eligible:
+        print(
+            f"calibration (C.3): {eligible - used} of {eligible} eligible rows did not "
+            "reach the fit (no audit or empty reranked shortlist)"
+        )
 
     if len(set(labels)) < 2:
         # Degenerate calibration set: single-class labels, or nothing left after
@@ -371,12 +389,20 @@ def report_calibration(
     conf_cal = [scaler.confidence(s) for s in logit_sets]
     ece_raw = expected_calibration_error(conf_raw, labels)
     ece_cal = expected_calibration_error(conf_cal, labels)
-    gate_ok = ece_cal < 0.10
+    # The gate counts against every eligible row in the selection. Rows that
+    # never reached the fit (no audit, empty shortlist) shrink the denominator
+    # silently otherwise, and a hollowed-out set can still print PASS (#1166).
+    coverage_ok = used == eligible
+    ece_ok = ece_cal < 0.10
+    gate_ok = ece_ok and coverage_ok
     print(
-        f"calibration (C.3, {len(labels)} rows): fitted T={scaler.temperature:.3f}; "
-        f"ECE {ece_raw:.3f} (raw, T=1) -> {ece_cal:.3f} (calibrated); "
-        f"gate ECE<0.10: {'PASS' if gate_ok else 'FAIL'}"
+        f"calibration (C.3, {used} rows): fitted T={scaler.temperature:.3f}; "
+        f"ECE {ece_raw:.3f} (raw, T=1) -> {ece_cal:.3f} (calibrated, in-sample); "
+        f"gate ECE<0.10: {'PASS' if ece_ok else 'FAIL'}; "
+        f"reached calibration: {used}/{eligible}"
     )
+    if not coverage_ok:
+        print("calibration (C.3): FAILED (gate denominator incomplete)")
     return (0 if gate_ok else 1), scaler
 
 
@@ -406,9 +432,23 @@ def report_decision_accuracy(
     from application.utils.librarian.decision_engine import decide
     from application.utils.librarian.schemas import Decision
 
-    graded = [r for r in rows if r.expected.decision is not None and r.id in audits]
+    selected = [r for r in rows if r.expected.decision is not None]
+    graded = [r for r in selected if r.id in audits]
+    if len(graded) < len(selected):
+        # Informational report, but a silent drop still hides a broken pipeline;
+        # say so even when nothing at all could be graded.
+        print(
+            f"decision (C.4): {len(selected) - len(graded)} of {len(selected)} rows "
+            "with an expected decision had no audit and were not graded"
+        )
     if not graded:
-        print("decision (C.4): no rows with an expected decision in this selection")
+        if selected:
+            print(
+                f"decision (C.4): none of the {len(selected)} rows with an expected "
+                "decision could be graded (no audits)"
+            )
+        else:
+            print("decision (C.4): no rows with an expected decision in this selection")
         return 0
 
     dec_match = reason_match = 0

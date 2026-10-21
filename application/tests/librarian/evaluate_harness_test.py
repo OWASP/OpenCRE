@@ -279,7 +279,12 @@ class ReportDecisionAccuracyTest(unittest.TestCase):
             )
 
         self.assertEqual(status, 0)
-        self.assertIn("no rows with an expected decision", out.getvalue())
+        report = out.getvalue()
+        self.assertIn("1 of 1 rows with an expected decision had no audit", report)
+        self.assertIn(
+            "none of the 1 rows with an expected decision could be graded", report
+        )
+        self.assertNotIn("no rows with an expected decision", report)
 
 
 class BoundaryGateTest(unittest.TestCase):
@@ -342,3 +347,156 @@ class BoundaryGateTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CalibrationCoverageTest(unittest.TestCase):
+    """#1166: rows that never reach the C.3 fit must count against the gate."""
+
+    def _rows(self) -> list:
+        return [
+            _golden_row("p1", "positive", "alpha", ["616-305"]),
+            _golden_row("p2", "positive", "alpha2", ["616-305"]),
+            _golden_row("p3", "positive", "empty", ["616-305"]),
+            _golden_row("n1", "hard_negative", "beta", []),
+            _golden_row("n2", "hard_negative", "beta2", []),
+            _golden_row("e1", "explicit", "delta", ["616-305"]),
+        ]
+
+    def _pipe(self) -> "CountingPipeline":
+        return CountingPipeline(
+            {
+                "alpha": [("616-305", 5.0), ("999-999", 0.1)],
+                "alpha2": [("616-305", 4.0), ("999-999", 0.2)],
+                "beta": [("111-111", 3.0), ("222-222", 2.9)],
+                "beta2": [("111-111", 2.0), ("222-222", 1.9)],
+                "delta": [("616-305", 1.0)],
+                # "empty" yields no candidates on purpose
+            }
+        )
+
+    def test_eligible_counts_only_the_two_calibration_slices(self) -> None:
+        self.assertEqual(harness.calibration_eligible(self._rows()), 5)
+
+    def test_partial_drop_fails_the_gate_and_says_how_many(self) -> None:
+        rows, pipe = self._rows(), self._pipe()
+        audits = harness.live_audits(rows, pipe, pipe)
+        with _captured_stdout() as out:
+            status, scaler = harness.report_calibration(rows, audits)
+        report = out.getvalue()
+        self.assertEqual(status, 1)
+        self.assertIsNotNone(scaler, "T is still fitted so C.4 can report")
+        self.assertIn("reached calibration: 4/5", report)
+        self.assertIn("1 of 5 eligible rows did not reach the fit", report)
+        self.assertIn("FAILED (gate denominator incomplete)", report)
+
+    def test_full_coverage_gates_on_ece_only(self) -> None:
+        rows = [r for r in self._rows() if r.id != "p3"]
+        pipe = self._pipe()
+        audits = harness.live_audits(rows, pipe, pipe)
+        with _captured_stdout() as out:
+            status, scaler = harness.report_calibration(rows, audits)
+        report = out.getvalue()
+        self.assertIsNotNone(scaler)
+        self.assertIn("reached calibration: 4/4", report)
+        self.assertNotIn("denominator incomplete", report)
+        self.assertIn("(calibrated, in-sample)", report)
+        # Expected outcome computed independently of the report text: refit T on
+        # the same calibration set and apply the 0.10 bar ourselves.
+        from application.utils.librarian.calibration.temperature import (
+            expected_calibration_error,
+            fit_temperature,
+        )
+
+        logit_sets, labels = harness.calibration_set(rows, audits)
+        scaler_check = fit_temperature(logit_sets, labels)
+        ece_check = expected_calibration_error(
+            [scaler_check.confidence(s) for s in logit_sets], labels
+        )
+        self.assertAlmostEqual(scaler.temperature, scaler_check.temperature, places=6)
+        self.assertEqual(status, 0 if ece_check < 0.10 else 1)
+
+    def test_missing_audit_rows_are_counted_in_the_decision_report(self) -> None:
+        from application.utils.librarian.calibration.temperature import (
+            TemperatureScaler,
+        )
+
+        rows = [
+            _golden_row("d1", "positive", "alpha", ["616-305"]),
+            _golden_row(
+                "d2", "hard_negative", "beta", [], reason_code="BELOW_THRESHOLD"
+            ),
+            _golden_row("d3", "positive", "never-audited", ["616-305"]),
+        ]
+        pipe = CountingPipeline(
+            {
+                "alpha": [("616-305", 20.0), ("999-999", 0.0)],
+                "beta": [("111-111", 1.0), ("222-222", 0.99)],
+            }
+        )
+        audits = harness.live_audits(rows[:2], pipe, pipe)
+        with _captured_stdout() as out:
+            status = harness.report_decision_accuracy(
+                rows, audits, TemperatureScaler(1.0), 0.80
+            )
+        report = out.getvalue()
+        self.assertEqual(status, 0, "still informational")
+        self.assertIn("1 of 3 rows with an expected decision had no audit", report)
+        self.assertIn("decision (C.4, 2 rows @ tau=0.80): overall 2/2", report)
+
+    def test_degenerate_set_still_reports_coverage(self) -> None:
+        rows = [
+            _golden_row("p1", "positive", "alpha", ["616-305"]),
+            _golden_row("p2", "positive", "empty", ["616-305"]),
+            _golden_row("n1", "hard_negative", "empty2", []),
+        ]
+        pipe = CountingPipeline(
+            {"alpha": [("616-305", 5.0)]}
+        )  # the other two are empty
+        audits = harness.live_audits(rows, pipe, pipe)
+        with _captured_stdout() as out:
+            status, scaler = harness.report_calibration(rows, audits)
+        report = out.getvalue()
+        self.assertEqual(status, 1)
+        self.assertIsNone(scaler)
+        self.assertIn("reached calibration: 1/3", report)
+        self.assertIn("2 of 3 eligible rows did not reach the fit", report)
+        self.assertIn("FAILED (gate did not run)", report)
+
+    def test_decision_report_names_missing_audits_when_nothing_graded(self) -> None:
+        from application.utils.librarian.calibration.temperature import (
+            TemperatureScaler,
+        )
+
+        rows = [
+            _golden_row("d1", "positive", "alpha", ["616-305"]),
+            _golden_row("d2", "positive", "alpha2", ["616-305"]),
+        ]
+        with _captured_stdout() as out:
+            status = harness.report_decision_accuracy(
+                rows, {}, TemperatureScaler(1.0), 0.80
+            )
+        report = out.getvalue()
+        self.assertEqual(status, 0)
+        self.assertIn("2 of 2 rows with an expected decision had no audit", report)
+        self.assertIn(
+            "none of the 2 rows with an expected decision could be graded", report
+        )
+        self.assertNotIn("no rows with an expected decision", report)
+
+    def test_selection_without_expected_decisions_keeps_the_original_line(self) -> None:
+        from application.utils.librarian.calibration.temperature import (
+            TemperatureScaler,
+        )
+
+        rows = [_golden_row("e1", "explicit", "delta", ["616-305"])]
+        rows[0] = rows[0].model_copy(
+            update={"expected": rows[0].expected.model_copy(update={"decision": None})}
+        )
+        with _captured_stdout() as out:
+            status = harness.report_decision_accuracy(
+                rows, {}, TemperatureScaler(1.0), 0.80
+            )
+        self.assertEqual(status, 0)
+        self.assertIn(
+            "no rows with an expected decision in this selection", out.getvalue()
+        )
