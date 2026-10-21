@@ -348,7 +348,7 @@ class OwaspAgentRouter:
             # Ingestion-time comprehension docs: combine top hits with an LLM and
             # answer only when the sources support it (UNKNOWN falls through).
             from application.utils.comprehension.answer import (
-                ABSTAIN_MESSAGE,
+                abstain_message,
                 should_abstain,
                 answer_from_candidates,
                 is_comprehension_hit,
@@ -403,7 +403,7 @@ class OwaspAgentRouter:
                     QueryResult(
                         ok=True,
                         kind="evidence",
-                        message=ABSTAIN_MESSAGE,
+                        message=abstain_message(comp_hits, normalized),
                         citations=[],
                         data={
                             "lane_scores": sim_decision.scores,

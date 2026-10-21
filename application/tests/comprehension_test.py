@@ -708,3 +708,112 @@ class WarmUpTest(unittest.TestCase):
             del os.environ["OWASP_WARMUP"]
         # No database/app context here: must swallow the failure and report False.
         self.assertFalse(shared.warm_up())
+
+
+class AbstainMessageTest(unittest.TestCase):
+    def test_not_found_asks_which_project_with_closest_matches(self):
+        from application.utils.comprehension.answer import (
+            ABSTAIN_MESSAGE,
+            abstain_message,
+        )
+        from application.utils.owasp_agent.lane_similarity import LaneHit
+
+        def hit(slug):
+            return LaneHit(
+                channel="c",
+                score=0.5,
+                url=f"owasp-agent://evidence/comprehension-{slug}-claim-001",
+                content="x",
+            )
+
+        msg = abstain_message(
+            [
+                hit("owasp-www-project-security-culture"),
+                hit("owasp-asvs"),
+                hit("owasp-www-project-security-culture"),
+                hit("owasp-samm"),
+            ]
+        )
+        self.assertIn("Which project or standard do you mean?", msg)
+        self.assertIn("Security Culture, Asvs, Samm", msg)
+        self.assertEqual(abstain_message([]), ABSTAIN_MESSAGE)
+
+
+class EditionRuleTest(unittest.TestCase):
+    def test_edition_flag_adds_rule_to_system_prompt(self):
+        from application.utils.comprehension.synthesize import EDITION_RULE, synthesize
+
+        seen = []
+
+        def llm(system, user):
+            seen.append(system)
+            return "Answer [1]"
+
+        with mock.patch.dict(os.environ, {"OWASP_CX_EDITION": "1"}):
+            synthesize("who led Top 10 2017?", [("t", ["u"])], llm)
+        with mock.patch.dict(os.environ, {"OWASP_CX_EDITION": ""}):
+            synthesize("who led Top 10 2017?", [("t", ["u"])], llm)
+        self.assertIn(EDITION_RULE, seen[0])
+        self.assertNotIn(EDITION_RULE, seen[1])
+
+
+class RouteProjectTest(unittest.TestCase):
+    def _route(self, scores):
+        from application.utils.comprehension import embedcache, retrieve, shared
+        from application.utils.owasp_agent.lane_similarity import LaneHit
+
+        hits = [
+            LaneHit(
+                channel="c",
+                score=s,
+                url=f"owasp-agent://evidence/comprehension-{slug}-overview",
+            )
+            for slug, s in scores
+        ]
+        with mock.patch.object(
+            retrieve, "_dense", return_value=hits
+        ), mock.patch.object(
+            embedcache, "embed_many", return_value=[[0.1]]
+        ), mock.patch.object(
+            shared, "shared_handler"
+        ), mock.patch(
+            "application.database.db.Node_collection"
+        ):
+            return retrieve.route_project(None, "q")
+
+    def test_confident_match_is_routed(self):
+        self.assertEqual(
+            self._route([("owasp-wstg", 0.8), ("owasp-asvs", 0.6)]), ["owasp-wstg"]
+        )
+
+    def test_weak_or_close_matches_are_not_routed(self):
+        self.assertEqual(self._route([("owasp-wstg", 0.5), ("owasp-asvs", 0.3)]), [])
+        self.assertEqual(self._route([("owasp-wstg", 0.8), ("owasp-asvs", 0.79)]), [])
+
+
+class SkippedFilesSupplementTest(unittest.TestCase):
+    def test_split_markdown_keeps_headings_with_their_text(self):
+        text = "# A\n\n" + ("alpha " * 200) + "\n\n# B\n\nbeta"
+        pieces = sources.split_markdown(text, size=500)
+        self.assertTrue(all(len(p) <= 1100 for p in pieces))
+        self.assertTrue(any(p.startswith("# B") for p in pieces))
+
+
+class AbstainNamedProjectTest(unittest.TestCase):
+    def test_no_which_project_question_when_project_is_named(self):
+        from application.utils.comprehension.answer import (
+            ABSTAIN_MESSAGE,
+            abstain_message,
+        )
+        from application.utils.owasp_agent.lane_similarity import LaneHit
+
+        h = LaneHit(
+            channel="c",
+            score=0.5,
+            url="owasp-agent://evidence/comprehension-owasp-asvs-claim-001",
+        )
+        self.assertEqual(
+            abstain_message([h], "Which ASVS levels are not pentestable?"),
+            ABSTAIN_MESSAGE,
+        )
+        self.assertIn("Which project", abstain_message([h], "what about that thing?"))
