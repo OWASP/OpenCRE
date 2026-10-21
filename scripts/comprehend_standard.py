@@ -60,6 +60,11 @@ def main() -> int:
         action="store_true",
         help="with --raw: also index repo markdown files the harvester skipped (git clone)",
     )
+    ap.add_argument(
+        "--supplement-only",
+        action="store_true",
+        help="with --supplement: write only the skipped files' chunks (repo already indexed)",
+    )
     ap.add_argument("--profile", choices=["standard", "people"], default="standard")
     ap.add_argument("--dry-run", action="store_true", help="no embeddings/DB writes")
     ap.add_argument("--limit-docs", type=int, default=0)
@@ -157,7 +162,7 @@ def main() -> int:
                             f"{repo}: +{len(extra)} chunks from skipped files",
                             flush=True,
                         )
-                        ch = extra
+                        ch = extra if a.supplement_only else ch + extra
                     enriched = None
                     if a.enrich and not a.dry_run:
                         lite = litellm_router.system_user_fn(
