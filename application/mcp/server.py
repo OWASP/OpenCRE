@@ -7,6 +7,7 @@ from cre_logging import get_logger
 logger = get_logger(__name__)
 
 import json
+import os
 from typing import Any, Dict, Optional
 
 import mcp.types as types
@@ -68,6 +69,41 @@ def server_instructions() -> str:
             "community/metadata questions from a separate index — not the CRE graph."
         )
     return base
+
+
+_BLOCKING_LIMITER: Any = None
+
+
+async def run_blocking_with_app(fn: Any) -> Any:
+    """Run a blocking call in a worker thread so one slow question cannot stall the server.
+
+    ``ask`` takes seconds (LLM calls). Called straight from an async handler it blocks the
+    event loop, so parallel users are answered one after another. Each call gets its own Flask
+    app context (database sessions are scoped per context and must not be shared across
+    threads); without a Flask app (stdio mode) it runs inline.
+    """
+    global _BLOCKING_LIMITER
+    try:
+        from flask import current_app
+
+        app = current_app._get_current_object()  # type: ignore[attr-defined]
+    except RuntimeError:
+        return fn()
+
+    import anyio
+
+    if _BLOCKING_LIMITER is None:
+        try:
+            cap = max(1, int(os.environ.get("OPENCRE_MCP_ASK_CONCURRENCY", "8")))
+        except ValueError:
+            cap = 8
+        _BLOCKING_LIMITER = anyio.CapacityLimiter(cap)
+
+    def _call() -> Any:
+        with app.app_context():
+            return fn()
+
+    return await anyio.to_thread.run_sync(_call, limiter=_BLOCKING_LIMITER)
 
 
 def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
@@ -150,15 +186,17 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
                             ],
                             is_error=True,
                         )
-                data = run_ask(
-                    str(arguments.get("prompt") or ""),
-                    corpus=str(arguments.get("corpus") or "auto"),
-                    place=(
-                        str(arguments["place"])
-                        if arguments.get("place") is not None
-                        else None
-                    ),
-                    rest_client=client,
+                data = await run_blocking_with_app(
+                    lambda: run_ask(
+                        str(arguments.get("prompt") or ""),
+                        corpus=str(arguments.get("corpus") or "auto"),
+                        place=(
+                            str(arguments["place"])
+                            if arguments.get("place") is not None
+                            else None
+                        ),
+                        rest_client=client,
+                    )
                 )
                 payload = json.dumps(data, ensure_ascii=False, default=str)
                 return types.CallToolResult(
