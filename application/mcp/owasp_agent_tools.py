@@ -76,6 +76,60 @@ OWASP_META_TOOLS: Tuple[Dict[str, Any], ...] = (
             "additionalProperties": False,
         },
     },
+    {
+        "name": "owasp_meta_sources_search",
+        "summary": (
+            "Search the indexed OWASP source text (not CRE). Returns snippets with paths and "
+            "citation URLs so a caller can verify an answer."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string"},
+                "project": {
+                    "type": "string",
+                    "description": "Optional project, e.g. ASVS",
+                },
+                "k": {"type": "integer", "default": 8},
+            },
+            "required": ["query"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "owasp_meta_sources_list",
+        "summary": "List the indexed source documents of one OWASP project.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"project": {"type": "string"}},
+            "required": ["project"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "owasp_meta_sources_get",
+        "summary": "Read one indexed source document of a project in full (truncated at max_chars).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "project": {"type": "string"},
+                "path": {"type": "string"},
+                "max_chars": {"type": "integer", "default": 20000},
+            },
+            "required": ["project", "path"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "owasp_meta_sources_overview",
+        "summary": "Short generated overview of an OWASP project (structure, editions, scope).",
+        "input_schema": {
+            "type": "object",
+            "properties": {"project": {"type": "string"}},
+            "required": ["project"],
+            "additionalProperties": False,
+        },
+    },
 )
 
 _OWASP_META_BY_NAME = {t["name"]: t for t in OWASP_META_TOOLS}
@@ -102,6 +156,8 @@ def call_owasp_meta_tool(
     if name not in _OWASP_META_BY_NAME:
         raise KeyError(f"Unknown OWASP meta tool: {name}")
     args = dict(arguments or {})
+    if name.startswith("owasp_meta_sources_"):
+        return _call_sources_tool(name, args)
     store = IndexStore()
     queries = MetaQueries(store)
 
@@ -177,3 +233,32 @@ def _result_payload(result: Any) -> Dict[str, Any]:
         "data": result.data,
         "citations": list(result.citations or []),
     }
+
+
+def _call_sources_tool(name: str, args: Dict[str, Any]) -> Dict[str, Any]:
+    from application import sqla
+    from application.utils.comprehension import toolkit
+
+    with sqla.session.get_bind().connect() as conn:
+        if name == "owasp_meta_sources_search":
+            query = str(args.get("query") or "").strip()
+            if not query:
+                raise ValueError("query is required")
+            return toolkit.search_sources(
+                conn, query, args.get("project"), int(args.get("k") or 8)
+            )
+        project = str(args.get("project") or "").strip()
+        if not project:
+            raise ValueError("project is required")
+        if name == "owasp_meta_sources_list":
+            return toolkit.list_project_docs(conn, project)
+        if name == "owasp_meta_sources_overview":
+            return toolkit.project_overview(conn, project)
+        if name == "owasp_meta_sources_get":
+            path = str(args.get("path") or "").strip()
+            if not path:
+                raise ValueError("path is required")
+            return toolkit.get_source(
+                conn, project, path, int(args.get("max_chars") or 20000)
+            )
+    raise KeyError(f"Unknown OWASP meta tool: {name}")
