@@ -210,3 +210,32 @@ def write_raw(
             embeddings=vec,
         )
     return len(docs)
+
+
+def changed_chunks(
+    database: Any, repo: str, chunks: List[Tuple[str, int, str]]
+) -> List[Tuple[str, int, str]]:
+    """Chunks that are new or whose text differs from what is stored (resume / incremental ingest).
+
+    A stored raw document holds the chunk text verbatim after the optional context line,
+    so "unchanged" means the same document id exists and its content contains the chunk text.
+    """
+    from sqlalchemy import text as sql_text
+
+    prefix = f"owasp-agent://evidence/{SLUG_PREFIX}{repo_slug(repo)}-raw-"
+    rows = database.session.execute(
+        sql_text(
+            "SELECT embeddings_url, embeddings_content FROM embeddings "
+            "WHERE embeddings_url LIKE :p"
+        ),
+        {"p": prefix + "%"},
+    ).fetchall()
+    stored = {r[0]: r[1] or "" for r in rows}
+    out: List[Tuple[str, int, str]] = []
+    for chunk in chunks:
+        ((doc_id, _, _),) = raw_documents(repo, [chunk])
+        url = f"owasp-agent://evidence/{doc_id}"
+        if chunk[2] in stored.get(url, ""):
+            continue
+        out.append(chunk)
+    return out

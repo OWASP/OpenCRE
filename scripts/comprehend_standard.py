@@ -65,6 +65,11 @@ def main() -> int:
         action="store_true",
         help="with --supplement: write only the skipped files' chunks (repo already indexed)",
     )
+    ap.add_argument(
+        "--skip-unchanged",
+        action="store_true",
+        help="with --raw: only process chunks that are new or changed (resume / incremental)",
+    )
     ap.add_argument("--profile", choices=["standard", "people"], default="standard")
     ap.add_argument("--dry-run", action="store_true", help="no embeddings/DB writes")
     ap.add_argument("--limit-docs", type=int, default=0)
@@ -163,6 +168,13 @@ def main() -> int:
                             flush=True,
                         )
                         ch = extra if a.supplement_only else ch + extra
+                    if a.skip_unchanged:
+                        before = len(ch)
+                        ch = store.changed_chunks(database, repo, ch)
+                        print(
+                            f"{repo}: {len(ch)}/{before} chunks new or changed",
+                            flush=True,
+                        )
                     enriched = None
                     if a.enrich and not a.dry_run:
                         lite = litellm_router.system_user_fn(
