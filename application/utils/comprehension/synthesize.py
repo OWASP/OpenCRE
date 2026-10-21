@@ -26,6 +26,15 @@ COUNT_SYSTEM = SYSTEM + (
 )
 
 
+EDITION_RULE = (
+    " Sources often cover several editions (years, versions, translations). If the question names "
+    "an edition, use only sources for that edition and say which one you used. If it names none, "
+    "use the latest edition and name it. Never combine people, dates or facts from different "
+    "editions in one answer; when asked about credits (leaders, authors, reviewers, translators), "
+    "list only those the sources tie to the edition asked about."
+)
+
+
 def synthesize(
     question: str,
     hits: Sequence[Tuple[str, List[str]]],
@@ -34,6 +43,10 @@ def synthesize(
     system: str = SYSTEM,
 ) -> Tuple[str, List[str]]:
     """``hits`` = (text, citations). Returns (answer, citations used); ("", []) if unknown."""
+    from application.utils.comprehension import flags
+
+    if flags.on("EDITION"):
+        system += EDITION_RULE
     numbered = "\n\n".join(
         f"[{i + 1}] {t.split(chr(10) + chr(10) + 'Citations:')[0]}"
         for i, (t, _) in enumerate(hits)

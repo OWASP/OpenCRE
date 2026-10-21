@@ -1,5 +1,7 @@
 import json
+import os
 import unittest
+from unittest import mock
 
 from application.utils.comprehension import digest, sources, store, synthesize
 from application.utils.comprehension.answer import (
