@@ -8,6 +8,7 @@ logger = get_logger(__name__)
 
 import json
 import os
+import socket
 import unittest
 from typing import Any, Dict
 from unittest.mock import patch
@@ -353,7 +354,7 @@ class McpPublicToolsTest(unittest.TestCase):
         self.assertEqual(ctx.exception.status_code, 404)
 
     def test_send_failures_say_what_went_wrong(self) -> None:
-        """Each failure gets its own message, and URL credentials never show up."""
+        """Each failure gets its own message, and secrets in the URL never show up."""
         errors = requests.exceptions
         site = "OpenCRE at http://127.0.0.1:5999"
         unreachable = f"Could not reach {site}"
@@ -370,7 +371,7 @@ class McpPublicToolsTest(unittest.TestCase):
         for error, expected in cases:
             with self.subTest(error=type(error).__name__):
                 client = RestClient(
-                    base_url="http://alice:s3cr3t@127.0.0.1:5999",
+                    base_url="http://alice:s3cr3t@127.0.0.1:5999?key=s3cr3t#s3cr3t",
                     session=_FailingSession(error),
                     timeout=2.5,
                 )
@@ -509,12 +510,11 @@ class McpPublicToolsTest(unittest.TestCase):
 
     def test_network_errors_are_tool_errors_not_internal_errors(self) -> None:
         """MCP clients see why the call failed; the server log keeps the cause."""
-        error = requests.ConnectionError("Connection refused")
-        server = build_server(
-            rest_client=RestClient(
-                base_url="http://127.0.0.1:5999", session=_FailingSession(error)
-            )
-        )
+        # Pick a free loopback port and close it, so the real session is refused.
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", 0))
+            base_url = f"http://127.0.0.1:{probe.getsockname()[1]}"
+        server = build_server(rest_client=RestClient(base_url=base_url))
 
         async def _run() -> None:
             call_handler = server.get_request_handler("tools/call")
@@ -528,8 +528,7 @@ class McpPublicToolsTest(unittest.TestCase):
             first = result_raw.content[0]
             assert isinstance(first, types.TextContent)
             self.assertEqual(
-                first.text,
-                "Could not reach OpenCRE at http://127.0.0.1:5999 (ConnectionError)",
+                first.text, f"Could not reach OpenCRE at {base_url} (ConnectionError)"
             )
 
         import asyncio
@@ -538,7 +537,7 @@ class McpPublicToolsTest(unittest.TestCase):
             asyncio.run(_run())
         logged = logs.records[0].exc_info
         assert logged is not None and logged[1] is not None
-        self.assertIs(logged[1].__cause__, error)
+        self.assertIsInstance(logged[1].__cause__, requests.ConnectionError)
 
     def test_base_url_comes_from_env_not_tool_args(self) -> None:
         with patch.dict(os.environ, {"OPENCRE_BASE_URL": "http://example.test:9"}):

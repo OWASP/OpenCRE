@@ -265,9 +265,11 @@ def _scrub(text: str, token: Optional[str]) -> str:
 def _send_failure_message(
     exc: requests.RequestException, base_url: str, timeout: float
 ) -> str:
-    """Say why the request failed, leaving out request details and URL credentials."""
+    """Say why the request failed without leaking request details or URL secrets."""
     parts = urlsplit(base_url)
-    where = parts._replace(netloc=parts.netloc.rpartition("@")[2]).geturl()
+    # Secrets can sit in user:password@, the query string or the fragment.
+    netloc = parts.netloc.rpartition("@")[2]
+    where = parts._replace(netloc=netloc, query="", fragment="").geturl()
     reason = type(exc).__name__
     # Timeout first: ConnectTimeout is also a ConnectionError.
     if isinstance(exc, requests.Timeout):
