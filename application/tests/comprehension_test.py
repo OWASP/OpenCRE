@@ -693,3 +693,18 @@ class ThinkEffortTest(unittest.TestCase):
         finally:
             del os.environ["OWASP_CX_THINK_EFFORT"]
         self.assertEqual(seen, [{"reasoning_effort": "low"}])
+
+
+class WarmUpTest(unittest.TestCase):
+    def test_warm_up_never_raises_and_can_be_disabled(self):
+        import os
+
+        from application.utils.comprehension import shared
+
+        os.environ["OWASP_WARMUP"] = "0"
+        try:
+            self.assertFalse(shared.warm_up())
+        finally:
+            del os.environ["OWASP_WARMUP"]
+        # No database/app context here: must swallow the failure and report False.
+        self.assertFalse(shared.warm_up())
