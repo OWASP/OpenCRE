@@ -819,3 +819,28 @@ class AbstainNamedProjectTest(unittest.TestCase):
             ABSTAIN_MESSAGE,
         )
         self.assertIn("Which project", abstain_message([h], "what about that thing?"))
+
+
+class ChangedChunksTest(unittest.TestCase):
+    def test_only_new_or_changed_chunks_are_returned(self):
+        chunks = [
+            ("a.md", 0, "same text"),
+            ("a.md", 1, "new text"),
+            ("b.md", 0, "edited text"),
+        ]
+        docs = store.raw_documents("OWASP/X", chunks)
+        stored = [
+            (
+                f"owasp-agent://evidence/{docs[0][0]}",
+                "X / a.md: context\nsame text Related questions: q",
+            ),
+            (f"owasp-agent://evidence/{docs[2][0]}", "X / b.md: old text"),
+        ]
+
+        class Session:
+            def execute(self, *a, **k):
+                return mock.Mock(fetchall=lambda: stored)
+
+        db = mock.Mock(session=Session())
+        out = store.changed_chunks(db, "OWASP/X", chunks)
+        self.assertEqual([c[:2] for c in out], [("a.md", 1), ("b.md", 0)])
