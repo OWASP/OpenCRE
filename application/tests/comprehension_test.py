@@ -791,3 +791,11 @@ class RouteProjectTest(unittest.TestCase):
     def test_weak_or_close_matches_are_not_routed(self):
         self.assertEqual(self._route([("owasp-wstg", 0.5), ("owasp-asvs", 0.3)]), [])
         self.assertEqual(self._route([("owasp-wstg", 0.8), ("owasp-asvs", 0.79)]), [])
+
+
+class SkippedFilesSupplementTest(unittest.TestCase):
+    def test_split_markdown_keeps_headings_with_their_text(self):
+        text = "# A\n\n" + ("alpha " * 200) + "\n\n# B\n\nbeta"
+        pieces = sources.split_markdown(text, size=500)
+        self.assertTrue(all(len(p) <= 1100 for p in pieces))
+        self.assertTrue(any(p.startswith("# B") for p in pieces))

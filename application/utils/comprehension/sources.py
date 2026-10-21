@@ -121,3 +121,66 @@ def chunks_for_repo(session: Any, source_repo: str) -> List[Tuple[str, int, str]
         seen.add((path, idx))
         out.append((path, idx, text[:6000]))
     return out
+
+
+def split_markdown(text: str, size: int = 1500) -> List[str]:
+    """Heading/paragraph-aware pieces of roughly ``size`` characters."""
+    pieces: List[str] = []
+    cur = ""
+    for para in re.split(r"\n{2,}", text):
+        para = para.strip()
+        if not para:
+            continue
+        if cur and (len(cur) + len(para) > size or para.startswith("#")):
+            pieces.append(cur)
+            cur = ""
+        cur = f"{cur}\n\n{para}" if cur else para
+        while len(cur) > size * 2:
+            pieces.append(cur[:size])
+            cur = cur[size:]
+    if cur:
+        pieces.append(cur)
+    return pieces
+
+
+def supplement_chunks(
+    repo: str, have_paths: Iterable[str], clone_dir: str
+) -> List[Tuple[str, int, str]]:
+    """Chunks of the repo's markdown files the harvester skipped (shallow clone of ``repo``).
+
+    The OpenCRE harvest keeps requirement-like files; front matter, release notes,
+    credits and older editions are dropped there but questions are asked about them.
+    """
+    import subprocess
+    from pathlib import Path
+
+    dest = Path(clone_dir) / repo.replace("/", "__")
+    if not dest.exists():
+        subprocess.run(
+            [
+                "git",
+                "clone",
+                "--depth",
+                "1",
+                "-q",
+                f"https://github.com/{repo}.git",
+                str(dest),
+            ],
+            check=True,
+            timeout=300,
+        )
+    have = set(have_paths)
+    out: List[Tuple[str, int, str]] = []
+    for f in sorted(dest.rglob("*.md")):
+        rel = str(f.relative_to(dest))
+        if ".git/" in rel or _RAW_NOISE.search(rel) or rel in have:
+            continue
+        if any(h.endswith(rel) or rel.endswith(h) for h in have):
+            continue
+        text = f.read_text(errors="ignore")
+        if len(text.strip()) < 80:
+            continue
+        for i, piece in enumerate(split_markdown(text)):
+            if len(piece) >= 60:
+                out.append((rel, i, piece[:6000]))
+    return out
