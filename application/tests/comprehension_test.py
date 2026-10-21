@@ -799,3 +799,23 @@ class SkippedFilesSupplementTest(unittest.TestCase):
         pieces = sources.split_markdown(text, size=500)
         self.assertTrue(all(len(p) <= 1100 for p in pieces))
         self.assertTrue(any(p.startswith("# B") for p in pieces))
+
+
+class AbstainNamedProjectTest(unittest.TestCase):
+    def test_no_which_project_question_when_project_is_named(self):
+        from application.utils.comprehension.answer import (
+            ABSTAIN_MESSAGE,
+            abstain_message,
+        )
+        from application.utils.owasp_agent.lane_similarity import LaneHit
+
+        h = LaneHit(
+            channel="c",
+            score=0.5,
+            url="owasp-agent://evidence/comprehension-owasp-asvs-claim-001",
+        )
+        self.assertEqual(
+            abstain_message([h], "Which ASVS levels are not pentestable?"),
+            ABSTAIN_MESSAGE,
+        )
+        self.assertIn("Which project", abstain_message([h], "what about that thing?"))

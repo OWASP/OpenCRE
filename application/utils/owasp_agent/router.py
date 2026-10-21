@@ -403,7 +403,7 @@ class OwaspAgentRouter:
                     QueryResult(
                         ok=True,
                         kind="evidence",
-                        message=abstain_message(comp_hits),
+                        message=abstain_message(comp_hits, normalized),
                         citations=[],
                         data={
                             "lane_scores": sim_decision.scores,

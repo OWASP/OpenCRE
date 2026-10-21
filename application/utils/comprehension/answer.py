@@ -68,10 +68,16 @@ def closest_projects(hits: Sequence[Any], limit: int = 3) -> List[str]:
     return out
 
 
-def abstain_message(hits: Sequence[Any]) -> str:
-    """The not-found message, asking which project is meant when the closest matches are known."""
+def abstain_message(hits: Sequence[Any], question: str = "") -> str:
+    """The not-found message, asking which project is meant when the closest matches are known.
+
+    When the question already names one of them, asking "which project?" is wrong: plain not-found.
+    """
     near = closest_projects(hits)
     if not near:
+        return ABSTAIN_MESSAGE
+    q = " " + re.sub(r"[^a-z0-9]+", " ", (question or "").lower()).strip() + " "
+    if any(f" {re.sub(r'[^a-z0-9]+', ' ', n.lower()).strip()} " in q for n in near):
         return ABSTAIN_MESSAGE
     return (
         "I couldn't find that in the indexed OWASP sources, so I won't guess. "
