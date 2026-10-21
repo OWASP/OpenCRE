@@ -35,6 +35,14 @@ EDITION_RULE = (
 )
 
 
+COMPLETE_RULE = (
+    " Cover every part of the question: if it has several parts or names several standards or "
+    "projects, answer each one in turn (one short line per part), and when asked to list or compare, "
+    "include every item the sources state. For a 'which is NOT ...' question, check each option "
+    "against the sources before choosing."
+)
+
+
 def synthesize(
     question: str,
     hits: Sequence[Tuple[str, List[str]]],
@@ -47,6 +55,8 @@ def synthesize(
 
     if flags.on("EDITION"):
         system += EDITION_RULE
+    if flags.on("COMPLETE"):
+        system += COMPLETE_RULE
     numbered = "\n\n".join(
         f"[{i + 1}] {t.split(chr(10) + chr(10) + 'Citations:')[0]}"
         for i, (t, _) in enumerate(hits)
