@@ -442,7 +442,13 @@ def report_decision_accuracy(
             "with an expected decision had no audit and were not graded"
         )
     if not graded:
-        print("decision (C.4): no rows with an expected decision in this selection")
+        if selected:
+            print(
+                f"decision (C.4): none of the {len(selected)} rows with an expected "
+                "decision could be graded (no audits)"
+            )
+        else:
+            print("decision (C.4): no rows with an expected decision in this selection")
         return 0
 
     dec_match = reason_match = 0

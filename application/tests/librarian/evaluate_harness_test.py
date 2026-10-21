@@ -279,7 +279,12 @@ class ReportDecisionAccuracyTest(unittest.TestCase):
             )
 
         self.assertEqual(status, 0)
-        self.assertIn("no rows with an expected decision", out.getvalue())
+        report = out.getvalue()
+        self.assertIn("1 of 1 rows with an expected decision had no audit", report)
+        self.assertIn(
+            "none of the 1 rows with an expected decision could be graded", report
+        )
+        self.assertNotIn("no rows with an expected decision", report)
 
 
 class BoundaryGateTest(unittest.TestCase):
@@ -473,4 +478,25 @@ class CalibrationCoverageTest(unittest.TestCase):
         report = out.getvalue()
         self.assertEqual(status, 0)
         self.assertIn("2 of 2 rows with an expected decision had no audit", report)
-        self.assertIn("no rows with an expected decision", report)
+        self.assertIn(
+            "none of the 2 rows with an expected decision could be graded", report
+        )
+        self.assertNotIn("no rows with an expected decision", report)
+
+    def test_selection_without_expected_decisions_keeps_the_original_line(self) -> None:
+        from application.utils.librarian.calibration.temperature import (
+            TemperatureScaler,
+        )
+
+        rows = [_golden_row("e1", "explicit", "delta", ["616-305"])]
+        rows[0] = rows[0].model_copy(
+            update={"expected": rows[0].expected.model_copy(update={"decision": None})}
+        )
+        with _captured_stdout() as out:
+            status = harness.report_decision_accuracy(
+                rows, {}, TemperatureScaler(1.0), 0.80
+            )
+        self.assertEqual(status, 0)
+        self.assertIn(
+            "no rows with an expected decision in this selection", out.getvalue()
+        )
