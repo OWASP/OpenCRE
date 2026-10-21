@@ -21,6 +21,7 @@ NAMES = (
     "CACHE",  # in-process answer cache (real traffic, not evals)
     "LONGCTX",  # questions naming 1-3 projects: read the whole project text, not snippets
     "FAST",  # final-answer model runs with thinking off (latency)
+    "EDITION",  # answer for the edition/year/version the question names; never mix editions
     "DECOMPOSE",  # multi-part questions: answer each part separately, then combine
 )
 
