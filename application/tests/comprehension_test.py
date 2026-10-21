@@ -658,3 +658,38 @@ class FastAndDecomposeTest(unittest.TestCase):
         self.assertIn("1. answer to What is SAMM?", out[0])
         self.assertIn("2. answer to Who leads SAMM?", out[0])
         self.assertEqual(out[1], ["https://x/1", "https://x/2"])
+
+
+class ThinkEffortTest(unittest.TestCase):
+    def test_effort_env_selects_a_reasoning_budget(self):
+        import os
+        from unittest import mock
+
+        from application.utils.comprehension import answer
+        from application.utils.owasp_agent.lane_similarity import LaneHit
+
+        hit = LaneHit(
+            channel="c",
+            score=0.9,
+            url="owasp-agent://evidence/comprehension-o-s-claim-001",
+            content="S: has 3 levels.\n\nCitations: https://x/a",
+        )
+        seen = []
+
+        def fake_fn(model, **kw):
+            seen.append(kw.get("extra_try_kwargs"))
+            return lambda system, user: "Three levels [1]."
+
+        self.assertEqual(answer.think_effort(), "")
+        os.environ["OWASP_CX_THINK_EFFORT"] = "Low"
+        try:
+            self.assertEqual(answer.think_effort(), "low")
+            with mock.patch(
+                "application.prompt_client.litellm_router.system_user_fn", fake_fn
+            ):
+                answer.answer_from_candidates("levels?", [hit], lambda m: "UNUSED")
+            os.environ["OWASP_CX_THINK_EFFORT"] = "bogus"
+            self.assertEqual(answer.think_effort(), "")
+        finally:
+            del os.environ["OWASP_CX_THINK_EFFORT"]
+        self.assertEqual(seen, [{"reasoning_effort": "low"}])
