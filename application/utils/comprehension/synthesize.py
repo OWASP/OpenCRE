@@ -3,9 +3,44 @@
 from __future__ import annotations
 
 import re
+from contextvars import ContextVar
 from typing import Callable, List, Sequence, Tuple
 
 LlmFn = Callable[[str, str], str]
+
+# Evidence behind the answer being built on this thread/context (callers that want to
+# show their work, e.g. MCP ``ask``, read it right after answering).
+_EVIDENCE: "ContextVar[list]" = ContextVar("comprehension_evidence", default=[])
+
+
+def reset_evidence() -> None:
+    _EVIDENCE.set([])
+
+
+def take_evidence() -> list:
+    return list(_EVIDENCE.get())
+
+
+def _record_evidence(
+    hits: Sequence[Tuple[str, List[str]]], used: Sequence[int]
+) -> None:
+    from application.utils.comprehension.toolkit import body_of, path_of
+
+    items = list(_EVIDENCE.get())
+    for i in used:
+        text, cites = hits[i - 1]
+        body = body_of(text)
+        snippet = body.split(": ", 1)[-1] if path_of(body) else body
+        items.append(
+            {
+                "n": i,
+                "path": path_of(body),
+                "snippet": snippet.strip()[:500],
+                "citations": list(cites)[:3],
+            }
+        )
+    _EVIDENCE.set(items)
+
 
 SYSTEM = (
     "Answer the question using ONLY the numbered sources. Be precise about what is "
@@ -67,6 +102,7 @@ def synthesize(
     used = sorted(
         {int(n) for n in re.findall(r"\[(\d+)\]", out) if 0 < int(n) <= len(hits)}
     )
+    _record_evidence(hits, used)
     cites: List[str] = []
     for i in used:
         for c in hits[i - 1][1]:

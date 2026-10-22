@@ -180,6 +180,9 @@ def answer_from_candidates(
         return None
     from application.utils.comprehension import flags
 
+    from application.utils.comprehension.synthesize import reset_evidence
+
+    reset_evidence()
     ckey = (question, tuple(flags.active()))
     if flags.on("CACHE"):
         got = _ANSWERS.get(ckey)
