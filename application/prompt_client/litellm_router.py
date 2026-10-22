@@ -21,12 +21,38 @@ from application.prompt_client.llm_error_utils import is_rate_limit_error
 LlmFn = Callable[[str, str], str]
 
 
+DEFAULT_MAX_RETRIES = 2
+DEFAULT_RETRY_SLEEP_SECONDS = 15
+
+
 def retry_policy() -> tuple[int, int]:
-    """Return (max_retries, sleep_seconds) from CRE_LLM_* env vars."""
-    return (
-        int(os.environ.get("CRE_LLM_MAX_RETRIES", "2")),
-        int(os.environ.get("CRE_LLM_RETRY_SLEEP_SECONDS", "15")),
-    )
+    """Return (max_retries, sleep_seconds) from CRE_LLM_* env vars with defensive fallback."""
+    raw_retries = os.environ.get("CRE_LLM_MAX_RETRIES")
+    raw_sleep = os.environ.get("CRE_LLM_RETRY_SLEEP_SECONDS")
+
+    max_retries = DEFAULT_MAX_RETRIES
+    if raw_retries is not None:
+        try:
+            max_retries = max(0, int(raw_retries.strip()))
+        except (ValueError, AttributeError):
+            logger.warning(
+                "Invalid CRE_LLM_MAX_RETRIES=%r; falling back to default %d",
+                raw_retries,
+                DEFAULT_MAX_RETRIES,
+            )
+
+    sleep_seconds = DEFAULT_RETRY_SLEEP_SECONDS
+    if raw_sleep is not None:
+        try:
+            sleep_seconds = max(0, int(raw_sleep.strip()))
+        except (ValueError, AttributeError):
+            logger.warning(
+                "Invalid CRE_LLM_RETRY_SLEEP_SECONDS=%r; falling back to default %d",
+                raw_sleep,
+                DEFAULT_RETRY_SLEEP_SECONDS,
+            )
+
+    return (max_retries, sleep_seconds)
 
 
 def get_litellm() -> Any:
