@@ -78,6 +78,13 @@ COMPLETE_RULE = (
 )
 
 
+PERSTD_RULE = (
+    " The question concerns several standards or projects. Answer for each one separately, naming it "
+    "(one short paragraph each), using only the sources about that project, then add a brief "
+    "combined conclusion. If the sources do not cover one of them, say so for that one."
+)
+
+
 def synthesize(
     question: str,
     hits: Sequence[Tuple[str, List[str]]],
