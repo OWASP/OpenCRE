@@ -910,3 +910,15 @@ class WriteRawResilienceTest(unittest.TestCase):
             )
         self.assertEqual(n, 1)
         self.assertEqual(len(written), 1)
+
+
+class RouteModelTest(unittest.TestCase):
+    def test_route_model(self):
+        from application.utils.comprehension.answer import route_model
+
+        with mock.patch.dict(os.environ, {"OWASP_CX_ROUTE": "1"}):
+            self.assertTrue(route_model("Who leads the ASVS project?"))
+            self.assertTrue(route_model("How many cheat sheets are there?"))
+            self.assertEqual(route_model("What does A01 cover?"), "")
+        with mock.patch.dict(os.environ, {"OWASP_CX_ROUTE": ""}):
+            self.assertEqual(route_model("Who leads ASVS?"), "")
