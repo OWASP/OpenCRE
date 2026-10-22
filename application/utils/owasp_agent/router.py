@@ -26,6 +26,7 @@ def is_owasp_agent_enabled() -> bool:
 _STRUCTURED_INTENTS = frozenset(
     {
         "events_near",
+        "event_lookup",
         "board_members",
         "board_person",
         "board_candidate_stats",
@@ -186,10 +187,86 @@ class OwaspAgentRouter:
                 resp["owasp_agent"]["also_cre"] = True
         return resp
 
+    def _index_chapter_intent(self, intent: str, text: str) -> str:
+        """Route 'who leads/runs OWASP <any indexed place>' to chapter_lookup."""
+        if intent not in ("cre_normative", "clarify"):
+            return intent
+        if not _CHAPTER_CUE_RE.search(text) or _mentions_known_project(text):
+            return intent
+        if re.search(r"\bprojects?\b", text, re.I):
+            return intent
+        try:
+            if self.queries.find_chapter_places(text):
+                return "chapter_lookup"
+        except Exception:
+            pass
+        return intent
+
+    def _index_event_intent(self, intent: str, text: str) -> str:
+        """Route 'when/where is Global AppSec USA 2026' to the indexed event."""
+        if intent not in ("cre_normative", "clarify", "events_near", "talk_lookup"):
+            return intent
+        if not _EVENT_CUE_RE.search(text):
+            return intent
+        if re.search(r"\b(nearest|near me|closest)\b", text, re.I) and intent == (
+            "events_near"
+        ):
+            return intent
+        try:
+            if self.queries.find_events(text):
+                return "event_lookup"
+        except Exception:
+            pass
+        return intent
+
+    def _handle_compound(
+        self, clauses: List[str], history: Optional[List[Dict[str, Any]]]
+    ) -> Optional[Dict[str, Any]]:
+        """Answer every clause the agent can; say which ones it handed back."""
+        answered: List[Dict[str, Any]] = []
+        handed_back: List[str] = []
+        for clause in clauses:
+            resp = self.handle(clause, history=history, _clause=True)
+            if resp is None:
+                handed_back.append(clause)
+            else:
+                answered.append(resp)
+        if not answered:
+            return None
+        parts = [
+            re.sub(r"^Answer:\s*", "", str(r.get("response") or "")).strip()
+            for r in answered
+        ]
+        text = "\n\n".join(p for p in parts if p)
+        if handed_back:
+            quoted = "; ".join(f'"{c}"' for c in handed_back)
+            text += (
+                f"\n\nI did not answer {quoted}: that part is a separate "
+                "security-guidance question, so please ask it on its own."
+            )
+        out = dict(answered[0])
+        out["response"] = text
+        out["compound"] = {"answered": len(answered), "handed_back": handed_back}
+        return out
+
+    def _refusal_response(self) -> Dict[str, Any]:
+        return format_chat_response(
+            QueryResult(
+                ok=True,
+                kind="refuse_malicious",
+                message=(
+                    "I cannot provide instructions or assistance for illegal or unauthorized "
+                    "access, phishing, DDoS, or similar attacks. I can help with OWASP chapters, "
+                    "projects, board history, membership, and defensive AppSec questions."
+                ),
+            )
+        )
+
     def handle(
         self,
         prompt: str,
         history: Optional[List[Dict[str, Any]]] = None,
+        _clause: bool = False,
     ) -> Optional[Dict[str, Any]]:
         """Return a chat response dict, or None to defer to CRE RAG.
 
@@ -198,9 +275,31 @@ class OwaspAgentRouter:
         """
         if not is_owasp_agent_enabled():
             return None
-        text = (prompt or "").strip()
+        text = fix_key_typos(
+            (prompt or "").strip()[:MAX_PROMPT_CHARS].replace("\u2019", "'")
+        )
         if not text:
             return None
+
+        # Refusal is decided on the CURRENT turn only: a malicious earlier turn
+        # must not poison a later benign one, and an attack clause inside a
+        # compound turn must not drop the legitimate clause.
+        if is_malicious_request(text):
+            benign = _strip_malicious_clauses(text)
+            if not benign:
+                return self._refusal_response()
+            resp = self.handle(benign, history=None, _clause=_clause)
+            if resp is not None:
+                resp["response"] = (
+                    "(I skipped the part of your message asking for unauthorized "
+                    "or attack help.) " + str(resp.get("response") or "")
+                )
+            return resp
+
+        if not _clause:
+            clauses = _split_compound(text)
+            if len(clauses) > 1 and classify_intent(text) not in _COMPOUND_AWARE:
+                return self._handle_compound(clauses, history)
 
         effective = _effective_prompt(text, history)
         from application.utils.owasp_agent.person_resolve import (
@@ -217,6 +316,11 @@ class OwaspAgentRouter:
         # score margin or constrained LLM — prefer this over intent/match_*.
         sim_decision = _similarity_gate(normalized)
         intent_preview = classify_intent(effective, known_people=known_people)
+        if intent_preview == "refuse_malicious":
+            # Current turn is clean (checked above); the match came from history.
+            intent_preview = classify_intent(text, known_people=known_people)
+        intent_preview = self._index_chapter_intent(intent_preview, text)
+        intent_preview = self._index_event_intent(intent_preview, text)
         if sim_decision is not None:
             from application.utils.owasp_agent.candidate_picker import (
                 default_completion_fn,
@@ -252,6 +356,10 @@ class OwaspAgentRouter:
                 kind, key = _meta_kind_key(getattr(hit, "url", "") or "")
                 if not kind:
                     return True
+                if not meta_hit_answers_prompt(
+                    hit, kind, key, effective, intent_preview
+                ):
+                    return False
                 return _sim_meta_ok_for_intent(
                     intent_preview, kind, key, effective, early_slots
                 )
@@ -434,16 +542,7 @@ class OwaspAgentRouter:
             )
             return format_chat_response(result)
         if intent == "refuse_malicious":
-            result = QueryResult(
-                ok=True,
-                kind="refuse_malicious",
-                message=(
-                    "I cannot provide instructions or assistance for illegal or unauthorized "
-                    "access, phishing, DDoS, or similar attacks. I can help with OWASP chapters, "
-                    "projects, board history, membership, and defensive AppSec questions."
-                ),
-            )
-            return format_chat_response(result)
+            return self._refusal_response()
 
         slots = extract_slots(effective, known_people=known_people)
         result = self._dispatch(intent, slots, effective)
@@ -661,6 +760,17 @@ class OwaspAgentRouter:
             places = list(slots.places or [])
             if slots.place and slots.place not in places:
                 places = [slots.place] + places
+            resolved = self.queries.find_chapter_places(text)
+            if resolved:
+                # Index-resolved chapters win; keep short unresolved extras so
+                # "London or Atlantis" still reports Atlantis as missing.
+                def _covered(p: str) -> bool:
+                    n = p.lower()
+                    return any(n in r.lower() or r.lower() in n for r in resolved)
+
+                places = resolved + [
+                    p for p in places if len(p.split()) <= 3 and not _covered(p)
+                ]
             # Multi-city compare / negation: look up all named places.
             if len(places) >= 2:
                 return self.queries.chapter_lookup(places=places)
@@ -789,7 +899,12 @@ class OwaspAgentRouter:
                 )
             return self.queries.compare_projects(a, b)
         # cre_fact is handled in handle() before _dispatch.
+        if intent == "event_lookup":
+            return self.queries.event_lookup(text)
         if intent == "events_near":
+            if slots.place:
+                # "Cambridge, UK - nearest OWASP meetup": keep only the place.
+                slots.place = re.split(r"\s[-–—]\s|;", slots.place)[0].strip()
             upcoming_only = not slots.include_past
             return self.queries.events_near(
                 place=slots.place,
@@ -838,10 +953,137 @@ def _similarity_gate(prompt: str):
         return None
 
 
+MAX_PROMPT_CHARS = 4096
+
+_CHAPTER_CUE_RE = re.compile(
+    r"\b(leads?|leaders?|runs?|organi[sz]\w*|chapter|group|meetups?|president|chair|active|inactive|status)\b",
+    re.I,
+)
+_EVENT_CUE_RE = re.compile(
+    r"\b(when|whens|where|dates?|held|location|conference|happening|speaking|"
+    r"speakers?|agenda|what is (this|the) event|next|is there|is .{0,12} in|20\d{2})\b",
+    re.I,
+)
+_TYPO_VOCAB = ("chapters", "chapter", "projects", "leaders", "membership")
+_TYPO_VALID = frozenset(_TYPO_VOCAB) | {"project", "leader", "leaded", "leading"}
+
+
+def fix_key_typos(text: str) -> str:
+    """Repair one-or-two-letter typos of the routing vocabulary ('chaptrs')."""
+    import difflib
+
+    def _fix(m: "re.Match[str]") -> str:
+        w = m.group(0)
+        lw = w.lower()
+        if lw in _TYPO_VALID or len(lw) < 6:
+            return w
+        close = difflib.get_close_matches(lw, _TYPO_VOCAB, n=1, cutoff=0.85)
+        if close and close[0][0] == lw[0] and abs(len(close[0]) - len(lw)) <= 1:
+            return close[0]
+        return w
+
+    return re.sub(r"[A-Za-z]+", _fix, text)
+
+
+_CLAUSE_SPLIT_RE = re.compile(r"[;\n]+|(?<=[.!?])\s+|\b(?:and\s+)?also,?\s+", re.I)
+
+
+_INJECTION_ONLY_RE = re.compile(
+    r"^\W*(?:please\s+)?(?:ignore|disregard)\b[^.;]{0,60}\b(instructions?|rules|above)\W*$",
+    re.I,
+)
+
+
+# Intents that already answer both halves of a two-part ask.
+_COMPOUND_AWARE = frozenset(
+    {
+        "count_projects_and_chapters",
+        "project_and_board",
+        "compare_projects",
+        "cre_community_bait",
+    }
+)
+_QUESTION_START_RE = re.compile(
+    r"^(who|what|whats|when|where|which|why|how|is|are|do|does|can|explain|tell|"
+    r"list|show|describe|give)\b",
+    re.I,
+)
+
+
+def _split_compound(text: str) -> List[str]:
+    """Split a two-question prompt into clauses; [text] when it is not one."""
+    parts = [
+        c.strip(" ,.;")
+        for c in re.split(
+            r"(?<=[?!.])\s+|;\s*|,?\s+(?:and\s+)?also,?\s+|,?\s+and\s+(?=(?:how|what|who|when|where|which|explain|tell|list)\b)",
+            text,
+        )
+        if c and c.strip(" ,.;")
+    ]
+    parts = [re.sub(r"^also,?\s+", "", p, flags=re.I) for p in parts]
+    parts = [p for p in parts if len(p.split()) >= 2]
+    if len(parts) < 2 or not all(_QUESTION_START_RE.match(p) for p in parts):
+        return [text]
+    return parts[:4]
+
+
+def _strip_malicious_clauses(text: str) -> str:
+    """Drop clauses that ask for attack material; return the benign remainder."""
+    clauses = [c.strip(" ,.;") for c in _CLAUSE_SPLIT_RE.split(text) if c and c.strip()]
+    for c in clauses:
+        # Only a bare instruction-override clause is droppable; requests for
+        # keys, payloads or attack help refuse the whole message.
+        if is_malicious_request(c) and not _INJECTION_ONLY_RE.search(c):
+            return ""
+    kept = [c for c in clauses if not is_malicious_request(c)]
+    rest = " ".join(kept).strip()
+    return rest if len(rest.split()) >= 2 else ""
+
+
+# Always refused: asks for attack material, secrets, or instruction override.
+_MALICIOUS_STRONG_RE = re.compile(
+    r"("
+    r"\bhow do i hack\b|\bteach me to (hack|phish)\b|\bsql injection payload\b|"
+    r"\bbreak into\b|\bsteal (their|passwords|dms)\b|"
+    r"\bphishing (email )?template\b|\bvishing\b|"
+    r"\bkeylogger\b|\b(write|build)\s+a\s+worm\b|\bpoison .{0,40}dependency\b|"
+    r"\bburp\s+intruder\b|"
+    r"\bbreaking into\b|\bforged token\b|\bdox\b|"
+    r"\bunrestricted gpt\b|\bdisable safety\b|"
+    r"\bignore (all )?(previous|prior|earlier)( instructions)?\b|"
+    r"\bdump (the )?(api|nest|heroku)?.{0,20}keys?\b|"
+    r"\boutput the .{0,40}api keys?\b|"
+    r"\bcsrf\s*\+\s*xss\b|\bchained against\b|"
+    r"\breset an owasp board member\b|"
+    r"\bharvest credit cards\b|\breverse shell\b"
+    r")"
+)
+# Topic words that are also vocabulary of defensive questions.
+_MALICIOUS_TOPIC_RE = re.compile(
+    r"\b(ddos|metasploit|social-?engineer\w*|phish\w*|auth bypass|idor|"
+    r"ransomware|exfiltrat\w*)\b"
+)
+# Defensive framing: only exempts the topic words above, never the strong list.
+_DEFENSIVE_CUE_RE = re.compile(
+    r"\b(prevent\w*|mitigat\w*|defen[cs]\w*|protect\w*|resist\w*|detect\w*|"
+    r"harden\w*|secure|securing|stop|block\w*|against|monitor\w*|"
+    r"what is|what's|used for|rollout|awareness|training)\b"
+)
+
+
+def is_malicious_request(text: str) -> bool:
+    """True for requests for attack material; False for defensive questions."""
+    t = (text or "").lower()
+    if _MALICIOUS_STRONG_RE.search(t):
+        return True
+    return bool(_MALICIOUS_TOPIC_RE.search(t)) and not _DEFENSIVE_CUE_RE.search(t)
+
+
 def classify_intent(text: str, *, known_people: Optional[List[str]] = None) -> str:
     from application.utils.owasp_agent.person_resolve import match_indexed_person
 
     t = text.lower().strip()
+    t = re.sub(r"\bnumber of\b", "how many", text.lower().strip())
     # Strip markdown fences / chat-role wrappers for structural matching.
     t_flat = re.sub(r"[`*\n]+", " ", t)
     t_flat = re.sub(r"\b(user|assistant)\s*:", " ", t_flat)
@@ -896,7 +1138,8 @@ def classify_intent(text: str, *, known_people: Optional[List[str]] = None) -> s
     person_hit = match_indexed_person(text, known_people)
     # Who-is / tell-me-about person lookup from indexed leaders/board (not CRE bios)
     if re.search(r"\bwho is\b", t) and not re.search(r"\bwho is (the|on|a|an)\b", t):
-        return "person_lookup"
+        if person_hit or _extract_quoted_or_capitalized_name(text):
+            return "person_lookup"
     if re.search(r"\b(tell me about|what about)\b", t) and person_hit:
         if not re.search(r"\b(vulnerability|mitigate|how (do|should)|cre)\b", t):
             return "person_lookup"
@@ -950,30 +1193,7 @@ def classify_intent(text: str, *, known_people: Optional[List[str]] = None) -> s
 
     # Malicious / unauthorized help — refuse before any meta routing so
     # compound prompts ("dump keys + chapter leader") cannot skip the gate.
-    # Prefer multi-word attack phrasing; bare AppSec terms (idor, exfiltrate)
-    # alone must not refuse defensive questions.
-    if re.search(
-        r"("
-        r"\bhow do i hack\b|\bteach me to (hack|phish)\b|\bsql injection payload\b|"
-        r"\b(launch|perform|run)\s+a\s+ddos\b|\bbreak into\b|"
-        r"\bsteal (their|passwords|dms)\b|"
-        r"\bphishing (email )?template\b|\bvishing\b|\bmetasploit\b|"
-        r"\bsocial-?engineer\b|"
-        r"\b(write|craft|build)\s+(a\s+)?phish(ing)?\b|"
-        r"\bkeylogger\b|\b(write|build)\s+a\s+worm\b|\bpoison .{0,40}dependency\b|"
-        r"\bburp\s+intruder\b|\bauth bypass\b|"
-        r"\bbreaking into\b|\bforged token\b|\bransomware\b|\bdox\b|"
-        r"\bunrestricted gpt\b|\bdisable safety\b|"
-        r"\bhow (do|to) (i )?exfiltrate\b|"
-        r"\bignore (all )?(previous|prior|earlier)( instructions)?\b|"
-        r"\bdump (the )?(api|nest|heroku)?.{0,20}keys?\b|"
-        r"\boutput the .{0,40}api keys?\b|"
-        r"\bcsrf\s*\+\s*xss\b|\bchained against\b|"
-        r"\breset an owasp board member\b|"
-        r"\bharvest credit cards\b|\breverse shell\b"
-        r")",
-        t,
-    ):
+    if is_malicious_request(t):
         return "refuse_malicious"
 
     # Fail-closed talk asks (often compound with a CRE factoid) before CRE-only.
@@ -1113,7 +1333,7 @@ def classify_intent(text: str, *, known_people: Optional[List[str]] = None) -> s
     if (
         re.search(
             r"\b(approximate )?count of (indexed )?owasp chapters\b|"
-            r"\bhow many (indexed )?owasp chapters\b|"
+            r"\bhow many (indexed )?(owasp )?chapters\b|"
             r"\bindexed owasp chapters\b",
             t,
         )
@@ -1178,6 +1398,15 @@ def classify_intent(text: str, *, known_people: Optional[List[str]] = None) -> s
         r"\b(near|nearby|around|closest|nearest)\b", t
     ):
         return "events_near"
+
+    # "Was/Has/Is <Name> (ever) on/served on the OWASP board?" -> board_person.
+    if re.search(
+        r"\b(is|was|has|have|were|did)\b.{0,60}\b(on|served on|joined) the "
+        r"(owasp |foundation |global )?(board|gboD)\b|\bever\b.{0,40}\bboard member\b",
+        t,
+        re.I,
+    ) and _extract_quoted_or_capitalized_name(text):
+        return "board_person"
 
     # Board roster / candidate stats without the old meta/normative dump gate.
     if re.search(r"\bhow many\b", t) and re.search(r"\bcandidates?\b", t):
@@ -1274,6 +1503,13 @@ def extract_slots(text: str, *, known_people: Optional[List[str]] = None) -> Slo
     if m_suburb:
         slots.place = m_suburb.group(1).strip().rstrip(".?!")
 
+    m_nearest_to = re.search(
+        r"\b(?i:nearest)\b.{0,40}?\bto\s+([A-Z][A-Za-z .'-]+?)(?=\s+(?:about|for|on|with)\b|[?,.!;]|$)",
+        text,
+    )
+    if m_nearest_to:
+        slots.place = m_nearest_to.group(1).strip().rstrip(".?!")
+
     m_place2 = re.search(
         r"\b(?:i(?:'m| am)|we are)\s+(?:in|near)\s+([A-Za-z .',-]+)",
         text,
@@ -1349,7 +1585,9 @@ def extract_slots(text: str, *, known_people: Optional[List[str]] = None) -> Slo
         if not slots.place and slots.places:
             slots.place = slots.places[0]
 
-    person = match_indexed_person(text, known_people)
+    person = match_indexed_person(
+        text, known_people
+    ) or _extract_quoted_or_capitalized_name(text)
     if person:
         slots.person = person
     # "Fail-closed on Spyros … talk" — single given name is enough for fail-closed.
@@ -1676,7 +1914,24 @@ def _name_starts_with_stopword(name: str) -> bool:
     return first in _NAME_LEADING_STOPWORDS
 
 
+_LEADING_AUX_RE = re.compile(
+    r"^(?:was|has|have|is|are|were|did|does|do)\s+(?=\S)", re.IGNORECASE
+)
+
+
+def _strip_leading_aux(name: Optional[str]) -> Optional[str]:
+    """'Was Jim Manico' -> 'Jim Manico' (aux verb captured as part of the name)."""
+    if not name:
+        return name
+    cleaned = _LEADING_AUX_RE.sub("", name.strip())
+    return cleaned or None
+
+
 def _extract_quoted_or_capitalized_name(text: str) -> Optional[str]:
+    return _strip_leading_aux(_extract_name_raw(text))
+
+
+def _extract_name_raw(text: str) -> Optional[str]:
     m = re.search(r"[\"']([A-Z][^\"']+)[\"']", text)
     if m:
         return m.group(1).strip()
@@ -1713,11 +1968,19 @@ def _extract_quoted_or_capitalized_name(text: str) -> Optional[str]:
         return m_lead_board.group(1).strip()
     # Verb-led extractions before bare possessive (avoids "Show Sam …" as a name).
     m_is = re.search(
-        r"\b[Ii]s\s+(" + _PERSON_NAME_RE + r")\s+on\b",
+        r"\b(?:[Ii]s|[Ww]as|[Hh]as|[Ww]ere|[Dd]id)\s+("
+        + _PERSON_NAME_RE
+        + r")\s+(?:ever\s+|on\b|an?\b|the\b|served\b|been\b|elected\b)",
         text,
     )
     if m_is:
         return m_is.group(1).strip()
+    m_single = re.search(
+        r"\b(?:[Ii]s|[Ww]as)\s+([A-Z][a-z]{2,})\s+on\s+the\b",
+        text,
+    )
+    if m_single and m_single.group(1).lower() not in _NAME_LEADING_STOPWORDS:
+        return m_single.group(1)
     m_has = re.search(
         r"\b[Hh]as\s+(" + _PERSON_NAME_RE + r")\s+been\b",
         text,
@@ -1808,6 +2071,74 @@ def _mentions_known_project(text: str) -> bool:
     if re.search(r"\bjuiceshop\b|\bjuice\s*shop\b|\btop\s*ten\b|\btop\s*10\b", t):
         return True
     return False
+
+
+NOT_SURE_FALLBACK = (
+    "I'm not sure what you're asking. I can answer questions about OWASP chapters "
+    "(who leads one, whether a city has one), projects and their leaders, events "
+    "such as Global AppSec, board members and history, and membership pricing, "
+    "and OpenCRE security standards. Could you rephrase or name one of those?"
+)
+
+# Prompt shapes that want a number, comparison or list, never one entity card.
+_AGGREGATE_SHAPE_RE = re.compile(
+    r"\b(how many|number of|count of|compare|comparison|difference between|"
+    r"versus|vs\.?|list (all|the|every)|all (the )?(owasp )?(projects|chapters)|"
+    r"which (owasp )?(projects|chapters))\b",
+    re.I,
+)
+_SINGLE_ENTITY_KINDS = frozenset(
+    {"project", "chapter", "person", "project_leader", "board_member"}
+)
+_GROUNDING_GENERIC = frozenset(
+    "owasp www project chapter the and for of top ten security application "
+    "applications app web what who how when where is are does do tell about "
+    "me please".split()
+)
+
+
+def _norm_tokens(text: str) -> List[str]:
+    return re.sub(r"[^a-z0-9]+", " ", (text or "").lower()).split()
+
+
+def _token_matches(t: str, ptoks: set) -> bool:
+    """Exact, or a near-variant (plural/suffix) - never 'open' ~ 'opencre'."""
+    if t in ptoks:
+        return True
+    return any(
+        len(p) >= 4
+        and len(t) >= 4
+        and abs(len(p) - len(t)) <= 2
+        and (p.startswith(t) or t.startswith(p))
+        for p in ptoks
+    )
+
+
+def meta_hit_answers_prompt(
+    hit: Any, kind: str, key: str, prompt: str, intent: str
+) -> bool:
+    """Floor for the meta lane: a single-entity card must be about the prompt.
+
+    Embedding similarity alone returns the nearest entity for anything
+    ("What is OpenCRE?" -> Open SAMMY). Require (a) the prompt is not a
+    count/compare/list/refusal and (b) at least one distinctive token of the
+    entity's name appears in the prompt.
+    """
+    if kind not in _SINGLE_ENTITY_KINDS:
+        return True
+    if intent in ("refuse_malicious", "clarify") or intent.startswith("count_"):
+        return False
+    if intent == "compare_projects" or _AGGREGATE_SHAPE_RE.search(prompt or ""):
+        return False
+    ptoks = set(_norm_tokens(prompt))
+    name_toks = {
+        t
+        for t in _norm_tokens(key.replace("-", " "))
+        if t not in _GROUNDING_GENERIC and (len(t) >= 3 or t.isdigit())
+    }
+    if not name_toks:
+        return True
+    return any(_token_matches(t, ptoks) for t in name_toks)
 
 
 def _sim_meta_ok_for_intent(
