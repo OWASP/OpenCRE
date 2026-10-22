@@ -309,7 +309,7 @@ class ExpansionStagesTest(SchedulerTestBase):
             "cre_expansion",
             cache_file="db-url",
             now=NOW,
-            config=SchedulerConfig(),
+            config=SchedulerConfig(filing_enabled=True),
             overrides={
                 "noise_filter": _ok("noise_filter"),
                 "librarian": _ok("librarian"),
