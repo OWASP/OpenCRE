@@ -269,7 +269,14 @@ def _answer_from_whole_project(
         )
 
     answer, cites = synthesize(question, sources, llm, system=system)
-    return (answer, cites) if answer else None
+    if not answer:
+        return None
+    from application.utils.comprehension.retrieve import last_pick
+
+    assumed = last_pick()
+    if assumed:
+        answer = f"Assuming you mean {assumed}: {answer}"
+    return answer, cites
 
 
 def think_effort() -> str:

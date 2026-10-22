@@ -1035,3 +1035,21 @@ class NestBrokenPageTest(unittest.TestCase):
 
         got = [i["k"] for i in ns.iter_items(get, "projects/")]
         self.assertEqual(got, [1, 3])
+
+
+class PickProjectTest(unittest.TestCase):
+    def _pick(self, reply):
+        from application.utils.comprehension import retrieve
+
+        cands = [("owasp-asvs", "levels"), ("owasp-samm", "maturity")]
+        with mock.patch.object(retrieve, "pick_candidates", return_value=cands):
+            return retrieve.pick_project(None, "q", llm=lambda s, u: reply)
+
+    def test_confident_choice_is_returned(self):
+        self.assertEqual(self._pick('{"project": 2, "confidence": 0.9}'), "owasp-samm")
+
+    def test_unsure_or_malformed_means_no_pick(self):
+        self.assertEqual(self._pick('{"project": null, "confidence": 0.9}'), "")
+        self.assertEqual(self._pick('{"project": 1, "confidence": 0.4}'), "")
+        self.assertEqual(self._pick('{"project": 7, "confidence": 0.9}'), "")
+        self.assertEqual(self._pick("not json"), "")
