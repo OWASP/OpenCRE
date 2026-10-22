@@ -364,14 +364,25 @@ def route_project(conn: Any, question: str) -> List[str]:
     return [m.group(1)] if m else []
 
 
-def project_sources(question: str) -> List[tuple]:
+def named_slugs(question: str, limit: int = 4) -> List[str]:
+    """Repo slugs of the projects the question names (up to ``limit``); [] on any failure."""
+    try:
+        from application import sqla
+
+        with sqla.session.get_bind().connect() as conn:
+            return matched_slugs(question, _known_slugs(conn), limit=limit)
+    except Exception:
+        return []
+
+
+def project_sources(question: str, max_projects: int | None = None) -> List[tuple]:
     """Whole text of the projects the question names (1..N); [] if none, too many or too big."""
     try:
         from sqlalchemy import text as sql_text
 
         from application import sqla
 
-        limit = longctx_max_projects()
+        limit = max_projects or longctx_max_projects()
         with sqla.session.get_bind().connect() as conn:
             slugs = matched_slugs(question, _known_slugs(conn), limit=limit + 1)
             if not slugs:

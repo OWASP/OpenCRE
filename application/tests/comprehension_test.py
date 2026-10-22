@@ -939,3 +939,12 @@ class EvidenceTest(unittest.TestCase):
         self.assertEqual([e["n"] for e in ev], [1])
         self.assertEqual(ev[0]["path"], "5.0/en/a.md")
         self.assertIn("three levels", ev[0]["snippet"])
+
+
+class PerStandardTest(unittest.TestCase):
+    def test_flag_registered_and_rule_text(self):
+        from application.utils.comprehension import flags
+        from application.utils.comprehension.synthesize import PERSTD_RULE
+
+        self.assertIn("PERSTD", flags.NAMES)
+        self.assertIn("separately", PERSTD_RULE)

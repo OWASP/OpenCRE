@@ -248,7 +248,18 @@ def _answer_from_whole_project(
     """One-project questions: let the model read the project's whole text (None -> normal path)."""
     from application.utils.comprehension.retrieve import project_sources
 
-    sources = project_sources(question)
+    from application.utils.comprehension import flags
+    from application.utils.comprehension.retrieve import named_slugs
+    from application.utils.comprehension.synthesize import PERSTD_RULE, SYSTEM
+
+    system = SYSTEM
+    sources: List[tuple] = []
+    if flags.on("PERSTD") and len(named_slugs(question)) >= 2:
+        sources = project_sources(question, max_projects=3)
+        if sources:
+            system = SYSTEM + PERSTD_RULE
+    if not sources:
+        sources = project_sources(question)
     if not sources:
         return None
 
@@ -257,7 +268,7 @@ def _answer_from_whole_project(
             [{"role": "system", "content": system}, {"role": "user", "content": user}]
         )
 
-    answer, cites = synthesize(question, sources, llm)
+    answer, cites = synthesize(question, sources, llm, system=system)
     return (answer, cites) if answer else None
 
 
