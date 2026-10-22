@@ -723,9 +723,34 @@ def find_root_cres() -> Any:
     abort(404, "No root CREs")
 
 
+def _wants_json_error() -> bool:
+    path = request.path or ""
+    if path.startswith(("/admin/", "/rest/")):
+        return True
+    best = request.accept_mimetypes.best_match(["application/json", "text/html"])
+    return best == "application/json"
+
+
+def _http_error_response(e: Any, status: int, fallback: str) -> Any:
+    description = getattr(e, "description", None) or fallback
+    if _wants_json_error():
+        return jsonify({"description": description}), status
+    return description, status
+
+
+@app.errorhandler(400)
+def bad_request(e) -> Any:
+    return _http_error_response(e, 400, "Bad request")
+
+
 @app.errorhandler(404)
 def page_not_found(e) -> Any:
-    return "Resource Not found", 404
+    return _http_error_response(e, 404, "Resource Not found")
+
+
+@app.errorhandler(409)
+def conflict(e) -> Any:
+    return _http_error_response(e, 409, "Conflict")
 
 
 _REPO_ROOT = os.path.abspath(
@@ -1059,6 +1084,70 @@ def admin_imports_enabled_required(f):
     return enabled_r
 
 
+def _bounded_int_arg(name: str, default: int, *, low: int, high: int) -> int:
+    try:
+        value = int(request.args.get(name) or default)
+    except ValueError:
+        abort(400, description=f"{name} must be an integer")
+    return max(low, min(high, value))
+
+
+@app.route("/admin/oie/runs", methods=["GET"])
+@login_required
+@admin_imports_enabled_required
+def admin_oie_runs() -> Any:
+    from application.utils.oie_scheduler import run_log
+
+    session = db.Node_collection().session
+    rows = run_log.list_runs(
+        session,
+        job=request.args.get("job") or None,
+        status=request.args.get("status") or None,
+        limit=_bounded_int_arg("limit", 50, low=1, high=500),
+        offset=_bounded_int_arg("offset", 0, low=0, high=1_000_000),
+    )
+    return jsonify({"runs": [run_log.run_to_dict(r) for r in rows]})
+
+
+@app.route("/admin/oie/runs/<run_id>", methods=["GET"])
+@login_required
+@admin_imports_enabled_required
+def admin_oie_run(run_id: str) -> Any:
+    from application.utils.oie_scheduler import run_log
+
+    row = run_log.get_run(db.Node_collection().session, run_id)
+    if row is None:
+        abort(404, description="OIE run not found")
+    return jsonify(run_log.run_to_dict(row))
+
+
+@app.route("/admin/oie/health", methods=["GET"])
+@login_required
+@admin_imports_enabled_required
+def admin_oie_health() -> Any:
+    from application.utils.oie_scheduler import health
+
+    report = health.evaluate_health(db.Node_collection().session)
+    strict = str(request.args.get("strict") or "").lower() in ("1", "true", "yes")
+    response = jsonify(report)
+    if strict and not report["healthy"]:
+        response.status_code = 503
+    return response
+
+
+@app.route("/admin/oie", methods=["GET"])
+@login_required
+@admin_imports_enabled_required
+def admin_oie_page() -> Any:
+    from application.utils.oie_scheduler import health, run_log
+    from application.web.oie_admin_page import render_oie_page
+
+    session = db.Node_collection().session
+    runs = [run_log.run_to_dict(r) for r in run_log.list_runs(session, limit=50)]
+    page = render_oie_page(health.evaluate_health(session), runs)
+    return make_response(page, 200, {"Content-Type": "text/html; charset=utf-8"})
+
+
 @app.route("/admin/imports/runs", methods=["GET"])
 @login_required
 @admin_imports_enabled_required
@@ -1069,15 +1158,24 @@ def admin_import_runs() -> Any:
     runs = db.list_import_runs(source=source, limit=limit, offset=offset)
     out = []
     for r in runs:
-        cs = db.get_staged_change_set(run_id=r.id)
+        # Older admin/OIE starts sometimes wrote import_run without a staged row.
+        cs = db.ensure_staged_change_set(run_id=r.id)
+        ops_count = 0
+        try:
+            from application.utils import import_diff
+
+            ops_count = len(import_diff.change_set_from_json(cs.changeset_json or "[]"))
+        except Exception:  # noqa: BLE001
+            ops_count = 0
         out.append(
             {
                 "id": r.id,
                 "source": r.source,
                 "version": r.version,
                 "created_at": r.created_at.isoformat() if r.created_at else None,
-                "has_conflicts": bool(cs.has_conflicts) if cs else False,
-                "staging_status": cs.staging_status if cs else None,
+                "has_conflicts": bool(cs.has_conflicts),
+                "staging_status": cs.staging_status,
+                "operation_count": ops_count,
             }
         )
     return jsonify({"runs": out})
@@ -1197,8 +1295,20 @@ def admin_import_run_impact(run_id: str) -> Any:
     r = db.get_import_run(run_id=run_id)
     if not r:
         abort(404, description="Import run not found")
-    database = db.Node_collection().with_graph()
-    return jsonify(import_impact.impact_summary_for_run(run_id, database))
+    logger.info("Impact requested run_id=%s source=%s", run_id, r.source)
+    try:
+        database = db.Node_collection().with_graph()
+        summary = import_impact.impact_summary_for_run(run_id, database)
+    except Exception as e:
+        logger.exception("Impact failed run_id=%s", run_id)
+        return jsonify({"description": f"Impact failed: {e}", "run_id": run_id}), 400
+    logger.info(
+        "Impact ok run_id=%s operation_count=%s warnings=%s",
+        run_id,
+        summary.get("operation_count"),
+        summary.get("warnings"),
+    )
+    return jsonify(summary)
 
 
 @app.route("/admin/imports/runs/<run_id>/apply", methods=["POST"])
@@ -1663,6 +1773,7 @@ def get_capabilities() -> Any:
         {
             "myopencre": is_myopencre_enabled(),
             "login": is_login_enabled(),
+            "admin": is_login_enabled() and is_cre_import_allowed(),
         }
     )
 
@@ -1671,27 +1782,23 @@ def get_capabilities() -> Any:
 @login_required
 @admin_imports_enabled_required
 def admin_imports_rerun() -> Any:
-    # A placeholder for triggering an actual import.
-    # In a real system, this would enqueue a background job.
-    source = request.json.get("source")
-    if not source:
-        return abort(400, "source is required")
+    body = request.get_json(silent=True) or {}
+    source = (body.get("source") or "").strip()
+    target_id = body.get("target_id")
+    if not source and not target_id:
+        abort(400, description="source is required")
+    from application.utils.admin_panel import service
 
-    database = db.Node_collection().with_graph()
     try:
-        run = db.create_import_run(source=source, version="re-run")
-    except Exception:
-        run = None
-
-    # Simulate basic empty changes so we don't break the UI.
-    from application.utils import import_diff
-
-    db.persist_staged_change_set(
-        run_id=run.id if run else "test-id",
-        changeset_json=import_diff.change_set_to_json([]),
-    )
-
-    return jsonify({"status": "success", "run_id": run.id if run else "test-id"})
+        result = service.start_ingestion(
+            source=source or str(target_id),
+            target_id=str(target_id) if target_id else None,
+        )
+    except KeyError as exc:
+        abort(404, description=str(exc))
+    except ValueError as exc:
+        abort(400, description=str(exc))
+    return jsonify({"status": "success", **result})
 
 
 @app.route("/rest/v1/cre_csv_import", methods=["POST"])
@@ -1867,6 +1974,11 @@ def delete_user_mcp_grant() -> Any:
 #         res = [doc.todict() for doc in documents]
 #         return jsonify({"data": res, "page": page, "total_pages": total_pages})
 #     abort(404)
+
+
+from application.web.admin_panel_routes import register_admin_panel_routes
+
+register_admin_panel_routes(app, login_required, admin_imports_enabled_required)
 
 
 if __name__ == "__main__":

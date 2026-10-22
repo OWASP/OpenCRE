@@ -64,6 +64,25 @@ class IncrementalPipelineTests(unittest.TestCase):
         saved = store.save.call_args[0][0]
         self.assertEqual(saved.last_processed_commit, "abc1234")
 
+    def test_checkpoint_can_be_deferred(self) -> None:
+        store = Mock()
+        pipeline = IncrementalPipeline(
+            checkpoint_store=store,
+            owner="OWASP",
+            repository_name="ASVS",
+            repository_id="owasp-asvs",
+        )
+        pipeline.process(
+            "OWASP/ASVS",
+            "run1",
+            [self.make_document("hello")],
+            last_processed_commit="abc1234",
+            persist_checkpoint=False,
+        )
+        store.save.assert_not_called()
+        pipeline.save_checkpoint("run1", "abc1234")
+        store.save.assert_called_once()
+
     def test_rejects_empty_checkpoint_commit(self) -> None:
         pipeline = IncrementalPipeline(
             checkpoint_store=Mock(),
@@ -78,6 +97,26 @@ class IncrementalPipelineTests(unittest.TestCase):
                 [self.make_document("hello")],
                 last_processed_commit="   ",
             )
+
+    def test_skips_invalid_documents_without_aborting(self) -> None:
+        store = Mock()
+        pipeline = IncrementalPipeline(
+            checkpoint_store=store,
+            owner="OWASP",
+            repository_name="Top10",
+            repository_id="owasp-top10",
+        )
+        bad = self.make_document("")  # empty text fails DocumentValidator
+        good = self.make_document("hello world")
+        emitted = pipeline.process(
+            "OWASP/ASVS",
+            "run1",
+            [bad, good],
+            last_processed_commit="abc1234",
+        )
+        self.assertEqual(len(emitted), 1)
+        self.assertEqual(emitted[0].text, "hello world")
+        store.save.assert_called_once()
 
 
 if __name__ == "__main__":

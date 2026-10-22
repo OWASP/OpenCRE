@@ -2,8 +2,37 @@ from cre_logging import get_logger
 
 logger = get_logger(__name__)
 
-from typing import Literal
-from pydantic import BaseModel, Field, ConfigDict, model_validator
+from typing import Any, Literal, Optional
+import re
+from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
+
+
+_CRON_ATOM = r"(?:\*(?:/\d+)?|\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*)"
+CRON_RE = re.compile(rf"^{_CRON_ATOM}(?:\s+{_CRON_ATOM}){{4}}$")
+
+
+def validate_cron_line(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    if not CRON_RE.fullmatch(text):
+        raise ValueError(
+            "cron must be a 5-field line (minute hour day-of-month month weekday)"
+        )
+    return text
+
+
+# What an OWASP org repo is for. ``standard``/``project``/``other`` feed the
+# knowledge-graph expansion path (harvest -> filter -> Librarian); ``chapter``
+# and ``event`` repos only feed the OWASP agent's metadata index.
+RepoKind = Literal["standard", "project", "chapter", "event", "other"]
+HARVESTABLE_KINDS: tuple[str, ...] = ("standard", "project", "other")
+# What a harvest run visits when the caller names no kinds: the curated standards
+# only, as before repos.yaml covered the whole org. Scheduled runs ask for
+# HARVESTABLE_KINDS explicitly.
+DEFAULT_HARVEST_KINDS: tuple[str, ...] = ("standard",)
 
 
 # this will control which repo paths are included and excluded during ingestions
@@ -147,6 +176,10 @@ class RepositoryConfig(BaseModel):
         ...,
         description="repository source type.",
     )
+    kind: RepoKind = Field(
+        default="standard",
+        description="what the repository is; routes it to the harvest or metadata path.",
+    )
     enabled: bool = Field(
         default=True,
         description="whether ingestion is enabled for this repository.",
@@ -170,14 +203,88 @@ class RepositoryConfig(BaseModel):
     paths: PathRules
     chunking: ChunkingConfig
     polling: PollingConfig
+    cron: Optional[str] = Field(
+        default=None,
+        description="5-field cron for how often this repository is ingested.",
+    )
+
+    @field_validator("cron")
+    @classmethod
+    def cron_line(cls, value: Optional[str]) -> Optional[str]:
+        return validate_cron_line(value)
 
 
-# Root configuration object loaded from repos.yaml.
+class SourceConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    url: str = Field(
+        ..., min_length=1, description="github.com/org/ or github.com/org/repo"
+    )
+    cron: Optional[str] = Field(
+        default=None,
+        description="5-field cron for how often this source is ingested.",
+    )
+    enabled: bool = Field(default=True)
+
+    @field_validator("cron")
+    @classmethod
+    def cron_line(cls, value: Optional[str]) -> Optional[str]:
+        return validate_cron_line(value)
+
+
+# Root configuration object loaded from repos.yaml / targets.yaml.
 class ReposFile(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    repositories: list[RepositoryConfig] = Field(
-        ...,
-        min_length=1,
-        description="List of repositories configured for ingestion.",
+    defaults: dict[str, dict[str, Any]] = Field(
+        default_factory=dict,
+        description=(
+            "Per-kind field defaults merged under each repository entry "
+            "(an explicit entry value wins), so org-wide files stay compact."
+        ),
     )
+    sources: list[SourceConfig] = Field(
+        default_factory=list,
+        description="GitHub org or repo URLs (github.com/OWASP/). "
+        "Orgs are expanded by the indexer, not at save time.",
+    )
+    repositories: list[RepositoryConfig] = Field(
+        default_factory=list,
+        description="OpenCRE harvest overrides (paths/chunking). Optional when sources is set.",
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def apply_kind_defaults(cls, data: object) -> object:
+        if not isinstance(data, dict):
+            return data
+        defaults = data.get("defaults") or {}
+        repositories = data.get("repositories")
+        if not defaults or not isinstance(repositories, list):
+            return data
+        merged = []
+        for entry in repositories:
+            if isinstance(entry, dict):
+                kind = entry.get("kind") or "standard"
+                entry = {**(defaults.get(kind) or {}), **entry}
+            merged.append(entry)
+        return {**data, "repositories": merged}
+
+    @field_validator("sources", mode="before")
+    @classmethod
+    def coerce_sources(cls, value: Any) -> Any:
+        if not isinstance(value, list):
+            return value
+        out: list[Any] = []
+        for item in value:
+            if isinstance(item, str):
+                out.append({"url": item})
+            else:
+                out.append(item)
+        return out
+
+    @model_validator(mode="after")
+    def sources_or_repositories(self) -> "ReposFile":
+        if not self.sources and not self.repositories:
+            raise ValueError("sources or repositories is required")
+        return self
