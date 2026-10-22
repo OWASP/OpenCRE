@@ -885,3 +885,28 @@ class ToolkitHelpersTest(unittest.TestCase):
             "owasp_meta_sources_overview",
         ):
             self.assertIn(n, names)
+
+
+class WriteRawResilienceTest(unittest.TestCase):
+    def test_failed_embeddings_are_skipped_not_fatal(self):
+        calls = {"n": 0}
+
+        def embed(body):
+            calls["n"] += 1
+            if "boom" in body:
+                raise RuntimeError("503")
+            return [0.1, 0.2]
+
+        written = []
+        with mock.patch(
+            "application.utils.owasp_agent.meta_embeddings.upsert_channel_embedding",
+            side_effect=lambda *a, **k: written.append(k["embeddings_url"]),
+        ), mock.patch("time.sleep"):
+            n = store.write_raw(
+                mock.Mock(),
+                "OWASP/X",
+                [("a.md", 0, "fine"), ("a.md", 1, "boom")],
+                embed,
+            )
+        self.assertEqual(n, 1)
+        self.assertEqual(len(written), 1)

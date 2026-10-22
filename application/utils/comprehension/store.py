@@ -198,18 +198,39 @@ def write_raw(
     ]
     if dry_run:
         return len(docs)
-    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
-        vecs = list(pool.map(lambda b: list(embed(b)), bodies))
-    for (slug, _, _), body, vec in zip(docs, bodies, vecs):
-        upsert_channel_embedding(
-            database,
-            source_channel=CHANNEL_AGENT,
-            doc_type=DOC_TYPE_EVIDENCE,
-            embeddings_url=evidence_url(slug),
-            embedding_text=body,
-            embeddings=vec,
-        )
-    return len(docs)
+    import time
+
+    def embed_retry(body: str):
+        for attempt in range(5):
+            try:
+                return list(embed(body))
+            except (
+                Exception
+            ):  # noqa: BLE001 - provider 503/429: back off, then give up on this chunk
+                if attempt == 4:
+                    return None
+                time.sleep(2**attempt)
+
+    written = 0
+    # Slices keep progress: a provider outage loses one slice, not the whole repo.
+    for start in range(0, len(docs), 500):
+        part_docs = docs[start : start + 500]
+        part_bodies = bodies[start : start + 500]
+        with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+            vecs = list(pool.map(embed_retry, part_bodies))
+        for (slug, _, _), body, vec in zip(part_docs, part_bodies, vecs):
+            if vec is None:
+                continue
+            upsert_channel_embedding(
+                database,
+                source_channel=CHANNEL_AGENT,
+                doc_type=DOC_TYPE_EVIDENCE,
+                embeddings_url=evidence_url(slug),
+                embedding_text=body,
+                embeddings=vec,
+            )
+            written += 1
+    return written
 
 
 def changed_chunks(
