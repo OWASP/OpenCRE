@@ -10,6 +10,7 @@ from io import BytesIO
 from urllib.parse import urljoin, urlparse
 
 from application.prompt_client import embed_alignment, litellm_router
+from application.utils.harvester.event_page import clean_embedding_text
 
 from scipy import sparse
 from sklearn.metrics.pairwise import cosine_similarity
@@ -315,7 +316,7 @@ class in_memory_embeddings:
         if is_plain_text_embed_url(url):
             text = _fetch_plain_http_text(url)
             if text:
-                return text
+                return clean_embedding_text(url, text)
             logger.warning(
                 "Plain-text URL %s: empty HTTP body, falling through to Playwright",
                 url,
@@ -344,7 +345,7 @@ class in_memory_embeddings:
                 logger.info(f"loading page {url}")
                 page.goto(url)
                 text = page.locator("body").inner_text()
-                return text
+                return clean_embedding_text(url, text)
             except requests.exceptions.RequestException as e:
                 logger.error(
                     f"Error fetching content for URL: {url} - {str(e)} (attempt {attempts}/9)"

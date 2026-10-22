@@ -56,6 +56,42 @@ def _envelope(
     }
 
 
+class PendingEmbeddingsTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.app = create_app(mode="test")
+        self.ctx = self.app.app_context()
+        self.ctx.push()
+        sqla.create_all()
+
+    def tearDown(self) -> None:
+        sqla.session.remove()
+        sqla.drop_all()
+        self.ctx.pop()
+
+    def _node(self, name, tags):
+        node = db.Node(name=name, section="s", ntype="Standard", tags=tags)
+        sqla.session.add(node)
+        sqla.session.commit()
+        return node.id
+
+    def test_only_auto_filed_nodes_without_embeddings_are_pending(self) -> None:
+        filed = self._node("OWASP/a", f"x,{graph_filer.AUTO_FILED_TAG}")
+        embedded = self._node("OWASP/b", graph_filer.AUTO_FILED_TAG)
+        self._node("ASVS", "curated")
+        sqla.session.add(
+            db.Embeddings(doc_type="Standard", node_id=embedded, embedding_vec="[1]")
+        )
+        sqla.session.commit()
+        self.assertEqual(
+            graph_filer.auto_filed_nodes_without_embeddings(sqla.session), [filed]
+        )
+
+    def test_nothing_pending_on_an_empty_graph(self) -> None:
+        self.assertEqual(
+            graph_filer.auto_filed_nodes_without_embeddings(sqla.session), []
+        )
+
+
 class GraphFilerTest(unittest.TestCase):
     def setUp(self) -> None:
         self.app = create_app(mode="test")
