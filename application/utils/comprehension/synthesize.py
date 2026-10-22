@@ -85,6 +85,16 @@ PERSTD_RULE = (
 )
 
 
+NEG_RE = re.compile(
+    r"\bnot\b|n't\b|\bexcept\b|\bexcluding\b|\bnone of\b|\bnever\b|\bwithout\b", re.I
+)
+NEG_RULE = (
+    " The question asks what is NOT / EXCEPT / excluded. First list every candidate option the question "
+    "or the sources give, then test each one against the sources (stated: yes/no), and only then name the "
+    "option(s) the sources do not support. Do not answer from the first sentence you find."
+)
+
+
 def synthesize(
     question: str,
     hits: Sequence[Tuple[str, List[str]]],

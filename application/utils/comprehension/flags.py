@@ -26,6 +26,7 @@ NAMES = (
     "PERSTD",  # questions naming 2-3 projects: read each whole, answer each standard separately
     "PICK",  # no project named: a cheap model picks it from the best-matching projects (or says unsure)
     "COMPLETE2",  # second pass: a cheap checker finds unanswered parts, the reader answers them
+    "NEG",  # negation questions (NOT / except): test every option against the sources before choosing
     "EDITION",  # answer for the edition/year/version the question names; never mix editions
     "ROUTE",  # people/count questions: whole-project read with a stronger reader model
     "DECOMPOSE",  # multi-part questions: answer each part separately, then combine
