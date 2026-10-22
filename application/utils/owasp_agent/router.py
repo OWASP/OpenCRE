@@ -369,6 +369,8 @@ class OwaspAgentRouter:
                     )
                 )
             cands = merge_with_dedicated(normalized, cands)
+            from application.utils.comprehension.synthesize import take_evidence
+
             comp_hits = [c for c in cands if is_comprehension_hit(c)]
             comp = answer_from_candidates(normalized, cands, default_completion_fn())
             if comp is not None:
@@ -381,6 +383,7 @@ class OwaspAgentRouter:
                         data={
                             "lane_scores": sim_decision.scores,
                             "pick_reason": "comprehension_synthesis",
+                            "evidence": take_evidence(),
                         },
                     )
                 )

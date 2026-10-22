@@ -922,3 +922,20 @@ class RouteModelTest(unittest.TestCase):
             self.assertEqual(route_model("What does A01 cover?"), "")
         with mock.patch.dict(os.environ, {"OWASP_CX_ROUTE": ""}):
             self.assertEqual(route_model("Who leads ASVS?"), "")
+
+
+class EvidenceTest(unittest.TestCase):
+    def test_synthesize_records_the_passages_it_used(self):
+        from application.utils.comprehension import synthesize as syn
+
+        syn.reset_evidence()
+        hits = [
+            ("ASVS / 5.0/en/a.md: ctx\nthree levels exist", ["https://x/a"]),
+            ("ASVS / 5.0/en/b.md: other", ["https://x/b"]),
+        ]
+        answer, cites = syn.synthesize("q", hits, lambda s, u: "Three levels [1]")
+        ev = syn.take_evidence()
+        self.assertEqual(cites, ["https://x/a"])
+        self.assertEqual([e["n"] for e in ev], [1])
+        self.assertEqual(ev[0]["path"], "5.0/en/a.md")
+        self.assertIn("three levels", ev[0]["snippet"])
