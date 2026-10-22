@@ -172,6 +172,51 @@ def _split_citations(content: str) -> Tuple[str, List[str]]:
     ]
 
 
+_MISSING_SYSTEM = (
+    "You check whether an answer addresses everything a question asks. List what the question asks for, "
+    "then say which asked-for items the answer does NOT address at all. Be strict only about whole items "
+    'that are absent; ignore style and detail. Reply with JSON only: {"missing": ["short phrase", ...]} '
+    "(empty list when the answer covers everything)."
+)
+
+
+def missing_parts(question: str, answer: str, helper: Any) -> List[str]:
+    """Items the question asks for that the answer leaves out (cheap checker)."""
+    from application.utils.comprehension import extras
+
+    try:
+        data = extras.parse_json(
+            helper(_MISSING_SYSTEM, f"Question: {question}\n\nAnswer: {answer}")
+        )
+        return [str(m).strip() for m in (data.get("missing") or []) if str(m).strip()][
+            :4
+        ]
+    except Exception:  # noqa: BLE001 - checker failure means "no second pass"
+        return []
+
+
+def _complete_pass(
+    question: str,
+    out: Tuple[str, List[str]],
+    cands: Sequence[Any],
+    complete: CompletionFn,
+) -> Tuple[str, List[str]]:
+    from application.utils.comprehension import flags
+
+    helper = flags.helper_llm()
+    if helper is None or not out or not out[0]:
+        return out
+    missing = missing_parts(question, out[0], helper)
+    if not missing:
+        return out
+    again = _answer(
+        f"{question}\n(The answer must also cover: {'; '.join(missing)})",
+        cands,
+        complete,
+    )
+    return again if again and again[0] else out
+
+
 def answer_from_candidates(
     question: str, cands: Sequence[Any], complete: Optional[CompletionFn]
 ) -> Optional[Tuple[str, List[str]]]:
@@ -191,6 +236,8 @@ def answer_from_candidates(
     out = _answer_decomposed(question, complete) if flags.on("DECOMPOSE") else None
     if out is None:
         out = _answer(question, cands, complete)
+    if out is not None and flags.on("COMPLETE2"):
+        out = _complete_pass(question, out, cands, complete)
     if flags.on("CACHE") and out is not None:
         _ANSWERS[ckey] = (time.time(), out)
         if len(_ANSWERS) > 512:
@@ -392,9 +439,14 @@ def _answer(
     if plan.get("parts"):
         ask = f"{ask}\n(Answer each part: " + " | ".join(plan["parts"]) + ")"
     count_mode = flags.on("COUNT") and bool(extras.COUNT_RE.search(ask))
-    answer, cites = synthesize(
-        ask, sources, llm, system=COUNT_SYSTEM if count_mode else SYSTEM
-    )
+    system = COUNT_SYSTEM if count_mode else SYSTEM
+    if flags.on("PERSTD"):
+        from application.utils.comprehension.retrieve import named_slugs
+        from application.utils.comprehension.synthesize import PERSTD_RULE
+
+        if len(named_slugs(question)) >= 2:
+            system = system + PERSTD_RULE
+    answer, cites = synthesize(ask, sources, llm, system=system)
     if answer and flags.on("VERIFY"):
         hl = flags.helper_llm()
         if hl and not extras.cheap_verify(answer, [t for t, _ in sources]):

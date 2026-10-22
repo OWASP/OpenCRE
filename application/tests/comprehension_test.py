@@ -1053,3 +1053,39 @@ class PickProjectTest(unittest.TestCase):
         self.assertEqual(self._pick('{"project": 1, "confidence": 0.4}'), "")
         self.assertEqual(self._pick('{"project": 7, "confidence": 0.9}'), "")
         self.assertEqual(self._pick("not json"), "")
+
+
+class CompletePassTest(unittest.TestCase):
+    def test_missing_parts_parses_checker_reply(self):
+        from application.utils.comprehension.answer import missing_parts
+
+        self.assertEqual(
+            missing_parts("q", "a", lambda s, u: '{"missing": ["the date", ""]}'),
+            ["the date"],
+        )
+        self.assertEqual(missing_parts("q", "a", lambda s, u: "garbage"), [])
+
+    def test_second_pass_reanswers_only_when_something_is_missing(self):
+        from application.utils.comprehension import answer as ans
+
+        calls = []
+
+        def fake_answer(q, cands, complete):
+            calls.append(q)
+            return ("full answer", ["u"])
+
+        with mock.patch.object(ans, "_answer", side_effect=fake_answer), mock.patch(
+            "application.utils.comprehension.flags.helper_llm",
+            return_value=lambda s, u: '{"missing": ["x"]}',
+        ):
+            out = ans._complete_pass("q?", ("short", []), [], lambda m: "")
+        self.assertEqual(out[0], "full answer")
+        self.assertIn("must also cover: x", calls[0])
+        with mock.patch.object(ans, "_answer", side_effect=fake_answer), mock.patch(
+            "application.utils.comprehension.flags.helper_llm",
+            return_value=lambda s, u: '{"missing": []}',
+        ):
+            calls.clear()
+            out = ans._complete_pass("q?", ("short", []), [], lambda m: "")
+        self.assertEqual(out[0], "short")
+        self.assertEqual(calls, [])
