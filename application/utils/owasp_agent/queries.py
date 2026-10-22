@@ -413,6 +413,8 @@ class MetaQueries:
             )
         pname = hit.get("name") or hit.get("key")
         desc = (hit.get("description") or "").strip()
+        if not desc:
+            desc = _project_fallback_blurb(hit)
         leaders = [x for x in (hit.get("leaders") or []) if x]
         level = hit.get("level") or ""
         url = hit.get("url") or ""
@@ -1191,6 +1193,48 @@ def _match_chapter(
     return best
 
 
+_PROJECT_FALLBACK_BLURBS = {
+    "juice-shop": (
+        "Intentionally vulnerable web application for security training and "
+        "testing (Juice Shop)."
+    ),
+    "juice shop": (
+        "Intentionally vulnerable web application for security training and "
+        "testing (Juice Shop)."
+    ),
+    "application-security-verification-standard": (
+        "Application Security Verification Standard (ASVS): a framework of "
+        "security requirements for designing, testing, and verifying apps."
+    ),
+    "asvs": (
+        "Application Security Verification Standard (ASVS): a framework of "
+        "security requirements for designing, testing, and verifying apps."
+    ),
+    "top-ten": (
+        "OWASP Top Ten: the standard awareness document for the most critical "
+        "web application security risks."
+    ),
+    "top ten": (
+        "OWASP Top Ten: the standard awareness document for the most critical "
+        "web application security risks."
+    ),
+}
+
+
+def _project_fallback_blurb(hit: Dict[str, Any]) -> str:
+    key = _norm(str(hit.get("key") or "").replace("-", " "))
+    pname = _norm(str(hit.get("name") or ""))
+    for cand in (str(hit.get("key") or ""), key, pname):
+        blurb = _PROJECT_FALLBACK_BLURBS.get(cand)
+        if blurb:
+            return blurb
+        compact = cand.replace(" ", "")
+        for k, v in _PROJECT_FALLBACK_BLURBS.items():
+            if k.replace(" ", "") in compact or compact in k.replace(" ", ""):
+                return v
+    return ""
+
+
 def _alias_matches_target(target: str, alias: str) -> bool:
     """Strict alias hit — short tokens (ai, ml) only match exactly."""
     a = _norm(alias)
@@ -1209,9 +1253,13 @@ def _match_project(
 ) -> Optional[Dict[str, Any]]:
     from application.utils.owasp_agent.project_aliases import ensure_project_aliases
 
-    target = _norm(name)
+    # Strip github slug noise before normalising: owasp/www-project-juice-shop → juice shop
+    raw = re.sub(r"^\s*owasp/", "", name or "", flags=re.IGNORECASE)
+    raw = re.sub(r"^www-project-", "", raw, flags=re.IGNORECASE)
+    target = re.sub(r"[-_]+", " ", _norm(raw)).strip()
     if not target:
         return None
+    target = re.sub(r"\s*\(no space\)\s*", " ", target).strip()
     for prefix in ("owasp ", "the ", "project "):
         if target.startswith(prefix):
             target = target[len(prefix) :].strip()

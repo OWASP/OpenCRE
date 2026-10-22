@@ -18,7 +18,10 @@ Env:
   OWASP_PROBE_COMPLETION_MODE   default mcp_ask
   OWASP_ADV_MAX_TURNS           default 2000
   OWASP_ADV_OUT                 default tmp/owasp_agent_adversarial_failures.jsonl
-  OWASP_ADV_SEED                optional int
+  OWASP_ADV_SEED                optional int (default 14)
+  OWASP_ADV_EXPORT_QUESTIONS    if 1, write frozen questions JSONL and exit (no MCP)
+  OWASP_ADV_QUESTIONS_OUT       export path (default tmp/owasp_mcp_ask_adv_5k_questions.jsonl)
+  OWASP_ADV_QUESTIONS_FILE      if set, replay frozen questions instead of bank+mutate
   OWASP_ADV_MCP_TRANSPORT       staging_ssh (default) | local
   OPENCRE_BASE_URL              for local MCP / mcp_inprocess
                                 (default http://127.0.0.1:15001)
@@ -43,6 +46,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 _REPO = Path(__file__).resolve().parents[1]
 _DEFAULT_OUT = _REPO / "tmp" / "owasp_agent_adversarial_failures.jsonl"
+_DEFAULT_QUESTIONS_OUT = _REPO / "tmp" / "owasp_mcp_ask_adv_5k_questions.jsonl"
 
 REFUSAL_MARKERS = (
     "which city are you in",
@@ -691,6 +695,33 @@ def _format_ask_result(result: Any) -> str:
 # --- MCP stdio (persistent) -----------------------------------------------
 
 
+def _staging_docker_exec_args() -> List[str]:
+    """Args after ``docker`` for mcp stdio on the staging compose stack."""
+    return [
+        "exec",
+        "-i",
+        "-e",
+        "OPENCRE_BASE_URL=http://web:5001",
+        "-e",
+        "PYTHONPATH=/code",
+        "-e",
+        "PYTHONUNBUFFERED=1",
+        "-e",
+        "OWASP_AGENT_ENABLED=1",
+        "-e",
+        f"OWASP_AGENT_LLM_PICK={os.environ.get('OWASP_AGENT_LLM_PICK') or '1'}",
+        "-e",
+        f"OWASP_AGENT_TOP_K={os.environ.get('OWASP_AGENT_TOP_K') or '8'}",
+        "-w",
+        "/code",
+        # mcp-1 has the MCP overlay (ask tool + openapi); web-1 image alone may not.
+        "opencre-staging-mcp-1",
+        "python",
+        "-m",
+        "application.mcp",
+    ]
+
+
 def _staging_ssh_params() -> Any:
     from mcp import StdioServerParameters
 
@@ -703,27 +734,18 @@ def _staging_ssh_params() -> Any:
             "ConnectTimeout=30",
             "sg@100.74.143.62",
             "docker",
-            "exec",
-            "-i",
-            "-e",
-            "OPENCRE_BASE_URL=http://127.0.0.1:5001",
-            "-e",
-            "PYTHONPATH=/code",
-            "-e",
-            "PYTHONUNBUFFERED=1",
-            "-e",
-            "OWASP_AGENT_ENABLED=1",
-            "-e",
-            f"OWASP_AGENT_LLM_PICK={os.environ.get('OWASP_AGENT_LLM_PICK') or '1'}",
-            "-e",
-            f"OWASP_AGENT_TOP_K={os.environ.get('OWASP_AGENT_TOP_K') or '8'}",
-            "-w",
-            "/code",
-            "opencre-staging-web-1",
-            "python",
-            "-m",
-            "application.mcp",
+            *_staging_docker_exec_args(),
         ],
+    )
+
+
+def _staging_docker_params() -> Any:
+    """Run on the staging host itself (no SSH hop)."""
+    from mcp import StdioServerParameters
+
+    return StdioServerParameters(
+        command="docker",
+        args=_staging_docker_exec_args(),
     )
 
 
@@ -772,7 +794,12 @@ class McpAskSession:
         from mcp.client.stdio import stdio_client
 
         transport = (os.environ.get("OWASP_ADV_MCP_TRANSPORT") or "staging_ssh").strip()
-        params = _local_mcp_params() if transport == "local" else _staging_ssh_params()
+        if transport == "local":
+            params = _local_mcp_params()
+        elif transport in ("staging_docker", "docker"):
+            params = _staging_docker_params()
+        else:
+            params = _staging_ssh_params()
         self._cm_stdio = stdio_client(params)
         read, write = await self._cm_stdio.__aenter__()
         self._cm_session = ClientSession(read, write)
@@ -932,6 +959,81 @@ def _load_prior_failures(out_path: Path) -> List[Dict[str, Any]]:
     return rows
 
 
+def _export_questions(
+    *,
+    seed: int,
+    max_turns: int,
+    start_turn: int,
+    out_path: Path,
+) -> int:
+    """Write frozen questions for turns [start_turn, max_turns]; no MCP calls."""
+    rng = random.Random(seed)
+    bank = _bank(rng)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    n = 0
+    with out_path.open("w", encoding="utf-8") as fh:
+        for turn in range(start_turn, max_turns + 1):
+            case = bank[(turn - 1) % len(bank)]
+            q = _mutate_question(case.q, turn, rng)
+            row = {
+                "turn": turn,
+                "seed": seed,
+                "cat": case.cat,
+                "q": q,
+                "expect": case.expect,
+                "needles": list(case.needles),
+                "note": case.note,
+            }
+            fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+            n += 1
+    print(
+        json.dumps(
+            {
+                "exported": True,
+                "path": str(out_path),
+                "turns": n,
+                "seed": seed,
+                "start_turn": start_turn,
+                "max_turns": max_turns,
+                "bank": len(bank),
+            }
+        ),
+        flush=True,
+    )
+    return 0
+
+
+def _load_frozen_questions(path: Path) -> List[Case]:
+    if not path.is_file():
+        raise FileNotFoundError(f"OWASP_ADV_QUESTIONS_FILE not found: {path}")
+    cases: List[Case] = []
+    for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"bad JSONL at {path}:{line_no}: {exc}") from exc
+        q = str(row.get("q") or "").strip()
+        if not q:
+            raise ValueError(f"missing q at {path}:{line_no}")
+        needles_raw = row.get("needles") or []
+        if not isinstance(needles_raw, list):
+            raise ValueError(f"needles must be a list at {path}:{line_no}")
+        cases.append(
+            Case(
+                q=q,
+                expect=str(row.get("expect") or "must_not_refuse"),
+                needles=tuple(str(x) for x in needles_raw),
+                note=str(row.get("note") or "frozen"),
+                cat=str(row.get("cat") or "frozen"),
+            )
+        )
+    if not cases:
+        raise ValueError(f"empty questions file: {path}")
+    return cases
+
+
 def main() -> int:
     seed = int(os.environ.get("OWASP_ADV_SEED") or "14")
     rng = random.Random(seed)
@@ -943,9 +1045,42 @@ def main() -> int:
     mode = (os.environ.get("OWASP_PROBE_COMPLETION_MODE") or "mcp_ask").strip().lower()
     os.environ.setdefault("OWASP_AGENT_ENABLED", "1")
 
-    bank = _bank(rng)
+    if (os.environ.get("OWASP_ADV_EXPORT_QUESTIONS") or "").strip() == "1":
+        export_path = Path(
+            os.environ.get("OWASP_ADV_QUESTIONS_OUT") or str(_DEFAULT_QUESTIONS_OUT)
+        )
+        return _export_questions(
+            seed=seed,
+            max_turns=max_turns,
+            start_turn=start_turn,
+            out_path=export_path,
+        )
+
+    questions_file = (os.environ.get("OWASP_ADV_QUESTIONS_FILE") or "").strip()
+    frozen: Optional[List[Case]] = None
+    if questions_file:
+        frozen_all = _load_frozen_questions(Path(questions_file))
+        # Allow batch windows over a frozen file (START_TURN / MAX_TURNS inclusive).
+        start_turn = max(1, start_turn)
+        max_turns = min(max_turns, len(frozen_all))
+        if start_turn > max_turns:
+            print(
+                json.dumps(
+                    {
+                        "error": "empty frozen window",
+                        "start_turn": start_turn,
+                        "max_turns": max_turns,
+                        "file_turns": len(frozen_all),
+                    }
+                ),
+                flush=True,
+            )
+            return 2
+        frozen = frozen_all[start_turn - 1 : max_turns]
+
+    bank = _bank(rng) if frozen is None else []
     cats_raw = (os.environ.get("OWASP_ADV_CATS") or "").strip()
-    if cats_raw:
+    if cats_raw and frozen is None:
         allow = {c.strip() for c in cats_raw.split(",") if c.strip()}
         bank = [c for c in bank if c.cat in allow]
         if not bank:
@@ -974,7 +1109,9 @@ def main() -> int:
                 "max_turns": max_turns,
                 "start_turn": start_turn,
                 "append": append,
-                "bank": len(bank),
+                "bank": len(bank) if frozen is None else None,
+                "questions_file": questions_file or None,
+                "frozen_turns": len(frozen) if frozen is not None else None,
                 "cats": cats_raw or None,
                 "mode": mode,
                 "mcp_transport": os.environ.get(
@@ -990,8 +1127,12 @@ def main() -> int:
     try:
         with out_path.open("a" if append else "w") as fh:
             for turn in range(start_turn, max_turns + 1):
-                case = bank[(turn - 1) % len(bank)]
-                q = _mutate_question(case.q, turn, rng)
+                if frozen is not None:
+                    case = frozen[turn - start_turn]
+                    q = case.q
+                else:
+                    case = bank[(turn - 1) % len(bank)]
+                    q = _mutate_question(case.q, turn, rng)
                 t0 = time.time()
                 answer = ask(q)
                 dt = round(time.time() - t0, 2)
@@ -1065,6 +1206,7 @@ def main() -> int:
         "unique_substantive": len(promote),
         "failures_path": str(out_path),
         "mode": mode,
+        "questions_file": questions_file or None,
         "failure_ids": [r["id"] for r in failures],
     }
     summary_path.write_text(json.dumps(summary, indent=2))

@@ -43,29 +43,50 @@ class TestNarrowCandidates(unittest.TestCase):
         self.assertEqual(len(narrowed), 1)
         self.assertIn("chapter", narrowed[0].url)
 
-    def test_evidence_prompt_does_not_keyword_narrow(self) -> None:
+    def test_structure_prompt_restricts_to_evidence(self) -> None:
         from application.utils.owasp_agent.candidate_picker import narrow_candidates
         from application.utils.owasp_agent.meta_embeddings import evidence_url
 
         pool = [
             LaneHit(
                 CHANNEL_AGENT,
-                0.7,
-                url=meta_entity_url("project", "ai-exchange", "site"),
-                content="AI Exchange",
+                0.9,
+                url=meta_entity_url("project", "asvs", "site"),
+                content="ASVS is an indexed OWASP project. Leaders: Alice.",
             ),
             LaneHit(
                 CHANNEL_AGENT,
-                0.66,
-                url=evidence_url("lethal-trifecta"),
-                content="trifecta",
+                0.7,
+                url=evidence_url("asvs-structure"),
+                content="OWASP ASVS defines three verification levels",
             ),
         ]
-        # Topic keywords must not dump-gate to evidence; sim/margin picks instead.
-        narrowed = narrow_candidates(
-            "lethal trifecta according to OWASP AI Exchange", pool
-        )
+        narrowed = narrow_candidates("How many levels does OWASP ASVS have?", pool)
+        self.assertEqual(len(narrowed), 1)
+        self.assertTrue(narrowed[0].url.startswith("owasp-agent://evidence/"))
+
+    def test_bare_brand_project_ask_keeps_nest(self) -> None:
+        """Who leads ASVS must not be forced onto structure evidence."""
+        from application.utils.owasp_agent.candidate_picker import narrow_candidates
+        from application.utils.owasp_agent.meta_embeddings import evidence_url
+
+        pool = [
+            LaneHit(
+                CHANNEL_AGENT,
+                0.9,
+                url=meta_entity_url("project", "asvs", "site"),
+                content="ASVS leaders",
+            ),
+            LaneHit(
+                CHANNEL_AGENT,
+                0.7,
+                url=evidence_url("asvs-structure"),
+                content="three verification levels",
+            ),
+        ]
+        narrowed = narrow_candidates("Who leads the OWASP ASVS project?", pool)
         self.assertEqual(len(narrowed), 2)
+        self.assertTrue(any("meta/project" in (h.url or "") for h in narrowed))
 
 
 class TestSelectAgentHit(unittest.TestCase):
