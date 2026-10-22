@@ -24,6 +24,7 @@ NAMES = (
     "PROJROUTE",  # no project named: pick one by similarity to project overviews
     "COMPLETE",  # answer every part and every named standard; include all stated items
     "EDITION",  # answer for the edition/year/version the question names; never mix editions
+    "ROUTE",  # people/count questions: whole-project read with a stronger reader model
     "DECOMPOSE",  # multi-part questions: answer each part separately, then combine
 )
 

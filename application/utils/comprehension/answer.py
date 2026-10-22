@@ -269,6 +269,26 @@ def synthesis_model() -> str:
     return (os.environ.get("OWASP_COMPREHENSION_MODEL") or "").strip()
 
 
+_ROUTE_PEOPLE_RE = re.compile(
+    r"\b(who|leaders?|lead|authors?|contributors?|reviewers?|maintainers?|chair|directors?|translators?)\b",
+    re.I,
+)
+_ROUTE_COUNT_RE = re.compile(r"\bhow many\b|\bnumber of\b|\btotal\b", re.I)
+
+
+def route_model(question: str) -> str:
+    """ROUTE flag: stronger reader model for people/count questions ('' = no routing)."""
+    from application.utils.comprehension import flags
+
+    if not flags.on("ROUTE"):
+        return ""
+    if _ROUTE_PEOPLE_RE.search(question or "") or _ROUTE_COUNT_RE.search(
+        question or ""
+    ):
+        return os.environ.get("OWASP_CX_ROUTE_MODEL", "gemini/gemini-2.5-pro")
+    return ""
+
+
 def _answer(
     question: str, cands: Sequence[Any], complete: CompletionFn
 ) -> Optional[Tuple[str, List[str]]]:
@@ -276,6 +296,9 @@ def _answer(
 
     model = synthesis_model()
     effort = "disable" if flags.on("FAST") else think_effort()
+    routed = route_model(question)
+    if routed:
+        model, effort = routed, "high"
     if model or effort:
         from application.prompt_client import litellm_router
 
