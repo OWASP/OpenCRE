@@ -158,7 +158,6 @@ def _refuse_c1_for_safety_gap(c_stage: "StageResult") -> Optional[str]:
     return None
 
 
-
 def _connect(cache_file: str) -> Any:
     from application import sqla
     from application.cmd.cre_main import db_connect

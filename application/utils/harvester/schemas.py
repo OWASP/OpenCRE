@@ -23,6 +23,7 @@ def validate_cron_line(value: Optional[str]) -> Optional[str]:
         )
     return text
 
+
 # What an OWASP org repo is for. ``standard``/``project``/``other`` feed the
 # knowledge-graph expansion path (harvest -> filter -> Librarian); ``chapter``
 # and ``event`` repos only feed the OWASP agent's metadata index.
