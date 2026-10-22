@@ -948,3 +948,59 @@ class PerStandardTest(unittest.TestCase):
 
         self.assertIn("PERSTD", flags.NAMES)
         self.assertIn("separately", PERSTD_RULE)
+
+
+class NestSourceTest(unittest.TestCase):
+    def test_project_keys_map_to_repos(self):
+        from application.utils.comprehension import nest_source as ns
+
+        repos = ["OWASP/CheatSheetSeries", "OWASP/www-project-top-ten", "OWASP/wstg"]
+        got = ns.map_projects_to_repos(
+            ["cheat-sheet-series", "top-ten", "nothing"], repos
+        )
+        self.assertEqual(
+            got,
+            {
+                "cheat-sheet-series": "OWASP/CheatSheetSeries",
+                "top-ten": "OWASP/www-project-top-ten",
+            },
+        )
+
+    def test_profile_and_issue_text(self):
+        from application.utils.comprehension import nest_source as ns
+
+        text = ns.profile_text(
+            {
+                "key": "k",
+                "name": "OWASP K",
+                "level": "flagship",
+                "leaders": [{"name": "A B"}, {"name": ""}],
+            },
+            "2026-10-22",
+        )
+        self.assertIn("Current project leaders: A B.", text)
+        grouped = ns.issues_by_repo(
+            iter(
+                [
+                    {
+                        "url": "https://github.com/OWASP/x/issues/7",
+                        "title": "t",
+                        "state": "open",
+                    }
+                ]
+            )
+        )
+        self.assertEqual(list(grouped), ["OWASP/x"])
+        self.assertIn("#7 [open] t", ns.issue_chunks(grouped["OWASP/x"])[0])
+
+    def test_pagination_uses_small_pages(self):
+        from application.utils.comprehension import nest_source as ns
+
+        calls = []
+
+        def get(path):
+            calls.append(path)
+            return {"items": [{"k": 1}], "has_next": len(calls) < 2}
+
+        self.assertEqual(len(list(ns.iter_items(get, "projects/"))), 2)
+        self.assertTrue(all("page_size=10" in c for c in calls))
