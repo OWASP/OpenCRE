@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import re
+from contextvars import ContextVar
 import time
 from typing import Any, List
 
@@ -364,6 +365,75 @@ def route_project(conn: Any, question: str) -> List[str]:
     return [m.group(1)] if m else []
 
 
+PICK_SYSTEM = (
+    "You decide which single OWASP project a question is about. Candidates are numbered with a "
+    'snippet of their text. Answer with JSON only: {"project": <candidate number or null>, '
+    '"confidence": <0 to 1>}. Use null when the question could be about several candidates, '
+    "about none of them, or does not make clear which project it means."
+)
+_PICK_STATE: "ContextVar[str]" = ContextVar("comprehension_pick", default="")
+
+
+def last_pick() -> str:
+    """Readable name of the project chosen by PICK for the current question ('' if none)."""
+    return _PICK_STATE.get()
+
+
+def pick_candidates(conn: Any, question: str, limit: int = 8) -> List[tuple]:
+    """(slug, snippet) of the best-matching distinct projects, best first."""
+    from application.database import db as db_mod
+    from application.database.pgvector_utils import to_pgvector_literal
+    from application.utils.comprehension.embedcache import embed_many
+    from application.utils.comprehension.shared import shared_handler
+
+    handler = shared_handler(db_mod.Node_collection())
+    vec = embed_many([question], handler.get_text_embeddings)[0]
+    hits = _dense(conn, to_pgvector_literal(list(vec)), docs_where(), 60)
+    seen: dict = {}
+    for h in hits:
+        m = _SLUG_RE.match(h.url or "")
+        if not m or m.group(1) in seen:
+            continue
+        body = (
+            (h.content or "")
+            .split("\n\nCitations:")[0]
+            .split("\n\nRelated questions:")[0]
+        )
+        seen[m.group(1)] = " ".join(body.split())[:220]
+        if len(seen) >= limit:
+            break
+    return list(seen.items())
+
+
+def pick_project(conn: Any, question: str, llm: Any = None) -> str:
+    """Slug of the project the question is about, chosen by a cheap model; '' when unsure."""
+    from application.utils.comprehension import extras, flags
+
+    llm = llm or flags.helper_llm()
+    if llm is None:
+        return ""
+    cands = pick_candidates(conn, question)
+    if len(cands) < 2:
+        return ""
+    menu = "\n".join(
+        f"{i}. {alias_phrase(slug)}: {snippet}"
+        for i, (slug, snippet) in enumerate(cands, 1)
+    )
+    try:
+        data = extras.parse_json(
+            llm(PICK_SYSTEM, f"Question: {question}\n\nCandidates:\n{menu}")
+        )
+        n = int(data.get("project"))
+        conf = float(data.get("confidence") or 0)
+    except Exception:  # noqa: BLE001 - null / malformed means "unsure"
+        return ""
+    if conf < float(os.environ.get("OWASP_CX_PICK_MIN", "0.7")) or not 1 <= n <= len(
+        cands
+    ):
+        return ""
+    return cands[n - 1][0]
+
+
 def named_slugs(question: str, limit: int = 4) -> List[str]:
     """Repo slugs of the projects the question names (up to ``limit``); [] on any failure."""
     try:
@@ -385,11 +455,17 @@ def project_sources(question: str, max_projects: int | None = None) -> List[tupl
         limit = max_projects or longctx_max_projects()
         with sqla.session.get_bind().connect() as conn:
             slugs = matched_slugs(question, _known_slugs(conn), limit=limit + 1)
+            _PICK_STATE.set("")
             if not slugs:
                 from application.utils.comprehension import flags
 
                 if flags.on("PROJROUTE"):
                     slugs = route_project(conn, question)
+                elif flags.on("PICK"):
+                    chosen = pick_project(conn, question)
+                    if chosen:
+                        slugs = [chosen]
+                        _PICK_STATE.set(alias_phrase(chosen).title())
             if not slugs or len(slugs) > limit:
                 return []
             rows: List[tuple] = []
