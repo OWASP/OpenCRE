@@ -16,6 +16,15 @@ ALIASES = {
     "OWASP/www-board": ["board", "owasp foundation", "board of directors", "owasp members", "members did owasp", "owasp have", "election", "seats"],
     "OWASP/owasp-scs": ["smart contract security", "scs ", "owasp scs"],
     "OWASP/www-project-threat-dragon": ["threat dragon"],
+    "OWASP/ASVS": ["asvs", "application security verification"],
+    "OWASP/masvs": ["masvs", "mobile application security verification"],
+    "OWASP/SAMM": ["samm", "software assurance maturity"],
+    "OWASP/API-Security": ["api security", "api top 10", "api1:", "api-security"],
+    "OWASP/wstg": ["wstg", "web security testing guide"],
+    "OWASP/www-project-developer-guide": ["developer guide"],
+    "OWASP/www-project-machine-learning-security-top-10": ["machine learning security", "ml security", "ml top 10", "ml01", "ml02"],
+    "OWASP/www-project-kubernetes-top-ten": ["kubernetes"],
+    "OWASP/www-project-smart-contract-top-10": ["smart contract top", "sc01", "sc02"],
 }
 GRAPH_Q = re.compile(r"\b(who|leader|leaders|led|lead|author|authors|contributor|contributors|reviewer|reviewers|how many|number of|count|total|when|what year|which year|date|released|release|edition|version|since|until|chair|member|members|title|role|recent|previous|change|differ|current|survey|individuals|resources)\b", re.I)
 STOP = set("the a an of in is are was were what who how many which for to and or on by with as at from this that does did do project owasp".split())
@@ -26,10 +35,30 @@ def detect_repo(q: str) -> str | None:
     hits = [r for r, al in ALIASES.items() if any(a in ql for a in al)]
     if "top 10" in ql and "mobile" in ql:
         hits = ["OWASP/www-project-mobile-top-10"]
+    if len(hits) > 1:
+        hits = [h for h in hits if h not in ("OWASP/www-project-top-ten", "OWASP/owasp-scs", "OWASP/www-board")] or hits
+    if "OWASP/www-project-smart-contract-top-10" in hits and "OWASP/owasp-scs" in hits:
+        hits = ["OWASP/www-project-smart-contract-top-10"]
     return hits[0] if len(hits) == 1 else None
 
 
-def facts_for(repo: str, q: str, k: int = 45) -> list[dict]:
+def infer_repo(q: str) -> str | None:
+    """No project named: pick the repo whose facts overlap the question most (clear winner only)."""
+    if not DB.exists():
+        return None
+    db = sqlite3.connect(DB)
+    repos = [r[0] for r in db.execute("select distinct repo from fact")]
+    tot = {}
+    for r in repos:
+        fs = _scored(r, q)
+        tot[r] = sum(sc for sc, _ in fs[:5])
+    best = sorted(tot.items(), key=lambda kv: kv[1], reverse=True)
+    if len(best) >= 2 and best[0][1] >= 10 and best[0][1] >= 1.6 * best[1][1]:
+        return best[0][0]
+    return None
+
+
+def _scored(repo: str, q: str):
     db = sqlite3.connect(DB)
     db.row_factory = sqlite3.Row
     rows = [dict(r) for r in db.execute("select * from fact where repo=?", (repo,))]
@@ -46,8 +75,13 @@ def facts_for(repo: str, q: str, k: int = 45) -> list[dict]:
             s += 2
         return s
 
-    rows.sort(key=score, reverse=True)
-    return [r for r in rows[:k] if score(r) > 0]
+    out = [(score(r), r) for r in rows]
+    out.sort(key=lambda t: t[0], reverse=True)
+    return out
+
+
+def facts_for(repo: str, q: str, k: int = 45) -> list[dict]:
+    return [r for sc, r in _scored(repo, q)[:k] if sc > 0]
 
 
 PROMPT = """Answer the question using ONLY the dated facts below (each has a verbatim source quote). Be precise: respect editions/years named in the question,
@@ -61,7 +95,7 @@ Facts:
 def graph_answer(q: str) -> tuple[str, list[str]] | None:
     if not GRAPH_Q.search(q):
         return None
-    repo = detect_repo(q)
+    repo = detect_repo(q) or infer_repo(q)
     if not repo or not DB.exists():
         return None
     fs = facts_for(repo, q)
