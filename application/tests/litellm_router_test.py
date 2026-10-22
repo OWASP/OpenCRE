@@ -83,6 +83,45 @@ class TestLiteLLMRouter(unittest.TestCase):
             "",
         )
 
+    def test_retry_policy_defaults(self) -> None:
+        with patch.dict(os.environ, {}, clear=True):
+            retries, sleep = litellm_router.retry_policy()
+            self.assertEqual(retries, 2)
+            self.assertEqual(sleep, 15)
+
+    def test_retry_policy_valid_env(self) -> None:
+        with patch.dict(
+            os.environ,
+            {"CRE_LLM_MAX_RETRIES": "5", "CRE_LLM_RETRY_SLEEP_SECONDS": "20"},
+            clear=True,
+        ):
+            retries, sleep = litellm_router.retry_policy()
+            self.assertEqual(retries, 5)
+            self.assertEqual(sleep, 20)
+
+    def test_retry_policy_invalid_strings_fallback(self) -> None:
+        with patch.dict(
+            os.environ,
+            {"CRE_LLM_MAX_RETRIES": "invalid", "CRE_LLM_RETRY_SLEEP_SECONDS": "not-a-number"},
+            clear=True,
+        ):
+            with self.assertLogs("application.prompt_client.litellm_router", level="WARNING") as cm:
+                retries, sleep = litellm_router.retry_policy()
+            self.assertEqual(retries, 2)
+            self.assertEqual(sleep, 15)
+            self.assertTrue(any("Invalid CRE_LLM_MAX_RETRIES" in log for log in cm.output))
+            self.assertTrue(any("Invalid CRE_LLM_RETRY_SLEEP_SECONDS" in log for log in cm.output))
+
+    def test_retry_policy_negative_values_clamped(self) -> None:
+        with patch.dict(
+            os.environ,
+            {"CRE_LLM_MAX_RETRIES": "-2", "CRE_LLM_RETRY_SLEEP_SECONDS": "-10"},
+            clear=True,
+        ):
+            retries, sleep = litellm_router.retry_policy()
+            self.assertEqual(retries, 0)
+            self.assertEqual(sleep, 0)
+
 
 if __name__ == "__main__":
     unittest.main()
