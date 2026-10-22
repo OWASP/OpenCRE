@@ -1019,3 +1019,19 @@ class TalksCatalogueTest(unittest.TestCase):
         self.assertIn("Newer talk - John Roe", chunks[0][2])  # newest first
         self.assertIn("2024-10-22 (approximate)", chunks[1][2])
         self.assertIn("https://youtu.be/abc", chunks[1][2])
+
+
+class NestBrokenPageTest(unittest.TestCase):
+    def test_a_failing_page_is_read_item_by_item(self):
+        from application.utils.comprehension import nest_source as ns
+
+        def get(path):
+            if "page_size=10" in path:
+                raise RuntimeError("500")
+            n = int(path.split("page=")[1].split("&")[0])
+            if n == 2:
+                raise RuntimeError("500 on the broken record")
+            return {"items": [{"k": n}], "has_next": n < 3}
+
+        got = [i["k"] for i in ns.iter_items(get, "projects/")]
+        self.assertEqual(got, [1, 3])

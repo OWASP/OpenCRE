@@ -40,16 +40,41 @@ def map_projects_to_repos(project_keys: List[str], repos: List[str]) -> Dict[str
 
 
 def iter_items(get: Callable[[str], Any], path: str) -> Iterator[Dict[str, Any]]:
-    """Pages through a Nest list endpoint with a safe page size; ``get(path_and_query)`` -> JSON."""
+    """Pages through a Nest list endpoint with a safe page size; ``get(path_and_query)`` -> JSON.
+
+    Nest answers HTTP 500 for a page that contains a record it cannot serialise; that page is
+    re-read one item at a time and the broken records are skipped.
+    """
     page = 1
     while True:
-        payload = get(f"{path}?page={page}&page_size={PAGE_SIZE}")
+        try:
+            payload = get(f"{path}?page={page}&page_size={PAGE_SIZE}")
+        except Exception:  # noqa: BLE001
+            payload = _page_item_by_item(get, path, page)
         for item in payload.get("items") or []:
             if isinstance(item, dict):
                 yield item
         if not payload.get("has_next") or page > 5000:
             return
         page += 1
+
+
+def _page_item_by_item(
+    get: Callable[[str], Any], path: str, page: int
+) -> Dict[str, Any]:
+    items: List[Dict[str, Any]] = []
+    has_next = True
+    first = (page - 1) * PAGE_SIZE + 1
+    for n in range(first, first + PAGE_SIZE):
+        try:
+            one = get(f"{path}?page={n}&page_size=1")
+        except Exception:  # noqa: BLE001 - skip the record Nest cannot serialise
+            continue
+        items.extend(one.get("items") or [])
+        has_next = bool(one.get("has_next"))
+        if not has_next:
+            break
+    return {"items": items, "has_next": has_next}
 
 
 def profile_text(detail: Dict[str, Any], fetched: str) -> str:
