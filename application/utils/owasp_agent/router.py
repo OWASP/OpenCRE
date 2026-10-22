@@ -372,7 +372,25 @@ class OwaspAgentRouter:
             from application.utils.comprehension.synthesize import take_evidence
 
             comp_hits = [c for c in cands if is_comprehension_hit(c)]
-            comp = answer_from_candidates(normalized, cands, default_completion_fn())
+            from application.utils.comprehension.answer import (
+                TEMPORARY_PROBLEM_MESSAGE,
+                AnswerUnavailable,
+            )
+
+            try:
+                comp = answer_from_candidates(
+                    normalized, cands, default_completion_fn()
+                )
+            except AnswerUnavailable:
+                return format_chat_response(
+                    QueryResult(
+                        ok=False,
+                        kind="error",
+                        message=TEMPORARY_PROBLEM_MESSAGE,
+                        citations=[],
+                        data={"pick_reason": "comprehension_unavailable"},
+                    )
+                )
             if comp is not None:
                 return format_chat_response(
                     QueryResult(

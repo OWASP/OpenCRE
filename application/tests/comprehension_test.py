@@ -1111,3 +1111,18 @@ class NegCountRulesTest(unittest.TestCase):
             )
         self.assertTrue(seen[0].startswith(COUNT_SYSTEM))
         self.assertTrue(seen[0].endswith(NEG_RULE))
+
+
+class AnswerUnavailableTest(unittest.TestCase):
+    def test_model_failure_is_not_reported_as_not_found(self):
+        from application.utils.comprehension import answer as ans
+
+        with mock.patch.dict(
+            os.environ, {"OWASP_COMPREHENSION_ANSWER": "1"}
+        ), mock.patch.object(
+            ans, "_answer", side_effect=RuntimeError("503 service unavailable")
+        ), mock.patch.object(
+            ans, "enabled", return_value=True
+        ):
+            with self.assertRaises(ans.AnswerUnavailable):
+                ans.answer_from_candidates("q?", [], lambda m: "")
