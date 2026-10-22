@@ -82,9 +82,7 @@ def main() -> int:
             log.flush()
             print(done, end="", flush=True)
             t = batch_end + 1
-        log.write(
-            f"ALL_BATCHES_DONE {time.strftime('%H:%M:%S', time.gmtime())}\n"
-        )
+        log.write(f"ALL_BATCHES_DONE {time.strftime('%H:%M:%S', time.gmtime())}\n")
         log.flush()
     print("ALL_BATCHES_DONE", flush=True)
     return 0

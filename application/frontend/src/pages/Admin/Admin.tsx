@@ -714,8 +714,8 @@ function PipelineTab({ origin }: { origin: string }) {
       <p className="admin-help">
         Look for <code>oie</code>/<code>started</code> (flags + skip_reason) and <code>oie_trace</code>{' '}
         (engine, graph_path, visited). The admin default runs Module B, C, and C.1 (graph filer). Skipped
-        stages mean the run passed the matching <code>skip_*</code> flag true. Module A with chunks=0
-        usually means harvester checkpoints were already at HEAD (no file diffs).
+        stages mean the run passed the matching <code>skip_*</code> flag true. Module A with chunks=0 usually
+        means harvester checkpoints were already at HEAD (no file diffs).
       </p>
       <table className="admin-table">
         <thead>
@@ -1058,8 +1058,8 @@ function ConfigTab({ origin }: { origin: string }) {
       <p className="admin-help">
         CRE explorer graph comes from upstream at <code>make install</code> / <code>make dev</code> (skip with{' '}
         <code>SKIP_UPSTREAM_SYNC=1</code>). Golden-set harvest runs A → B → C → C.1. C.1 only auto-files
-        high-confidence links when the toggle below is on (default off — review{' '}
-        <code>decision_queue</code> first). OWASP agent sync is separate — progress shows under Pipeline.
+        high-confidence links when the toggle below is on (default off — review <code>decision_queue</code>{' '}
+        first). OWASP agent sync is separate — progress shows under Pipeline.
       </p>
       <p>
         <Checkbox
