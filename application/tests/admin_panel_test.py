@@ -707,7 +707,8 @@ class TestAdminPanel(unittest.TestCase):
             r = c.get("/admin/config")
             self.assertEqual(r.status_code, 200)
             body = r.get_json()
-            self.assertFalse(body["writable"])
+            # At least OIE_GRAPH_FILING_ENABLED is process-writable.
+            self.assertTrue(body["writable"])
             self.assertIn("restart", body["restart_instructions"].lower())
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
