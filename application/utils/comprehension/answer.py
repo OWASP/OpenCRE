@@ -299,12 +299,25 @@ def _answer_from_whole_project(
     from application.utils.comprehension.retrieve import named_slugs
     from application.utils.comprehension.synthesize import PERSTD_RULE, SYSTEM
 
-    system = SYSTEM
+    from application.utils.comprehension import extras
+    from application.utils.comprehension.synthesize import (
+        COUNT_SYSTEM,
+        NEG_RE,
+        NEG_RULE,
+    )
+
+    system = (
+        COUNT_SYSTEM
+        if flags.on("COUNT") and extras.COUNT_RE.search(question)
+        else SYSTEM
+    )
+    if flags.on("NEG") and NEG_RE.search(question):
+        system = system + NEG_RULE
     sources: List[tuple] = []
     if flags.on("PERSTD") and len(named_slugs(question)) >= 2:
         sources = project_sources(question, max_projects=3)
         if sources:
-            system = SYSTEM + PERSTD_RULE
+            system = system + PERSTD_RULE
     if not sources:
         sources = project_sources(question)
     if not sources:
@@ -440,6 +453,11 @@ def _answer(
         ask = f"{ask}\n(Answer each part: " + " | ".join(plan["parts"]) + ")"
     count_mode = flags.on("COUNT") and bool(extras.COUNT_RE.search(ask))
     system = COUNT_SYSTEM if count_mode else SYSTEM
+    if flags.on("NEG"):
+        from application.utils.comprehension.synthesize import NEG_RE, NEG_RULE
+
+        if NEG_RE.search(question):
+            system = system + NEG_RULE
     if flags.on("PERSTD"):
         from application.utils.comprehension.retrieve import named_slugs
         from application.utils.comprehension.synthesize import PERSTD_RULE

@@ -1089,3 +1089,40 @@ class CompletePassTest(unittest.TestCase):
             out = ans._complete_pass("q?", ("short", []), [], lambda m: "")
         self.assertEqual(out[0], "short")
         self.assertEqual(calls, [])
+
+
+class NegCountRulesTest(unittest.TestCase):
+    def test_negation_detector(self):
+        from application.utils.comprehension.synthesize import NEG_RE
+
+        for q in (
+            "Which of these is NOT listed?",
+            "Everything except level 1",
+            "What isn't covered?",
+        ):
+            self.assertTrue(NEG_RE.search(q), q)
+        self.assertFalse(NEG_RE.search("How many levels does SAMM define?"))
+
+    def test_whole_project_uses_count_and_neg_systems(self):
+        from application.utils.comprehension import answer as ans
+        from application.utils.comprehension.synthesize import COUNT_SYSTEM, NEG_RULE
+
+        seen = []
+        with mock.patch.dict(
+            os.environ, {"OWASP_CX_COUNT": "1", "OWASP_CX_NEG": "1"}
+        ), mock.patch(
+            "application.utils.comprehension.retrieve.project_sources",
+            return_value=[("X / a.md: text", ["u"])],
+        ), mock.patch(
+            "application.utils.comprehension.retrieve.named_slugs",
+            return_value=["owasp-x"],
+        ), mock.patch(
+            "application.utils.comprehension.answer.synthesize",
+            side_effect=lambda q, s, llm, system="": seen.append(system)
+            or ("a", ["u"]),
+        ):
+            ans._answer_from_whole_project(
+                "How many items are NOT listed?", lambda m: ""
+            )
+        self.assertTrue(seen[0].startswith(COUNT_SYSTEM))
+        self.assertTrue(seen[0].endswith(NEG_RULE))
