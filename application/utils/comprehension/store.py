@@ -143,8 +143,12 @@ def raw_documents(
     chunks: List[Tuple[str, int, str]],
     github_base: str = "https://github.com",
     enriched: Optional[Dict[Tuple[str, int], Tuple[str, List[str]]]] = None,
+    url_for: Optional[Callable[[str], str]] = None,
 ) -> List[Tuple[str, str, List[str]]]:
-    """Source chunks as retrievable documents (detail recall that summaries lose)."""
+    """Source chunks as retrievable documents (detail recall that summaries lose).
+
+    ``url_for(path)`` overrides the citation URL for sources that are not repo files (e.g. Nest).
+    """
     base = repo_slug(repo)
     family = repo.split("/")[-1]
     out: List[Tuple[str, str, List[str]]] = []
@@ -157,7 +161,13 @@ def raw_documents(
             (
                 f"{SLUG_PREFIX}{base}-raw-{pslug}-{phash}-{idx:03d}",
                 _raw_text(family, path, text, (enriched or {}).get((path, idx))),
-                [f"{github_base}/{repo}/blob/HEAD/{path}"],
+                [
+                    (
+                        url_for(path)
+                        if url_for
+                        else f"{github_base}/{repo}/blob/HEAD/{path}"
+                    )
+                ],
             )
         )
     return out
@@ -182,6 +192,7 @@ def write_raw(
     workers: int = 8,
     dry_run: bool = False,
     enriched: Optional[Dict[Tuple[str, int], Tuple[str, List[str]]]] = None,
+    url_for: Optional[Callable[[str], str]] = None,
 ) -> int:
     from concurrent.futures import ThreadPoolExecutor
 
@@ -192,7 +203,7 @@ def write_raw(
         upsert_channel_embedding,
     )
 
-    docs = raw_documents(repo, chunks, enriched=enriched)
+    docs = raw_documents(repo, chunks, enriched=enriched, url_for=url_for)
     bodies = [
         text + ("\n\nCitations: " + ", ".join(c) if c else "") for _, text, c in docs
     ]
