@@ -76,6 +76,8 @@ class BuildComponentsTest(unittest.TestCase):
         "CRE_LIBRARIAN_TEMPERATURE": "1.2",
         "CRE_LIBRARIAN_CRE_SUMMARY": "0",
         "CRE_LIBRARIAN_DUAL_INDEX": "0",
+        # CI and SQLite have no pgvector; the shipped default needs it.
+        "CRE_LIBRARIAN_RETRIEVER_BACKEND": "in_memory",
     }
 
     def _build(self):
@@ -140,6 +142,7 @@ class BuildComponentsTest(unittest.TestCase):
                 os.environ,
                 {
                     "CRE_LIBRARIAN_TEMPERATURE": "1.2",
+                    "CRE_LIBRARIAN_RETRIEVER_BACKEND": "in_memory",
                     "CRE_LIBRARIAN_CRE_SUMMARY": "1",
                     "CRE_LIBRARIAN_DUAL_INDEX": "0",
                 },
@@ -172,6 +175,7 @@ class BuildComponentsTest(unittest.TestCase):
                 os.environ,
                 {
                     "CRE_LIBRARIAN_TEMPERATURE": "1.2",
+                    "CRE_LIBRARIAN_RETRIEVER_BACKEND": "in_memory",
                     "CRE_LIBRARIAN_CRE_SUMMARY": "1",
                     "CRE_LIBRARIAN_DUAL_INDEX": "1",
                     "CRE_LIBRARIAN_PRIOR_CAGE": "0",
@@ -204,6 +208,7 @@ class BuildComponentsTest(unittest.TestCase):
                 os.environ,
                 {
                     "CRE_LIBRARIAN_TEMPERATURE": "1.2",
+                    "CRE_LIBRARIAN_RETRIEVER_BACKEND": "in_memory",
                     "CRE_LIBRARIAN_CRE_SUMMARY": "0",
                     "CRE_LIBRARIAN_DUAL_INDEX": "0",
                     "CRE_LIBRARIAN_STANDARD_RETRIEVAL": "1",

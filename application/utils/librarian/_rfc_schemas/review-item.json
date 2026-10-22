@@ -32,6 +32,10 @@
         "NO_CANDIDATES",
         "ADVERSARIAL_FLAG",
         "UPDATE_AMBIGUOUS",
+        "CRE_GAP",
+        "PAIRWISE_DISAGREE",
+        "SOURCE_UNSUPPORTED",
+        "COVERAGE_THIN",
         "SAFETY_UNEVALUATED"
       ]
     },

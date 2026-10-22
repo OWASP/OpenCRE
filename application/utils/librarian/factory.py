@@ -52,9 +52,11 @@ class LibrarianComponents:
     cre_prior: Optional[Any] = None
     #: Grounded shortlist judge LLM (system, user) -> text. None disables lever C.
     shortlist_llm_fn: Optional[Callable[[str, str], str]] = None
+    #: Shortlist judge cache (Postgres-backed when built from a live DB).
+    shortlist_cache: Optional[Any] = None
     #: C.4 safety guard (None → pipeline keeps NullSafetyGuard).
     safety_guard: Optional[Any] = None
-#: Contains parent→children index for leaf drill-down (None = skip).
+    #: Contains parent→children index for leaf drill-down (None = skip).
     parent_index: Optional[Any] = None
     #: When True, promote better Contains children over hub umbrellas after C.2.
     leaf_drilldown: bool = True
@@ -71,6 +73,11 @@ class LibrarianComponents:
     umbrella_promote_cap: int = 8
     shortlist_judge_max_picks: int = 3
     margin_gamma: Optional[float] = None
+    #: Hub→leaf C.1 cage (default off; see CRE_LIBRARIAN_HUB_LEAF_CAGE).
+    hub_leaf_cage: bool = False
+    #: CRE id → name for experimental grounding / pairwise prompts.
+    cre_names: Mapping[str, str] = field(default_factory=dict)
+
 
 def build_scaler(config: Optional[LibrarianConfig] = None) -> Scaler:
     """The C.3 calibrator at the configured temperature.
@@ -122,14 +129,16 @@ def build_components(
         build_retriever,
     )
     from application.utils.librarian.cross_encoder import (
+        CosineOrderReranker,
         CrossEncoderReranker,
         build_cross_encoder_score_fn,
     )
+    from application.utils.librarian.schemas import RetrievalAudit
 
     config = config or load_config()
     backend = RetrieverBackend(config.retriever_backend)
 
-    if backend is RetrieverBackend.pgvector:
+    if backend is RetrieverBackend.pgvector and config.cosine_retrieval:
         from application.database.pgvector_utils import fail_pgvector_unavailable
 
         if not database.can_use_pgvector_similarity():
@@ -175,6 +184,7 @@ def build_components(
                 llm_fn=default_llm_fn(),
                 cache_dir=default_cache_dir(),
                 embed_fn=embed_fn,
+                database=database,
             )
         except Exception:  # noqa: BLE001
             logger.warning(
@@ -195,11 +205,26 @@ def build_components(
 
     # in_memory holds the hub matrix in RAM; pgvector ranks in the DB over the
     # embedding_vec column and needs no pool. Both satisfy the same retrieve().
-    # Hidden CRE summaries may replace the C.1 pool for this process only —
-    # never persisted to Postgres embeddings. Dual index keeps the name-stub
-    # hub *and* the summary hub: header titles search names, body searches
-    # summaries.
-    if summary_vectors:
+    # Hidden CRE summaries may replace the C.1 pool; summary text lives in
+    # ``oie.summary`` and vectors in ``embeddings(doc_type=CRE_SUMMARY)`` via
+    # ``oie.embedding_id`` — never overwriting hub ``doc_type=CRE`` rows.
+    # Dual index keeps the name-stub hub *and* the summary hub: header titles
+    # search names, body searches summaries.
+    if not config.cosine_retrieval:
+
+        class _CosineOffRetriever:
+            def retrieve(self, text: str) -> RetrievalAudit:
+                del text
+                return RetrievalAudit(
+                    retriever="cosine-off/0.1.0",
+                    candidates=[],
+                    reranked=[],
+                    threshold=config.link_threshold,
+                )
+
+        retriever = _CosineOffRetriever()
+        logger.info("CRE_LIBRARIAN_COSINE=0: C.1 cosine retrieval disabled")
+    elif summary_vectors:
         summary_pool = CandidatePool.from_mapping(summary_vectors)
         summary_retriever = build_retriever(
             RetrieverBackend.in_memory,
@@ -255,14 +280,18 @@ def build_components(
             ),
         )
 
-    reranker = CrossEncoderReranker(
-        score_fn=build_cross_encoder_score_fn(config.crossencoder_model),
-        top_n=config.top_k_rerank,
-        cre_texts=cre_texts,
-        cre_names=cre_names,
-        hybrid_beta=config.hybrid_beta,
-        hybrid_gamma=config.hybrid_gamma,
-    )
+    if config.cross_encoder:
+        reranker = CrossEncoderReranker(
+            score_fn=build_cross_encoder_score_fn(config.crossencoder_model),
+            top_n=config.top_k_rerank,
+            cre_texts=cre_texts,
+            cre_names=cre_names,
+            hybrid_beta=config.hybrid_beta,
+            hybrid_gamma=config.hybrid_gamma,
+        )
+    else:
+        reranker = CosineOrderReranker(top_n=config.top_k_rerank)
+        logger.info("CRE_LIBRARIAN_CROSS_ENCODER=0: C.2 uses cosine-order passthrough")
 
     known_external, cre_id_map = _hub_external_registry(database, cre_embeddings)
     cre_membership, membership_map = _cre_table_membership(database, cre_embeddings)
@@ -291,6 +320,24 @@ def build_components(
             parent_index=parent_index,
             standard_links=standard_links,
             neighbor_transfer=neighbor_transfer,
+        )
+
+    if config.hub_leaf_cage and parent_index is not None:
+        from application.utils.librarian.hub_leaf_cage import HubLeafCageRetriever
+
+        retriever = HubLeafCageRetriever(
+            retriever,
+            parent_index,
+            top_hubs=config.hub_leaf_cage_top_hubs,
+            enabled=True,
+        )
+        logger.info(
+            "hub-leaf cage enabled (top_hubs=%s)",
+            config.hub_leaf_cage_top_hubs,
+        )
+    elif config.hub_leaf_cage and parent_index is None:
+        logger.warning(
+            "CRE_LIBRARIAN_HUB_LEAF_CAGE=1 but parent_index unavailable; skipping"
         )
 
     if config.standard_retrieval:
@@ -326,12 +373,29 @@ def build_components(
         )
 
         if safety_guard_enabled():
-            safety_guard = LlmSafetyGuard(llm_fn=default_safety_litellm_fn())
+            safety_guard = LlmSafetyGuard(
+                llm_fn=default_safety_litellm_fn(), database=database
+            )
     except Exception:  # noqa: BLE001
         logger.warning(
             "LLM safety guard unavailable; NullSafetyGuard remains",
             exc_info=True,
         )
+
+    shortlist_cache = None
+    try:
+        from application.utils.librarian.llm_response_cache import (
+            KIND_SHORTLIST_JUDGE,
+            optional_disk_dir,
+        )
+        from application.utils.librarian.shortlist_judge import ShortlistJudgeCache
+
+        shortlist_cache = ShortlistJudgeCache(
+            disk_dir=optional_disk_dir(KIND_SHORTLIST_JUDGE),
+            database=database,
+        )
+    except Exception:  # noqa: BLE001
+        logger.debug("shortlist judge cache unavailable", exc_info=True)
 
     return LibrarianComponents(
         retriever=retriever,
@@ -342,8 +406,9 @@ def build_components(
         cre_membership=cre_membership,
         cre_prior=cre_prior,
         shortlist_llm_fn=shortlist_llm,
+        shortlist_cache=shortlist_cache,
         safety_guard=safety_guard,
-parent_index=parent_index,
+        parent_index=parent_index,
         leaf_drilldown=config.leaf_drilldown,
         leaf_drilldown_resources=config.leaf_drilldown_resources,
         leaf_drilldown_force_resources=config.leaf_drilldown_force_resources,
@@ -354,6 +419,8 @@ parent_index=parent_index,
         umbrella_promote_cap=config.umbrella_promote_cap,
         shortlist_judge_max_picks=config.shortlist_judge_max_picks,
         margin_gamma=config.margin_gamma,
+        hub_leaf_cage=config.hub_leaf_cage,
+        cre_names=cre_names,
     )
 
 
@@ -515,7 +582,21 @@ def _build_edition_transfer(database: Any) -> Optional[Any]:
             default_litellm_fn,
         )
 
-        return build_edition_transfer_from_db(session, llm_fn=default_litellm_fn())
+        # Live path: cache + heuristic only. Precompute with
+        # ``scripts/oie_precompute_remap_caches.py``. Opt into live LLM misses
+        # via CRE_LIBRARIAN_EDITION_REMAP_LIVE=1.
+        import os
+
+        live = (
+            os.environ.get("CRE_LIBRARIAN_EDITION_REMAP_LIVE") or ""
+        ).strip().lower() in (
+            "1",
+            "true",
+            "yes",
+            "on",
+        )
+        llm = default_litellm_fn() if live else None
+        return build_edition_transfer_from_db(session, llm_fn=llm, database=database)
     except Exception:  # noqa: BLE001
         logger.debug("edition transfer service unavailable", exc_info=True)
         return None
@@ -581,7 +662,7 @@ def _build_neighbor_transfer_index(database: Any) -> Optional[Any]:
             build_neighbor_transfer_index,
         )
 
-        return build_neighbor_transfer_index(session, llm_fn=None)
+        return build_neighbor_transfer_index(session, llm_fn=None, database=database)
     except Exception:  # noqa: BLE001
         logger.debug("neighbor transfer index unavailable", exc_info=True)
         return None

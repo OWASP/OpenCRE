@@ -33,9 +33,9 @@ class DocumentChunkPipeline:
         self._validator = validator or ChunkRecordValidator()
 
     def chunk(self, document: Document) -> list[IngestChunkRecord]:
-        mode = "off"
+        mode = "auto"
         if self._chunking is not None:
-            mode = getattr(self._chunking, "requirement_extract", "off") or "off"
+            mode = getattr(self._chunking, "requirement_extract", "auto") or "auto"
 
         extracted = None
         if should_extract_requirements(document.text, mode=mode):
