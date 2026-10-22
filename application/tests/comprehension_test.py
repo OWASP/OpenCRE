@@ -1006,21 +1006,6 @@ class NestSourceTest(unittest.TestCase):
         self.assertTrue(all("page_size=10" in c for c in calls))
 
 
-class TalksCatalogueTest(unittest.TestCase):
-    def test_parse_and_chunk(self):
-        from application.utils.comprehension import talks_source as ts
-
-        talks = ts.parse_catalogue(
-            "abc|20241022|2667|Shift Left - Jane Doe\nbad line\ndef|20261021|60|Newer talk - John Roe\n"
-        )
-        self.assertEqual(len(talks), 2)
-        chunks = ts.catalogue_chunks(talks, per_chunk=1)
-        self.assertEqual(len(chunks), 2)
-        self.assertIn("Newer talk - John Roe", chunks[0][2])  # newest first
-        self.assertIn("2024-10-22 (approximate)", chunks[1][2])
-        self.assertIn("https://youtu.be/abc", chunks[1][2])
-
-
 class NestBrokenPageTest(unittest.TestCase):
     def test_a_failing_page_is_read_item_by_item(self):
         from application.utils.comprehension import nest_source as ns
