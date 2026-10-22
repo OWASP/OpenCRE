@@ -172,6 +172,16 @@ def _split_citations(content: str) -> Tuple[str, List[str]]:
     ]
 
 
+TEMPORARY_PROBLEM_MESSAGE = (
+    "I hit a temporary problem while writing this answer (the model service did not respond). "
+    "Please try again in a moment."
+)
+
+
+class AnswerUnavailable(Exception):
+    """The model call behind an answer failed; not the same as "no source answers this"."""
+
+
 _MISSING_SYSTEM = (
     "You check whether an answer addresses everything a question asks. List what the question asks for, "
     "then say which asked-for items the answer does NOT address at all. Be strict only about whole items "
@@ -233,11 +243,21 @@ def answer_from_candidates(
         got = _ANSWERS.get(ckey)
         if got and time.time() - got[0] < 3600:
             return got[1]
-    out = _answer_decomposed(question, complete) if flags.on("DECOMPOSE") else None
-    if out is None:
-        out = _answer(question, cands, complete)
-    if out is not None and flags.on("COMPLETE2"):
-        out = _complete_pass(question, out, cands, complete)
+    try:
+        out = _answer_decomposed(question, complete) if flags.on("DECOMPOSE") else None
+        if out is None:
+            out = _answer(question, cands, complete)
+        if out is not None and flags.on("COMPLETE2"):
+            out = _complete_pass(question, out, cands, complete)
+    except (
+        Exception
+    ) as exc:  # noqa: BLE001 - provider 503/429/timeouts must not look like "not found"
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "comprehension answer failed: %s: %s", type(exc).__name__, str(exc)[:200]
+        )
+        raise AnswerUnavailable(str(exc)[:200]) from exc
     if flags.on("CACHE") and out is not None:
         _ANSWERS[ckey] = (time.time(), out)
         if len(_ANSWERS) > 512:
