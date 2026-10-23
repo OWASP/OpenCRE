@@ -28,6 +28,7 @@ NAMES = (
     "COMPLETE2",  # second pass: a cheap checker finds unanswered parts, the reader answers them
     "NEG",  # negation questions (NOT / except): test every option against the sources before choosing
     "PREFIXCACHE",  # sources first, question last, so the provider can reuse the cached project text
+    "WIDEMATCH",  # whole-project reading can match any repo with raw chunks, not only digested ones
     "EDITION",  # answer for the edition/year/version the question names; never mix editions
     "ROUTE",  # people/count questions: whole-project read with a stronger reader model
     "DECOMPOSE",  # multi-part questions: answer each part separately, then combine

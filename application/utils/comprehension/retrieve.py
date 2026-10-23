@@ -49,16 +49,33 @@ def matched_slugs(question: str, slugs: List[str], limit: int = 3) -> List[str]:
 def _known_slugs(conn) -> List[str]:
     from sqlalchemy import text as sql_text
 
-    if time.time() - _REPO_CACHE["at"] < 600 and _REPO_CACHE["slugs"]:
+    from application.utils.comprehension import flags
+
+    wide = flags.on("WIDEMATCH")
+    cache_key = "wide" if wide else "digested"
+    if (
+        _REPO_CACHE.get("key") == cache_key
+        and time.time() - _REPO_CACHE["at"] < 600
+        and _REPO_CACHE["slugs"]
+    ):
         return _REPO_CACHE["slugs"]
-    rows = conn.execute(
-        sql_text(
-            "SELECT DISTINCT embeddings_url FROM embeddings "
-            "WHERE embeddings_url LIKE 'owasp-agent://evidence/comprehension-%-overview'"
-        )
-    ).fetchall()
-    slugs = sorted({m.group(1) for (u,) in rows if (m := _SLUG_RE.match(u))})
-    _REPO_CACHE.update(at=time.time(), slugs=slugs)
+    if wide:
+        rows = conn.execute(
+            sql_text(
+                "SELECT DISTINCT substring(embeddings_url from 'comprehension-(.+?)-raw-') "
+                "FROM embeddings WHERE embeddings_url LIKE 'owasp-agent://evidence/comprehension-%-raw-%'"
+            )
+        ).fetchall()
+        slugs = sorted({r[0] for r in rows if r[0]})
+    else:
+        rows = conn.execute(
+            sql_text(
+                "SELECT DISTINCT embeddings_url FROM embeddings "
+                "WHERE embeddings_url LIKE 'owasp-agent://evidence/comprehension-%-overview'"
+            )
+        ).fetchall()
+        slugs = sorted({m.group(1) for (u,) in rows if (m := _SLUG_RE.match(u))})
+    _REPO_CACHE.update(at=time.time(), slugs=slugs, key=cache_key)
     return slugs
 
 
