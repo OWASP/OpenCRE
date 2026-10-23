@@ -1145,3 +1145,29 @@ class PrefixCacheTest(unittest.TestCase):
         self.assertTrue(seen[0].startswith("Sources:"))
         self.assertTrue(seen[0].endswith("Question: what?"))
         self.assertTrue(seen[1].startswith("Question: what?"))
+
+
+class WikiChunksTest(unittest.TestCase):
+    def test_wiki_pages_become_chunks_with_a_wiki_path(self):
+        import tempfile
+        from pathlib import Path
+
+        from application.utils.comprehension import sources
+
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp) / "OWASP__x__wiki"
+            d.mkdir()
+            (d / "Home.md").write_text(
+                "# Home\n\n" + "The project wiki explains setup. " * 6
+            )
+            (d / "image.png").write_bytes(b"\x89PNG")
+            chunks = sources.wiki_chunks("OWASP/x", tmp)
+        self.assertTrue(chunks)
+        self.assertTrue(all(c[0] == "wiki/Home.md" for c in chunks))
+
+
+class WideMatchTest(unittest.TestCase):
+    def test_flag_registered(self):
+        from application.utils.comprehension import flags
+
+        self.assertIn("WIDEMATCH", flags.NAMES)
