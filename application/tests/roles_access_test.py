@@ -85,6 +85,35 @@ class WebRolesTest(unittest.TestCase):
                 "user_id", s
             )  # a plain user is NOT signed out for poking an admin URL
 
+    def test_chat_is_rate_limited_per_account(self):
+        from application.utils import rate_limit
+
+        rate_limit.reset_memory()
+        handler = MagicMock()
+        handler.generate_text.return_value = {"response": "ok", "accurate": True}
+        with patch.dict(
+            os.environ,
+            {
+                "OWASP_AGENT_ENABLED": "0",
+                "RATE_LIMIT_PER_MINUTE": "2",
+                "RATE_LIMIT_ENABLED": "1",
+            },
+        ), patch(
+            "application.prompt_client.prompt_client.PromptHandler",
+            return_value=handler,
+        ):
+            jane, bob = self._client("jane@owasp.org"), self._client("bob@owasp.org")
+            codes = [
+                jane.post("/rest/v1/completion", json={"prompt": "hi"}).status_code
+                for _ in range(3)
+            ]
+            third = jane.post("/rest/v1/completion", json={"prompt": "hi"})
+            other = bob.post("/rest/v1/completion", json={"prompt": "hi"}).status_code
+        self.assertEqual(codes, [200, 200, 429])
+        self.assertIn("Retry-After", third.headers)
+        self.assertIn("per minute", third.get_json()["error"])
+        self.assertEqual(other, 200)  # another account still has its own allowance
+
     def test_admin_passes_the_admin_gates(self):
         c = self._client("boss@owasp.org")
         self.assertEqual(c.get("/rest/v1/api-keys").status_code, 200)
@@ -218,3 +247,18 @@ class McpRolesTest(unittest.TestCase):
         self.assertTrue(user.is_error)
         self.assertRegex(self._text(user).lower(), r"admin role is required")
         self.assertFalse(admin.is_error)
+
+    def test_mcp_ask_is_rate_limited_per_account(self):
+        from application.utils import rate_limit
+
+        rate_limit.reset_memory()
+        tok = self._mint(self.jane)
+        with patch.dict(
+            os.environ, {"RATE_LIMIT_PER_MINUTE": "2", "RATE_LIMIT_ENABLED": "1"}
+        ), patch("application.mcp.server.run_ask", return_value={"ok": True}):
+            results = [
+                self._call_tool("ask", {"prompt": "x"}, authorization=f"Bearer {tok}")
+                for _ in range(3)
+            ]
+        self.assertEqual([r.is_error for r in results], [False, False, True])
+        self.assertTrue(self._text(results[2]).startswith("429 "))

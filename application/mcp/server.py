@@ -176,12 +176,28 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
             if remote_auth.remote_mode_enabled():
                 # Every tool needs a signed-in account with the role it requires.
                 try:
-                    remote_auth.require_remote_auth(name, frozenset(schemas))
+                    caller = remote_auth.require_remote_auth(name, frozenset(schemas))
                 except remote_auth.RemoteAskAuthError as auth_exc:
                     return types.CallToolResult(
                         content=[types.TextContent(type="text", text=str(auth_exc))],
                         is_error=True,
                     )
+                if name == ASK_TOOL_NAME and caller is not None:
+                    from application.utils import rate_limit, roles
+
+                    try:
+                        rate_limit.check_and_count(
+                            caller.email, roles.role_for(caller.email), "ask"
+                        )
+                    except rate_limit.RateLimited as limited:
+                        return types.CallToolResult(
+                            content=[
+                                types.TextContent(
+                                    type="text", text=f"429 {limited.message()}"
+                                )
+                            ],
+                            is_error=True,
+                        )
             if name == ASK_TOOL_NAME:
                 data = await run_blocking_with_app(
                     lambda: run_ask(
@@ -192,6 +208,7 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
                             if arguments.get("place") is not None
                             else None
                         ),
+                        history=arguments.get("history"),
                         rest_client=client,
                     )
                 )
