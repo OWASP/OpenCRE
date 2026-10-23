@@ -109,7 +109,7 @@ class ClampTopKTest(unittest.TestCase):
         self.assertEqual(clamp_top_k(99), MAX_TOP_K)
 
     def test_rejects_non_positive_and_non_integer(self) -> None:
-        for bad in ("0", "-3", "x", 2.5):
+        for bad in ("0", "-3", "x", 2.5, "--3", "\u00b2", True):
             with self.assertRaises(InvalidStandardError):
                 clamp_top_k(bad)
 
@@ -303,6 +303,11 @@ class LinkSuggestRouteTest(unittest.TestCase):
                 resp = c.post("/rest/v1/link/suggest", json=_standard())
         self.assertEqual(resp.status_code, 503)
 
+    def test_malformed_top_k_strings_are_400_not_500(self) -> None:
+        for bad in ("--3", "\u00b2"):
+            resp = self._post(_standard(), query=f"?top_k={bad}")
+            self.assertEqual(resp.status_code, 400, bad)
+
     def test_provider_failure_is_reported_not_swallowed(self) -> None:
         class _Boom(Exception):
             status_code = 502
@@ -314,6 +319,8 @@ class LinkSuggestRouteTest(unittest.TestCase):
                 resp = c.post("/rest/v1/link/suggest", json=_standard())
         self.assertEqual(resp.status_code, 502)
         self.assertIn("error", resp.get_json())
+        # the client gets a status and a generic message, never the raw text
+        self.assertNotIn("upstream down", resp.get_data(as_text=True))
 
 
 if __name__ == "__main__":

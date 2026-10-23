@@ -1347,8 +1347,15 @@ def link_suggest() -> Any:
                 ),
                 503,
             )
+        # Never echo the exception: SQLAlchemy and provider errors can carry SQL
+        # text, paths and config values. Full detail goes to the server log; the
+        # client gets the status code and a generic message.
         status_code = _llm_error_status_code(e) or 500
-        return jsonify({"error": f"AI Service Error: {str(e)}"}), status_code
+        logger.error("link_suggest failed with status %s", status_code, exc_info=True)
+        return (
+            jsonify({"error": "Link suggestion failed upstream; see server logs."}),
+            status_code,
+        )
     return jsonify(results)
 
 

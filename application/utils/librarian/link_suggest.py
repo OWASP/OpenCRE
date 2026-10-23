@@ -21,9 +21,13 @@ from cre_logging import get_logger
 
 logger = get_logger(__name__)
 
+import re
 from typing import Any, Callable, Dict, List, Mapping, Optional
 
 from application.defs import cre_defs as defs
+
+#: The public CRE id shape ("287-251"); everything else is treated as a row id.
+_PUBLIC_ID = re.compile(r"\d{3}-\d{3}")
 
 #: Hard ceiling on one request's shortlist. The retriever's own top_k is the
 #: pipeline setting (20 by default); a caller may ask for fewer, never more.
@@ -85,8 +89,13 @@ def clamp_top_k(raw: Any) -> int:
         value = raw
     elif isinstance(raw, float) and raw.is_integer():
         value = int(raw)
-    elif isinstance(raw, str) and raw.strip().lstrip("-").isdigit():
-        value = int(raw.strip())
+    elif isinstance(raw, str):
+        # int() is the parser; "--3" and "\u00b2" pass isdigit-style checks and
+        # then blow up inside int(), so its failure is the signal, not a pre-check.
+        try:
+            value = int(raw.strip())
+        except ValueError:
+            raise InvalidStandardError("top_k must be an integer") from None
     else:
         raise InvalidStandardError("top_k must be an integer")
     if value < 1:
@@ -116,15 +125,22 @@ def _resolve_cre(database: Any, candidate_id: str) -> Optional[defs.CRE]:
     the pool for exactly this reason; here the translation happens per result,
     so the endpoint is correct against a pool keyed either way.
     """
-    for kwargs in ({"internal_id": candidate_id}, {"external_id": candidate_id}):
-        try:
-            matches = database.get_CREs(**kwargs) or []
-        except Exception:  # a malformed id must not take the whole shortlist down
-            matches = []
-        if matches:
-            found: defs.CRE = matches[0]
-            return found
-    return None
+    # One lookup, chosen by the id's shape: public ids are "ddd-ddd" (the
+    # pattern cre_defs.CRE enforces), anything else is a row id. A single miss
+    # then logs once, instead of twice per stale candidate on every request.
+    kwargs = (
+        {"external_id": candidate_id}
+        if _PUBLIC_ID.fullmatch(candidate_id or "")
+        else {"internal_id": candidate_id}
+    )
+    try:
+        matches = database.get_CREs(**kwargs) or []
+    except Exception:  # a malformed id must not take the whole shortlist down
+        return None
+    if not matches:
+        return None
+    found: defs.CRE = matches[0]
+    return found
 
 
 def suggest_links(
