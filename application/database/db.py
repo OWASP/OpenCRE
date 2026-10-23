@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 
 from collections import Counter, defaultdict
 from itertools import permutations
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
 from neomodel.exceptions import (
     DoesNotExist,
     FeatureNotSupported,
@@ -56,6 +56,8 @@ from application.utils.gap_analysis import (
 
 from .. import sqla  # type: ignore
 
+
+from enum import Enum
 
 BaseModel: DefaultMeta = sqla.Model
 
@@ -459,6 +461,80 @@ class HarvestInput(BaseModel):  # type: ignore
     )
     __table_args__ = (
         sqla.Index("ix_harvest_input_run_status", "pipeline_run_id", "status"),
+    )
+
+
+class SectionStatus(str, Enum):
+    """Lifecycle of one user-standard section (RFC user-auth-myopencre, TODO 2).
+
+    ``USER_CONFIRMED`` and ``USER_REJECTED`` are ground truth: the mapping job
+    never rewrites them (RFC TODO 3), only the user can.
+    """
+
+    PENDING = "PENDING"
+    AUTO_MAPPED = "AUTO_MAPPED"
+    NEEDS_REVIEW = "NEEDS_REVIEW"
+    UNMAPPABLE = "UNMAPPABLE"
+    USER_CONFIRMED = "USER_CONFIRMED"
+    USER_REJECTED = "USER_REJECTED"
+
+
+USER_DECIDED_STATUSES = frozenset(
+    {SectionStatus.USER_CONFIRMED.value, SectionStatus.USER_REJECTED.value}
+)
+
+
+class UserStandard(BaseModel):  # type: ignore
+    """A standard a MyOpenCRE user uploaded for mapping (RFC TODO 2).
+
+    Owned by exactly one user; two users uploading the same-named standard get
+    two rows with zero shared state. Deleting the user cascades.
+    """
+
+    __tablename__ = "user_standards"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    user_id = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("users.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+    name = sqla.Column(sqla.String, nullable=False)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+    updated_at = sqla.Column(sqla.DateTime, nullable=False)
+    __table_args__ = (
+        sqla.UniqueConstraint("user_id", "name", name="uq_user_standards_user_name"),
+    )
+
+
+class UserStandardSection(BaseModel):  # type: ignore
+    """One section of a user standard and what the mapping job made of it.
+
+    ``cre_db_id`` is a soft reference to the CRE row's internal id, validated at
+    write time, never a foreign key: CRE nodes live in the graph layer and a
+    hard FK would couple the two (RFC TODO 2). ``confidence`` is the Librarian's
+    calibrated C.3 confidence for the stored candidate.
+    """
+
+    __tablename__ = "user_standard_sections"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    standard_id = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("user_standards.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+    section_id = sqla.Column(sqla.String, nullable=False)
+    section_text = sqla.Column(sqla.Text, nullable=False)
+    cre_db_id = sqla.Column(sqla.String, nullable=True)
+    confidence = sqla.Column(sqla.Float, nullable=True)
+    status = sqla.Column(sqla.String, nullable=False)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+    updated_at = sqla.Column(sqla.DateTime, nullable=False)
+    __table_args__ = (
+        sqla.UniqueConstraint(
+            "standard_id", "section_id", name="uq_user_standard_sections_section"
+        ),
+        sqla.Index("ix_user_standard_sections_status", "standard_id", "status"),
+        sqla.Index("ix_user_standard_sections_cre", "standard_id", "cre_db_id"),
     )
 
 
@@ -2380,6 +2456,201 @@ class Node_collection:
         self.session.commit()
         self.session.flush()
         return res
+
+    # ---- MyOpenCRE user standards (RFC user-auth-myopencre, TODO 2 + 3) ----
+
+    @staticmethod
+    def _utcnow_naive() -> Any:
+        from datetime import datetime, timezone
+
+        return datetime.now(timezone.utc).replace(tzinfo=None)
+
+    def create_user_standard(self, user_id: str, name: str) -> UserStandard:
+        """Create one user-owned standard; (user_id, name) is unique."""
+        now = self._utcnow_naive()
+        standard = UserStandard(
+            user_id=user_id, name=name, created_at=now, updated_at=now
+        )
+        self.session.add(standard)
+        self.session.commit()
+        return standard
+
+    def get_user_standards(self, user_id: str) -> List[UserStandard]:
+        """Only the requesting user's standards, never another user's."""
+        rows: List[UserStandard] = (
+            UserStandard.query.filter(UserStandard.user_id == user_id)
+            .order_by(UserStandard.created_at, UserStandard.id)
+            .all()
+        )
+        return rows
+
+    def upsert_user_standard_sections(
+        self, standard_id: str, sections: Sequence[Tuple[str, str]]
+    ) -> int:
+        """Insert or refresh sections as ``(section_id, section_text)`` pairs.
+
+        New rows start ``PENDING``. A re-uploaded row whose text changed goes
+        back to ``PENDING`` so the job re-maps it, unless the user has already
+        decided it: ``USER_CONFIRMED`` / ``USER_REJECTED`` keep their status and
+        mapping, because user decisions are ground truth. Returns rows touched.
+        """
+        now = self._utcnow_naive()
+        existing = {
+            row.section_id: row
+            for row in UserStandardSection.query.filter(
+                UserStandardSection.standard_id == standard_id
+            ).all()
+        }
+        touched = 0
+        for section_id, section_text in sections:
+            row = existing.get(section_id)
+            if row is None:
+                row = UserStandardSection(
+                    standard_id=standard_id,
+                    section_id=section_id,
+                    section_text=section_text,
+                    status=SectionStatus.PENDING.value,
+                    created_at=now,
+                    updated_at=now,
+                )
+                self.session.add(row)
+                # A repeated section_id later in the same upload must update
+                # this row, not insert a second one into the unique constraint.
+                existing[section_id] = row
+                touched += 1
+                continue
+            if row.section_text == section_text:
+                continue
+            row.section_text = section_text
+            row.updated_at = now
+            if row.status not in USER_DECIDED_STATUSES:
+                row.status = SectionStatus.PENDING.value
+                row.cre_db_id = None
+                row.confidence = None
+            touched += 1
+        self.session.commit()
+        return touched
+
+    def _owned_standard(self, standard_id: str, user_id: str) -> Optional[UserStandard]:
+        row: Optional[UserStandard] = UserStandard.query.filter(
+            UserStandard.id == standard_id, UserStandard.user_id == user_id
+        ).first()
+        return row
+
+    def get_user_standard_sections(
+        self, standard_id: str, user_id: str
+    ) -> List[UserStandardSection]:
+        """Sections of a standard the user owns; empty for anyone else."""
+        if self._owned_standard(standard_id, user_id) is None:
+            return []
+        rows: List[UserStandardSection] = (
+            UserStandardSection.query.filter(
+                UserStandardSection.standard_id == standard_id
+            )
+            .order_by(UserStandardSection.section_id)
+            .all()
+        )
+        return rows
+
+    def get_user_standard_sections_by_status(
+        self, standard_id: str, statuses: Sequence[str]
+    ) -> List[UserStandardSection]:
+        """Job-side read, by status, in a stable order. No user scoping: the
+        mapping job runs as the system on a standard id it was handed."""
+        if not statuses:
+            return []
+        rows: List[UserStandardSection] = (
+            UserStandardSection.query.filter(
+                UserStandardSection.standard_id == standard_id,
+                UserStandardSection.status.in_(list(statuses)),
+            )
+            .order_by(UserStandardSection.section_id, UserStandardSection.id)
+            .all()
+        )
+        return rows
+
+    def set_section_mapping(
+        self,
+        section_id: str,
+        *,
+        cre_db_id: Optional[str],
+        confidence: Optional[float],
+        status: str,
+    ) -> bool:
+        """Job-side write of one section's outcome; True if a row moved.
+
+        Never moves a user-decided row, whatever it is asked to write, and the
+        check is part of the UPDATE itself: a user who confirms a section
+        between the job loading it and writing it wins, because the worker's
+        stale PENDING view is never consulted. That invariant lives here so no
+        caller can break it by accident.
+        """
+        updated = UserStandardSection.query.filter(
+            UserStandardSection.id == section_id,
+            UserStandardSection.status.notin_(list(USER_DECIDED_STATUSES)),
+        ).update(
+            {
+                UserStandardSection.cre_db_id: cre_db_id,
+                UserStandardSection.confidence: confidence,
+                UserStandardSection.status: status,
+                UserStandardSection.updated_at: self._utcnow_naive(),
+            },
+            synchronize_session=False,
+        )
+        self.session.commit()
+        return bool(updated)
+
+    def _owned_section(
+        self, section_id: str, user_id: str
+    ) -> Optional[UserStandardSection]:
+        row: Optional[UserStandardSection] = (
+            UserStandardSection.query.join(
+                UserStandard, UserStandard.id == UserStandardSection.standard_id
+            )
+            .filter(
+                UserStandardSection.id == section_id, UserStandard.user_id == user_id
+            )
+            .first()
+        )
+        return row
+
+    def confirm_section_mapping(
+        self, section_id: str, cre_db_id: str, user_id: str
+    ) -> bool:
+        """The user accepts a CRE for a section; returns False if not theirs
+        or if ``cre_db_id`` is not a CRE in the graph (validated at write)."""
+        row = self._owned_section(section_id, user_id)
+        if row is None or not self.get_CREs(internal_id=cre_db_id):
+            return False
+        if row.cre_db_id != cre_db_id:
+            # The stored confidence was computed for the job's candidate; it
+            # says nothing about the CRE the user chose instead.
+            row.confidence = None
+        row.cre_db_id = cre_db_id
+        row.status = SectionStatus.USER_CONFIRMED.value
+        row.updated_at = self._utcnow_naive()
+        self.session.commit()
+        return True
+
+    def reject_section_mapping(self, section_id: str, user_id: str) -> bool:
+        row = self._owned_section(section_id, user_id)
+        if row is None:
+            return False
+        row.status = SectionStatus.USER_REJECTED.value
+        row.updated_at = self._utcnow_naive()
+        self.session.commit()
+        return True
+
+    def get_cre_internal_id(self, external_id: str) -> Optional[str]:
+        """The CRE row's internal id for a public id like "287-251", or None.
+
+        The reverse of ``get_CREs(internal_id=...)``. Soft references such as
+        ``user_standard_sections.cre_db_id`` store the internal id; everything
+        a human sees is the external id, so writers translate through here.
+        """
+        row = CRE.query.filter(CRE.external_id == external_id).first()
+        internal_id: Optional[str] = row.id if row is not None else None
+        return internal_id
 
     def add_cre(self, cre: cre_defs.CRE) -> CRE:
         entry: CRE = None
