@@ -1126,3 +1126,22 @@ class AnswerUnavailableTest(unittest.TestCase):
         ):
             with self.assertRaises(ans.AnswerUnavailable):
                 ans.answer_from_candidates("q?", [], lambda m: "")
+
+
+class PrefixCacheTest(unittest.TestCase):
+    def test_sources_come_first_when_flag_is_on(self):
+        from application.utils.comprehension.synthesize import synthesize
+
+        seen = []
+
+        def llm(system, user):
+            seen.append(user)
+            return "A [1]"
+
+        with mock.patch.dict(os.environ, {"OWASP_CX_PREFIXCACHE": "1"}):
+            synthesize("what?", [("body text", ["u"])], llm)
+        with mock.patch.dict(os.environ, {"OWASP_CX_PREFIXCACHE": ""}):
+            synthesize("what?", [("body text", ["u"])], llm)
+        self.assertTrue(seen[0].startswith("Sources:"))
+        self.assertTrue(seen[0].endswith("Question: what?"))
+        self.assertTrue(seen[1].startswith("Question: what?"))

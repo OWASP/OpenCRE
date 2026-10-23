@@ -113,7 +113,12 @@ def synthesize(
         f"[{i + 1}] {t.split(chr(10) + chr(10) + 'Citations:')[0]}"
         for i, (t, _) in enumerate(hits)
     )
-    out = (llm(system, f"Question: {question}\n\nSources:\n{numbered}") or "").strip()
+    if flags.on("PREFIXCACHE"):
+        # Same project text first: providers cache the longest shared prefix across questions.
+        user = f"Sources:\n{numbered}\n\nQuestion: {question}"
+    else:
+        user = f"Question: {question}\n\nSources:\n{numbered}"
+    out = (llm(system, user) or "").strip()
     if not out or out.upper().startswith("UNKNOWN"):
         return "", []
     used = sorted(
