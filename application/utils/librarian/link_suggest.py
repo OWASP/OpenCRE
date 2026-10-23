@@ -27,7 +27,9 @@ from typing import Any, Callable, Dict, List, Mapping, Optional
 from application.defs import cre_defs as defs
 
 #: The public CRE id shape ("287-251"); everything else is treated as a row id.
-_PUBLIC_ID = re.compile(r"\d{3}-\d{3}")
+_PUBLIC_ID = re.compile(r"[0-9]{3}-[0-9]{3}")
+#: What a top_k string may be: an optional sign and ASCII digits, nothing else.
+_ASCII_INT = re.compile(r"[+-]?[0-9]+")
 
 #: Hard ceiling on one request's shortlist. The retriever's own top_k is the
 #: pipeline setting (20 by default); a caller may ask for fewer, never more.
@@ -90,12 +92,12 @@ def clamp_top_k(raw: Any) -> int:
     elif isinstance(raw, float) and raw.is_integer():
         value = int(raw)
     elif isinstance(raw, str):
-        # int() is the parser; "--3" and "\u00b2" pass isdigit-style checks and
-        # then blow up inside int(), so its failure is the signal, not a pre-check.
-        try:
-            value = int(raw.strip())
-        except ValueError:
-            raise InvalidStandardError("top_k must be an integer") from None
+        # Strict ASCII integer: isdigit() admits "\u00b2" and lstrip("-") admits
+        # "--3", while int() itself admits "2_0". Only an optional sign and
+        # ASCII digits are a top_k; everything else is a 400.
+        if not _ASCII_INT.fullmatch(raw.strip()):
+            raise InvalidStandardError("top_k must be an integer")
+        value = int(raw.strip())
     else:
         raise InvalidStandardError("top_k must be an integer")
     if value < 1:

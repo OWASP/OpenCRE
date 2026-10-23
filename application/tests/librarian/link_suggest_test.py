@@ -109,7 +109,7 @@ class ClampTopKTest(unittest.TestCase):
         self.assertEqual(clamp_top_k(99), MAX_TOP_K)
 
     def test_rejects_non_positive_and_non_integer(self) -> None:
-        for bad in ("0", "-3", "x", 2.5, "--3", "\u00b2", True):
+        for bad in ("0", "-3", "x", 2.5, "--3", "\u00b2", "2_0", " 7 x", True):
             with self.assertRaises(InvalidStandardError):
                 clamp_top_k(bad)
 
@@ -304,7 +304,7 @@ class LinkSuggestRouteTest(unittest.TestCase):
         self.assertEqual(resp.status_code, 503)
 
     def test_malformed_top_k_strings_are_400_not_500(self) -> None:
-        for bad in ("--3", "\u00b2"):
+        for bad in ("--3", "\u00b2", "2_0"):
             resp = self._post(_standard(), query=f"?top_k={bad}")
             self.assertEqual(resp.status_code, 400, bad)
 
