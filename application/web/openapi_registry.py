@@ -42,6 +42,10 @@ OPENAPI_GUARDRAIL_EXEMPT_RULES: Set[str] = {
     "/rest/v1/api-keys",
     "/rest/v1/api-keys/<jti>",
     "/rest/v1/api-keys/<jti>/audit",
+    # Signed-in account endpoints (role + personal API keys); session auth, not public REST.
+    "/rest/v1/me",
+    "/rest/v1/my-api-keys",
+    "/rest/v1/my-api-keys/<jti>",
     "/api/capabilities",
     "/docs/faq.md",
     "/",

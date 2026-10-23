@@ -85,26 +85,32 @@ def verify_api_token(raw: str) -> Optional[ApiKeyIdentity]:
 
 
 def email_on_login_allowlist(email: Optional[str]) -> bool:
-    """True when ``email`` is on LOGIN_ALLOWED_EMAILS.
+    """True when ``email`` has the admin role (kept under its old name for callers).
 
-    Mirrors Admin ``login_required`` / ``_login_email_allowed`` without Flask
-    request path gates. Dev/test: empty allowlist allows anyone.
-    ``FLASK_CONFIG=production``: empty allowlist fails closed.
+    Legacy mode: on LOGIN_ALLOWED_EMAILS (dev/test: empty allows anyone; production: empty
+    fails closed). Roles mode: one of the named ``ADMIN_EMAILS``.
     """
-    raw = (os.environ.get("LOGIN_ALLOWED_EMAILS") or "").strip()
-    is_prod = (os.environ.get("FLASK_CONFIG") or "").strip().lower() == "production"
-    if not raw:
-        return not is_prod
-    allowed = {e.strip().lower() for e in raw.split(",") if e.strip()}
-    return (email or "").strip().lower() in allowed
+    from application.utils import roles
+
+    return roles.has_role(email, roles.ADMIN)
 
 
 def verify_admin_allowlisted_api_token(raw: str) -> Optional[ApiKeyIdentity]:
-    """Path-agnostic Admin JWT check: signature + DB + LOGIN_ALLOWED_EMAILS."""
+    """Path-agnostic admin check: signature + DB + admin role."""
     identity = verify_api_token(raw)
     if identity is None:
         return None
     if not email_on_login_allowlist(identity.email):
+        return None
+    return identity
+
+
+def verify_token_with_role(raw: str, needed: str) -> Optional[ApiKeyIdentity]:
+    """Signature + DB + the account currently has at least role ``needed`` (None otherwise)."""
+    from application.utils import roles
+
+    identity = verify_api_token(raw)
+    if identity is None or not roles.has_role(identity.email, needed):
         return None
     return identity
 

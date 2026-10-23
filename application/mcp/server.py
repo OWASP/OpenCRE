@@ -171,22 +171,18 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
         name = params.name
         arguments: Dict[str, Any] = dict(params.arguments or {})
         try:
-            if name == ASK_TOOL_NAME:
-                from application.mcp import remote_auth
+            from application.mcp import remote_auth
 
-                if remote_auth.remote_mode_enabled():
-                    try:
-                        remote_auth.require_remote_ask_auth()
-                    except remote_auth.RemoteAskAuthError as auth_exc:
-                        return types.CallToolResult(
-                            content=[
-                                types.TextContent(
-                                    type="text",
-                                    text=str(auth_exc),
-                                )
-                            ],
-                            is_error=True,
-                        )
+            if remote_auth.remote_mode_enabled():
+                # Every tool needs a signed-in account with the role it requires.
+                try:
+                    remote_auth.require_remote_auth(name, frozenset(schemas))
+                except remote_auth.RemoteAskAuthError as auth_exc:
+                    return types.CallToolResult(
+                        content=[types.TextContent(type="text", text=str(auth_exc))],
+                        is_error=True,
+                    )
+            if name == ASK_TOOL_NAME:
                 data = await run_blocking_with_app(
                     lambda: run_ask(
                         str(arguments.get("prompt") or ""),

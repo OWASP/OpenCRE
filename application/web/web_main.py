@@ -1001,6 +1001,9 @@ def _auth_challenge():
     )
 
 
+from application.utils import roles as account_roles
+
+
 def _is_production_config() -> bool:
     return (os.environ.get("FLASK_CONFIG") or "").strip().lower() == "production"
 
@@ -1010,16 +1013,18 @@ def _login_emails_raw() -> str:
 
 
 def _login_email_allowed(email: str | None) -> bool:
-    """True when ``email`` is on LOGIN_ALLOWED_EMAILS.
+    """Admin-level gate: True when ``email`` has the admin role.
 
-    Dev/test: unset/empty allowlist allows anyone (local convenience).
-    ``FLASK_CONFIG=production``: empty allowlist fails closed.
+    Legacy mode (``ADMIN_EMAILS`` unset): the account is on LOGIN_ALLOWED_EMAILS; dev/test with an
+    empty allowlist allows anyone; ``FLASK_CONFIG=production`` with an empty allowlist fails closed.
+    Roles mode (``ADMIN_EMAILS`` set): the account is one of the named admins.
     """
-    raw = _login_emails_raw()
-    if not raw:
-        return not _is_production_config()
-    allowed = {e.strip().lower() for e in raw.split(",") if e.strip()}
-    return (email or "").strip().lower() in allowed
+    return account_roles.has_role(email, account_roles.ADMIN)
+
+
+def _user_email_allowed(email: str | None) -> bool:
+    """User-level gate: any account with a role (user or admin)."""
+    return account_roles.has_role(email, account_roles.USER)
 
 
 def _ensure_csrf_token() -> str:
@@ -1059,15 +1064,21 @@ def _require_same_origin_admin() -> None:
         abort(403, description="Cross-origin admin mutation refused")
 
 
-def login_required(f):
+def _auth_gate(f, allowed, role_label):
+    """Shared body of ``login_required`` (admin) and ``user_required`` (any role)."""
+
     @wraps(f)
-    def login_r(*args, **kwargs):
+    def gated(*args, **kwargs):
         if os.environ.get("NO_LOGIN") == "1":
             return f(*args, **kwargs)
-        if _is_production_config() and not _login_emails_raw():
+        if (
+            _is_production_config()
+            and not _login_emails_raw()
+            and not account_roles.roles_enabled()
+        ):
             abort(
                 403,
-                description="LOGIN_ALLOWED_EMAILS must be set when FLASK_CONFIG=production",
+                description="LOGIN_ALLOWED_EMAILS (or ADMIN_EMAILS) must be set when FLASK_CONFIG=production",
             )
         if not _is_logged_in():
             from application.utils.api_tokens import verify as api_verify
@@ -1077,26 +1088,40 @@ def login_required(f):
                 identity = api_verify.verify_api_token(raw)
                 if identity is None:
                     abort(401, description="Invalid or expired API key")
-                if not _login_email_allowed(identity.email):
+                if not allowed(identity.email):
                     abort(
                         403,
-                        description="API key owner is not on the allowlist for this environment.",
+                        description=f"API key owner does not have the {role_label} role in this environment.",
                     )
                 api_verify.bind_api_key_identity(identity)
             else:
                 return _auth_challenge()
-        # Defense in depth: drop sessions that are no longer allowlisted.
+        # Defense in depth: re-check the role on every request.
         email = session.get("email") or getattr(g, "api_key_email", None)
-        if not _login_email_allowed(email):
-            if "user_id" in session:
-                session.clear()
+        if not allowed(email):
+            if "user_id" in session and not _user_email_allowed(email):
+                session.clear()  # no role at all any more: drop the session
             abort(
                 403,
-                description="Your Google account is not on the allowlist for this environment.",
+                description=(
+                    "Your Google account is not on the allowlist for this environment."
+                    if not _user_email_allowed(email)
+                    else f"The {role_label} role is required for this action."
+                ),
             )
         return f(*args, **kwargs)
 
-    return login_r
+    return gated
+
+
+def login_required(f):
+    """Admin-level gate (named admins). Used by the admin panel and API-key management."""
+    return _auth_gate(f, _login_email_allowed, "admin")
+
+
+def user_required(f):
+    """Any account with a role: the chatbot and answer feedback."""
+    return _auth_gate(f, _user_email_allowed, "user")
 
 
 def login_or_mcp_required(f):
@@ -1140,10 +1165,10 @@ def _admin_google_session_required(f):
     def wrapped(*args, **kwargs):
         if getattr(g, "api_key_jti", None) or not session.get("user_id"):
             abort(403, description="API key management requires Google login")
-        if not _login_emails_raw():
+        if not _login_emails_raw() and not account_roles.roles_enabled():
             abort(
                 403,
-                description="LOGIN_ALLOWED_EMAILS must be set to mint API keys",
+                description="LOGIN_ALLOWED_EMAILS (or ADMIN_EMAILS) must be set to mint API keys",
             )
         if not _login_email_allowed(session.get("email")):
             abort(403, description="Only allowlisted admins can manage API keys")
@@ -1532,7 +1557,7 @@ def admin_import_run_apply(run_id: str) -> Any:
 
 
 @app.route("/rest/v1/completion", methods=["POST"])
-@login_required
+@user_required
 def chat_cre() -> Any:
     message = request.get_json(force=True)
     if posthog:
@@ -1643,7 +1668,7 @@ def _with_answer_id(response: Any, question: Optional[str]) -> Any:
 
 
 @app.route("/rest/v1/answer_feedback", methods=["POST"])
-@login_required
+@user_required
 def answer_feedback_post() -> Any:
     """Thumbs up/down for an answer: ``{"answer_id", "rating": "up"|"down", "comment"?}``."""
     from application.utils.answer_feedback import record_rating
@@ -1806,8 +1831,19 @@ def auth_callback():
             401,
             description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
         )
-    # Optional exact-email allowlist (staging): further restricts who may log in.
-    allowed_emails_raw = (os.environ.get("LOGIN_ALLOWED_EMAILS") or "").strip()
+    if account_roles.roles_enabled():
+        # Two-role model: anyone on an allowed domain may log in; named admins get the admin role.
+        if account_roles.role_for(email) is None:
+            abort(
+                403,
+                description="Your Google account has no access to this environment.",
+            )
+    # Legacy exact-email allowlist (staging): further restricts who may log in.
+    allowed_emails_raw = (
+        ""
+        if account_roles.roles_enabled()
+        else (os.environ.get("LOGIN_ALLOWED_EMAILS") or "").strip()
+    )
     if allowed_emails_raw:
         allowed_emails = {
             e.strip().lower() for e in allowed_emails_raw.split(",") if e.strip()
@@ -2208,6 +2244,93 @@ def delete_user_mcp_grant() -> Any:
 #         res = [doc.todict() for doc in documents]
 #         return jsonify({"data": res, "page": page, "total_pages": total_pages})
 #     abort(404)
+
+
+def _own_key_session_required(f):
+    """Personal API keys: any role, Google session only (not another API key), CSRF on writes."""
+
+    @wraps(f)
+    @user_required
+    def wrapped(*args, **kwargs):
+        if getattr(g, "api_key_jti", None) or not session.get("user_id"):
+            abort(403, description="API key management requires Google login")
+        if os.environ.get("NO_LOGIN") != "1" and request.method in (
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE",
+        ):
+            _ensure_csrf_token()
+            _require_csrf()
+        return f(*args, **kwargs)
+
+    return wrapped
+
+
+@app.route("/rest/v1/me", methods=["GET"])
+@user_required
+def whoami() -> Any:
+    """The signed-in account and its role, so clients know which features to show."""
+    email = session.get("email") or getattr(g, "api_key_email", None)
+    return jsonify({"email": email, "role": account_roles.role_for(email) or "none"})
+
+
+@app.route("/rest/v1/my-api-keys", methods=["POST"])
+@_own_key_session_required
+def create_my_api_key() -> Any:
+    """Mint a personal API key for MCP/CLI use (shown once). Any account with a role."""
+    from application.utils.api_tokens import mint as api_mint
+
+    body = request.get_json(silent=True) or {}
+    name = body.get("name") if isinstance(body, dict) else None
+    expires_days = body.get("expires_days") if isinstance(body, dict) else None
+    database = db.Node_collection()
+    user = _resolve_current_user(database)
+    if user is None:
+        abort(401, description="Not authenticated")
+    try:
+        minted = api_mint.mint_api_token(
+            user=user,
+            name=str(name or "api-key"),
+            expires_days=int(expires_days) if expires_days is not None else None,
+        )
+    except (TypeError, ValueError) as exc:
+        abort(400, description=str(exc))
+    return (
+        jsonify(
+            {
+                "token": minted.token,
+                "jti": minted.jti,
+                "name": minted.name,
+                "expires_at": minted.expires_at.isoformat() + "Z",
+            }
+        ),
+        201,
+    )
+
+
+@app.route("/rest/v1/my-api-keys", methods=["GET"])
+@_own_key_session_required
+def list_my_api_keys() -> Any:
+    from application.utils.api_tokens import mint as api_mint
+
+    user = _resolve_current_user(db.Node_collection())
+    if user is None:
+        abort(401, description="Not authenticated")
+    return jsonify({"keys": api_mint.list_api_tokens(user_id=user.id)})
+
+
+@app.route("/rest/v1/my-api-keys/<jti>", methods=["DELETE"])
+@_own_key_session_required
+def revoke_my_api_key(jti: str) -> Any:
+    from application.utils.api_tokens import mint as api_mint
+
+    user = _resolve_current_user(db.Node_collection())
+    if user is None:
+        abort(401, description="Not authenticated")
+    if not api_mint.revoke_api_token(jti, user_id=user.id):
+        abort(404, description="API key not found")
+    return ("", 204)
 
 
 @app.route("/rest/v1/api-keys", methods=["POST"])
