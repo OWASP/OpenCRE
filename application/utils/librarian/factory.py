@@ -62,36 +62,28 @@ def build_scaler(config: Optional[LibrarianConfig] = None) -> Scaler:
     return TemperatureScaler(config.temperature)
 
 
-def build_components(
+def build_retriever_for(
     database: Any,
     *,
     config: Optional[LibrarianConfig] = None,
     embed_fn: Optional[Callable[[str], Sequence[float]]] = None,
-) -> LibrarianComponents:
-    """Construct C.1 + C.2 + C.3 against a connected OpenCRE database.
+) -> Any:
+    """Construct C.1 alone against a connected OpenCRE database.
 
-    Args:
-        database: a connected ``db.Node_collection`` (the caller owns it, the
-            same way Module B's ``run_noise_filter`` takes a session it did not
-            open).
-        config: Module C settings; defaults to ``load_config()``.
-        embed_fn: text -> embedding. Defaults to the prompt handler's embedder,
-            which calls the paid embedding API; injectable so a caller can
-            supply a local or fake embedder.
+    Returns ``(retriever, cre_embeddings)``: the retriever behind the shared
+    ``retrieve()`` seam, and the hub embeddings it was built from (the in_memory
+    pool source, and the id set ``build_components`` records as known CREs).
 
-    Raises whatever the pgvector guard raises when that backend is configured
-    but unavailable — deliberately, rather than falling back to a different
-    retrieval path and producing silently different rankings.
+    Split out of ``build_components`` so a caller that only needs the shortlist
+    (the ``/rest/v1/link/suggest`` endpoint, which runs in the web process and
+    must not load a torch cross-encoder) can share C.1 exactly, instead of
+    re-implementing retrieval and drifting from the pipeline.
     """
     from application.defs import cre_defs as defs
     from application.utils.librarian.candidate_retriever import (
         CandidatePool,
         RetrieverBackend,
         build_retriever,
-    )
-    from application.utils.librarian.cross_encoder import (
-        CrossEncoderReranker,
-        build_cross_encoder_score_fn,
     )
 
     config = config or load_config()
@@ -129,6 +121,40 @@ def build_components(
             if backend is RetrieverBackend.pgvector
             else None
         ),
+    )
+    return retriever, cre_embeddings
+
+
+def build_components(
+    database: Any,
+    *,
+    config: Optional[LibrarianConfig] = None,
+    embed_fn: Optional[Callable[[str], Sequence[float]]] = None,
+) -> LibrarianComponents:
+    """Construct C.1 + C.2 + C.3 against a connected OpenCRE database.
+
+    Args:
+        database: a connected ``db.Node_collection`` (the caller owns it, the
+            same way Module B's ``run_noise_filter`` takes a session it did not
+            open).
+        config: Module C settings; defaults to ``load_config()``.
+        embed_fn: text -> embedding. Defaults to the prompt handler's embedder,
+            which calls the paid embedding API; injectable so a caller can
+            supply a local or fake embedder.
+
+    Raises whatever the pgvector guard raises when that backend is configured
+    but unavailable — deliberately, rather than falling back to a different
+    retrieval path and producing silently different rankings.
+    """
+    from application.defs import cre_defs as defs
+    from application.utils.librarian.cross_encoder import (
+        CrossEncoderReranker,
+        build_cross_encoder_score_fn,
+    )
+
+    config = config or load_config()
+    retriever, cre_embeddings = build_retriever_for(
+        database, config=config, embed_fn=embed_fn
     )
 
     # C.2 scores each (section, candidate) pair against the CRE's
