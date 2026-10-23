@@ -22,7 +22,11 @@ from application.utils.librarian.config_loader import LibrarianConfig
 from application.utils.librarian.factory import LibrarianComponents
 from application.utils.librarian.schemas import CreCandidate, RetrievalAudit
 from application.utils.mapping_job import (
+    DEFAULT_QUEUE,
     REMAP_AFTER_REINDEX,
+    MappingPartialFailure,
+    MappingSummary,
+    check_complete,
     run_mapping,
 )
 
@@ -83,10 +87,6 @@ class _Scaler:
 
     def confidence(self, logits):
         return self.by_cre.get(self.current, 0.0)
-
-
-class _Components(LibrarianComponents):
-    pass
 
 
 def _components(by_text, conf_by_cre):
@@ -319,6 +319,86 @@ class MappingJobTest(unittest.TestCase):
         self.assertEqual(rows["1.2"].status, SectionStatus.PENDING.value)
         self.assertIsNone(rows["1.2"].cre_db_id)
         self.assertEqual(rows["1.3"].status, SectionStatus.AUTO_MAPPED.value)
+
+    def test_duplicate_section_ids_in_one_upload_last_one_wins(self) -> None:
+        """A repeated section id must update the row added moments earlier in
+        the same call, not insert a second one into the unique constraint."""
+        std = self.collection.create_user_standard(self.user.id, "Dupes")
+        touched = self.collection.upsert_user_standard_sections(
+            std.id, [("9.1", "first text"), ("9.1", "second text"), ("9.2", "x")]
+        )
+        rows = {
+            r.section_id: r
+            for r in self.collection.get_user_standard_sections(std.id, self.user.id)
+        }
+        self.assertEqual(sorted(rows), ["9.1", "9.2"])
+        self.assertEqual(rows["9.1"].section_text, "second text")
+        self.assertEqual(touched, 3)
+
+    def test_confirming_a_different_cre_clears_the_jobs_confidence(self) -> None:
+        run_mapping(
+            self.standard.id,
+            self.collection,
+            components=_components(self.by_text, self.conf),
+            config=_config(),
+        )
+        # 1.2's candidate is salt at 0.42; the user picks nonce instead
+        row = self._rows()["1.2"]
+        self.collection.confirm_section_mapping(row.id, self.nonce.id, self.user.id)
+        self.assertIsNone(self._rows()["1.2"].confidence)
+        # confirming the job's own candidate keeps the score it was computed for
+        row = self._rows()["1.1"]
+        self.collection.confirm_section_mapping(row.id, self.nonce.id, self.user.id)
+        self.assertEqual(self._rows()["1.1"].confidence, 0.95)
+
+    def test_job_write_cannot_overwrite_a_decision_made_after_it_loaded(self) -> None:
+        """The status guard is in the UPDATE, so a user decision that lands
+        between the job's read and its write is the one that survives."""
+        row = self._rows()["1.1"]
+        self.collection.confirm_section_mapping(row.id, self.salt.id, self.user.id)
+        moved = self.collection.set_section_mapping(
+            row.id,
+            cre_db_id=self.nonce.id,
+            confidence=0.99,
+            status=SectionStatus.AUTO_MAPPED.value,
+        )
+        self.assertFalse(moved)
+        after = self._rows()["1.1"]
+        self.assertEqual(after.status, SectionStatus.USER_CONFIRMED.value)
+        self.assertEqual(after.cre_db_id, self.salt.id)
+
+    def test_job_write_moves_a_pending_row(self) -> None:
+        row = self._rows()["1.1"]
+        moved = self.collection.set_section_mapping(
+            row.id,
+            cre_db_id=self.nonce.id,
+            confidence=0.9,
+            status=SectionStatus.AUTO_MAPPED.value,
+        )
+        self.assertTrue(moved)
+        self.assertEqual(self._rows()["1.1"].status, SectionStatus.AUTO_MAPPED.value)
+
+    def test_partial_failure_is_raised_so_rq_records_it(self) -> None:
+        ok = MappingSummary(standard_id="s", threshold=0.8, considered=2, auto_mapped=2)
+        self.assertIs(check_complete(ok), ok)
+        bad = MappingSummary(
+            standard_id="s", threshold=0.8, considered=2, auto_mapped=1, errored=1
+        )
+        with self.assertRaises(MappingPartialFailure) as caught:
+            check_complete(bad)
+        self.assertIs(caught.exception.summary, bad)
+        self.assertIn("1 of 2", str(caught.exception))
+
+    def test_default_queue_is_one_the_stock_worker_listens_to(self) -> None:
+        from application import worker
+
+        self.assertIn(DEFAULT_QUEUE, worker.DEFAULT_LISTEN)
+
+    def test_empty_status_list_reads_nothing(self) -> None:
+        self.assertEqual(
+            self.collection.get_user_standard_sections_by_status(self.standard.id, []),
+            [],
+        )
 
     def test_same_name_for_two_users_is_two_rows_and_duplicate_for_one_user_fails(
         self,
