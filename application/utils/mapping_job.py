@@ -35,6 +35,12 @@ from application.utils.librarian.decision_engine import Decision, ReasonCode, de
 from application.utils.librarian.factory import LibrarianComponents
 from application.utils.librarian.link_suggest import _resolve_cre
 
+#: The queue ``enqueue_mapping`` uses unless ``CRE_MAPPING_QUEUE_NAME`` says
+#: otherwise. It must be one the stock worker listens to
+#: (``application.worker.DEFAULT_LISTEN``), or jobs sit queued forever; a test
+#: pins the two together.
+DEFAULT_QUEUE = "default"
+
 #: Which rows a run considers. Re-indexing the graph re-runs AUTO_MAPPED and
 #: NEEDS_REVIEW too (RFC TODO 3); a normal run only drains PENDING.
 PENDING_ONLY: Sequence[str] = (SectionStatus.PENDING.value,)
@@ -151,16 +157,41 @@ def run_mapping(
     return summary
 
 
+class MappingPartialFailure(RuntimeError):
+    """Some sections errored. Raised so rq records the job as failed; the
+    sections that did map are already committed and are not retried."""
+
+    def __init__(self, summary: MappingSummary) -> None:
+        self.summary = summary
+        super().__init__(
+            f"mapping of standard {summary.standard_id}: {summary.errored} of "
+            f"{summary.considered} sections errored and were left PENDING"
+        )
+
+
+def check_complete(summary: MappingSummary) -> MappingSummary:
+    """Return ``summary`` if every considered section was mapped, else raise.
+
+    A job that swallowed failures would report success to rq and nothing
+    would ever retry the PENDING leftovers; raising is what makes the partial
+    run visible on the queue and re-runnable.
+    """
+    if summary.errored:
+        raise MappingPartialFailure(summary)
+    return summary
+
+
 def run_mapping_job(standard_id: str, db_connection_str: str) -> Dict[str, Any]:
     """rq entry point: connect, map the PENDING sections, return the summary.
 
     Registered by dotted path, like ``run_gap_pair_job``, so the worker needs
-    no import of the web app.
+    no import of the web app. Raises ``MappingPartialFailure`` when any
+    section errored, after the successful ones are committed.
     """
     from application.cmd.cre_main import db_connect
 
     database = db_connect(path=db_connection_str)
-    return run_mapping(standard_id, database).to_dict()
+    return check_complete(run_mapping(standard_id, database)).to_dict()
 
 
 def enqueue_mapping(standard_id: str, db_connection_str: str) -> str:
@@ -171,7 +202,7 @@ def enqueue_mapping(standard_id: str, db_connection_str: str) -> str:
 
     conn = redis.connect()  # type: ignore[no-untyped-call]
     queue = Queue(
-        name=os.environ.get("CRE_MAPPING_QUEUE_NAME", "mapping"), connection=conn
+        name=os.environ.get("CRE_MAPPING_QUEUE_NAME", DEFAULT_QUEUE), connection=conn
     )
     job = queue.enqueue_call(
         description=f"mapping:{standard_id}",
@@ -183,7 +214,10 @@ def enqueue_mapping(standard_id: str, db_connection_str: str) -> str:
 
 
 __all__ = [
+    "DEFAULT_QUEUE",
+    "MappingPartialFailure",
     "MappingSummary",
+    "check_complete",
     "PENDING_ONLY",
     "REMAP_AFTER_REINDEX",
     "enqueue_mapping",

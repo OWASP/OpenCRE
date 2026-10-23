@@ -2505,16 +2505,18 @@ class Node_collection:
         for section_id, section_text in sections:
             row = existing.get(section_id)
             if row is None:
-                self.session.add(
-                    UserStandardSection(
-                        standard_id=standard_id,
-                        section_id=section_id,
-                        section_text=section_text,
-                        status=SectionStatus.PENDING.value,
-                        created_at=now,
-                        updated_at=now,
-                    )
+                row = UserStandardSection(
+                    standard_id=standard_id,
+                    section_id=section_id,
+                    section_text=section_text,
+                    status=SectionStatus.PENDING.value,
+                    created_at=now,
+                    updated_at=now,
                 )
+                self.session.add(row)
+                # A repeated section_id later in the same upload must update
+                # this row, not insert a second one into the unique constraint.
+                existing[section_id] = row
                 touched += 1
                 continue
             if row.section_text == section_text:
@@ -2555,6 +2557,8 @@ class Node_collection:
     ) -> List[UserStandardSection]:
         """Job-side read, by status, in a stable order. No user scoping: the
         mapping job runs as the system on a standard id it was handed."""
+        if not statuses:
+            return []
         rows: List[UserStandardSection] = (
             UserStandardSection.query.filter(
                 UserStandardSection.standard_id == standard_id,
@@ -2572,20 +2576,29 @@ class Node_collection:
         cre_db_id: Optional[str],
         confidence: Optional[float],
         status: str,
-    ) -> None:
-        """Job-side write of one section's outcome. Never moves a user-decided
-        row, whatever it is asked to write: that invariant lives here so no
-        caller can break it by accident."""
-        row = UserStandardSection.query.filter(
-            UserStandardSection.id == section_id
-        ).first()
-        if row is None or row.status in USER_DECIDED_STATUSES:
-            return
-        row.cre_db_id = cre_db_id
-        row.confidence = confidence
-        row.status = status
-        row.updated_at = self._utcnow_naive()
+    ) -> bool:
+        """Job-side write of one section's outcome; True if a row moved.
+
+        Never moves a user-decided row, whatever it is asked to write, and the
+        check is part of the UPDATE itself: a user who confirms a section
+        between the job loading it and writing it wins, because the worker's
+        stale PENDING view is never consulted. That invariant lives here so no
+        caller can break it by accident.
+        """
+        updated = UserStandardSection.query.filter(
+            UserStandardSection.id == section_id,
+            UserStandardSection.status.notin_(list(USER_DECIDED_STATUSES)),
+        ).update(
+            {
+                UserStandardSection.cre_db_id: cre_db_id,
+                UserStandardSection.confidence: confidence,
+                UserStandardSection.status: status,
+                UserStandardSection.updated_at: self._utcnow_naive(),
+            },
+            synchronize_session=False,
+        )
         self.session.commit()
+        return bool(updated)
 
     def _owned_section(
         self, section_id: str, user_id: str
@@ -2609,6 +2622,10 @@ class Node_collection:
         row = self._owned_section(section_id, user_id)
         if row is None or not self.get_CREs(internal_id=cre_db_id):
             return False
+        if row.cre_db_id != cre_db_id:
+            # The stored confidence was computed for the job's candidate; it
+            # says nothing about the CRE the user chose instead.
+            row.confidence = None
         row.cre_db_id = cre_db_id
         row.status = SectionStatus.USER_CONFIRMED.value
         row.updated_at = self._utcnow_naive()
