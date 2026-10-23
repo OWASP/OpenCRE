@@ -1583,49 +1583,46 @@ def chat_cre() -> Any:
             "Chat is unavailable on this deployment (ML/LLM dependencies not installed).",
         )
 
+    from application.utils import rate_limit
+
+    if os.environ.get("NO_LOGIN") != "1":
+        _who = session.get("email") or getattr(g, "api_key_email", None)
+        try:
+            rate_limit.check_and_count(_who, account_roles.role_for(_who), "ask")
+        except rate_limit.RateLimited as limited:
+            resp = jsonify({"error": limited.message()})
+            resp.status_code = 429
+            resp.headers["Retry-After"] = str(limited.retry_after)
+            return resp
+
     from application.utils.chat_history import split_prompt_and_history
 
     user_prompt, chat_history = split_prompt_and_history(
         message if isinstance(message, dict) else {}
     )
-    # Experimental OIE OWASP metadata agent (feature-flagged). Logistics/meta
-    # questions must not be forced through CRE RAG — see owasp_agent router.
+    # Same routing and answer pipeline as MCP `ask` (application.utils.owasp_agent.service);
+    # the web chat additionally passes its conversation history.
+    from application.utils.owasp_agent.service import (
+        OwaspAgentUnavailable,
+        route_question,
+    )
+
     try:
-        from application.utils.owasp_agent import (
-            OwaspAgentRouter,
-            is_owasp_agent_enabled,
+        agent_response = route_question(user_prompt or "", chat_history)
+    except OwaspAgentUnavailable:
+        return (
+            jsonify(
+                {
+                    "error": (
+                        "OWASP metadata agent failed. "
+                        "Not falling back to CRE RAG for community/meta questions."
+                    )
+                }
+            ),
+            503,
         )
-
-        if is_owasp_agent_enabled():
-            agent_response = OwaspAgentRouter().handle(
-                user_prompt or "", history=chat_history
-            )
-            if agent_response is not None:
-                return jsonify(_with_answer_id(agent_response, user_prompt))
-    except Exception:
-        logger.exception("owasp agent router failed")
-        # If this looks like a meta question, do not fall through to CRE RAG.
-        try:
-            from application.utils.owasp_agent.router import classify_intent
-
-            if classify_intent(user_prompt or "") != "cre_normative":
-                return (
-                    jsonify(
-                        {
-                            "error": (
-                                "OWASP metadata agent failed. "
-                                "Not falling back to CRE RAG for community/meta questions."
-                            )
-                        }
-                    ),
-                    503,
-                )
-        except Exception:
-            logger.exception("owasp agent classify_intent also failed")
-            return (
-                jsonify({"error": "OWASP metadata agent unavailable"}),
-                503,
-            )
+    if agent_response is not None:
+        return jsonify(_with_answer_id(agent_response, user_prompt))
 
     try:
         response = prompt.generate_text(user_prompt, history=chat_history)
