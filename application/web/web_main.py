@@ -1564,24 +1564,6 @@ def chat_cre() -> Any:
         posthog.capture("chat_cre", "")
 
     database = db.Node_collection()
-    # Lazy import to avoid loading heavy prompt/ML dependencies at web boot.
-    try:
-        from application.prompt_client import llm_error_utils, prompt_client
-
-        prompt = prompt_client.PromptHandler(database)
-    except ImportError:
-        abort(
-            503,
-            "Chat is unavailable on this deployment (ML/LLM dependencies not installed).",
-        )
-    except RuntimeError as exc:
-        # PromptHandler raises RuntimeError when litellm is missing.
-        if "litellm" not in str(exc).lower():
-            raise
-        abort(
-            503,
-            "Chat is unavailable on this deployment (ML/LLM dependencies not installed).",
-        )
 
     from application.utils import rate_limit
 
@@ -1624,6 +1606,26 @@ def chat_cre() -> Any:
     if agent_response is not None:
         return jsonify(_with_answer_id(agent_response, user_prompt))
 
+    # Only questions the OWASP agent does not handle need the CRE retrieval handler. Building it costs
+    # 2-3 s per request (16 s in a fresh process), so it is created here and never for agent answers.
+    # Lazy import to avoid loading heavy prompt/ML dependencies at web boot.
+    try:
+        from application.prompt_client import llm_error_utils, prompt_client
+
+        prompt = prompt_client.PromptHandler(database)
+    except ImportError:
+        abort(
+            503,
+            "Chat is unavailable on this deployment (ML/LLM dependencies not installed).",
+        )
+    except RuntimeError as exc:
+        # PromptHandler raises RuntimeError when litellm is missing.
+        if "litellm" not in str(exc).lower():
+            raise
+        abort(
+            503,
+            "Chat is unavailable on this deployment (ML/LLM dependencies not installed).",
+        )
     try:
         response = prompt.generate_text(user_prompt, history=chat_history)
     except Exception as e:

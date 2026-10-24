@@ -69,3 +69,25 @@ def warm_up() -> bool:
         return True
     except Exception:  # noqa: BLE001 - warm-up must never stop the server
         return False
+
+
+def start_background_warm_up(app: Any) -> bool:
+    """Warm a freshly started web worker in the background so the first chat is not the slow one.
+
+    Opt-in with OWASP_WARMUP_WEB=1 (command-line jobs that also call create_app must not start it).
+    """
+    if (os.environ.get("OWASP_WARMUP_WEB", "") or "").strip().lower() not in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    ):
+        return False
+    import threading
+
+    def _run() -> None:
+        with app.app_context():
+            warm_up()
+
+    threading.Thread(target=_run, name="opencre-web-warmup", daemon=True).start()
+    return True
