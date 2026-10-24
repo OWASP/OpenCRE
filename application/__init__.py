@@ -92,4 +92,8 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
     compress.init_app(app)
     cache.init_app(app)
 
+    if mode != "test":
+        from application.utils.comprehension.shared import start_background_warm_up
+
+        start_background_warm_up(app)  # no-op unless OWASP_WARMUP_WEB=1
     return app
