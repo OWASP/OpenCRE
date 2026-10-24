@@ -109,3 +109,25 @@ describe('linkifyCitations', () => {
     expect(linkifyCitations('Plain [1] text', [])).toBe('Plain [1] text');
   });
 });
+
+describe('Chatbot continue conversation', () => {
+  afterEach(() => jest.clearAllMocks());
+
+  it('sends only the new question unless "Continue conversation" is ticked', async () => {
+    const { ask, calls, container, getByText, getByPlaceholderText, findAllByText } = setup('ans-1');
+    await ask();
+    const send = async (text: string, expected: number) => {
+      fireEvent.change(getByPlaceholderText(/Type your infosec question/), { target: { value: text } });
+      fireEvent.click(getByText('Ask'));
+      await findAllByText(/3 maturity levels/).then((els) => expect(els.length).toBeGreaterThan(0));
+      await waitFor(() => expect(calls.filter((c) => c.url.endsWith('/completion'))).toHaveLength(expected));
+    };
+    await send('second question', 2);
+    const bodies = () =>
+      calls.filter((c) => c.url.endsWith('/completion')).map((c) => JSON.parse(c.init.body));
+    expect(bodies()[1].messages).toHaveLength(1);
+    fireEvent.click(container.querySelector('input[type=checkbox]')!);
+    await send('third question', 3);
+    expect(bodies()[2].messages.length).toBeGreaterThan(1);
+  });
+});

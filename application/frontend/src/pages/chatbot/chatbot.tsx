@@ -5,7 +5,7 @@ import { marked } from 'marked';
 import React, { useEffect, useRef, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Button, Container, Form, GridRow, Header, Icon } from 'semantic-ui-react';
+import { Button, Checkbox, Container, Form, GridRow, Header, Icon } from 'semantic-ui-react';
 import { Grid } from 'semantic-ui-react';
 
 import { useEnvironment } from '../../hooks';
@@ -59,6 +59,7 @@ export const Chatbot = () => {
   const [error, setError] = useState<string>('');
   const [chat, setChat] = useState<ChatState>(DEFAULT_CHAT_STATE);
   const [user, setUser] = useState('');
+  const [continueConversation, setContinueConversation] = useState<boolean>(false);
   const [modelName, setModelName] = useState<string>('');
 
   function getModelDisplayName(modelName: string): string {
@@ -181,14 +182,6 @@ export const Chatbot = () => {
       });
   }
 
-  function startNewChat() {
-    setChatMessages([]);
-    setError('');
-    setChat(DEFAULT_CHAT_STATE);
-    setModelName('');
-    setShowScrollToBottom(false);
-  }
-
   async function onSubmit() {
     if (!chat.term.trim()) return;
     shouldForceScrollRef.current = true;
@@ -197,7 +190,7 @@ export const Chatbot = () => {
     setChat({ ...chat, term: '' });
     setLoading(true);
 
-    const prior = chatMessages.slice(-(HISTORY_CAP - 1)).map((m) => ({
+    const prior = (continueConversation ? chatMessages.slice(-(HISTORY_CAP - 1)) : []).map((m) => ({
       role: m.role === 'assistant' ? 'assistant' : 'user',
       content: m.message,
     }));
@@ -338,9 +331,11 @@ export const Chatbot = () => {
           </Header>
           {hasMessages ? (
             <div className="chatbot-toolbar">
-              <Button type="button" size="small" basic onClick={startNewChat}>
-                <Icon name="plus" /> New chat
-              </Button>
+              <Checkbox
+                label="Continue conversation"
+                checked={continueConversation}
+                onChange={(_, d) => setContinueConversation(!!d.checked)}
+              />
             </div>
           ) : null}
 
