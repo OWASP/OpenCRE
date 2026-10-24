@@ -275,6 +275,12 @@ class OwaspAgentRouter:
         """
         if not is_owasp_agent_enabled():
             return None
+        if not _clause:
+            from application.utils.comprehension.synthesize import set_history
+
+            set_history(
+                history
+            )  # native multi-turn for the answer call (background, not a question)
         text = fix_key_typos(
             (prompt or "").strip()[:MAX_PROMPT_CHARS].replace("\u2019", "'")
         )

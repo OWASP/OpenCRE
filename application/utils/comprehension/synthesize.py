@@ -13,6 +13,45 @@ LlmFn = Callable[[str, str], str]
 _EVIDENCE: "ContextVar[list]" = ContextVar("comprehension_evidence", default=[])
 
 
+# The chat's earlier turns for the question being answered. The answer call sends them as real
+# user/assistant messages (native multi-turn), so the model reads them as background, not as questions.
+_HISTORY: "ContextVar[list]" = ContextVar("comprehension_history", default=[])
+HISTORY_RULE = (
+    " Earlier messages in this conversation are background only: answer ONLY the final question, "
+    "do not answer the earlier questions again."
+)
+MAX_HISTORY_TURNS = 6
+MAX_HISTORY_CHARS = 600
+
+
+def set_history(history) -> None:
+    """Prepare the earlier chat turns (last few, trimmed, alternating roles) for the answer call."""
+    from application.utils.chat_history import normalize_chat_messages
+
+    turns = []
+    for m in normalize_chat_messages(history)[-MAX_HISTORY_TURNS:]:
+        content = m["content"][:MAX_HISTORY_CHARS]
+        if turns and turns[-1]["role"] == m["role"]:
+            turns[-1]["content"] += "\n" + content  # providers want alternating roles
+        else:
+            turns.append({"role": m["role"], "content": content})
+    while turns and turns[0]["role"] != "user":
+        turns.pop(0)
+    _HISTORY.set(turns)
+
+
+def get_history() -> list:
+    return list(_HISTORY.get())
+
+
+def with_history(messages: list) -> list:
+    """[system, ...earlier turns, final user message]: native multi-turn for the answer call."""
+    turns = get_history()
+    if not turns or len(messages) < 2:
+        return list(messages)
+    return [messages[0], *turns, *messages[1:]]
+
+
 def reset_evidence() -> None:
     _EVIDENCE.set([])
 
@@ -105,6 +144,8 @@ def synthesize(
     """``hits`` = (text, citations). Returns (answer, citations used); ("", []) if unknown."""
     from application.utils.comprehension import flags
 
+    if get_history():
+        system += HISTORY_RULE
     if flags.on("EDITION"):
         system += EDITION_RULE
     if flags.on("COMPLETE"):
