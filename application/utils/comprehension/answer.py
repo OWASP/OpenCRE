@@ -408,6 +408,10 @@ def _answer(
             temperature=0.0,
             # Thinking tokens bill as output and add seconds: off, or a small budget.
             extra_try_kwargs={"reasoning_effort": effort} if effort else None,
+            interactive=True,
+            fallback_model=os.environ.get(
+                "OWASP_ANSWER_FALLBACK_MODEL", "gemini/gemini-2.5-flash-lite"
+            ),
         )
         complete = lambda msgs: call(
             msgs[0]["content"], msgs[1]["content"]

@@ -10,6 +10,14 @@ _LOCK = threading.Lock()
 _HANDLER: Any = None
 
 
+def _interactive(handler: Any) -> Any:
+    """This handler serves people waiting for answers: the interactive layer
+    (litellm_router.quick_retry / resilient_completion) does the retrying, so the bulk-job sleeps
+    inside the handler are switched off."""
+    handler._llm_max_retries = 0
+    return handler
+
+
 def shared_handler(database: Any) -> Any:
     """A lazily created, cached PromptHandler(load_all_embeddings=False)."""
     from application.prompt_client import prompt_client
@@ -21,10 +29,14 @@ def shared_handler(database: Any) -> Any:
         "no",
         "off",
     ):
-        return prompt_client.PromptHandler(database, load_all_embeddings=False)
+        return _interactive(
+            prompt_client.PromptHandler(database, load_all_embeddings=False)
+        )
     with _LOCK:
         if _HANDLER is None:
-            _HANDLER = prompt_client.PromptHandler(database, load_all_embeddings=False)
+            _HANDLER = _interactive(
+                prompt_client.PromptHandler(database, load_all_embeddings=False)
+            )
         return _HANDLER
 
 
