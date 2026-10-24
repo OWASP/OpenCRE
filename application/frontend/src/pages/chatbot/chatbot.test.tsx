@@ -2,7 +2,7 @@ import { fireEvent, render, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 
-import { Chatbot } from './chatbot';
+import { Chatbot, linkifyCitations } from './chatbot';
 
 // The syntax highlighter ships ESM only; the thumbs tests do not render code blocks.
 jest.mock('react-syntax-highlighter', () => ({ Prism: () => null }));
@@ -85,5 +85,27 @@ describe('Chatbot thumbs up/down', () => {
     await ask();
     await findByText(/3 maturity levels/);
     expect(queryByText(/Privacy & Security/)).toBeNull();
+  });
+});
+
+describe('linkifyCitations', () => {
+  const urls = ['https://github.com/OWASP/a.md', 'https://github.com/OWASP/b.md'];
+
+  it('turns [n] markers into links to the n-th source', () => {
+    expect(linkifyCitations('Imperfect [1][2].', urls)).toBe(
+      'Imperfect [[1]](https://github.com/OWASP/a.md)[[2]](https://github.com/OWASP/b.md).'
+    );
+  });
+
+  it('leaves markers without a matching source, and unsafe links, alone', () => {
+    expect(linkifyCitations('See [3] and [1].', ['https://x.org/a'])).toBe(
+      'See [3] and [[1]](https://x.org/a).'
+    );
+    expect(linkifyCitations('See [1].', ['javascript:alert(1)'])).toBe('See [1].');
+  });
+
+  it('returns the text unchanged when there are no sources', () => {
+    expect(linkifyCitations('Plain [1] text', undefined)).toBe('Plain [1] text');
+    expect(linkifyCitations('Plain [1] text', [])).toBe('Plain [1] text');
   });
 });

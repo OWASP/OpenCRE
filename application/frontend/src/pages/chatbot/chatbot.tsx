@@ -17,6 +17,23 @@ export function renderChatMarkdown(markdown: string): string {
   return DOMPurify.sanitize(String(parsed), { USE_PROFILES: { html: true } });
 }
 
+/** Turn [n] markers into links to the n-th cited source (the backend numbers them to match the list). */
+export function linkifyCitations(markdown: string, urls: string[] | undefined): string {
+  if (!urls || urls.length === 0) return markdown;
+  const safe = (url: string) => {
+    try {
+      const protocol = new URL(url).protocol;
+      return protocol === 'http:' || protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+  return markdown.replace(/\[(\d+)\]/g, (marker, num) => {
+    const url = urls[Number(num) - 1];
+    return url && safe(url) ? `[${marker}](${url})` : marker;
+  });
+}
+
 export const Chatbot = () => {
   type chatMessage = {
     timestamp: string;
@@ -114,7 +131,7 @@ export const Chatbot = () => {
     }
   }, []);
 
-  function processResponse(response: string) {
+  function processResponse(response: string, citations?: string[]) {
     const responses = response.split('```');
     const res: React.ReactElement[] = [];
 
@@ -124,7 +141,7 @@ export const Chatbot = () => {
           <p
             key={i}
             dangerouslySetInnerHTML={{
-              __html: renderChatMarkdown(txt),
+              __html: renderChatMarkdown(linkifyCitations(txt, citations)),
             }}
           />
         );
@@ -283,25 +300,29 @@ export const Chatbot = () => {
   }
 
   function displayOwaspCitations(urls: string[]) {
-    const safe = urls.filter((url) => {
+    const isSafe = (url: string) => {
       try {
         const parsed = new URL(url);
         return parsed.protocol === 'http:' || parsed.protocol === 'https:';
       } catch {
         return false;
       }
-    });
-    if (!safe.length) return null;
+    };
+    if (!urls.some(isSafe)) return null;
     return (
       <div className="references">
         <div className="references-title">OWASP community sources</div>
-        {safe.map((url, i) => (
-          <div className="reference-card" key={i}>
-            <a href={url} target="_blank" rel="noopener noreferrer">
-              {url}
-            </a>
-          </div>
-        ))}
+        {urls.map((url, i) =>
+          isSafe(url) ? (
+            // The number is the position in the full list, so [n] in the answer always matches.
+            <div className="reference-card" key={i} id={`source-${i + 1}`}>
+              <span className="reference-number">[{i + 1}] </span>
+              <a href={url} target="_blank" rel="noopener noreferrer">
+                {url}
+              </a>
+            </div>
+          ) : null
+        )}
       </div>
     );
   }
@@ -342,7 +363,7 @@ export const Chatbot = () => {
                           <span className="message-timestamp">{m.timestamp}</span>
                         </div>
 
-                        <div className="message-body">{processResponse(m.message)}</div>
+                        <div className="message-body">{processResponse(m.message, m.owaspCitations)}</div>
 
                         {m.role === 'assistant' && m.answerId ? (
                           <div className="rate-answer" role="group" aria-label="Rate this answer">

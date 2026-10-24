@@ -202,3 +202,39 @@ class NativeHistoryTest(unittest.TestCase):
         self.assertEqual(
             [t["role"] for t in self.syn.get_history()], ["user", "assistant"]
         )
+
+
+class CitationNumberingTest(unittest.TestCase):
+    def test_markers_are_renumbered_to_match_the_returned_source_list(self):
+        from application.utils.comprehension import synthesize as syn
+
+        hits = [
+            ("s1", ["https://x/a"]),
+            ("s2", ["https://x/b"]),
+            ("s3", ["https://x/a"]),
+            ("s4", []),
+            ("s5", ["https://x/c"]),
+        ]
+        answer, cites = syn.synthesize(
+            "q",
+            hits,
+            lambda s, u: "Detection is imperfect [3][5]. Some attacks win [1][3][4]. Limits [2].",
+        )
+        self.assertEqual(cites, ["https://x/a", "https://x/b", "https://x/c"])
+        # [1] and [3] are two chunks of the same file -> one number; [4] has no URL -> dropped.
+        self.assertEqual(
+            answer, "Detection is imperfect [1][3]. Some attacks win [1]. Limits [2]."
+        )
+        evidence = syn.take_evidence()
+        self.assertEqual(sorted({e["n"] for e in evidence if e["n"]}), [1, 2, 3])
+        self.assertIn(
+            None, [e["n"] for e in evidence]
+        )  # the source without a link keeps its snippet, no number
+
+    def test_answer_without_markers_is_untouched(self):
+        from application.utils.comprehension import synthesize as syn
+
+        answer, cites = syn.synthesize(
+            "q", [("s1", ["https://x/a"])], lambda s, u: "No markers here."
+        )
+        self.assertEqual((answer, cites), ("No markers here.", []))

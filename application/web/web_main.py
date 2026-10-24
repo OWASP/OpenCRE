@@ -1646,8 +1646,36 @@ def chat_cre() -> Any:
             jsonify({"error": f"AI Service Error: {str(e)}"}),
             status_code,
         )
+    response = _block_unverified_answer(response, user_prompt)
     response = _maybe_append_cre_followups(user_prompt or "", response)
     return jsonify(_with_answer_id(response, user_prompt))
+
+
+def _block_unverified_answer(response: Any, question: Optional[str]) -> Any:
+    """Do not show free-form model text that no source backs (it can be a confident hallucination).
+
+    ``generate_text`` marks an answer ``accurate`` only when a CRE/standard node matched the question.
+    Otherwise the model answered from its own memory ("who started opencre" -> a made-up founder), so the
+    user gets an honest "couldn't find it" instead. CHAT_BLOCK_UNVERIFIED=0 restores the old behaviour.
+    """
+    blocking = (
+        os.environ.get("CHAT_BLOCK_UNVERIFIED", "1") or "1"
+    ).strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
+    if not blocking or not isinstance(response, dict) or response.get("accurate"):
+        return response
+    from application.utils.comprehension.answer import ABSTAIN_MESSAGE
+
+    logger.info(
+        "blocked an unverified chat answer for %r: %s",
+        (question or "")[:120],
+        str(response.get("response") or "")[:300].replace("\n", " "),
+    )
+    return {**response, "response": ABSTAIN_MESSAGE, "table": "", "accurate": False}
 
 
 def _with_answer_id(response: Any, question: Optional[str]) -> Any:

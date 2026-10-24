@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from contextvars import ContextVar
-from typing import Callable, List, Sequence, Tuple
+from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 LlmFn = Callable[[str, str], str]
 
@@ -60,8 +60,39 @@ def take_evidence() -> list:
     return list(_EVIDENCE.get())
 
 
+def renumber_citations(
+    answer: str,
+    hits: Sequence[Tuple[str, List[str]]],
+    used: Sequence[int],
+    cites: Sequence[str],
+) -> Tuple[str, Dict[int, int]]:
+    """Make the [n] markers match the returned citation list (so a UI can link [n] to cites[n-1]).
+
+    The model cites the numbered sources it was shown ([3], [17], ...), but callers receive only the URLs
+    of the sources it used. Each marker becomes the 1-based position of its source's first URL in ``cites``;
+    several chunks of one file share a number, repeated markers collapse ([2][2] -> [2]) and markers of
+    sources without a URL are dropped.
+    """
+    number: Dict[int, int] = {}
+    for i in used:
+        urls = hits[i - 1][1]
+        if urls and urls[0] in cites:
+            number[i] = list(cites).index(urls[0]) + 1
+
+    def swap(m: "re.Match[str]") -> str:
+        n = number.get(int(m.group(1)))
+        return f"[{n}]" if n else ""
+
+    out = re.sub(r"\[(\d+)\]", swap, answer)
+    out = re.sub(r"(\[\d+\])(?:\s*\1)+", r"\1", out)  # [2][2] -> [2]
+    out = re.sub(r"[ \t]+([.,;:!?])", r"\1", out)
+    return out, number
+
+
 def _record_evidence(
-    hits: Sequence[Tuple[str, List[str]]], used: Sequence[int]
+    hits: Sequence[Tuple[str, List[str]]],
+    used: Sequence[int],
+    number: Optional[Dict[int, int]] = None,
 ) -> None:
     from application.utils.comprehension.toolkit import body_of, path_of
 
@@ -72,7 +103,7 @@ def _record_evidence(
         snippet = body.split(": ", 1)[-1] if path_of(body) else body
         items.append(
             {
-                "n": i,
+                "n": number.get(i) if number is not None else i,
                 "path": path_of(body),
                 "snippet": snippet.strip()[:500],
                 "citations": list(cites)[:3],
@@ -165,10 +196,11 @@ def synthesize(
     used = sorted(
         {int(n) for n in re.findall(r"\[(\d+)\]", out) if 0 < int(n) <= len(hits)}
     )
-    _record_evidence(hits, used)
     cites: List[str] = []
     for i in used:
         for c in hits[i - 1][1]:
             if c not in cites:
                 cites.append(c)
+    out, number = renumber_citations(out, hits, used, cites)
+    _record_evidence(hits, used, number)
     return out, cites
