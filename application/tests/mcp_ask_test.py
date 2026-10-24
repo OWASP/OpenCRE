@@ -106,7 +106,7 @@ class McpAskToolTest(unittest.TestCase):
             instructions = server_instructions()
             self.assertIn("ask tool", instructions.lower())
 
-    @patch("application.mcp.ask.OwaspAgentRouter")
+    @patch("application.utils.owasp_agent.OwaspAgentRouter")
     def test_auto_meta_channel(self, router_cls: MagicMock) -> None:
         router_cls.return_value.handle.return_value = {
             "response": "Answer: 1 chapter",
@@ -130,7 +130,7 @@ class McpAskToolTest(unittest.TestCase):
         self.assertIn("https://nest.example/la", out["citations"])
         router_cls.return_value.handle.assert_called_once()
 
-    @patch("application.mcp.ask.OwaspAgentRouter")
+    @patch("application.utils.owasp_agent.OwaspAgentRouter")
     def test_meta_runs_before_cre_normative_defer(self, router_cls: MagicMock) -> None:
         """AIX/meta evidence must win even when intent is cre_normative."""
         router_cls.return_value.handle.return_value = {
@@ -232,7 +232,7 @@ class McpAskToolTest(unittest.TestCase):
                 }
             },
         )
-        with patch("application.mcp.ask.OwaspAgentRouter") as router_cls:
+        with patch("application.utils.owasp_agent.OwaspAgentRouter") as router_cls:
             out = ask(
                 "authentication",
                 corpus=CORPUS_SECURITY,
@@ -290,7 +290,9 @@ class McpAskToolTest(unittest.TestCase):
             with patch(
                 "application.mcp.ask.classify_intent", return_value="cre_normative"
             ):
-                with patch("application.mcp.ask.OwaspAgentRouter") as router_cls:
+                with patch(
+                    "application.utils.owasp_agent.OwaspAgentRouter"
+                ) as router_cls:
                     router_cls.return_value.handle.return_value = None
                     out = ask("How should I store passwords?", corpus=CORPUS_OWASP_META)
         self.assertFalse(out["ok"])

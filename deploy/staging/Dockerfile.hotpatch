@@ -1,0 +1,18 @@
+# Layer application code from a synced tree onto the existing staging image (skips pip),
+# and build the frontend bundle here so the deployed UI always matches the code.
+# Build context = repository root:  docker build -f deploy/staging/Dockerfile.hotpatch -t opencre-staging-web:latest .
+FROM node:lts AS frontend
+WORKDIR /code
+COPY package.json yarn.lock /code/
+RUN yarn install --frozen-lockfile
+COPY tsconfig.json webpack.config.js webpack.prod.js /code/
+COPY application/frontend /code/application/frontend
+RUN yarn build
+
+FROM opencre-staging-web:latest
+RUN pip install --no-cache-dir -U "litellm>=1.83.7"
+COPY application /code/application
+COPY --from=frontend /code/application/frontend/www /code/application/frontend/www
+COPY cre.py /code/cre.py
+COPY scripts /code/scripts
+COPY Makefile /code/Makefile

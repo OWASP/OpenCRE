@@ -1,0 +1,85 @@
+[
+  {
+    "name": "follow-up about risks must not re-answer the earlier question (reported 2026-10-24)",
+    "history": [
+      {"role": "user", "content": "Does the exchange cover agentic AI?"},
+      {"role": "assistant", "content": "Yes, the AI Exchange covers agentic AI threats and controls."}
+    ],
+    "next": "What are some key risks",
+    "rewrite": "What are some key risks of agentic AI according to the AI Exchange?",
+    "expect_standalone": "What are some key risks of agentic AI according to the AI Exchange?",
+    "must_not_contain": ["does the exchange cover"],
+    "rewrite_calls": 1
+  },
+  {
+    "name": "elliptical follow-up keeps the topic",
+    "history": [
+      {"role": "user", "content": "What does OWASP membership cost in Switzerland?"},
+      {"role": "assistant", "content": "Answer: Standard individual dues apply in Switzerland."}
+    ],
+    "next": "and in Morocco?",
+    "rewrite": "What does OWASP membership cost in Morocco?",
+    "expect_standalone": "What does OWASP membership cost in Morocco?",
+    "must_not_contain": ["switzerland"],
+    "rewrite_calls": 1
+  },
+  {
+    "name": "a self-contained question after an unrelated one ignores the history completely",
+    "history": [
+      {"role": "user", "content": "What does ASVS cover?"},
+      {"role": "assistant", "content": "ASVS is a verification standard."}
+    ],
+    "next": "Who are the project leaders of the OWASP Developer Guide project?",
+    "rewrite": null,
+    "expect_standalone": "Who are the project leaders of the OWASP Developer Guide project?",
+    "must_not_contain": ["asvs"],
+    "rewrite_calls": 0
+  },
+  {
+    "name": "third turn only depends on the previous answer, not on the first question",
+    "history": [
+      {"role": "user", "content": "What is OWASP SAMM?"},
+      {"role": "assistant", "content": "SAMM is the Software Assurance Maturity Model."},
+      {"role": "user", "content": "How many levels does it define?"},
+      {"role": "assistant", "content": "Three maturity levels per practice."}
+    ],
+    "next": "and what is level two?",
+    "rewrite": "What is maturity level two in OWASP SAMM?",
+    "expect_standalone": "What is maturity level two in OWASP SAMM?",
+    "must_not_contain": ["what is owasp samm?", "how many levels"],
+    "rewrite_calls": 1
+  },
+  {
+    "name": "the rewrite model glues the earlier question in: it is rejected, only the current message is used",
+    "history": [
+      {"role": "user", "content": "Does the exchange cover agentic AI?"},
+      {"role": "assistant", "content": "Yes."}
+    ],
+    "next": "What are some key risks",
+    "rewrite": "Does the exchange cover agentic AI? What are some key risks?",
+    "expect_standalone": "What are some key risks",
+    "must_not_contain": ["does the exchange cover"],
+    "rewrite_calls": 1
+  },
+  {
+    "name": "the rewrite model is down: current message alone, never the history",
+    "history": [
+      {"role": "user", "content": "Does the exchange cover agentic AI?"},
+      {"role": "assistant", "content": "Yes."}
+    ],
+    "next": "Why is that?",
+    "rewrite": "__FAIL__",
+    "expect_standalone": "Why is that?",
+    "must_not_contain": ["does the exchange cover"],
+    "rewrite_calls": 1
+  },
+  {
+    "name": "first message of a chat has no history",
+    "history": [],
+    "next": "What are some key risks",
+    "rewrite": null,
+    "expect_standalone": "What are some key risks",
+    "must_not_contain": [],
+    "rewrite_calls": 0
+  }
+]

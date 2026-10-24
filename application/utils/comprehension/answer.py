@@ -172,6 +172,61 @@ def _split_citations(content: str) -> Tuple[str, List[str]]:
     ]
 
 
+TEMPORARY_PROBLEM_MESSAGE = (
+    "I hit a temporary problem while writing this answer (the model service did not respond). "
+    "Please try again in a moment."
+)
+
+
+class AnswerUnavailable(Exception):
+    """The model call behind an answer failed; not the same as "no source answers this"."""
+
+
+_MISSING_SYSTEM = (
+    "You check whether an answer addresses everything a question asks. List what the question asks for, "
+    "then say which asked-for items the answer does NOT address at all. Be strict only about whole items "
+    'that are absent; ignore style and detail. Reply with JSON only: {"missing": ["short phrase", ...]} '
+    "(empty list when the answer covers everything)."
+)
+
+
+def missing_parts(question: str, answer: str, helper: Any) -> List[str]:
+    """Items the question asks for that the answer leaves out (cheap checker)."""
+    from application.utils.comprehension import extras
+
+    try:
+        data = extras.parse_json(
+            helper(_MISSING_SYSTEM, f"Question: {question}\n\nAnswer: {answer}")
+        )
+        return [str(m).strip() for m in (data.get("missing") or []) if str(m).strip()][
+            :4
+        ]
+    except Exception:  # noqa: BLE001 - checker failure means "no second pass"
+        return []
+
+
+def _complete_pass(
+    question: str,
+    out: Tuple[str, List[str]],
+    cands: Sequence[Any],
+    complete: CompletionFn,
+) -> Tuple[str, List[str]]:
+    from application.utils.comprehension import flags
+
+    helper = flags.helper_llm()
+    if helper is None or not out or not out[0]:
+        return out
+    missing = missing_parts(question, out[0], helper)
+    if not missing:
+        return out
+    again = _answer(
+        f"{question}\n(The answer must also cover: {'; '.join(missing)})",
+        cands,
+        complete,
+    )
+    return again if again and again[0] else out
+
+
 def answer_from_candidates(
     question: str, cands: Sequence[Any], complete: Optional[CompletionFn]
 ) -> Optional[Tuple[str, List[str]]]:
@@ -188,9 +243,21 @@ def answer_from_candidates(
         got = _ANSWERS.get(ckey)
         if got and time.time() - got[0] < 3600:
             return got[1]
-    out = _answer_decomposed(question, complete) if flags.on("DECOMPOSE") else None
-    if out is None:
-        out = _answer(question, cands, complete)
+    try:
+        out = _answer_decomposed(question, complete) if flags.on("DECOMPOSE") else None
+        if out is None:
+            out = _answer(question, cands, complete)
+        if out is not None and flags.on("COMPLETE2"):
+            out = _complete_pass(question, out, cands, complete)
+    except (
+        Exception
+    ) as exc:  # noqa: BLE001 - provider 503/429/timeouts must not look like "not found"
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "comprehension answer failed: %s: %s", type(exc).__name__, str(exc)[:200]
+        )
+        raise AnswerUnavailable(str(exc)[:200]) from exc
     if flags.on("CACHE") and out is not None:
         _ANSWERS[ckey] = (time.time(), out)
         if len(_ANSWERS) > 512:
@@ -252,12 +319,25 @@ def _answer_from_whole_project(
     from application.utils.comprehension.retrieve import named_slugs
     from application.utils.comprehension.synthesize import PERSTD_RULE, SYSTEM
 
-    system = SYSTEM
+    from application.utils.comprehension import extras
+    from application.utils.comprehension.synthesize import (
+        COUNT_SYSTEM,
+        NEG_RE,
+        NEG_RULE,
+    )
+
+    system = (
+        COUNT_SYSTEM
+        if flags.on("COUNT") and extras.COUNT_RE.search(question)
+        else SYSTEM
+    )
+    if flags.on("NEG") and NEG_RE.search(question):
+        system = system + NEG_RULE
     sources: List[tuple] = []
     if flags.on("PERSTD") and len(named_slugs(question)) >= 2:
         sources = project_sources(question, max_projects=3)
         if sources:
-            system = SYSTEM + PERSTD_RULE
+            system = system + PERSTD_RULE
     if not sources:
         sources = project_sources(question)
     if not sources:
@@ -269,7 +349,14 @@ def _answer_from_whole_project(
         )
 
     answer, cites = synthesize(question, sources, llm, system=system)
-    return (answer, cites) if answer else None
+    if not answer:
+        return None
+    from application.utils.comprehension.retrieve import last_pick
+
+    assumed = last_pick()
+    if assumed:
+        answer = f"Assuming you mean {assumed}: {answer}"
+    return answer, cites
 
 
 def think_effort() -> str:
@@ -321,6 +408,10 @@ def _answer(
             temperature=0.0,
             # Thinking tokens bill as output and add seconds: off, or a small budget.
             extra_try_kwargs={"reasoning_effort": effort} if effort else None,
+            interactive=True,
+            fallback_model=os.environ.get(
+                "OWASP_ANSWER_FALLBACK_MODEL", "gemini/gemini-2.5-flash-lite"
+            ),
         )
         complete = lambda msgs: call(
             msgs[0]["content"], msgs[1]["content"]
@@ -385,9 +476,19 @@ def _answer(
     if plan.get("parts"):
         ask = f"{ask}\n(Answer each part: " + " | ".join(plan["parts"]) + ")"
     count_mode = flags.on("COUNT") and bool(extras.COUNT_RE.search(ask))
-    answer, cites = synthesize(
-        ask, sources, llm, system=COUNT_SYSTEM if count_mode else SYSTEM
-    )
+    system = COUNT_SYSTEM if count_mode else SYSTEM
+    if flags.on("NEG"):
+        from application.utils.comprehension.synthesize import NEG_RE, NEG_RULE
+
+        if NEG_RE.search(question):
+            system = system + NEG_RULE
+    if flags.on("PERSTD"):
+        from application.utils.comprehension.retrieve import named_slugs
+        from application.utils.comprehension.synthesize import PERSTD_RULE
+
+        if len(named_slugs(question)) >= 2:
+            system = system + PERSTD_RULE
+    answer, cites = synthesize(ask, sources, llm, system=system)
     if answer and flags.on("VERIFY"):
         hl = flags.helper_llm()
         if hl and not extras.cheap_verify(answer, [t for t, _ in sources]):

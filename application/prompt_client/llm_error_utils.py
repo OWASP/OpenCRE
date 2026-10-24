@@ -33,9 +33,51 @@ def is_rate_limit_error(err: BaseException) -> bool:
     return False
 
 
+_OVERLOAD_NAMES = (
+    "serviceunavailable",
+    "internalservererror",
+    "badgateway",
+    "gatewaytimeout",
+    "overloaded",
+)
+_OVERLOAD_MESSAGES = (
+    "service unavailable",
+    "overloaded",
+    "high demand",
+    "currently experiencing",
+    "try again later",
+    "internal error",
+    "internal server error",
+    "bad gateway",
+    "gateway timeout",
+    "model is unavailable",
+)
+
+
+def is_overload_error(err: BaseException) -> bool:
+    """Provider-side outage / overload (HTTP 500, 502, 503, 504): retry, then fall back."""
+    name = type(err).__name__.lower()
+    if any(tok in name for tok in _OVERLOAD_NAMES):
+        return True
+    status = (
+        getattr(err, "status", None)
+        or getattr(err, "status_code", None)
+        or getattr(err, "http_status", None)
+    )
+    if status in (500, 502, 503, 504):
+        return True
+    msg = str(err).lower()
+    if any(tok in msg for tok in _OVERLOAD_MESSAGES):
+        return True
+    return any(
+        f'"code": {code}' in msg or f"error {code}" in msg
+        for code in (500, 502, 503, 504)
+    )
+
+
 def is_transient_llm_error(err: BaseException) -> bool:
-    """Connection / timeout blips that are safe to retry (not model refusal)."""
-    if is_rate_limit_error(err):
+    """Connection / timeout blips and provider overloads that are safe to retry (not model refusal)."""
+    if is_rate_limit_error(err) or is_overload_error(err):
         return True
     name = type(err).__name__.lower()
     if any(

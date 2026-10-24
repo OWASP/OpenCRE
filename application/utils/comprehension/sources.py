@@ -184,3 +184,59 @@ def supplement_chunks(
             if len(piece) >= 60:
                 out.append((rel, i, piece[:6000]))
     return out
+
+
+_WIKI_EXT = (
+    ".md",
+    ".markdown",
+    ".txt",
+    ".textile",
+    ".rdoc",
+    ".mediawiki",
+    ".asciidoc",
+    ".rst",
+    ".org",
+)
+
+
+def wiki_chunks(repo: str, clone_dir: str) -> List[Tuple[str, int, str]]:
+    """Chunks of the repository's GitHub wiki (a separate git repo); [] when it has none."""
+    import os
+    import subprocess
+    from pathlib import Path
+
+    dest = Path(clone_dir) / (repo.replace("/", "__") + "__wiki")
+    if not dest.exists():
+        done = subprocess.run(
+            [
+                "git",
+                "clone",
+                "--depth",
+                "1",
+                "-q",
+                f"https://github.com/{repo}.wiki.git",
+                str(dest),
+            ],
+            capture_output=True,
+            timeout=120,
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+        )
+        if done.returncode != 0:
+            return []
+    out: List[Tuple[str, int, str]] = []
+    for f in sorted(dest.rglob("*")):
+        rel = str(f.relative_to(dest))
+        if (
+            not f.is_file()
+            or ".git/" in rel
+            or rel.startswith(".git")
+            or not rel.lower().endswith(_WIKI_EXT)
+        ):
+            continue
+        text = f.read_text(errors="ignore")
+        if len(text.strip()) < 80:
+            continue
+        for i, piece in enumerate(split_markdown(text)):
+            if len(piece) >= 60:
+                out.append((f"wiki/{rel}", i, piece[:6000]))
+    return out

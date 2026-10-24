@@ -45,7 +45,10 @@ semver
 python-markdown-maker
 
 # chat (/rest/v1/completion) — embed prompt via LiteLLM, match with sklearn
-litellm
+# Track the latest LiteLLM, never anything below 1.83.7: that release fixed the 2026 security advisories
+# (https://github.com/BerriAI/litellm/security/advisories), and PyPI releases 1.82.7 / 1.82.8 were malicious.
+# Re-read the advisories when upgrading.
+litellm>=1.83.7
 numpy
 scipy
 scikit-learn

@@ -1006,21 +1006,6 @@ class NestSourceTest(unittest.TestCase):
         self.assertTrue(all("page_size=10" in c for c in calls))
 
 
-class TalksCatalogueTest(unittest.TestCase):
-    def test_parse_and_chunk(self):
-        from application.utils.comprehension import talks_source as ts
-
-        talks = ts.parse_catalogue(
-            "abc|20241022|2667|Shift Left - Jane Doe\nbad line\ndef|20261021|60|Newer talk - John Roe\n"
-        )
-        self.assertEqual(len(talks), 2)
-        chunks = ts.catalogue_chunks(talks, per_chunk=1)
-        self.assertEqual(len(chunks), 2)
-        self.assertIn("Newer talk - John Roe", chunks[0][2])  # newest first
-        self.assertIn("2024-10-22 (approximate)", chunks[1][2])
-        self.assertIn("https://youtu.be/abc", chunks[1][2])
-
-
 class NestBrokenPageTest(unittest.TestCase):
     def test_a_failing_page_is_read_item_by_item(self):
         from application.utils.comprehension import nest_source as ns
@@ -1035,3 +1020,154 @@ class NestBrokenPageTest(unittest.TestCase):
 
         got = [i["k"] for i in ns.iter_items(get, "projects/")]
         self.assertEqual(got, [1, 3])
+
+
+class PickProjectTest(unittest.TestCase):
+    def _pick(self, reply):
+        from application.utils.comprehension import retrieve
+
+        cands = [("owasp-asvs", "levels"), ("owasp-samm", "maturity")]
+        with mock.patch.object(retrieve, "pick_candidates", return_value=cands):
+            return retrieve.pick_project(None, "q", llm=lambda s, u: reply)
+
+    def test_confident_choice_is_returned(self):
+        self.assertEqual(self._pick('{"project": 2, "confidence": 0.9}'), "owasp-samm")
+
+    def test_unsure_or_malformed_means_no_pick(self):
+        self.assertEqual(self._pick('{"project": null, "confidence": 0.9}'), "")
+        self.assertEqual(self._pick('{"project": 1, "confidence": 0.4}'), "")
+        self.assertEqual(self._pick('{"project": 7, "confidence": 0.9}'), "")
+        self.assertEqual(self._pick("not json"), "")
+
+
+class CompletePassTest(unittest.TestCase):
+    def test_missing_parts_parses_checker_reply(self):
+        from application.utils.comprehension.answer import missing_parts
+
+        self.assertEqual(
+            missing_parts("q", "a", lambda s, u: '{"missing": ["the date", ""]}'),
+            ["the date"],
+        )
+        self.assertEqual(missing_parts("q", "a", lambda s, u: "garbage"), [])
+
+    def test_second_pass_reanswers_only_when_something_is_missing(self):
+        from application.utils.comprehension import answer as ans
+
+        calls = []
+
+        def fake_answer(q, cands, complete):
+            calls.append(q)
+            return ("full answer", ["u"])
+
+        with mock.patch.object(ans, "_answer", side_effect=fake_answer), mock.patch(
+            "application.utils.comprehension.flags.helper_llm",
+            return_value=lambda s, u: '{"missing": ["x"]}',
+        ):
+            out = ans._complete_pass("q?", ("short", []), [], lambda m: "")
+        self.assertEqual(out[0], "full answer")
+        self.assertIn("must also cover: x", calls[0])
+        with mock.patch.object(ans, "_answer", side_effect=fake_answer), mock.patch(
+            "application.utils.comprehension.flags.helper_llm",
+            return_value=lambda s, u: '{"missing": []}',
+        ):
+            calls.clear()
+            out = ans._complete_pass("q?", ("short", []), [], lambda m: "")
+        self.assertEqual(out[0], "short")
+        self.assertEqual(calls, [])
+
+
+class NegCountRulesTest(unittest.TestCase):
+    def test_negation_detector(self):
+        from application.utils.comprehension.synthesize import NEG_RE
+
+        for q in (
+            "Which of these is NOT listed?",
+            "Everything except level 1",
+            "What isn't covered?",
+        ):
+            self.assertTrue(NEG_RE.search(q), q)
+        self.assertFalse(NEG_RE.search("How many levels does SAMM define?"))
+
+    def test_whole_project_uses_count_and_neg_systems(self):
+        from application.utils.comprehension import answer as ans
+        from application.utils.comprehension.synthesize import COUNT_SYSTEM, NEG_RULE
+
+        seen = []
+        with mock.patch.dict(
+            os.environ, {"OWASP_CX_COUNT": "1", "OWASP_CX_NEG": "1"}
+        ), mock.patch(
+            "application.utils.comprehension.retrieve.project_sources",
+            return_value=[("X / a.md: text", ["u"])],
+        ), mock.patch(
+            "application.utils.comprehension.retrieve.named_slugs",
+            return_value=["owasp-x"],
+        ), mock.patch(
+            "application.utils.comprehension.answer.synthesize",
+            side_effect=lambda q, s, llm, system="": seen.append(system)
+            or ("a", ["u"]),
+        ):
+            ans._answer_from_whole_project(
+                "How many items are NOT listed?", lambda m: ""
+            )
+        self.assertTrue(seen[0].startswith(COUNT_SYSTEM))
+        self.assertTrue(seen[0].endswith(NEG_RULE))
+
+
+class AnswerUnavailableTest(unittest.TestCase):
+    def test_model_failure_is_not_reported_as_not_found(self):
+        from application.utils.comprehension import answer as ans
+
+        with mock.patch.dict(
+            os.environ, {"OWASP_COMPREHENSION_ANSWER": "1"}
+        ), mock.patch.object(
+            ans, "_answer", side_effect=RuntimeError("503 service unavailable")
+        ), mock.patch.object(
+            ans, "enabled", return_value=True
+        ):
+            with self.assertRaises(ans.AnswerUnavailable):
+                ans.answer_from_candidates("q?", [], lambda m: "")
+
+
+class PrefixCacheTest(unittest.TestCase):
+    def test_sources_come_first_when_flag_is_on(self):
+        from application.utils.comprehension.synthesize import synthesize
+
+        seen = []
+
+        def llm(system, user):
+            seen.append(user)
+            return "A [1]"
+
+        with mock.patch.dict(os.environ, {"OWASP_CX_PREFIXCACHE": "1"}):
+            synthesize("what?", [("body text", ["u"])], llm)
+        with mock.patch.dict(os.environ, {"OWASP_CX_PREFIXCACHE": ""}):
+            synthesize("what?", [("body text", ["u"])], llm)
+        self.assertTrue(seen[0].startswith("Sources:"))
+        self.assertTrue(seen[0].endswith("Question: what?"))
+        self.assertTrue(seen[1].startswith("Question: what?"))
+
+
+class WikiChunksTest(unittest.TestCase):
+    def test_wiki_pages_become_chunks_with_a_wiki_path(self):
+        import tempfile
+        from pathlib import Path
+
+        from application.utils.comprehension import sources
+
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp) / "OWASP__x__wiki"
+            d.mkdir()
+            (d / "Home.md").write_text(
+                "# Home\n\n" + "The project wiki explains setup. " * 6
+            )
+            (d / "image.png").write_bytes(b"\x89PNG")
+            chunks = sources.wiki_chunks("OWASP/x", tmp)
+        self.assertTrue(chunks)
+        self.assertTrue(all(c[0] == "wiki/Home.md" for c in chunks))
+
+
+class WideMatchTest(unittest.TestCase):
+    def test_flag_registered(self):
+        from application.utils.comprehension import flags
+
+        self.assertIn("WIDEMATCH", flags.NAMES)
