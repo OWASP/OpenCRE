@@ -212,6 +212,7 @@ def default_completion_fn() -> Optional[CompletionFn]:
 
         database = db_mod.Node_collection()
         from application.utils.comprehension.shared import shared_handler
+        from application.utils.comprehension.synthesize import with_history
 
         handler = shared_handler(database)
 
@@ -222,7 +223,7 @@ def default_completion_fn() -> Optional[CompletionFn]:
                 fallback_model=os.environ.get(
                     "OWASP_ANSWER_FALLBACK_MODEL", "gemini/gemini-2.5-flash-lite"
                 ),
-                messages=list(messages),
+                messages=with_history(list(messages)),
                 client=handler._litellm,
                 context="OWASP agent answer",
                 temperature=0,
