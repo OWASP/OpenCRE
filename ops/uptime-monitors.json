@@ -1,0 +1,10 @@
+{
+  "alert_contacts_note": "Alert contacts are created once in the UptimeRobot dashboard (email, Slack, Discord); their ids go in UPTIMEROBOT_ALERT_CONTACTS (comma separated, e.g. 0123456_0_0).",
+  "interval_seconds": 300,
+  "monitors": [
+    {"name": "OpenCRE production - home page", "url": "https://opencre.org/", "type": "http"},
+    {"name": "OpenCRE production - standards API", "url": "https://opencre.org/rest/v1/standards", "type": "keyword", "keyword": "standards"},
+    {"name": "OpenCRE production - gap-analysis standards", "url": "https://opencre.org/rest/v1/ga_standards", "type": "http"},
+    {"name": "OpenCRE staging - home page", "url": "https://staging.opencre.org/", "type": "http"}
+  ]
+}
