@@ -49,6 +49,8 @@ python-markdown-maker
 # (https://github.com/BerriAI/litellm/security/advisories), and PyPI releases 1.82.7 / 1.82.8 were malicious.
 # Re-read the advisories when upgrading.
 litellm>=1.83.7
+# Optional error alerts (SENTRY_DSN); no data is sent unless it is set. See application/utils/error_reporting.py.
+sentry-sdk>=2
 numpy
 scipy
 scikit-learn
