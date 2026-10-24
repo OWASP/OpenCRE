@@ -216,14 +216,16 @@ def default_completion_fn() -> Optional[CompletionFn]:
         handler = shared_handler(database)
 
         def _complete(messages: Sequence[dict]) -> str:
-            resp = litellm_router.completion(
+            # A person is waiting: quick retries, a cheaper fallback model and a circuit breaker.
+            resp = litellm_router.resilient_completion(
                 model=handler.chat_model,
+                fallback_model=os.environ.get(
+                    "OWASP_ANSWER_FALLBACK_MODEL", "gemini/gemini-2.5-flash-lite"
+                ),
                 messages=list(messages),
                 client=handler._litellm,
-                context="OWASP agent candidate pick",
+                context="OWASP agent answer",
                 temperature=0,
-                max_retries=handler._llm_max_retries,
-                retry_sleep_seconds=handler._llm_retry_sleep_seconds,
             )
             return litellm_router.extract_content_text(resp)
 
