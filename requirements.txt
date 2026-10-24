@@ -50,6 +50,8 @@ python-markdown-maker
 # Re-read the advisories when upgrading.
 # 1.107.x reported malicious (2026-10-26): stay below it until a clean release is confirmed.
 litellm>=1.83.7,<1.107
+# Optional error alerts (SENTRY_DSN); no data is sent unless it is set. See application/utils/error_reporting.py.
+sentry-sdk>=2
 numpy
 scipy
 scikit-learn
