@@ -1325,16 +1325,16 @@ def link_suggest() -> Any:
             "Link suggestion is unavailable on this deployment "
             "(ML/LLM dependencies not installed).",
         )
-    except RuntimeError as exc:
-        # PromptHandler raises RuntimeError when litellm is missing.
-        if "litellm" not in str(exc).lower():
-            raise
-        abort(
-            503,
-            "Link suggestion is unavailable on this deployment "
-            "(ML/LLM dependencies not installed).",
-        )
     except Exception as e:
+        # PromptHandler raises RuntimeError when litellm is missing. Any other
+        # RuntimeError (retriever, database) falls through to the generic
+        # handling below; a dedicated except clause would re-raise past it.
+        if isinstance(e, RuntimeError) and "litellm" in str(e).lower():
+            abort(
+                503,
+                "Link suggestion is unavailable on this deployment "
+                "(ML/LLM dependencies not installed).",
+            )
         if llm_error_utils.is_rate_limit_error(e):
             return (
                 jsonify(

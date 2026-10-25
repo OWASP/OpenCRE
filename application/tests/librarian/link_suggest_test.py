@@ -134,6 +134,16 @@ class SuggestLinksTest(unittest.TestCase):
         sqla.drop_all()
         self.ctx.pop()
 
+    def test_a_failing_cre_lookup_is_logged_with_the_candidate(self) -> None:
+        """A lookup that raises is not a miss: it is logged, named, and the
+        candidate still comes back unresolved so the shortlist survives."""
+        broken = mock.Mock()
+        broken.get_CREs.side_effect = RuntimeError("database gone")
+        with self.assertLogs(link_suggest.logger, level="WARNING") as logs:
+            self.assertIsNone(link_suggest._resolve_cre(broken, "287-251"))
+        self.assertIn("287-251", logs.output[0])
+        self.assertIn("database gone", logs.output[0])
+
     def test_internal_uuid_candidates_resolve_to_the_public_cre_id(self) -> None:
         """The embeddings table keys vectors by the CRE row's internal UUID, so
         that is what the retriever returns. A caller must only ever see
@@ -302,6 +312,25 @@ class LinkSuggestRouteTest(unittest.TestCase):
             with self.app.test_client() as c:
                 resp = c.post("/rest/v1/link/suggest", json=_standard())
         self.assertEqual(resp.status_code, 503)
+
+    def test_other_runtime_errors_get_the_generic_body_not_flasks_500_page(
+        self,
+    ) -> None:
+        """Only a missing litellm is a 503; any other RuntimeError must go
+        through the same generic handling as every other failure."""
+        with mock.patch.object(
+            link_suggest,
+            "_default_retriever",
+            side_effect=RuntimeError("index file /srv/cre/secret.idx is corrupt"),
+        ):
+            with self.app.test_client() as c:
+                resp = c.post("/rest/v1/link/suggest", json=_standard())
+        self.assertEqual(resp.status_code, 500)
+        self.assertEqual(
+            resp.get_json(),
+            {"error": "Link suggestion failed upstream; see server logs."},
+        )
+        self.assertNotIn("secret.idx", resp.get_data(as_text=True))
 
     def test_malformed_top_k_strings_are_400_not_500(self) -> None:
         for bad in ("--3", "\u00b2", "2_0"):

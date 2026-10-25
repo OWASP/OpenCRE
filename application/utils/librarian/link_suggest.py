@@ -137,7 +137,16 @@ def _resolve_cre(database: Any, candidate_id: str) -> Optional[defs.CRE]:
     )
     try:
         matches = database.get_CREs(**kwargs) or []
-    except Exception:  # a malformed id must not take the whole shortlist down
+    except Exception:
+        # A malformed id must not take the whole shortlist down, but a lookup
+        # that raises is not the same as a lookup that misses: say which
+        # candidate failed so a broken database path does not read as "stale".
+        logger.warning(
+            "link_suggest: CRE lookup failed for candidate %r; "
+            "returning it unresolved",
+            candidate_id,
+            exc_info=True,
+        )
         return None
     if not matches:
         return None
