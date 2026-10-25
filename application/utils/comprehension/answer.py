@@ -497,4 +497,13 @@ def _answer(
                 _, answer = extras.verify_answer(ask, answer, numbered, hl)
             except Exception:
                 pass
-    return (answer, cites) if answer else None
+    if not answer:
+        return None
+    from application.utils.comprehension import authority
+
+    for (
+        url
+    ) in authority.featured_urls():  # admin-featured projects: show the closest match
+        if url not in cites:
+            cites = list(cites) + [url]
+    return answer, cites

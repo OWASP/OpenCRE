@@ -203,36 +203,34 @@ def _expand(conn: Any, hits: List[LaneHit]) -> None:
             h.content = merge_neighbours(h.content, prev, nxt)
 
 
-def _with_boosted_projects(
-    conn: Any, q: str, dense: List[LaneHit], per: int = 8
-) -> List[LaneHit]:
-    """Projects an admin weighted above 1 always put their own best chunks in the pool.
-
-    A weight only reorders candidates, so a favoured project whose chunks all fall outside
-    the global top-N would otherwise never get the chance to be boosted.
-    """
+def _feature_projects(conn: Any, q: str, dense: List[LaneHit]) -> None:
+    """Remember each featured project's best chunk when it is close enough to the best match."""
     from application.utils.comprehension import authority
 
     try:
-        boosted = [s for s, w in authority.weights().items() if w > 1.0]
+        featured = {s: w for s, w in authority.weights().items() if w > 1.0}
     except Exception:  # noqa: BLE001
-        return dense
-    if not boosted:
-        return dense
-    seen = {h.url for h in dense}
-    extra: List[LaneHit] = []
-    for slug in boosted:
-        for h in _dense(
+        return
+    if not featured or not dense:
+        return
+    best = max(float(h.score) for h in dense)
+    urls = authority.featured_urls()
+    for slug, w in featured.items():
+        top = _dense(
             conn,
             q,
             "embeddings_url LIKE :pat",
-            per,
+            1,
             {"pat": f"owasp-agent://evidence/comprehension-{slug}-%"},
-        ):
-            if h.url not in seen:
-                seen.add(h.url)
-                extra.append(h)
-    return dense + extra
+        )
+        if top and float(top[0].score) >= best - authority.tolerance(w):
+            _, _, tail = top[0].content.partition("\n\nCitations:")
+            cite = next(
+                (c.strip() for c in tail.split(",") if c.strip().startswith("http")), ""
+            )
+            if cite and cite not in urls:
+                urls.append(cite)
+    authority.set_featured(urls)
 
 
 def _slug_of(hit: LaneHit) -> str:
@@ -272,6 +270,9 @@ def fetch_comprehension_hits(
         from application.utils.comprehension.shared import shared_handler
 
         handler = shared_handler(database)
+        from application.utils.comprehension import authority as _authority
+
+        _authority.reset_featured()
         texts = [question] + [q for q in (queries or []) if q and q != question]
         k = retrieval_k()
         wide = k * 2 if flags.on("RERANK") else k
@@ -290,8 +291,9 @@ def fetch_comprehension_hits(
                     docs_where(),
                     max(wide, 300) if flags.on("TOPPROJECTS") else wide,
                 )
-                dense = _with_boosted_projects(conn, q, dense)
                 rankings.append(dense)
+                if t == question:
+                    _feature_projects(conn, q, dense)
                 if flags.on("HYBRID"):
                     keyword_hits += _keyword(conn, t, wide)
                 scoped = matched_slugs(t, slugs)

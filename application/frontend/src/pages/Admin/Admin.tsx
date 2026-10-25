@@ -26,7 +26,7 @@ const TAB_META: Record<Tab, { label: string; sub: string }> = {
   oie: { label: 'OIE queue', sub: 'RQ / OIE worker status.' },
   authority: {
     label: 'Authority',
-    sub: 'Bias answers toward or away from projects. 1 = neutral, above 1 = trusted more, below 1 = less, 0 = hidden.',
+    sub: 'Feature or soften projects. 1 = neutral; above 1 = always list the project's best match among references; below 1 = rank lower; 0 = hidden.',
   },
   schedule: { label: 'Schedules', sub: 'How often the ingestion jobs run — change or switch off.' },
   graph: { label: 'Review', sub: 'Staged links — expand section text, accept/reject.' },
@@ -1141,10 +1141,7 @@ function AuthorityTab({ origin }: { origin: string }) {
       {error ? <Message negative content={error} /> : null}
       {notice ? <Message positive content={notice} /> : null}
       <p>
-        A weight multiplies how strongly a project&apos;s text matches a question before sources are chosen.
-        Try 1.1 to 1.3 to favour a flagship project and 0.8 to 0.9 to soften a noisy one. Questions that name
-        a project are not affected.
-      </p>
+        Above 1 never changes the answer itself: the project&apos;s closest passage is added to the references when it is reasonably relevant (1.15 is strict, 1.3 is looser). Below 1 pushes a project down in the ranking and 0 hides it. Questions that name a project are not affected.</p>
       <input
         aria-label="filter projects"
         placeholder="Filter projects"

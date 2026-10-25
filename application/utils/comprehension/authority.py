@@ -1,14 +1,19 @@
-"""Admin-editable authority weights: bias answers toward (or away from) projects.
+"""Admin-editable authority weights: favour or soften projects in answers.
 
-Stored as one JSON setting ``{repo slug: weight}`` in ``admin_runtime_setting``. A weight
-multiplies the similarity score of every chunk of that project before ranking, so 1.0 is
-neutral, 1.1 nudges a project up, 0.9 down and 0 hides it. Unlisted projects stay at 1.0.
+Stored as one JSON setting ``{repo slug: weight}`` in ``admin_runtime_setting``. Unlisted
+projects are 1.0 (neutral).
+
+* Below 1: the project's chunk scores are multiplied by the weight before ranking (0 hides it).
+* Above 1 ("featured"): ranking is left alone, so answers do not get worse, but the project's best
+  matching chunk is listed among the answer's references whenever it is reasonably relevant to the
+  question. The higher the weight, the less relevant a match may be. Never shown for abstentions.
 """
 
 from __future__ import annotations
 
 import json
 import time
+from contextvars import ContextVar
 from typing import Any, Dict, List, Optional
 
 KEY = "COMPREHENSION_AUTHORITY"
@@ -68,14 +73,34 @@ def save(new: Dict[str, float], actor: Optional[str] = None) -> Dict[str, float]
     return clean
 
 
+_FEATURED: "ContextVar[List[str]]" = ContextVar("authority_featured", default=[])
+
+
+def reset_featured() -> None:
+    _FEATURED.set([])
+
+
+def featured_urls() -> List[str]:
+    return list(_FEATURED.get())
+
+
+def tolerance(weight: float) -> float:
+    """How far below the best score a featured project's chunk may fall and still be listed."""
+    return max(0.02, min(0.2, 0.08 * (weight - 1.0) / 0.15))
+
+
+def set_featured(urls: List[str]) -> None:
+    _FEATURED.set(list(urls))
+
+
 def bias(hits: List[Any], slug_of) -> List[Any]:
     """Multiply each hit's score by its project's weight, drop weight-0 projects, re-sort."""
     w = weights()
-    if not w:
+    if not w or all(v >= 1.0 for v in w.values()):
         return hits
     out = []
     for h in hits:
-        factor = w.get(slug_of(h) or "", 1.0)
+        factor = min(1.0, w.get(slug_of(h) or "", 1.0))
         if factor <= 0:
             continue
         h.score = float(h.score) * factor

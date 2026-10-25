@@ -22,11 +22,33 @@ class TestAuthority(unittest.TestCase):
             with self.assertRaises(ValueError):
                 authority.validate(bad)
 
-    def test_bias_reorders_and_hides(self):
-        authority.weights = lambda fresh=False: {"aix": 1.3, "noisy": 0.0}
-        hits = [hit("aisvs", 0.70), hit("noisy", 0.69), hit("aix", 0.60)]
+    def test_bias_softens_and_hides_but_never_boosts(self):
+        authority.weights = lambda fresh=False: {
+            "aix": 1.3,
+            "noisy": 0.0,
+            "meh": 0.5,
+        }
+        hits = [
+            hit("aisvs", 0.70),
+            hit("noisy", 0.69),
+            hit("meh", 0.68),
+            hit("aix", 0.60),
+        ]
         out = authority.bias(hits, _slug_of)
-        self.assertEqual([_slug_of(h) for h in out], ["aix", "aisvs"])
+        self.assertEqual([_slug_of(h) for h in out], ["aisvs", "aix", "meh"])
+
+    def test_featured_tolerance_grows_with_weight(self):
+        self.assertAlmostEqual(authority.tolerance(1.15), 0.08)
+        self.assertGreater(authority.tolerance(1.3), authority.tolerance(1.15))
+        self.assertEqual(authority.tolerance(5), 0.2)
+        self.assertEqual(authority.tolerance(1.01), 0.02)
+
+    def test_featured_urls_roundtrip(self):
+        authority.reset_featured()
+        self.assertEqual(authority.featured_urls(), [])
+        authority.set_featured(["https://x"])
+        self.assertEqual(authority.featured_urls(), ["https://x"])
+        authority.reset_featured()
 
     def test_bias_is_a_noop_without_weights(self):
         authority.weights = lambda fresh=False: {}
