@@ -122,6 +122,38 @@ describe('Admin', () => {
     expect(JSON.parse(put!.init.body)).toEqual({ interval_minutes: 30, enabled: true });
   });
 
+  it('edits project authority weights and saves only the changed ones', async () => {
+    loggedIn();
+    const calls: { url: string; init?: any }[] = [];
+    (global as any).fetch = jest.fn((url: string, init?: any) => {
+      calls.push({ url: String(url), init });
+      if (String(url).endsWith('/admin/authority') && init?.method === 'PUT') {
+        return jsonRes({ weights: { 'www-project-ai-exchange': 1.2 } });
+      }
+      if (String(url).endsWith('/admin/authority')) {
+        return jsonRes({
+          projects: [
+            { slug: 'www-project-ai-exchange', name: 'ai exchange', weight: 1 },
+            { slug: 'AISVS', name: 'aisvs', weight: 1 },
+          ],
+        });
+      }
+      return jsonRes({});
+    });
+    const { getByText, findByLabelText, findByText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    fireEvent.click(getByText('Authority'));
+    const input = (await findByLabelText('www-project-ai-exchange weight')) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '1.2' } });
+    fireEvent.click(getByText(/^Save/));
+    expect(await findByText(/1 project weight\(s\) saved/)).toBeTruthy();
+    const put = calls.find((c) => c.init?.method === 'PUT');
+    expect(JSON.parse(put!.init.body)).toEqual({ weights: { 'www-project-ai-exchange': 1.2 } });
+  });
+
   it('loads import runs and links to MyOpenCRE', async () => {
     loggedIn();
     (global as any).fetch = jest.fn((url: string) => {

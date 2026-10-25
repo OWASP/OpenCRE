@@ -194,6 +194,21 @@ def _expand(conn: Any, hits: List[LaneHit]) -> None:
             h.content = merge_neighbours(h.content, prev, nxt)
 
 
+def _slug_of(hit: LaneHit) -> str:
+    m = _SLUG_RE.match(hit.url or "")
+    return m.group(1) if m else ""
+
+
+def _apply_authority(hits: List[LaneHit]) -> List[LaneHit]:
+    """Admin authority weights, then (TOPPROJECTS) the best 3 projects each get a share."""
+    from application.utils.comprehension import authority, flags
+
+    hits = authority.bias(hits, _slug_of)
+    if flags.on("TOPPROJECTS"):
+        hits = authority.diversify(hits, _slug_of, projects=3, per=5)
+    return hits
+
+
 def fetch_comprehension_hits(
     question: str, queries: List[str] | None = None
 ) -> List[LaneHit]:
@@ -228,7 +243,12 @@ def fetch_comprehension_hits(
             vecs = embed_many(texts, handler.get_text_embeddings)
             for t, vec in zip(texts, vecs):
                 q = to_pgvector_literal(list(vec))
-                dense = _dense(conn, q, docs_where(), wide)
+                dense = _dense(
+                    conn,
+                    q,
+                    docs_where(),
+                    max(wide, 300) if flags.on("TOPPROJECTS") else wide,
+                )
                 rankings.append(dense)
                 if flags.on("HYBRID"):
                     keyword_hits += _keyword(conn, t, wide)
@@ -264,6 +284,7 @@ def fetch_comprehension_hits(
                 hits = rrf(rankings, key=lambda h: h.url)
             if keyword_hits:
                 hits = supplement_with_keyword(hits, keyword_hits)
+            hits = _apply_authority(hits)
             if flags.on("EXPAND"):
                 _expand(conn, hits[: max(k, 12)])
         return hits

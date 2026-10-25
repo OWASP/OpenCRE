@@ -13,6 +13,7 @@ type Tab =
   | 'pipeline'
   | 'oie'
   | 'schedule'
+  | 'authority'
   | 'graph'
   | 'workbench'
   | 'myopencre'
@@ -23,6 +24,10 @@ const TAB_META: Record<Tab, { label: string; sub: string }> = {
   config: { label: 'Config values', sub: 'Process env vs .env — admin only.' },
   pipeline: { label: 'Pipeline', sub: 'Jobs, stage logs, ingest.' },
   oie: { label: 'OIE queue', sub: 'RQ / OIE worker status.' },
+  authority: {
+    label: 'Authority',
+    sub: 'Bias answers toward or away from projects. 1 = neutral, above 1 = trusted more, below 1 = less, 0 = hidden.',
+  },
   schedule: { label: 'Schedules', sub: 'How often the ingestion jobs run — change or switch off.' },
   graph: { label: 'Review', sub: 'Staged links — expand section text, accept/reject.' },
   workbench: { label: 'Workbench', sub: 'Accepted targets and re-ingest.' },
@@ -182,6 +187,7 @@ export const Admin = () => {
     { id: 'pipeline', label: 'Pipeline', group: 'Ops' },
     { id: 'oie', label: 'OIE queue', group: 'Ops' },
     { id: 'schedule', label: 'Schedules', group: 'Ops' },
+    { id: 'authority', label: 'Authority', group: 'Ops' },
     { id: 'graph', label: 'Review', group: 'Ops' },
     { id: 'workbench', label: 'Workbench', group: 'Ops' },
     { id: 'myopencre', label: 'MyOpenCRE', group: 'Apps' },
@@ -234,6 +240,7 @@ export const Admin = () => {
           {tab === 'pipeline' && <PipelineTab origin={origin} />}
           {tab === 'oie' && <OieQueueTab origin={origin} />}
           {tab === 'schedule' && <ScheduleTab origin={origin} />}
+          {tab === 'authority' && <AuthorityTab origin={origin} />}
           {tab === 'graph' && <GraphManagementTab origin={origin} />}
           {tab === 'workbench' && <WorkbenchTab origin={origin} />}
           {tab === 'myopencre' && (
@@ -1073,6 +1080,109 @@ type ScheduleJob = {
   next_expected: string | null;
   last_run: { status?: string; started_at?: string } | null;
 };
+
+type AuthorityRow = { slug: string; name: string; weight: number };
+
+function AuthorityTab({ origin }: { origin: string }) {
+  const [rows, setRows] = useState<AuthorityRow[]>([]);
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  const [filter, setFilter] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(() => {
+    fetch(`${origin}/admin/authority`)
+      .then(async (res) => {
+        const body = await readJson(res);
+        if (!res.ok) throw new Error(apiError(body, res));
+        const list: AuthorityRow[] = body.projects || [];
+        setRows(list);
+        setDraft(Object.fromEntries(list.map((r) => [r.slug, String(r.weight)])));
+        setError(null);
+      })
+      .catch((err) => setError(String(err)));
+  }, [origin]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const changed = rows.filter((r) => Number(draft[r.slug]) !== r.weight);
+
+  const save = async () => {
+    setBusy(true);
+    setNotice(null);
+    setError(null);
+    try {
+      const weights = Object.fromEntries(changed.map((r) => [r.slug, Number(draft[r.slug])]));
+      const res = await fetch(`${origin}/admin/authority`, {
+        method: 'PUT',
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ weights }),
+      });
+      const body = await readJson(res);
+      if (!res.ok) throw new Error(apiError(body, res));
+      setNotice(`${changed.length} project weight(s) saved; effective within 30 seconds`);
+      load();
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const shown = rows
+    .filter((r) => !filter || r.slug.toLowerCase().includes(filter.toLowerCase()))
+    .sort((a, b) => Number(b.weight !== 1) - Number(a.weight !== 1) || a.slug.localeCompare(b.slug));
+
+  return (
+    <div>
+      {error ? <Message negative content={error} /> : null}
+      {notice ? <Message positive content={notice} /> : null}
+      <p>
+        A weight multiplies how strongly a project&apos;s text matches a question before sources are chosen.
+        Try 1.1 to 1.3 to favour a flagship project and 0.8 to 0.9 to soften a noisy one. Questions that name
+        a project are not affected.
+      </p>
+      <input
+        aria-label="filter projects"
+        placeholder="Filter projects"
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+      />{' '}
+      <Button primary size="small" disabled={!changed.length || busy} onClick={save}>
+        Save {changed.length ? `(${changed.length})` : ''}
+      </Button>
+      <table className="admin-table" data-testid="authority-table">
+        <thead>
+          <tr>
+            <th>project</th>
+            <th>weight</th>
+          </tr>
+        </thead>
+        <tbody>
+          {shown.map((r) => (
+            <tr key={r.slug}>
+              <td className="mono">{r.slug}</td>
+              <td>
+                <input
+                  type="number"
+                  step={0.05}
+                  min={0}
+                  max={3}
+                  aria-label={`${r.slug} weight`}
+                  value={draft[r.slug] ?? ''}
+                  onChange={(e) => setDraft({ ...draft, [r.slug]: e.target.value })}
+                />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 function ScheduleTab({ origin }: { origin: string }) {
   const [jobs, setJobs] = useState<ScheduleJob[]>([]);

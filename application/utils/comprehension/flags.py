@@ -31,6 +31,7 @@ NAMES = (
     "WIDEMATCH",  # whole-project reading can match any repo with raw chunks, not only digested ones
     "EDITION",  # answer for the edition/year/version the question names; never mix editions
     "ROUTE",  # people/count questions: whole-project read with a stronger reader model
+    "TOPPROJECTS",  # no project named: the 3 best-matching projects each contribute sources
     "DECOMPOSE",  # multi-part questions: answer each part separately, then combine
 )
 

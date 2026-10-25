@@ -343,6 +343,42 @@ def register_admin_panel_routes(
             logger.exception("ingest status failed")
             return _err(500, f"ingest status failed: {exc}")
 
+    @bp.route("/admin/authority", methods=["GET"])
+    @login_required
+    @imports_enabled
+    def admin_authority_get() -> Any:
+        from application import sqla
+        from application.utils.comprehension import authority, retrieve
+
+        try:
+            with sqla.session.get_bind().connect() as conn:
+                slugs = retrieve._known_slugs(conn)
+            return jsonify({"projects": authority.project_table(slugs)})
+        except Exception as exc:
+            logger.exception("authority get failed")
+            return _err(500, f"authority failed: {exc}")
+
+    @bp.route("/admin/authority", methods=["PUT"])
+    @login_required
+    @imports_enabled
+    def admin_authority_put() -> Any:
+        from application.utils.comprehension import authority
+
+        body = request.get_json(silent=True) or {}
+        try:
+            current = dict(authority.weights(fresh=True))
+            current.update(body.get("weights") or {})
+            if not isinstance(body.get("weights"), dict):
+                return _err(400, "weights object required")
+            actor = session.get("email") or getattr(g, "api_key_email", None)
+            saved = authority.save(current, actor=actor)
+        except ValueError as exc:
+            return _err(400, str(exc))
+        except Exception as exc:
+            logger.exception("authority update failed")
+            return _err(500, f"authority update failed: {exc}")
+        return jsonify({"weights": saved})
+
     @bp.route("/admin/schedule", methods=["GET"])
     @login_required
     @imports_enabled
