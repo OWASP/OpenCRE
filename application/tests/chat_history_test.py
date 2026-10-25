@@ -136,3 +136,27 @@ class ChatHandlerIsLazyTest(unittest.TestCase):
                 sqla.drop_all()
         self.assertEqual(out.status_code, 200)
         handler.assert_not_called()
+
+
+class TestCleanAnswerText(unittest.TestCase):
+    def test_links_and_double_brackets_become_plain_markers(self):
+        from application.utils.comprehension.synthesize import clean_answer_text
+
+        raw = (
+            "Owners attend [[7]](https://github.com/OWASP/x/blob/HEAD/a.md) and "
+            "[8](https://github.com/OWASP/x/blob/HEAD/b.md). See [the playbook](https://x.org/p) "
+            "or https://github.com/OWASP/y ."
+        )
+        out = clean_answer_text(raw)
+        self.assertNotIn("http", out)
+        self.assertIn("[7]", out)
+        self.assertNotIn("[[7]]", out)
+        self.assertIn("[8].", out)
+        self.assertIn("See the playbook", out)
+
+    def test_plain_markers_are_untouched(self):
+        from application.utils.comprehension.synthesize import clean_answer_text
+
+        self.assertEqual(
+            clean_answer_text("SAMM has 3 levels [1][2]."), "SAMM has 3 levels [1][2]."
+        )

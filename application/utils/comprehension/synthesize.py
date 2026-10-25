@@ -60,6 +60,28 @@ def take_evidence() -> list:
     return list(_EVIDENCE.get())
 
 
+_MD_LINK = re.compile(r"\[([^\[\]]+)\]\(\s*https?://[^)\s]*\s*\)")
+_MARK_LINK = re.compile(r"\[\[(\d+)\]\]\(\s*https?://[^)\s]*\s*\)")
+_DOUBLE_MARK = re.compile(r"\[\[(\d+)\]\]")
+_BARE_URL = re.compile(r"https?://[^\s)\]>]+")
+
+
+def clean_answer_text(text: str) -> str:
+    """Keep the model's answer free of links: only ``[n]`` markers may point at sources.
+
+    Sources contain markdown (``[text](url)``) and the model sometimes copies it, producing
+    ``[[7]](https://...)`` that the UI cannot link and a raw URL that should stay hidden.
+    The references list under the answer carries the real links.
+    """
+    out = _MARK_LINK.sub(lambda m: f"[{m.group(1)}]", text)
+    out = _MD_LINK.sub(
+        lambda m: f"[{m.group(1)}]" if m.group(1).isdigit() else m.group(1), out
+    )
+    out = _DOUBLE_MARK.sub(lambda m: f"[{m.group(1)}]", out)
+    out = _BARE_URL.sub("", out)
+    return re.sub(r"[ \t]+([.,;:])", r"\1", out)
+
+
 def renumber_citations(
     answer: str,
     hits: Sequence[Tuple[str, List[str]]],
@@ -190,7 +212,7 @@ def synthesize(
         user = f"Sources:\n{numbered}\n\nQuestion: {question}"
     else:
         user = f"Question: {question}\n\nSources:\n{numbered}"
-    out = (llm(system, user) or "").strip()
+    out = clean_answer_text((llm(system, user) or "").strip())
     if not out or out.upper().startswith("UNKNOWN"):
         return "", []
     used = sorted(
