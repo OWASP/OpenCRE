@@ -48,6 +48,31 @@ class MissingCandidateTextError(RerankerError):
     """A shortlisted CRE has no text to score against — cannot rerank fairly."""
 
 
+class CosineOrderReranker:
+    """C.2 off: copy C.1 cosine order into ``reranked`` (no MiniLM load)."""
+
+    def __init__(self, top_n: int) -> None:
+        if top_n <= 0:
+            raise RerankerError(f"top_n must be > 0, got {top_n}")
+        self._top_n = top_n
+
+    def rerank(self, text: str, audit: RetrievalAudit) -> RetrievalAudit:
+        del text  # ranking uses score_vector only
+        candidates = list(audit.candidates or [])
+        if not candidates:
+            return audit.model_copy(update={"reranked": []})
+        ordered = sorted(
+            candidates,
+            key=lambda c: float(c.score_vector or 0.0),
+            reverse=True,
+        )
+        reranked = [
+            c.model_copy(update={"score_rerank": float(c.score_vector or 0.0)})
+            for c in ordered[: self._top_n]
+        ]
+        return audit.model_copy(update={"reranked": reranked})
+
+
 class CrossEncoderReranker:
     """Re-score a C.1 shortlist; hybrid when the shortlist is a small cage."""
 

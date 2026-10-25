@@ -105,6 +105,7 @@ def run_librarian_queue(
     *,
     at: datetime,
     sink: Optional[EnvelopeSink] = None,
+    artifact_id: Optional[str] = None,
     limit: Optional[int] = None,
     lock_rows: bool = False,
     dry_run: bool = False,
@@ -126,6 +127,8 @@ def run_librarian_queue(
         sink: where the envelopes are persisted. Required for a real run —
             consuming a row whose envelope was discarded loses the chunk — and
             it must report ``persists=True``. A dry run may omit it.
+        artifact_id: when set, only drain that Docling document's rows (OIE RQ
+            per-document C jobs).
         limit: cap on rows read in this batch; None drains the run.
         lock_rows: claim the batch with ``FOR UPDATE SKIP LOCKED`` so that
             several consumers draining one run take disjoint rows. Off by
@@ -188,9 +191,13 @@ def run_librarian_queue(
                 "must not mark rows consumed. Use dry_run=True with it."
             )
 
+    if artifact_id is not None and not str(artifact_id).strip():
+        raise ValueError("artifact_id must be non-empty when provided")
+
     source = DbKnowledgeSource(
         session,
         pipeline_run_id=pipeline_run_id,
+        artifact_id=artifact_id,
         limit=limit,
         lock_rows=lock_rows,
     )
@@ -205,6 +212,7 @@ def run_librarian_queue(
         cre_id_map=getattr(components, "cre_id_map", {}) or {},
         cre_membership=getattr(components, "cre_membership", None),
         shortlist_llm_fn=getattr(components, "shortlist_llm_fn", None),
+        shortlist_cache=getattr(components, "shortlist_cache", None),
         use_focus_query=config.focus_query,
         pref_inject=config.pref_inject,
         prefer_audit=config.prefer_audit_ids,
@@ -233,6 +241,7 @@ def run_librarian_queue(
             getattr(components, "shortlist_judge_max_picks", 3) or 3
         ),
         margin_gamma=getattr(components, "margin_gamma", None),
+        cre_names=getattr(components, "cre_names", None) or {},
     )
 
     # A locked run must not leave its claim outstanding. `FOR UPDATE SKIP LOCKED`

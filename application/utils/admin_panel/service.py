@@ -4,7 +4,7 @@ from cre_logging import get_logger
 
 logger = get_logger(__name__)
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
 import importlib.util
 import json
@@ -14,8 +14,9 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from flask import current_app, has_app_context
 
@@ -774,12 +775,14 @@ def invoke_oie_cli(
     skip_b: Optional[bool] = None,
     skip_c: Optional[bool] = None,
     skip_c1: Optional[bool] = None,
+    use_rq: Optional[bool] = None,
     timeout: Optional[int] = None,
 ) -> Dict[str, Any]:
     """Run Module A→B→C→C.1 via the CLI against the app Postgres URL.
 
     Defaults are live (sync + persist) so admin ingest is end-to-end. Pass
     ``dry_run=True`` / ``sync_repos=False`` only for hermetic probes.
+    ``use_rq`` / ``CRE_OIE_RQ=1`` fans out on the import RQ ``oie`` queue.
     """
     script = REPO_ROOT / "scripts" / "run_oie_pipeline.py"
     cache_file = _oie_cache_file()
@@ -791,6 +794,8 @@ def invoke_oie_cli(
             skip_c = auto_c
     if skip_c1 is None:
         skip_c1 = False
+    if use_rq is None:
+        use_rq = os.environ.get("CRE_OIE_RQ", "").strip() in ("1", "true", "yes")
     argv = [
         sys.executable,
         str(script),
@@ -811,6 +816,8 @@ def invoke_oie_cli(
         argv.append("--skip-c")
     if skip_c1:
         argv.append("--skip-c1")
+    if use_rq:
+        argv.append("--rq")
     if max_repos is not None and max_repos > 0:
         argv.extend(["--max-repos", str(int(max_repos))])
     if repos_yaml:
@@ -895,6 +902,7 @@ def _run_oie_job(
     max_repos: Optional[int],
     skip_b: Optional[bool],
     skip_c: Optional[bool],
+    skip_c1: Optional[bool] = None,
     cleanup_yaml: bool,
 ) -> Dict[str, Any]:
     try:
@@ -906,6 +914,7 @@ def _run_oie_job(
             max_repos=max_repos,
             skip_b=skip_b,
             skip_c=skip_c,
+            skip_c1=skip_c1,
         )
         _record_oie_result(run_id, oie)
         return oie
@@ -928,6 +937,253 @@ def _packaged_harvest_source(custom_name: str) -> tuple[str, Optional[str]]:
     return repos_yaml_source_name(custom_name, packaged), path
 
 
+def download_graph_from_upstream(cache_file: str) -> None:
+    """Import CRE graph from opencre.org into ``cache_file`` (Postgres URL).
+
+    Runs in a subprocess so ``cre_main.db_connect`` cannot nest/pop the
+    admin request's Flask app context.
+    """
+    cache = (cache_file or "").replace("postgresql+psycopg2://", "postgresql://")
+    argv = [
+        sys.executable,
+        str(REPO_ROOT / "cre.py"),
+        "--upstream_sync",
+        "--cache_file",
+        cache,
+    ]
+    proc = subprocess.run(
+        argv,
+        capture_output=True,
+        text=True,
+        timeout=60 * 60,
+        check=False,
+        cwd=str(REPO_ROOT),
+        env=_subprocess_env(),
+    )
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "upstream_sync failed")[-1500:]
+        raise RuntimeError(f"cre.py --upstream_sync failed: {detail}")
+
+
+def _cre_hub_sqlite_path() -> Optional[Path]:
+    env = (os.getenv("CRE_HUB_SQLITE") or "").strip()
+    if env:
+        p = Path(env)
+        return p if p.is_file() else None
+    packaged = REPO_ROOT / "standards_cache.sqlite"
+    return packaged if packaged.is_file() else None
+
+
+def sync_cre_hub_embeddings(cache_file: str) -> Dict[str, Any]:
+    """Load CRE embedding vectors into Postgres (required for Module C).
+
+    ``cre.py --upstream_sync`` only imports the CRE graph; Librarian needs
+    ``embeddings`` rows with ``embedding_vec``. Prefer a local hub sqlite
+    (``CRE_HUB_SQLITE`` or ``standards_cache.sqlite``).
+    """
+    hub = _cre_hub_sqlite_path()
+    if hub is None:
+        return {
+            "status": "skipped",
+            "reason": "no CRE hub sqlite (set CRE_HUB_SQLITE or place standards_cache.sqlite)",
+        }
+    dest = (cache_file or "").replace("postgresql+psycopg2://", "postgresql://")
+    argv = [
+        sys.executable,
+        str(REPO_ROOT / "scripts" / "oie_sync_cre_hub.py"),
+        "--from-sqlite",
+        str(hub),
+        "--to-postgres",
+        dest,
+        "--allow-remote-destination",
+    ]
+    proc = subprocess.run(
+        argv,
+        capture_output=True,
+        text=True,
+        timeout=60 * 60,
+        check=False,
+        cwd=str(REPO_ROOT),
+        env=_subprocess_env(),
+    )
+    out = (proc.stdout or "")[-1500:]
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "cre hub sync failed")[-1500:]
+        raise RuntimeError(f"oie_sync_cre_hub failed: {detail}")
+    return {"status": "ok", "hub": str(hub), "detail": out}
+
+
+def _run_upstream_sync_job(run_id: str, cache_file: str) -> Dict[str, Any]:
+    append_event(
+        run_id,
+        "upstream_sync",
+        "started",
+        f"download_graph_from_upstream cache={cache_file[:80]}",
+    )
+    try:
+        download_graph_from_upstream(cache_file)
+    except Exception as exc:
+        append_event(run_id, "upstream_sync", "error", str(exc)[:2000])
+        raise
+    append_event(run_id, "upstream_sync", "ok", "upstream CRE graph synced")
+
+    append_event(run_id, "cre_hub_embeddings", "started", "sync CRE embedding vectors")
+    try:
+        hub = sync_cre_hub_embeddings(cache_file)
+    except Exception as exc:
+        append_event(run_id, "cre_hub_embeddings", "error", str(exc)[:2000])
+        raise
+    status = str(hub.get("status") or "ok")
+    append_event(
+        run_id,
+        "cre_hub_embeddings",
+        status if status in ("ok", "skipped", "error") else "ok",
+        json.dumps(hub)[:2000],
+    )
+    if status == "skipped":
+        # Module C will EmptyPoolError — surface clearly before OIE starts.
+        raise RuntimeError(
+            "CRE hub embeddings missing after upstream sync: "
+            + str(hub.get("reason") or "skipped")
+        )
+    return {"status": "ok", "hub": hub}
+
+
+def start_upstream_sync_and_ingest(
+    *,
+    name: Optional[str] = None,
+    packaged: bool = True,
+    yaml_text: Optional[str] = None,
+    dry_run: bool = False,
+    sync_repos: bool = True,
+    max_repos: Optional[int] = DEFAULT_OIE_MAX_REPOS,
+    skip_b: Optional[bool] = None,
+    skip_c: Optional[bool] = None,
+    skip_c1: Optional[bool] = None,
+    wait: Optional[bool] = None,
+) -> Dict[str, Any]:
+    """Pull CRE hub from upstream, then start packaged (or one-off) OIE ingest.
+
+    Progress events (``upstream_sync``, then ``oie``) land on one import run so
+    Admin → Pipeline shows both stages. Async by default outside tests.
+    """
+    try:
+        cache_file = _oie_cache_file()
+    except RuntimeError as exc:
+        raise ValueError(str(exc)) from exc
+
+    custom_name = (name or "").strip()
+    cleanup_yaml = False
+    one_off_yaml: Optional[str] = None
+    repos_yaml_path: Optional[str] = None
+
+    if yaml_text is not None:
+        data = load_repos_mapping(yaml_text)
+        probe_github_sources(data.get("sources") or [])
+        source = repos_yaml_source_name(custom_name, yaml_text)
+        one_off_yaml = yaml_text
+    elif packaged:
+        source, repos_yaml_path = _packaged_harvest_source(custom_name)
+    else:
+        raise ValueError("packaged=true or yaml is required")
+
+    run = db.create_import_run(source=source, version="admin-upstream-sync-and-ingest")
+    db.persist_staged_change_set(
+        run_id=run.id,
+        changeset_json=import_diff.change_set_to_json([]),
+        staging_status="pending_review",
+    )
+    append_event(run.id, "queued", "ok", f"upstream_sync+oie source={source}")
+
+    if one_off_yaml is not None:
+        repos_yaml_path = str(_write_run_repos_yaml(run.id, one_off_yaml))
+        cleanup_yaml = True
+
+    auto_b, auto_c = _default_skip_bc()
+    eff_skip_b = auto_b if skip_b is None else skip_b
+    eff_skip_c = auto_c if skip_c is None else skip_c
+    eff_skip_c1 = False if skip_c1 is None else bool(skip_c1)
+    oie_plan = {
+        "after": "upstream_sync",
+        "dry_run": dry_run,
+        "sync_repos": sync_repos,
+        "max_repos": max_repos,
+        "skip_b": eff_skip_b,
+        "skip_c": eff_skip_c,
+        "skip_c1": eff_skip_c1,
+        "repos_yaml": repos_yaml_path,
+    }
+
+    testing = (
+        bool(has_app_context() and current_app.config.get("TESTING"))
+        or (os.getenv("ADMIN_OIE_SYNC") or "").strip().lower() in TRUE_VALUES
+    )
+    run_sync = testing if wait is None else bool(wait)
+    job_kwargs = dict(
+        dry_run=dry_run,
+        sync_repos=sync_repos,
+        max_repos=max_repos,
+        skip_b=eff_skip_b,
+        skip_c=eff_skip_c,
+        skip_c1=eff_skip_c1,
+        cleanup_yaml=cleanup_yaml,
+    )
+    oie: Optional[Dict[str, Any]] = None
+    async_job = False
+
+    def _worker_body() -> Dict[str, Any]:
+        # Upstream first — do not start OIE until the CRE hub is in Postgres.
+        _run_upstream_sync_job(run.id, cache_file)
+        append_event(run.id, "oie", "started", json.dumps(oie_plan)[:2000])
+        return _run_oie_job(run.id, repos_yaml_path, **job_kwargs)
+
+    if run_sync:
+        try:
+            oie = _worker_body()
+        except Exception as exc:
+            logger.exception("upstream-sync-and-ingest failed")
+            append_event(run.id, "oie", "error", str(exc)[:2000])
+            raise
+    else:
+        app = current_app._get_current_object()
+        run_id = run.id
+        yaml_path = repos_yaml_path
+        kw = dict(job_kwargs)
+        plan = dict(oie_plan)
+
+        def _worker() -> None:
+            with app.app_context():
+                try:
+                    _run_upstream_sync_job(run_id, cache_file)
+                    append_event(run_id, "oie", "started", json.dumps(plan)[:2000])
+                    _run_oie_job(run_id, yaml_path, **kw)
+                except Exception as exc:
+                    logger.exception("async upstream-sync-and-ingest failed")
+                    append_event(run_id, "oie", "error", str(exc)[:2000])
+
+        threading.Thread(
+            target=_worker, daemon=True, name=f"admin-upstream-oie-{run.id}"
+        ).start()
+        async_job = True
+        oie = {
+            "async": True,
+            "started": True,
+            "skip_b": eff_skip_b,
+            "skip_c": eff_skip_c,
+            "skip_c1": eff_skip_c1,
+        }
+
+    return {
+        "run_id": run.id,
+        "source": source,
+        "oie": oie,
+        "dry_run": dry_run,
+        "sync_repos": sync_repos,
+        "async": async_job,
+        "upstream_sync": True,
+    }
+
+
 def start_ingestion(
     *,
     source: str = "",
@@ -940,6 +1196,7 @@ def start_ingestion(
     max_repos: Optional[int] = DEFAULT_OIE_MAX_REPOS,
     skip_b: Optional[bool] = None,
     skip_c: Optional[bool] = None,
+    skip_c1: Optional[bool] = None,
     wait: Optional[bool] = None,
 ) -> Dict[str, Any]:
     custom_name = (name or "").strip()
@@ -998,6 +1255,7 @@ def start_ingestion(
         auto_b, auto_c = _default_skip_bc()
         eff_skip_b = auto_b if skip_b is None else skip_b
         eff_skip_c = auto_c if skip_c is None else skip_c
+        eff_skip_c1 = False if skip_c1 is None else bool(skip_c1)
         skip_reason = (
             "admin_default_skip_bc"
             if skip_b is None and skip_c is None and eff_skip_b and eff_skip_c
@@ -1014,7 +1272,7 @@ def start_ingestion(
                     "max_repos": max_repos,
                     "skip_b": eff_skip_b,
                     "skip_c": eff_skip_c,
-                    "skip_c1": False,
+                    "skip_c1": eff_skip_c1,
                     "skip_reason": skip_reason,
                     "repos_yaml": repos_yaml_path,
                     "wait": wait,
@@ -1031,6 +1289,7 @@ def start_ingestion(
                         "C.1 only auto-files when OIE_GRAPH_FILING_ENABLED=1 "
                         "(Config toggle; default off — review decision_queue first). "
                         "Pass skip_b/skip_c/skip_c1 true to opt out of stages. "
+                        "max_repos=0 means no cap. "
                         "Module A may write 0 chunks when checkpoints are already at HEAD."
                     ),
                 }
@@ -1047,6 +1306,7 @@ def start_ingestion(
             max_repos=max_repos,
             skip_b=eff_skip_b,
             skip_c=eff_skip_c,
+            skip_c1=eff_skip_c1,
             cleanup_yaml=cleanup_yaml,
         )
         if run_sync:
@@ -1069,6 +1329,7 @@ def start_ingestion(
                 "started": True,
                 "skip_b": eff_skip_b,
                 "skip_c": eff_skip_c,
+                "skip_c1": eff_skip_c1,
             }
     else:
         append_event(
@@ -1272,7 +1533,30 @@ def _op_added_name(op: Dict[str, Any], doc: Dict[str, Any]) -> str:
     return ""
 
 
-def review_run_links(run_id: str) -> Dict[str, Any]:
+def _section_title_content(doc: Dict[str, Any], added_name: str) -> tuple[str, str]:
+    title = str(
+        doc.get("name")
+        or doc.get("section")
+        or doc.get("sectionID")
+        or added_name
+        or ""
+    )
+    content = str(
+        doc.get("description")
+        or doc.get("text")
+        or doc.get("body")
+        or doc.get("content")
+        or ""
+    )
+    return title, content
+
+
+def review_run_links(
+    run_id: str,
+    *,
+    page: int = 1,
+    page_size: int = 50,
+) -> Dict[str, Any]:
     cs = db.get_staged_change_set(run_id=run_id)
     if not cs:
         raise KeyError("no staged change set")
@@ -1287,11 +1571,15 @@ def review_run_links(run_id: str) -> Dict[str, Any]:
         if not isinstance(op, dict):
             continue
         doc = _op_document(op)
+        name = _op_added_name(op, doc)
+        title, content = _section_title_content(doc, name)
         added = {
-            "name": _op_added_name(op, doc),
+            "name": name,
             "section": doc.get("section") or "",
             "sectionID": doc.get("sectionID") or "",
             "op": op.get("op"),
+            "title": title,
+            "content": content,
         }
         cres = doc.get("linked_cres")
         if not isinstance(cres, list) or not cres:
@@ -1320,10 +1608,18 @@ def review_run_links(run_id: str) -> Dict[str, Any]:
                     "decision": cre.get("decision") or "pending",
                 }
             )
+    total = len(links)
+    size = max(1, min(int(page_size or 50), 200))
+    page_n = max(1, int(page or 1))
+    start = (page_n - 1) * size
+    page_links = links[start : start + size]
     return {
         "run_id": run_id,
         "staging_status": cs.staging_status,
-        "links": links,
+        "links": page_links,
+        "total": total,
+        "page": page_n,
+        "page_size": size,
         "changeset": ops,
     }
 
@@ -1395,18 +1691,104 @@ def review_link(
     return review_run_links(run_id)
 
 
+def _review_pulse_from_staged() -> Dict[str, Any]:
+    """Accept-as-is / adjust / reject rates from staged link decisions (no gold set)."""
+    accepted = 0
+    adjusted = 0
+    rejected = 0
+    pending = 0
+    try:
+        rows = sqla.session.query(db.StagedChangeSet).all()
+    except Exception:
+        logger.exception("review pulse query failed")
+        rows = []
+    for cs in rows:
+        try:
+            ops = json.loads(cs.changeset_json or "[]")
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(ops, list):
+            continue
+        for op in ops:
+            if not isinstance(op, dict):
+                continue
+            doc = _op_document(op)
+            cres = doc.get("linked_cres")
+            if not isinstance(cres, list) or not cres:
+                if cs.staging_status == "pending_review":
+                    pending += 1
+                continue
+            for cre in cres:
+                if not isinstance(cre, dict):
+                    continue
+                decision = str(cre.get("decision") or "pending").lower()
+                if decision in ("approved", "accept", "accepted"):
+                    accepted += 1
+                elif decision in ("relinked", "relink", "edited"):
+                    adjusted += 1
+                elif decision in ("denied", "deny", "rejected"):
+                    rejected += 1
+                else:
+                    pending += 1
+    decided = accepted + adjusted + rejected
+    total = decided + pending
+
+    def _pct(n: int) -> float:
+        return round((100.0 * n / decided), 1) if decided else 0.0
+
+    return {
+        "accepted_as_is": accepted,
+        "adjusted": adjusted,
+        "rejected": rejected,
+        "pending": pending,
+        "decided": decided,
+        "total": total,
+        "accepted_as_is_pct": _pct(accepted),
+        "adjusted_pct": _pct(adjusted),
+        "rejected_pct": _pct(rejected),
+    }
+
+
 def dashboard_payload() -> Dict[str, Any]:
     pipe = pipeline_snapshot()
     events = pipe.get("events") or []
     running = [e for e in events if e.get("status") == "started"]
     failed = [e for e in events if e.get("status") in ("error", "failed")]
+    ingest_errors = [
+        e
+        for e in events
+        if e.get("status") in ("error", "failed")
+        and str(e.get("stage") or "").lower()
+        in ("harvest", "ingest", "module_a", "a", "chunk", "embed")
+    ]
+    staged_pending = 0
+    try:
+        staged_pending = (
+            sqla.session.query(db.StagedChangeSet)
+            .filter(db.StagedChangeSet.staging_status == "pending_review")
+            .count()
+        )
+    except Exception:
+        logger.exception("staged pending count failed")
+    oie = pipe.get("oie") or {}
+    blocked = int(oie.get("blocked") or oie.get("fail_closed") or 0)
+    pulse = _review_pulse_from_staged()
     return {
         "running": running[:25],
         "failed": failed[:25],
         "import_runs": (pipe.get("import_runs") or [])[:15],
         "latest_strip": pipe.get("latest_strip"),
-        "oie_unconsumed": (pipe.get("oie") or {}).get("unconsumed", 0),
+        "oie_unconsumed": oie.get("unconsumed", 0),
         "agent": agent_status(),
+        "needs_attention": {
+            "staged_review": staged_pending,
+            "failed_24h": len(failed),
+            "blocked": blocked,
+            "ingest_errors": len(ingest_errors),
+            "oie_unconsumed": oie.get("unconsumed", 0),
+            "queue_depth": int(oie.get("queue_depth") or len(running)),
+        },
+        "review_pulse": pulse,
     }
 
 
@@ -1419,6 +1801,15 @@ def config_payload() -> Dict[str, Any]:
         "config": rows,
         "writable": any(bool(r.get("writable")) for r in rows),
         "restart_instructions": RESTART_INSTRUCTIONS,
+    }
+
+
+def config_diff_payload() -> Dict[str, Any]:
+    rows = config_catalog.present_config_diff(os.environ)
+    return {
+        "diff": rows,
+        "dotenv_path": str(config_catalog.ENV_DOTENV),
+        "dotenv_present": config_catalog.ENV_DOTENV.is_file(),
     }
 
 
@@ -1445,4 +1836,354 @@ def config_put(updates: Dict[str, Optional[str]]) -> Dict[str, Any]:
         "config": config_catalog.present_config(os.environ),
         "needs_restart": needs_restart,
         "note": RESTART_INSTRUCTIONS if needs_restart else None,
+    }
+
+
+# Prior remaining snapshots for ETA/stuck (Redis when available; else process memory).
+_INGEST_PROGRESS_MEM: Dict[str, Dict[str, Any]] = {}
+_STUCK_REMAINING_SEC = 600
+_STUCK_STARTED_JOB_SEC = 1800
+_INGEST_STATUS_LOOKBACK = timedelta(hours=48)
+_INGEST_STATUS_CAP = 20
+
+
+def _parse_event_detail(detail: Optional[str]) -> Dict[str, Any]:
+    if not detail:
+        return {}
+    text = str(detail).strip()
+    if not text.startswith("{"):
+        return {"raw": text[:500]}
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError:
+        return {"raw": text[:500]}
+    return parsed if isinstance(parsed, dict) else {"raw": text[:500]}
+
+
+def _spec_summary(spec: Any) -> Dict[str, Any]:
+    if not isinstance(spec, dict):
+        return {}
+    out: Dict[str, Any] = {}
+    for key in (
+        "owner",
+        "repo",
+        "branch",
+        "kind",
+        "lane",
+        "id",
+        "include",
+        "mode",
+        "cron",
+    ):
+        if key in spec and spec[key] is not None:
+            out[key] = spec[key]
+    return out
+
+
+def _load_progress_snap(run_id: str) -> Optional[Dict[str, Any]]:
+    key = f"admin:ingest:progress:{run_id}"
+    try:
+        from application.utils import redis as redis_util
+
+        conn = redis_util.connect()  # type: ignore[no-untyped-call]
+        raw = conn.get(key)
+        if raw:
+            if isinstance(raw, bytes):
+                raw = raw.decode("utf-8")
+            data = json.loads(raw)
+            if isinstance(data, dict):
+                return data
+    except Exception:  # noqa: BLE001
+        pass
+    mem = _INGEST_PROGRESS_MEM.get(run_id)
+    return dict(mem) if mem else None
+
+
+def _store_progress_snap(run_id: str, snap: Dict[str, Any]) -> None:
+    _INGEST_PROGRESS_MEM[run_id] = dict(snap)
+    key = f"admin:ingest:progress:{run_id}"
+    try:
+        from application.utils import redis as redis_util
+
+        conn = redis_util.connect()  # type: ignore[no-untyped-call]
+        conn.set(key, json.dumps(snap), ex=7 * 24 * 3600)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _eta_from_rate(
+    *,
+    started_at: Optional[datetime],
+    done: int,
+    remaining: int,
+    now: datetime,
+) -> Tuple[str, str]:
+    """Return (eta_iso_or_empty, note) — same idea as estimate_eta_utc."""
+    total = done + remaining
+    if remaining <= 0 and total > 0:
+        return "", "complete"
+    if done <= 0:
+        return "", "warming up"
+    if not started_at:
+        return "", "warming up"
+    start = started_at if started_at.tzinfo else started_at.replace(tzinfo=timezone.utc)
+    elapsed = max((now - start).total_seconds(), 1.0)
+    per = elapsed / done
+    seconds_left = per * remaining
+    eta = now.timestamp() + seconds_left
+    eta_iso = datetime.fromtimestamp(eta, tz=timezone.utc).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+    mins = int(seconds_left // 60)
+    return eta_iso, f"~{mins}m left · {per/60:.1f}m/unit"
+
+
+def ingestions_status(
+    *,
+    lookback: Optional[timedelta] = None,
+    limit: int = _INGEST_STATUS_CAP,
+    now: Optional[datetime] = None,
+) -> Dict[str, Any]:
+    """Active/recent ingestions with config, live progress, ETA, and stuck flag."""
+    now_dt = now or datetime.now(timezone.utc)
+    since = now_dt - (lookback or _INGEST_STATUS_LOOKBACK)
+    cap = max(1, min(int(limit), 50))
+
+    runs = (
+        sqla.session.query(db.ImportRun)
+        .filter(db.ImportRun.created_at >= since)
+        .order_by(db.ImportRun.created_at.desc())
+        .limit(cap)
+        .all()
+    )
+    if not runs:
+        # Fall back to most recent even if older than lookback.
+        runs = (
+            sqla.session.query(db.ImportRun)
+            .order_by(db.ImportRun.created_at.desc())
+            .limit(min(cap, 5))
+            .all()
+        )
+
+    from application.utils.rq_dashboard_snapshot import (
+        oie_rq_status,
+        oie_run_queue_counts,
+        queue_summary,
+    )
+
+    try:
+        rq_body = oie_rq_status(limit=40)
+    except Exception:  # noqa: BLE001
+        logger.exception("ingestions_status: oie_rq_status failed")
+        rq_body = {
+            "queues": {},
+            "oie": {"queued": [], "started": [], "failed": [], "finished": []},
+        }
+    try:
+        queues = queue_summary()
+    except Exception:  # noqa: BLE001
+        queues = rq_body.get("queues") or {}
+
+    oie_q = "oie"
+    try:
+        from application.utils.oie_rq.fanout import oie_queue_name
+
+        oie_q = oie_queue_name()
+    except Exception:  # noqa: BLE001
+        pass
+    q_depths = queues.get(oie_q) or queues.get("oie") or {}
+    rq_queued = int(q_depths.get("queued") or 0)
+    rq_started = int(q_depths.get("started") or 0)
+    rq_failed = int(q_depths.get("failed") or 0)
+    rq_finished = int(q_depths.get("finished") or 0)
+
+    oie_jobs = rq_body.get("oie") or {}
+    started_jobs = list(oie_jobs.get("started") or [])
+    oldest_started_age: Optional[float] = None
+    for job in started_jobs:
+        started_raw = job.get("started_at") or job.get("enqueued_at")
+        if not started_raw:
+            continue
+        try:
+            ts = datetime.fromisoformat(str(started_raw).replace("Z", "+00:00"))
+            age = (now_dt - ts).total_seconds()
+            if oldest_started_age is None or age > oldest_started_age:
+                oldest_started_age = age
+        except (TypeError, ValueError):
+            continue
+
+    targets = {t.id: t for t in sqla.session.query(db.IngestionTarget).all()}
+    targets_by_name = {t.name: t for t in targets.values() if t.name}
+
+    ingestions: List[Dict[str, Any]] = []
+    for run in runs:
+        events = (
+            sqla.session.query(db.AdminPipelineEvent)
+            .filter(db.AdminPipelineEvent.run_id == run.id)
+            .order_by(db.AdminPipelineEvent.created_at.desc())
+            .limit(50)
+            .all()
+        )
+        latest = events[0] if events else None
+        phase = f"{latest.stage}/{latest.status}" if latest else "unknown"
+        start_cfg: Dict[str, Any] = {}
+        for ev in events:
+            if ev.stage == "oie" and ev.status == "started":
+                start_cfg = _parse_event_detail(ev.detail)
+                break
+        target = targets.get(run.source) or targets_by_name.get(run.source)
+        spec = {}
+        if target:
+            try:
+                spec = json.loads(target.spec_json or "{}")
+            except json.JSONDecodeError:
+                spec = {}
+        config = {
+            "source": run.source,
+            "target_id": target.id if target else None,
+            "kind": target.kind if target else None,
+            "dry_run": start_cfg.get("dry_run"),
+            "sync_repos": start_cfg.get("sync_repos"),
+            "max_repos": start_cfg.get("max_repos"),
+            "skip_b": start_cfg.get("skip_b"),
+            "skip_c": start_cfg.get("skip_c"),
+            "skip_c1": start_cfg.get("skip_c1"),
+            "skip_reason": start_cfg.get("skip_reason"),
+            "graph_path": start_cfg.get("graph_path"),
+            "wait": start_cfg.get("wait"),
+            "repos_yaml": start_cfg.get("repos_yaml"),
+            "spec": _spec_summary(spec),
+        }
+
+        db_note = ""
+        try:
+            counts = oie_run_queue_counts(sqla.session, run.id)
+        except Exception:  # noqa: BLE001
+            counts = {
+                "harvest_pending": 0,
+                "harvest_processed": 0,
+                "knowledge_unconsumed": 0,
+                "knowledge_consumed": 0,
+                "decision_rows": 0,
+            }
+            db_note = "db_counts_unavailable"
+
+        hi_pending = int(counts.get("harvest_pending") or 0)
+        hi_done = int(counts.get("harvest_processed") or 0)
+        kq_open = int(counts.get("knowledge_unconsumed") or 0)
+        kq_done = int(counts.get("knowledge_consumed") or 0)
+        # Module C drain = KQ + RQ. Do NOT fold HI pending into remaining/ETA
+        # (HI is Module A harvest backlog and can be tens of thousands).
+        remaining = kq_open + rq_queued + rq_started
+        done = kq_done + rq_finished
+
+        progress = {
+            "harvest_pending": hi_pending,
+            "harvest_processed": hi_done,
+            "knowledge_unconsumed": kq_open,
+            "knowledge_consumed": kq_done,
+            "decision_rows": int(counts.get("decision_rows") or 0),
+            "rq_queued": rq_queued,
+            "rq_started": rq_started,
+            "rq_failed": rq_failed,
+            "rq_finished": rq_finished,
+            "remaining": remaining,
+            "done": done,
+        }
+
+        prior = _load_progress_snap(run.id)
+        # Prefer snap-to-snap throughput so old ImportRun.created_at cannot
+        # invent multi-day ETAs from a tiny done count.
+        eta_iso, eta_note = "", "warming up"
+        if remaining <= 0:
+            eta_iso, eta_note = "", "complete"
+        elif prior:
+            try:
+                prior_rem = int(prior.get("remaining") or -1)
+                prior_ts = float(prior.get("ts") or 0)
+                age = max(time.time() - prior_ts, 1.0)
+                drained = prior_rem - remaining
+                if drained > 0 and prior_rem >= 0:
+                    per = age / drained
+                    seconds_left = per * remaining
+                    eta = now_dt.timestamp() + seconds_left
+                    eta_iso = datetime.fromtimestamp(eta, tz=timezone.utc).strftime(
+                        "%Y-%m-%dT%H:%M:%SZ"
+                    )
+                    mins = int(seconds_left // 60)
+                    eta_note = f"~{mins}m left · {per:.1f}s/unit"
+            except (TypeError, ValueError):
+                eta_note = "warming up"
+        if db_note and eta_note == "warming up":
+            eta_note = db_note
+
+        stuck = False
+        stuck_reason = ""
+        if remaining > 0 and prior:
+            try:
+                prior_rem = int(prior.get("remaining") or -1)
+                prior_ts = float(prior.get("ts") or 0)
+                age = time.time() - prior_ts
+                if prior_rem == remaining and age >= _STUCK_REMAINING_SEC:
+                    stuck = True
+                    stuck_reason = f"remaining unchanged for {int(age // 60)}m"
+            except (TypeError, ValueError):
+                pass
+        if (
+            not stuck
+            and remaining > 0
+            and oldest_started_age is not None
+            and oldest_started_age >= _STUCK_STARTED_JOB_SEC
+        ):
+            stuck = True
+            stuck_reason = f"oldest started RQ job age {int(oldest_started_age // 60)}m"
+        if not stuck and remaining > 0 and prior:
+            try:
+                prior_failed = int(prior.get("rq_failed") or 0)
+                prior_fin = int(prior.get("rq_finished") or 0)
+                if (
+                    rq_failed > prior_failed
+                    and rq_finished <= prior_fin
+                    and (time.time() - float(prior.get("ts") or 0))
+                    >= _STUCK_REMAINING_SEC
+                ):
+                    stuck = True
+                    stuck_reason = "failed jobs rising with no finishes"
+            except (TypeError, ValueError):
+                pass
+
+        _store_progress_snap(
+            run.id,
+            {
+                "remaining": remaining,
+                "ts": time.time(),
+                "rq_failed": rq_failed,
+                "rq_finished": rq_finished,
+                "done": done,
+            },
+        )
+
+        ingestions.append(
+            {
+                "run_id": run.id,
+                "source": run.source,
+                "created_at": run.created_at.isoformat() if run.created_at else None,
+                "phase": phase,
+                "config": config,
+                "progress": progress,
+                "eta": {"eta_utc": eta_iso, "note": eta_note},
+                "stuck": stuck,
+                "stuck_reason": stuck_reason or None,
+            }
+        )
+
+    return {
+        "timestamp": now_dt.isoformat(),
+        "ingestions": ingestions,
+        "active_count": sum(
+            1
+            for i in ingestions
+            if int((i.get("progress") or {}).get("remaining") or 0) > 0
+        ),
+        "stuck_count": sum(1 for i in ingestions if i.get("stuck")),
     }

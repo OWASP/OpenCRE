@@ -1,9 +1,9 @@
 """Health of the scheduled OIE jobs and the queues between the modules.
 
 Backs ``/admin/oie/health`` and ``scripts/monitor_oie_health.py``. A job is
-``stale`` when its last successful run is older than ``STALE_AFTER_SLOTS`` slots:
-a laptop that slept through one or two ticks is normal, one that missed a whole
-day of the 10-minute job is not.
+``stale`` when its last successful run is older than ``STALE_AFTER_SLOTS`` slots
+of the job's current interval (the admin-panel value, else the default): missing
+one or two ticks is normal, missing three in a row is not.
 """
 
 from __future__ import annotations
@@ -16,10 +16,10 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
 from application.database import db
-from application.utils.oie_scheduler import run_log
+from application.utils.oie_scheduler import run_log, schedule_settings
 from application.utils.oie_scheduler.jobs import JOBS
 
-STALE_AFTER_SLOTS = 6
+STALE_AFTER_SLOTS = 3
 
 
 def queue_depths(session: Any) -> Dict[str, int]:
@@ -51,10 +51,11 @@ def _last(session: Any, job: str, *statuses: str) -> Optional[db.OieRun]:
 
 def job_health(session: Any, job: str, now: datetime) -> Dict[str, Any]:
     spec = JOBS[job]
+    interval = schedule_settings.effective_interval_minutes(job, spec.interval_minutes)
     naive_now = run_log.naive_utc(now)
     last = _last(session, job)
     last_ok = _last(session, job, "ok", "degraded")
-    stale_after = timedelta(minutes=spec.interval_minutes * STALE_AFTER_SLOTS)
+    stale_after = timedelta(minutes=interval * STALE_AFTER_SLOTS)
 
     if last is None:
         state = "never_ran"
@@ -72,13 +73,13 @@ def job_health(session: Any, job: str, now: datetime) -> Dict[str, Any]:
 
     return {
         "job": job,
-        "interval_minutes": spec.interval_minutes,
+        "interval_minutes": interval,
         "state": state,
         "last_run": run_log.run_to_dict(last) if last else None,
         "last_success_at": (
             (last_ok.finished_at or last_ok.started_at).isoformat() if last_ok else None
         ),
-        "next_slot_at": run_log.expected_next(spec.interval_minutes, now).isoformat(),
+        "next_slot_at": run_log.expected_next(interval, now).isoformat(),
     }
 
 

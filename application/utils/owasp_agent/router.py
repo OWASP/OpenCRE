@@ -702,6 +702,15 @@ def classify_intent(text: str, *, known_people: Optional[List[str]] = None) -> s
     ):
         return "talk_lookup"
 
+    # Fail-closed talk asks (often compound with a CRE factoid) before CRE-only.
+    # Do not steal board asks that only say "do not invent talk quotes".
+    if (
+        re.search(r"\bfail[- ]closed\b", t)
+        and re.search(r"\btalk\b", t)
+        and not re.search(r"\bboard\b", t)
+    ):
+        return "talk_lookup"
+
     # Curated CRE factoids (deterministic) before generic CRE RAG
     from application.utils.owasp_agent.cre_facts import lookup_cre_factoid
 
@@ -1011,6 +1020,14 @@ def extract_slots(text: str, *, known_people: Optional[List[str]] = None) -> Slo
     person = match_indexed_person(text, known_people)
     if person:
         slots.person = person
+    # "Fail-closed on Spyros … talk" — single given name is enough for fail-closed.
+    if not slots.person:
+        m_on_talk = re.search(
+            r"\bon\s+([A-Z][a-z]{2,})\s+(?:\S+\s+){0,4}talk\b",
+            text,
+        )
+        if m_on_talk:
+            slots.person = m_on_talk.group(1).strip()
 
     m_diff = re.search(
         r"\b(?:difference between|differ(?:ence)? between|compare)\s+"

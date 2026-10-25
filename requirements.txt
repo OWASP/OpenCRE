@@ -26,6 +26,7 @@ neo4j
 neomodel
 networkx
 PyYAML==6.0.1
+pathspec
 
 # auth + HTTP
 requests
@@ -33,6 +34,7 @@ oauthlib
 google-auth
 google-api-core
 google_auth_oauthlib
+PyJWT>=2.8.0,<3
 
 # OpenAPI / schemas used by web
 marshmallow
