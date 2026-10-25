@@ -15,8 +15,6 @@ from typing import Any, Dict, List, Mapping, Optional, Set, Tuple
 from application.mcp.rest_client import (
     RestClient,
     RestClientError,
-    RestRequestError,
-    RestResponseError,
 )
 from application.utils.gap_analysis import OPENCRE_STANDARD_NAME
 from application.utils.owasp_agent import is_owasp_agent_enabled
@@ -165,8 +163,8 @@ def _owasp_meta_facts(
             ),
         }
 
-    # Always try the meta/sim router first — AIX evidence and community cards can
-    # answer prompts that keyword intent labels as cre_normative.
+    # Always try the meta/sim router first — evidence and community cards can
+    # answer prompts that classify_intent labels as cre_normative.
     resp = _router_handle(prompt)
     if resp is None:
         if intent == "cre_normative" and not allow_cre_defer:
@@ -213,49 +211,114 @@ def _owasp_meta_facts(
     }
 
 
+def _retrieve_nearest_standard(prompt: str) -> Any:
+    """Same embedding retrieval as the chatbot; runs under Flask app context."""
+    from application.database import db as db_mod
+    from application.prompt_client import prompt_client
+
+    def _run() -> Any:
+        database = db_mod.Node_collection()
+        handler = prompt_client.PromptHandler(database, load_all_embeddings=False)
+        return handler.retrieve_nearest_standard_for_prompt(prompt)
+
+    try:
+        from flask import has_app_context
+
+        if has_app_context():
+            return _run()
+    except Exception:
+        pass
+    try:
+        app = _ensure_app()
+        with app.app_context():
+            return _run()
+    except Exception:
+        logger.info("ask: embedding retrieval failed", exc_info=True)
+        try:
+            return _run()
+        except Exception:
+            logger.info("ask: embedding retrieval bare fallback failed", exc_info=True)
+            return None
+
+
+def _cre_ids_from_node(node: Any) -> List[str]:
+    """Collect CRE external ids linked from a Standard/node."""
+    from application.defs import cre_defs
+
+    out: List[str] = []
+    seen: Set[str] = set()
+    for link in getattr(node, "links", None) or []:
+        doc = getattr(link, "document", None)
+        if doc is None:
+            continue
+        doctype = getattr(doc, "doctype", None)
+        if doctype != cre_defs.Credoctypes.CRE:
+            continue
+        cre_id = str(getattr(doc, "id", None) or "").strip()
+        if not cre_id or not _looks_like_cre_id(cre_id) or cre_id in seen:
+            continue
+        seen.add(cre_id)
+        out.append(cre_id)
+    return out
+
+
+def _matched_standard_payload(hit: Any) -> Dict[str, Any]:
+    node = hit.node
+    section = getattr(node, "section", None)
+    section_id = getattr(node, "sectionID", None) or getattr(node, "section_id", None)
+    hyperlink = getattr(node, "hyperlink", None)
+    content = hit.embeddings_content or ""
+    return {
+        "node_id": hit.node_id,
+        "name": getattr(node, "name", None),
+        "section": section,
+        "sectionID": section_id,
+        "description": getattr(node, "description", None),
+        "hyperlink": hyperlink,
+        "embeddings_content": content[:8000],
+        "embeddings_url": hit.embeddings_url or "",
+        "similarity": hit.similarity,
+    }
+
+
 def _security_facts(
     prompt: str,
     *,
     rest_client: Optional[RestClient],
     intent: str,
 ) -> Dict[str, Any]:
+    """Retrieve via chatbot embedding similarity; return fact pack (no narrative LLM)."""
     client = rest_client or RestClient()
-    try:
-        search_data = client.call_tool("text_search", {"text": prompt}).data
-    except RestResponseError as exc:
-        if exc.status_code == 404:
-            return {
-                "ok": False,
-                "channel": CORPUS_SECURITY,
-                "intent": intent,
-                "items": [],
-                "message": "No CRE/standard matches the search terms.",
-                "citations": [],
-                "standards_filter": "all_mapped",
-            }
-        raise
-    except RestClientError:
-        raise
+    hit = _retrieve_nearest_standard(prompt)
+    if hit is None:
+        return {
+            "ok": False,
+            "channel": CORPUS_SECURITY,
+            "intent": intent,
+            "matched_standard": None,
+            "items": [],
+            "message": "No CRE/standard embedding match above similarity threshold.",
+            "citations": [],
+            "standards_filter": "all_mapped",
+        }
 
-    docs = _as_doc_list(search_data)
-    cre_docs = [d for d in docs if _is_cre_doc(d)]
-    if not cre_docs:
-        # Only accept CRE-shaped ids (e.g. 622-203), never Standard composite keys.
-        cre_docs = [
-            d
-            for d in docs
-            if isinstance(d.get("id"), str) and _looks_like_cre_id(str(d["id"]))
-        ]
-
+    matched = _matched_standard_payload(hit)
     selection, standards_filter = _myopencre_selection(client)
     items: List[Dict[str, Any]] = []
     citations: List[str] = []
+    from application.utils.owasp_agent.candidate_picker import is_structure_ask
 
-    for doc in cre_docs[:_MAX_CRE_ENRICH]:
-        cre_id = str(doc.get("id") or "").strip()
-        if not cre_id:
-            continue
-        enriched = doc
+    structural_prompt = is_structure_ask(prompt)
+
+    emb_url = matched.get("embeddings_url") or ""
+    if isinstance(emb_url, str) and emb_url.startswith(("http://", "https://")):
+        citations.append(emb_url)
+    hyperlink = matched.get("hyperlink")
+    if isinstance(hyperlink, str) and hyperlink.startswith(("http://", "https://")):
+        citations.append(hyperlink)
+
+    for cre_id in _cre_ids_from_node(hit.node)[:_MAX_CRE_ENRICH]:
+        enriched: Dict[str, Any] = {"id": cre_id}
         try:
             full = client.call_tool("get_cre_by_id", {"creid": cre_id}).data
             if isinstance(full, dict) and isinstance(full.get("data"), dict):
@@ -280,46 +343,43 @@ def _security_facts(
             if isinstance(link, str) and link.startswith(("http://", "https://")):
                 citations.append(link)
 
-        items.append(
-            {
-                "cre_id": cre_id,
-                "name": enriched.get("name") or doc.get("name"),
-                "description": enriched.get("description") or doc.get("description"),
-                "url": cre_url,
-                "standards": standards,
-            }
+        # Keep curated facts on items only — never prepend into message for
+        # unrelated CRE hits. Surface linked-standard structure only for
+        # structural question shapes (levels / layers / maturity).
+        node_facts = _collect_metadata_facts(
+            enriched, standards, include_linked_standards=structural_prompt
         )
+        item: Dict[str, Any] = {
+            "cre_id": cre_id,
+            "name": enriched.get("name"),
+            "description": enriched.get("description"),
+            "url": cre_url,
+            "standards": standards,
+        }
+        if node_facts:
+            item["facts"] = node_facts
+            from application.utils.owasp_agent.node_facts import format_facts_message
+
+            _msg, fact_cites = format_facts_message(node_facts)
+            for cite in fact_cites:
+                citations.append(cite)
+        items.append(item)
+
+    message = (
+        f"Nearest standard match (similarity={matched['similarity']:.3f}); "
+        f"{len(items)} linked CRE fact item(s)."
+    )
 
     return {
-        "ok": bool(items),
+        "ok": True,
         "channel": CORPUS_SECURITY,
         "intent": intent,
+        "matched_standard": matched,
         "items": items,
-        "message": (
-            f"Found {len(items)} CRE fact item(s)."
-            if items
-            else "No CRE documents matched."
-        ),
+        "message": message,
         "citations": _dedupe_preserve(citations),
         "standards_filter": standards_filter,
     }
-
-
-def _as_doc_list(data: Any) -> List[Dict[str, Any]]:
-    if isinstance(data, list):
-        return [d for d in data if isinstance(d, dict)]
-    if isinstance(data, dict):
-        for key in ("data", "results", "documents"):
-            nested = data.get(key)
-            if isinstance(nested, list):
-                return [d for d in nested if isinstance(d, dict)]
-        return [data]
-    return []
-
-
-def _is_cre_doc(doc: Mapping[str, Any]) -> bool:
-    doctype = str(doc.get("doctype") or "").lower()
-    return doctype == "cre"
 
 
 def _looks_like_cre_id(cre_id: str) -> bool:
@@ -341,15 +401,46 @@ def _extract_standards(cre_doc: Mapping[str, Any]) -> List[Dict[str, Any]]:
         name = doc.get("name")
         if not isinstance(name, str) or not name.strip():
             continue
-        out.append(
-            {
-                "name": name.strip(),
-                "section": doc.get("section"),
-                "subsection": doc.get("subsection"),
-                "hyperlink": doc.get("hyperlink"),
-            }
-        )
+        entry: Dict[str, Any] = {
+            "name": name.strip(),
+            "section": doc.get("section"),
+            "subsection": doc.get("subsection"),
+            "hyperlink": doc.get("hyperlink"),
+        }
+        meta = doc.get("metadata")
+        if isinstance(meta, dict) and meta.get("facts"):
+            entry["metadata"] = {"facts": meta["facts"]}
+        out.append(entry)
     return out
+
+
+def _collect_metadata_facts(
+    cre_doc: Mapping[str, Any],
+    standards: List[Dict[str, Any]],
+    *,
+    include_linked_standards: bool = False,
+) -> Dict[str, Any]:
+    """Collect metadata.facts from the CRE; optionally merge linked standards.
+
+    Linked-standard structure facts (ASVS levels, etc.) are only merged when
+    ``include_linked_standards`` is True so unrelated CRE hits do not inherit
+    family structure prose.
+    """
+    merged: Dict[str, Any] = {}
+    cre_meta = cre_doc.get("metadata")
+    if isinstance(cre_meta, dict):
+        facts = cre_meta.get("facts")
+        if isinstance(facts, dict):
+            merged.update(facts)
+    if include_linked_standards:
+        for std in standards:
+            meta = std.get("metadata")
+            if not isinstance(meta, dict):
+                continue
+            facts = meta.get("facts")
+            if isinstance(facts, dict):
+                merged.update(facts)
+    return merged
 
 
 def _myopencre_selection(

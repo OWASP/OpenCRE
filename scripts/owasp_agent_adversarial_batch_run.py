@@ -46,6 +46,9 @@ def main() -> int:
         "OWASP_AGENT_ENABLED": "1",
         "PYTHONUNBUFFERED": "1",
     }
+    qfile = (os.environ.get("OWASP_ADV_QUESTIONS_FILE") or "").strip()
+    if qfile:
+        env_base["OWASP_ADV_QUESTIONS_FILE"] = qfile
 
     with log_path.open("a") as log:
         t = start
