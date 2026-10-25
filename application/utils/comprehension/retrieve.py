@@ -203,6 +203,38 @@ def _expand(conn: Any, hits: List[LaneHit]) -> None:
             h.content = merge_neighbours(h.content, prev, nxt)
 
 
+def _with_boosted_projects(
+    conn: Any, q: str, dense: List[LaneHit], per: int = 8
+) -> List[LaneHit]:
+    """Projects an admin weighted above 1 always put their own best chunks in the pool.
+
+    A weight only reorders candidates, so a favoured project whose chunks all fall outside
+    the global top-N would otherwise never get the chance to be boosted.
+    """
+    from application.utils.comprehension import authority
+
+    try:
+        boosted = [s for s, w in authority.weights().items() if w > 1.0]
+    except Exception:  # noqa: BLE001
+        return dense
+    if not boosted:
+        return dense
+    seen = {h.url for h in dense}
+    extra: List[LaneHit] = []
+    for slug in boosted:
+        for h in _dense(
+            conn,
+            q,
+            "embeddings_url LIKE :pat",
+            per,
+            {"pat": f"owasp-agent://evidence/comprehension-{slug}-%"},
+        ):
+            if h.url not in seen:
+                seen.add(h.url)
+                extra.append(h)
+    return dense + extra
+
+
 def _slug_of(hit: LaneHit) -> str:
     m = _SLUG_RE.match(hit.url or "")
     return m.group(1) if m else ""
@@ -258,6 +290,7 @@ def fetch_comprehension_hits(
                     docs_where(),
                     max(wide, 300) if flags.on("TOPPROJECTS") else wide,
                 )
+                dense = _with_boosted_projects(conn, q, dense)
                 rankings.append(dense)
                 if flags.on("HYBRID"):
                     keyword_hits += _keyword(conn, t, wide)
