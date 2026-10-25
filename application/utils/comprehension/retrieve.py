@@ -137,6 +137,15 @@ def _dense(
     from application.utils.owasp_agent.lane_similarity import cosine_exprs
 
     dist, score = cosine_exprs()
+    if limit > 40:  # the HNSW index returns at most ef_search (default 40) rows
+        try:
+            conn.execute(
+                sql_text(f"SET LOCAL hnsw.ef_search = {min(1000, int(limit))}")
+            )
+        except (
+            Exception
+        ):  # noqa: BLE001 - non-pgvector / older pgvector: keep the default
+            pass
     rows = conn.execute(
         sql_text(_DENSE_SQL.format(where=where, dist=dist, score=score)),
         {"q": q, "channel": CHANNEL_AGENT, "limit": limit, **(params or {})},
