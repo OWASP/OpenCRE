@@ -316,6 +316,7 @@ class MappingJobTest(unittest.TestCase):
         self.assertEqual(touched, 2)
         rows = self._rows()
         self.assertEqual(rows["1.1"].status, SectionStatus.USER_CONFIRMED.value)
+        self.assertEqual(rows["1.1"].cre_db_id, self.nonce.id)
         self.assertEqual(rows["1.2"].status, SectionStatus.PENDING.value)
         self.assertIsNone(rows["1.2"].cre_db_id)
         self.assertEqual(rows["1.3"].status, SectionStatus.AUTO_MAPPED.value)
