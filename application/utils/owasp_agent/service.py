@@ -51,6 +51,25 @@ def closest_cre_rows(prompt: str) -> List[Dict[str, Any]]:
         return []
 
 
+def encode_citation_urls(response: Any) -> Any:
+    """Percent-encode spaces in citation URLs (repo file names like "4. Train your people.md").
+
+    A raw space breaks markdown links and makes the reference unclickable. Elementwise, so the
+    ``[n]`` marker to citation positions do not change.
+    """
+    if not isinstance(response, dict):
+        return response
+    meta = response.get("owasp_agent")
+    if not isinstance(meta, dict) or not isinstance(meta.get("citations"), list):
+        return response
+    cites = [
+        c.replace(" ", "%20") if isinstance(c, str) else c for c in meta["citations"]
+    ]
+    if cites == meta["citations"]:
+        return response
+    return {**response, "owasp_agent": {**meta, "citations": cites}}
+
+
 def attach_closest_cre(prompt: str, response: Dict[str, Any]) -> Dict[str, Any]:
     """Add the closest CRE to an evidence answer's references and citations (CRE-first bias)."""
     if not isinstance(response, dict) or not response.get("accurate", True):
@@ -88,7 +107,9 @@ def route_question(
         return None
     try:
         response = OwaspAgentRouter().handle(prompt or "", history=history or None)
-        return attach_closest_cre(prompt or "", response) if response else response
+        if not response:
+            return response
+        return encode_citation_urls(attach_closest_cre(prompt or "", response))
     except Exception:  # noqa: BLE001
         logger.exception("owasp agent router failed")
         try:

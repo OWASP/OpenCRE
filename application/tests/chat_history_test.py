@@ -154,6 +154,15 @@ class TestCleanAnswerText(unittest.TestCase):
         self.assertIn("[8].", out)
         self.assertIn("See the playbook", out)
 
+    def test_urls_containing_spaces_are_removed_too(self):
+        from application.utils.comprehension.synthesize import clean_answer_text
+
+        raw = (
+            "Include owners [[7]](https://github.com/OWASP/t/blob/HEAD/playbook/4. Train your "
+            "people to threat model.md) and testers [[8]](https://github.com/OWASP/t/a b.md)."
+        )
+        self.assertEqual(clean_answer_text(raw), "Include owners [7] and testers [8].")
+
     def test_plain_markers_are_untouched(self):
         from application.utils.comprehension.synthesize import clean_answer_text
 

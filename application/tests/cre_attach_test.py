@@ -50,5 +50,19 @@ class TestAttachClosestCre(unittest.TestCase):
             self.assertEqual(service.closest_cre_rows("q"), [])
 
 
+class TestEncodeCitationUrls(unittest.TestCase):
+    def test_spaces_in_urls_are_encoded_and_positions_kept(self):
+        resp = {"owasp_agent": {"citations": ["https://x/a b.md", "https://y/ok"]}}
+        out = service.encode_citation_urls(resp)
+        self.assertEqual(
+            out["owasp_agent"]["citations"], ["https://x/a%20b.md", "https://y/ok"]
+        )
+
+    def test_clean_responses_are_returned_unchanged(self):
+        resp = {"owasp_agent": {"citations": ["https://y/ok"]}}
+        self.assertIs(service.encode_citation_urls(resp), resp)
+        self.assertEqual(service.encode_citation_urls("x"), "x")
+
+
 if __name__ == "__main__":
     unittest.main()

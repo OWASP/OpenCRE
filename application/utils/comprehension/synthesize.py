@@ -60,8 +60,8 @@ def take_evidence() -> list:
     return list(_EVIDENCE.get())
 
 
-_MD_LINK = re.compile(r"\[([^\[\]]+)\]\(\s*https?://[^)\s]*\s*\)")
-_MARK_LINK = re.compile(r"\[\[(\d+)\]\]\(\s*https?://[^)\s]*\s*\)")
+_MD_LINK = re.compile(r"\[([^\[\]]+)\]\(\s*https?://[^)]*\)")
+_MARK_LINK = re.compile(r"\[\[(\d+)\]\]\(\s*https?://[^)]*\)")
 _DOUBLE_MARK = re.compile(r"\[\[(\d+)\]\]")
 _BARE_URL = re.compile(r"https?://[^\s)\]>]+")
 
