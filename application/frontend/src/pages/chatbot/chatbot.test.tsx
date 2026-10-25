@@ -128,6 +128,9 @@ describe('Chatbot continue conversation', () => {
     expect(bodies()[1].messages).toHaveLength(1);
     fireEvent.click(container.querySelector('input[type=checkbox]')!);
     await send('third question', 3);
-    expect(bodies()[2].messages.length).toBeGreaterThan(1);
+    expect(bodies()[2].messages).toHaveLength(3); // last question + its answer + the new question
+    await send('fourth question', 4);
+    expect(bodies()[3].messages.map((m: any) => m.content)).not.toContain('levels in SAMM?');
+    expect(bodies()[3].messages).toHaveLength(3);
   });
 });

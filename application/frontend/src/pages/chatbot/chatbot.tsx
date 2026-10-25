@@ -158,7 +158,8 @@ export const Chatbot = () => {
     return res;
   }
 
-  const HISTORY_CAP = 20;
+  // "Continue conversation" sends only the last question and its answer.
+  const HISTORY_MESSAGES = 2;
 
   /** Thumbs up/down: show the choice at once, tell the server, and undo it if that fails. */
   function rateAnswer(idx: number, rating: 'up' | 'down') {
@@ -190,7 +191,7 @@ export const Chatbot = () => {
     setChat({ ...chat, term: '' });
     setLoading(true);
 
-    const prior = (continueConversation ? chatMessages.slice(-(HISTORY_CAP - 1)) : []).map((m) => ({
+    const prior = (continueConversation ? chatMessages.slice(-HISTORY_MESSAGES) : []).map((m) => ({
       role: m.role === 'assistant' ? 'assistant' : 'user',
       content: m.message,
     }));
@@ -329,15 +330,6 @@ export const Chatbot = () => {
           <Header as="h1" className="chatbot-title">
             OWASP OpenCRE Chat
           </Header>
-          {hasMessages ? (
-            <div className="chatbot-toolbar">
-              <Checkbox
-                label="Continue conversation"
-                checked={continueConversation}
-                onChange={(_, d) => setContinueConversation(!!d.checked)}
-              />
-            </div>
-          ) : null}
 
           <Container>
             <div className={`chat-container ${hasMessages ? 'chat-active' : 'chat-landing'}`}>
@@ -439,6 +431,14 @@ export const Chatbot = () => {
                     onChange={(e) => setChat({ ...chat, term: e.target.value })}
                     placeholder="Type your infosec question here…"
                   />
+                  {hasMessages ? (
+                    <Checkbox
+                      className="chat-continue"
+                      label="Continue conversation (uses your last question and its answer)"
+                      checked={continueConversation}
+                      onChange={(_, d) => setContinueConversation(!!d.checked)}
+                    />
+                  ) : null}
                   <Button primary fluid size="small">
                     <Icon name="send" /> Ask
                   </Button>

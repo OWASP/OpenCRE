@@ -70,11 +70,9 @@ h1.ui.header.chatbot-title {
   margin-bottom: 1rem !important;
 }
 
-.chatbot-toolbar {
-  display: flex;
-  justify-content: center;
-  margin: 0 auto 0.5rem;
-  max-width: 960px;
+.chat-continue {
+  margin: 0.25rem 0 0.5rem;
+  text-align: left;
 }
 
 /* Tablet & below */
