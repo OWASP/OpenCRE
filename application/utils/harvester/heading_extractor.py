@@ -3,6 +3,7 @@ from cre_logging import get_logger
 logger = get_logger(__name__)
 
 from dataclasses import dataclass
+import re
 
 from .models import HeadingNode
 
@@ -10,6 +11,8 @@ from .models import HeadingNode
 @dataclass(slots=True)
 class _FenceState:
     in_fence: bool = False
+    marker: str = ""
+    length: int = 0
 
 
 class HeadingExtractor:
@@ -63,11 +66,31 @@ class HeadingExtractor:
 
     @staticmethod
     def _toggle_fence(line: str, fence: _FenceState) -> bool:
-        stripped = line.lstrip()
-        if stripped.startswith("```") or stripped.startswith("~~~"):
-            fence.in_fence = not fence.in_fence
-            return True
-        return False
+        # Four spaces (or a leading tab) belong to indented code, not a fence.
+        match = re.fullmatch(r" {0,3}(`{3,}|~{3,})(.*)", line)
+        if match is None:
+            return False
+
+        marker, remainder = match.groups()
+        if fence.in_fence:
+            # A closer must match the opener's type and be at least as long.
+            # Language/info strings are allowed only on opening fences.
+            if (
+                marker[0] != fence.marker
+                or len(marker) < fence.length
+                or remainder.strip(" \t")
+            ):
+                return False
+            fence.in_fence = False
+            fence.marker = ""
+            fence.length = 0
+        else:
+            if marker[0] == "`" and "`" in remainder:
+                return False
+            fence.in_fence = True
+            fence.marker = marker[0]
+            fence.length = len(marker)
+        return True
 
     @staticmethod
     def _is_indented_code(line: str) -> bool:
