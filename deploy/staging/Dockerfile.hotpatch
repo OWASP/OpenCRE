@@ -10,7 +10,7 @@ COPY application/frontend /code/application/frontend
 RUN yarn build
 
 FROM opencre-staging-web:latest
-RUN pip install --no-cache-dir -U "litellm>=1.83.7"
+RUN pip install --no-cache-dir -U "litellm>=1.83.7,<1.107"
 COPY application /code/application
 COPY --from=frontend /code/application/frontend/www /code/application/frontend/www
 COPY cre.py /code/cre.py
