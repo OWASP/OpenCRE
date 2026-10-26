@@ -135,19 +135,11 @@ def _resolve_cre(database: Any, candidate_id: str) -> Optional[defs.CRE]:
         if _PUBLIC_ID.fullmatch(candidate_id or "")
         else {"internal_id": candidate_id}
     )
-    try:
-        matches = database.get_CREs(**kwargs) or []
-    except Exception:
-        # A malformed id must not take the whole shortlist down, but a lookup
-        # that raises is not the same as a lookup that misses: say which
-        # candidate failed so a broken database path does not read as "stale".
-        logger.warning(
-            "link_suggest: CRE lookup failed for candidate %r; "
-            "returning it unresolved",
-            candidate_id,
-            exc_info=True,
-        )
-        return None
+    # No try/except: an id of any shape is a plain equality filter, so a
+    # malformed id misses (None below) and never raises. A lookup that raises
+    # means the database failed, and that must reach the route's error
+    # handling rather than come back as a 200 full of unresolved UUIDs.
+    matches = database.get_CREs(**kwargs) or []
     if not matches:
         return None
     found: defs.CRE = matches[0]

@@ -134,15 +134,19 @@ class SuggestLinksTest(unittest.TestCase):
         sqla.drop_all()
         self.ctx.pop()
 
-    def test_a_failing_cre_lookup_is_logged_with_the_candidate(self) -> None:
-        """A lookup that raises is not a miss: it is logged, named, and the
-        candidate still comes back unresolved so the shortlist survives."""
+    def test_a_failing_cre_lookup_propagates_instead_of_reading_as_a_miss(
+        self,
+    ) -> None:
+        """A lookup that raises is not a stale embedding: it must not come
+        back as an unresolved candidate carrying a raw UUID."""
         broken = mock.Mock()
         broken.get_CREs.side_effect = RuntimeError("database gone")
-        with self.assertLogs(link_suggest.logger, level="WARNING") as logs:
-            self.assertIsNone(link_suggest._resolve_cre(broken, "287-251"))
-        self.assertIn("287-251", logs.output[0])
-        self.assertIn("database gone", logs.output[0])
+        with self.assertRaises(RuntimeError):
+            link_suggest._resolve_cre(broken, "287-251")
+
+    def test_a_malformed_candidate_id_is_a_miss_not_an_error(self) -> None:
+        self.assertIsNone(link_suggest._resolve_cre(self.collection, "not-an-id"))
+        self.assertIsNone(link_suggest._resolve_cre(self.collection, ""))
 
     def test_internal_uuid_candidates_resolve_to_the_public_cre_id(self) -> None:
         """The embeddings table keys vectors by the CRE row's internal UUID, so
@@ -331,6 +335,20 @@ class LinkSuggestRouteTest(unittest.TestCase):
             {"error": "Link suggestion failed upstream; see server logs."},
         )
         self.assertNotIn("secret.idx", resp.get_data(as_text=True))
+
+    def test_a_database_failure_during_resolution_is_a_500_not_a_200(self) -> None:
+        with mock.patch.object(
+            db.Node_collection,
+            "get_CREs",
+            side_effect=RuntimeError("connection reset by /var/run/pg.sock"),
+        ):
+            resp = self._post(_standard())
+        self.assertEqual(resp.status_code, 500)
+        self.assertEqual(
+            resp.get_json(),
+            {"error": "Link suggestion failed upstream; see server logs."},
+        )
+        self.assertNotIn("pg.sock", resp.get_data(as_text=True))
 
     def test_malformed_top_k_strings_are_400_not_500(self) -> None:
         for bad in ("--3", "\u00b2", "2_0"):
