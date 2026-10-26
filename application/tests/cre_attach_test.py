@@ -63,6 +63,17 @@ class TestAttachClosestCre(unittest.TestCase):
             self.assertEqual(service.closest_cre_rows("q"), [])
 
 
+class TestSignificantWords(unittest.TestCase):
+    def test_question_words_that_name_a_cre_are_found(self):
+        q = service._significant_words("How do I prevent XSS?")
+        self.assertEqual(q, {"xss"})
+        self.assertTrue(q & service._significant_words("XSS protection"))
+        self.assertTrue(q & service._significant_words("Escape output against XSS"))
+        self.assertFalse(
+            q & service._significant_words("Sanitize untrusted HTML input")
+        )
+
+
 class TestEncodeCitationUrls(unittest.TestCase):
     def test_spaces_in_urls_are_encoded_and_positions_kept(self):
         resp = {"owasp_agent": {"citations": ["https://x/a b.md", "https://y/ok"]}}

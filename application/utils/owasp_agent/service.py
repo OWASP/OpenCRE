@@ -25,6 +25,25 @@ def _cre_attach_threshold() -> float:
         return 0.6
 
 
+_NAME_MATCH_BONUS = 0.03
+_STOP = frozenset(
+    "how do does did can could should would what which who why when where is are was the "
+    "a an and or of to for in on with my our your i we it this that about from by be as at "
+    "prevent avoid stop protect against secure securely best way ways make using use".split()
+)
+
+
+def _significant_words(text: str) -> set:
+    """Lower-case content words (3+ letters) of a question or CRE name."""
+    import re
+
+    return {
+        w
+        for w in re.findall(r"[a-z0-9]+", (text or "").lower())
+        if len(w) >= 3 and w not in _STOP
+    }
+
+
 def closest_cre_rows(
     prompt: str, limit: int = 3, margin: float = 0.03
 ) -> List[Dict[str, Any]]:
@@ -58,20 +77,25 @@ def closest_cre_rows(
                 ),
                 {"q": to_pgvector_literal(list(vec)), "n": limit * 3},
             ).fetchall()
-        rows: List[Dict[str, Any]] = []
-        seen = set()
-        best = float(found[0].s) if found else 0.0
-        if best < _cre_attach_threshold():
+        if not found or float(found[0].s) < _cre_attach_threshold():
             return []
+        words = _significant_words(prompt)
+        scored = []
+        seen = set()
         for r in found:
-            if r.cre_id in seen or float(r.s) < best - margin:
+            if r.cre_id in seen:
                 continue
             seen.add(r.cre_id)
             cre = database.get_cre_by_db_id(r.cre_id)
-            if cre:
-                rows.append(cre.shallow_copy().todict())
-            if len(rows) >= limit:
-                break
+            if not cre:
+                continue
+            bonus = _NAME_MATCH_BONUS if words & _significant_words(cre.name) else 0.0
+            scored.append((float(r.s) + bonus, cre))
+        scored.sort(key=lambda t: -t[0])
+        best = scored[0][0] if scored else 0.0
+        rows = [
+            cre.shallow_copy().todict() for sc, cre in scored if sc >= best - margin
+        ][:limit]
         return rows
     except Exception:  # noqa: BLE001 - an extra reference must never fail an answer
         logger.info("closest CRE lookup failed", exc_info=True)
