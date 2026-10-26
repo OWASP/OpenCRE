@@ -1285,6 +1285,80 @@ def chat_cre() -> Any:
     return jsonify(response)
 
 
+@app.route("/rest/v1/link/suggest", methods=["POST"])
+@login_required
+def link_suggest() -> Any:
+    """Rank the CREs a Standard section most likely links to (#275).
+
+    Body: a CRE ``Standard`` JSON document. Optional ``top_k`` (query string or
+    body, 1 to 20, default 5). Response: a JSON array of CREs, best first, each
+    with ``doctype``, ``id``, ``name``, ``tags`` and the retriever's cosine
+    ``score``. Same auth and same unavailable/rate-limit handling as
+    ``/rest/v1/completion``: both call the paid embedding API.
+    """
+    payload = request.get_json(force=True, silent=True)
+    if not isinstance(payload, dict):
+        abort(400, description="body must be a JSON object (a CRE Standard document)")
+    if posthog:
+        posthog.capture("link_suggest", "")
+
+    database = db.Node_collection()
+    # Lazy import to avoid loading heavy prompt/ML dependencies at web boot.
+    try:
+        from application.prompt_client import llm_error_utils
+        from application.utils.librarian import link_suggest as suggest
+    except ImportError:
+        abort(
+            503,
+            "Link suggestion is unavailable on this deployment "
+            "(ML/LLM dependencies not installed).",
+        )
+
+    try:
+        top_k = suggest.clamp_top_k(request.args.get("top_k", payload.get("top_k")))
+        results = suggest.suggest_links(database, payload, top_k=top_k)
+    except suggest.InvalidStandardError as exc:
+        abort(400, description=str(exc))
+    except ImportError:
+        abort(
+            503,
+            "Link suggestion is unavailable on this deployment "
+            "(ML/LLM dependencies not installed).",
+        )
+    except Exception as e:
+        # PromptHandler raises RuntimeError when litellm is missing. Any other
+        # RuntimeError (retriever, database) falls through to the generic
+        # handling below; a dedicated except clause would re-raise past it.
+        if isinstance(e, RuntimeError) and "litellm" in str(e).lower():
+            abort(
+                503,
+                "Link suggestion is unavailable on this deployment "
+                "(ML/LLM dependencies not installed).",
+            )
+        if llm_error_utils.is_rate_limit_error(e):
+            return (
+                jsonify(
+                    {
+                        "error": (
+                            "The AI service is temporarily rate-limited or out of quota. "
+                            "Please try again in a minute."
+                        )
+                    }
+                ),
+                503,
+            )
+        # Never echo the exception: SQLAlchemy and provider errors can carry SQL
+        # text, paths and config values. Full detail goes to the server log; the
+        # client gets the status code and a generic message.
+        status_code = _llm_error_status_code(e) or 500
+        logger.error("link_suggest failed with status %s", status_code, exc_info=True)
+        return (
+            jsonify({"error": "Link suggestion failed upstream; see server logs."}),
+            status_code,
+        )
+    return jsonify(results)
+
+
 class CREFlow:
     """ "This class handles authentication with google's oauth"""
 
