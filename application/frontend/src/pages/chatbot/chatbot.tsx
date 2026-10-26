@@ -271,6 +271,22 @@ export const Chatbot = () => {
       return null;
     }
 
+    if (dt === 'cre' && d.id) {
+      // A Common Requirement: link to its own page (the /node/... form is for standard sections).
+      return (
+        <div className="reference-card">
+          <a href={`/cre/${encodeURIComponent(d.id)}`}>
+            <strong>
+              {d.id} — {d.name}
+            </strong>
+          </a>
+          <div className="reference-link">
+            <a href={`/cre/${encodeURIComponent(d.id)}`}>View in OpenCRE</a>
+          </div>
+        </div>
+      );
+    }
+
     let link = `/node/${d.doctype.toLowerCase()}/${d.name}`;
     link += d.section ? `/section/${d.section}` : `/sectionid/${d.sectionID}`;
 

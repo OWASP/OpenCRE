@@ -29,6 +29,19 @@ class TestAttachClosestCre(unittest.TestCase):
             out["owasp_agent"]["citations"][0], "https://a/1"
         )  # [n] markers stay valid
 
+    def test_near_ties_are_all_listed_and_cited(self):
+        rows = [
+            {"doctype": "CRE", "id": "366-835", "name": "Escape output against XSS"},
+            {"doctype": "CRE", "id": "760-765", "name": "XSS protection"},
+        ]
+        with mock.patch.object(service, "closest_cre_rows", return_value=rows):
+            out = service.attach_closest_cre("q", _resp())
+        self.assertEqual([r["id"] for r in out["table"]], ["366-835", "760-765"])
+        self.assertEqual(
+            out["owasp_agent"]["citations"][1:],
+            ["https://opencre.org/cre/366-835", "https://opencre.org/cre/760-765"],
+        )
+
     def test_other_kinds_abstentions_and_no_match_are_untouched(self):
         row = {"doctype": "CRE", "id": "1-2"}
         with mock.patch.object(service, "closest_cre_rows", return_value=[row]):

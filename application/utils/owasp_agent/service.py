@@ -25,30 +25,80 @@ def _cre_attach_threshold() -> float:
         return 0.6
 
 
-def closest_cre_rows(prompt: str) -> List[Dict[str, Any]]:
-    """The CRE closest to the question (``[]`` when none is close enough or on any failure).
+def closest_cre_rows(
+    prompt: str, limit: int = 3, margin: float = 0.03
+) -> List[Dict[str, Any]]:
+    """The CREs closest to the question: the best match plus any within ``margin`` of it.
 
-    OpenCRE chat exists to connect a control question to its Common Requirement, so every
-    evidence answer carries this row even when the answer text comes from other sources.
+    OpenCRE chat exists to connect a control question to its Common Requirement(s), so every
+    evidence answer carries them even when the answer text comes from other sources. Near-ties
+    (e.g. "Escape output against XSS" vs "XSS protection") are all shown instead of picking one.
+    ``[]`` when none is close enough or on any failure.
     """
     try:
+        from sqlalchemy import text as sql_text
+
+        from application import sqla
         from application.database import db as db_mod
+        from application.database.pgvector_utils import to_pgvector_literal
         from application.utils.comprehension.embedcache import embed_many
         from application.utils.comprehension.shared import shared_handler
+        from application.utils.owasp_agent.lane_similarity import cosine_exprs
 
         database = db_mod.Node_collection()
         handler = shared_handler(database)
         vec = embed_many([prompt], handler.get_text_embeddings)[0]
-        found = handler.get_id_of_most_similar_cre_paginated(
-            list(vec), similarity_threshold=_cre_attach_threshold()
-        )
-        if not found or not found[0]:
+        dist, score = cosine_exprs()
+        with sqla.session.get_bind().connect() as conn:
+            found = conn.execute(
+                sql_text(
+                    f"SELECT cre_id, {score} AS s FROM embeddings "
+                    "WHERE doc_type = 'CRE' AND embedding_vec IS NOT NULL "
+                    f"ORDER BY {dist} LIMIT :n"
+                ),
+                {"q": to_pgvector_literal(list(vec)), "n": limit * 3},
+            ).fetchall()
+        rows: List[Dict[str, Any]] = []
+        seen = set()
+        best = float(found[0].s) if found else 0.0
+        if best < _cre_attach_threshold():
             return []
-        cre = database.get_cre_by_db_id(found[0])
-        return [cre.shallow_copy().todict()] if cre else []
+        for r in found:
+            if r.cre_id in seen or float(r.s) < best - margin:
+                continue
+            seen.add(r.cre_id)
+            cre = database.get_cre_by_db_id(r.cre_id)
+            if cre:
+                rows.append(cre.shallow_copy().todict())
+            if len(rows) >= limit:
+                break
+        return rows
     except Exception:  # noqa: BLE001 - an extra reference must never fail an answer
         logger.info("closest CRE lookup failed", exc_info=True)
         return []
+
+
+def attach_closest_cre(prompt: str, response: Dict[str, Any]) -> Dict[str, Any]:
+    """Add the closest CRE(s) to an evidence answer's references and citations (CRE-first bias)."""
+    if not isinstance(response, dict) or not response.get("accurate", True):
+        return response
+    meta = response.get("owasp_agent")
+    if not isinstance(meta, dict) or meta.get("kind") != "evidence":
+        return response
+    rows = closest_cre_rows(prompt)
+    if not rows:
+        return response
+    out = dict(response)
+    table = out.get("table")
+    out["table"] = rows + [r for r in (table if isinstance(table, list) else []) if r]
+    cites = list(meta.get("citations") or [])
+    for row in rows:
+        cre_id = str(row.get("id") or "")
+        url = f"https://opencre.org/cre/{cre_id}" if cre_id else ""
+        if url and url not in cites:
+            cites.append(url)
+    out["owasp_agent"] = {**meta, "citations": cites}
+    return out
 
 
 def encode_citation_urls(response: Any) -> Any:
@@ -68,28 +118,6 @@ def encode_citation_urls(response: Any) -> Any:
     if cites == meta["citations"]:
         return response
     return {**response, "owasp_agent": {**meta, "citations": cites}}
-
-
-def attach_closest_cre(prompt: str, response: Dict[str, Any]) -> Dict[str, Any]:
-    """Add the closest CRE to an evidence answer's references and citations (CRE-first bias)."""
-    if not isinstance(response, dict) or not response.get("accurate", True):
-        return response
-    meta = response.get("owasp_agent")
-    if not isinstance(meta, dict) or meta.get("kind") != "evidence":
-        return response
-    rows = closest_cre_rows(prompt)
-    if not rows:
-        return response
-    out = dict(response)
-    table = out.get("table")
-    out["table"] = rows + [r for r in (table if isinstance(table, list) else []) if r]
-    cre_id = str(rows[0].get("id") or "")
-    if cre_id:
-        url = f"https://opencre.org/cre/{cre_id}"
-        cites = list(meta.get("citations") or [])
-        if url not in cites:
-            out["owasp_agent"] = {**meta, "citations": cites + [url]}
-    return out
 
 
 def route_question(

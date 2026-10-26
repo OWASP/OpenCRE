@@ -110,6 +110,36 @@ describe('linkifyCitations', () => {
   });
 });
 
+describe('Chatbot CRE reference', () => {
+  afterEach(() => jest.clearAllMocks());
+
+  it('links a CRE reference to its /cre/<id> page', async () => {
+    (global as any).fetch = jest.fn((url: string) => {
+      if (String(url).endsWith('/auth/user')) return res('someone');
+      if (String(url).endsWith('/completion')) {
+        return res({
+          response: 'Escape output.',
+          accurate: true,
+          table: [{ doctype: 'CRE', id: '366-835', name: 'Escape output against XSS' }],
+        });
+      }
+      return res({});
+    });
+    const utils = render(
+      <MemoryRouter>
+        <Chatbot />
+      </MemoryRouter>
+    );
+    fireEvent.change(utils.getByPlaceholderText(/Type your infosec question/), {
+      target: { value: 'how do I prevent xss' },
+    });
+    fireEvent.click(utils.getByText('Ask'));
+    const link = (await utils.findByText(/366-835/)).closest('a')!;
+    expect(link.getAttribute('href')).toBe('/cre/366-835');
+    expect(document.body.innerHTML).not.toContain('sectionid/undefined');
+  });
+});
+
 describe('Chatbot continue conversation', () => {
   afterEach(() => jest.clearAllMocks());
 
