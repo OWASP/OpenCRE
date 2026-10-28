@@ -462,9 +462,9 @@ def map_analysis() -> Any:
         )
         try:
             return jsonify(_compute_ga_without_redis(database, standards))
-        except Exception as fallback_exc:
+        except Exception:
             logger.exception("Synchronous GA fallback failed for %s", cache_key)
-            abort(503, f"Gap analysis unavailable: {fallback_exc}")
+            abort(503, "Gap analysis unavailable")
 
 
 @openapi_documented("map_analysis_weak_links")
@@ -1064,8 +1064,13 @@ def admin_imports_enabled_required(f):
 @admin_imports_enabled_required
 def admin_import_runs() -> Any:
     source = request.args.get("source")
-    limit = int(request.args.get("limit") or 50)
-    offset = int(request.args.get("offset") or 0)
+    try:
+        limit = int(request.args.get("limit", 50))
+        offset = int(request.args.get("offset", 0))
+    except ValueError:
+        abort(400, description="limit and offset must be integers")
+    if limit < 0 or offset < 0:
+        abort(400, description="limit and offset must not be negative")
     runs = db.list_import_runs(source=source, limit=limit, offset=offset)
     out = []
     for r in runs:
@@ -1239,6 +1244,9 @@ def admin_import_run_apply(run_id: str) -> Any:
 @login_required
 def chat_cre() -> Any:
     message = request.get_json(force=True)
+    prompt_text = message.get("prompt") if isinstance(message, dict) else None
+    if not isinstance(prompt_text, str) or not prompt_text.strip():
+        abort(400, description="Body must be a JSON object with a non-empty 'prompt'")
     if posthog:
         posthog.capture("chat_cre", "")
 
@@ -1263,7 +1271,7 @@ def chat_cre() -> Any:
         )
 
     try:
-        response = prompt.generate_text(message.get("prompt"))
+        response = prompt.generate_text(prompt_text)
     except Exception as e:
         if llm_error_utils.is_rate_limit_error(e):
             return (
@@ -1277,11 +1285,9 @@ def chat_cre() -> Any:
                 ),
                 503,
             )
+        logger.exception("Chat completion failed")
         status_code = _llm_error_status_code(e) or 500
-        return (
-            jsonify({"error": f"AI Service Error: {str(e)}"}),
-            status_code,
-        )
+        return jsonify({"error": "AI Service Error"}), status_code
     return jsonify(response)
 
 
@@ -1663,9 +1669,7 @@ def import_from_cre_csv() -> Any:
         from application.utils.external_project_parsers.parsers import myopencre_parser
 
         parse_result = myopencre_parser.parse_rows_to_documents(rows)
-    except cre_exceptions.DuplicateLinkException as dle:
-        abort(500, f"error during parsing of the incoming CSV, err:{dle}")
-    except ValueError as ve:
+    except (cre_exceptions.DuplicateLinkException, ValueError) as ve:
         abort(400, f"invalid CSV contents: {ve}")
 
     if not parse_result or not parse_result.results:
