@@ -13,6 +13,7 @@ import tempfile
 from types import SimpleNamespace
 from unittest.mock import patch, Mock
 
+import redis
 import rq
 import os
 import networkx as nx
@@ -1173,6 +1174,40 @@ class TestMain(unittest.TestCase):
             )
             self.assertEqual(200, response.status_code)
             self.assertEqual(["ASVS", "CAPEC", "OpenCRE"], json.loads(response.data))
+
+    def test_ma_job_results_requires_id(self) -> None:
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/ma_job_results")
+            self.assertEqual(400, response.status_code)
+
+    @patch.dict(os.environ, {"REDIS_URL": "redis://127.0.0.1:1", "REDIS_NO_SSL": "1"})
+    def test_ma_job_results_redis_unreachable(self) -> None:
+        os.environ.pop("REDIS_HOST", None)
+        os.environ.pop("REDIS_PORT", None)
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/ma_job_results?id=ABC")
+            self.assertEqual(503, response.status_code)
+            self.assertNotIn("127.0.0.1", response.get_data(as_text=True))
+
+    @patch.object(rq.job.Job, "fetch")
+    @patch.object(app_redis, "connect")
+    def test_ma_job_results_redis_fails_after_fetch(
+        self, redis_conn_mock, fetch_mock
+    ) -> None:
+        fetch_mock.return_value.get_status.side_effect = (
+            redis.exceptions.ConnectionError("Connection reset by peer")
+        )
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/ma_job_results?id=ABC")
+            self.assertEqual(503, response.status_code)
+
+    @patch.object(rq.job.Job, "fetch")
+    @patch.object(app_redis, "connect")
+    def test_ma_job_results_unknown_job(self, redis_conn_mock, fetch_mock) -> None:
+        fetch_mock.side_effect = rq.exceptions.NoSuchJobError()
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/ma_job_results?id=ABC")
+            self.assertEqual(404, response.status_code)
 
     def test_gap_analysis_weak_links_no_cache(self) -> None:
         with self.app.test_client() as client:
