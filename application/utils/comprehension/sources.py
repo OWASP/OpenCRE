@@ -6,6 +6,8 @@ import re
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Tuple
 
+from application.utils.comprehension.paths import is_asset_path
+
 # Boilerplate that says nothing about the standard itself.
 _NOISE_NAMES = re.compile(
     r"(code[_-]?of[_-]?conduct|license|licence|contributing|security\.md|"
@@ -34,7 +36,7 @@ class SourceDoc:
 
 
 def is_noise_path(path: str) -> bool:
-    return bool(_NOISE_NAMES.search(path or ""))
+    return bool(_NOISE_NAMES.search(path or "")) or is_asset_path(path)
 
 
 def docs_from_rows(rows: Iterable[Tuple[str, str, Dict[str, Any]]]) -> List[SourceDoc]:
@@ -114,7 +116,7 @@ def chunks_for_repo(session: Any, source_repo: str) -> List[Tuple[str, int, str]
         )
         text = str((payload or {}).get("text") or "").strip()
         idx = int(((payload or {}).get("span") or {}).get("index") or 0)
-        if _RAW_NOISE.search(path or "") or len(text) < 60:
+        if _RAW_NOISE.search(path or "") or is_asset_path(path) or len(text) < 60:
             continue
         if (path, idx) in seen:
             continue
@@ -173,7 +175,12 @@ def supplement_chunks(
     out: List[Tuple[str, int, str]] = []
     for f in sorted(dest.rglob("*.md")):
         rel = str(f.relative_to(dest))
-        if ".git/" in rel or _RAW_NOISE.search(rel) or rel in have:
+        if (
+            ".git/" in rel
+            or _RAW_NOISE.search(rel)
+            or is_asset_path(rel)
+            or rel in have
+        ):
             continue
         if any(h.endswith(rel) or rel.endswith(h) for h in have):
             continue

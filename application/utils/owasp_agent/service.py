@@ -45,7 +45,7 @@ def _significant_words(text: str) -> set:
 
 
 def closest_cre_rows(
-    prompt: str, limit: int = 3, margin: float = 0.03
+    prompt: str, limit: int = 2, margin: float = 0.03
 ) -> List[Dict[str, Any]]:
     """The CREs closest to the question: the best match plus any within ``margin`` of it.
 

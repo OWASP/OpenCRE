@@ -240,8 +240,18 @@ def _slug_of(hit: LaneHit) -> str:
 
 def _apply_authority(hits: List[LaneHit]) -> List[LaneHit]:
     """Admin authority weights, then (TOPPROJECTS) the best 3 projects each get a share."""
-    from application.utils.comprehension import authority, flags
+    from application.utils.comprehension import authority, flags, paths
 
+    for (
+        h
+    ) in hits:  # file path as a signal: archives, tests, changelogs rank a little lower
+        _, _, tail = (h.content or "").partition("\n\nCitations:")
+        cite = next(
+            (c.strip() for c in tail.split(",") if c.strip().startswith("http")), ""
+        )
+        if cite:
+            h.score = float(h.score) * paths.priority(cite)
+    hits.sort(key=lambda h: -float(h.score))
     hits = authority.bias(hits, _slug_of)
     if flags.on("TOPPROJECTS"):
         hits = authority.diversify(hits, _slug_of, projects=3, per=5)

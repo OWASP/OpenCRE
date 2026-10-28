@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 from contextvars import ContextVar
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
@@ -64,6 +65,14 @@ _MD_LINK = re.compile(r"\[([^\[\]]+)\]\(\s*https?://[^)]*\)")
 _MARK_LINK = re.compile(r"\[\[(\d+)\]\]\(\s*https?://[^)]*\)")
 _DOUBLE_MARK = re.compile(r"\[\[(\d+)\]\]")
 _BARE_URL = re.compile(r"https?://[^\s)\]>]+")
+
+
+def max_resources() -> int:
+    """Most resource links one answer shows (stricter = fewer, better ones)."""
+    try:
+        return max(1, int(os.environ.get("OWASP_MAX_RESOURCES", "5")))
+    except ValueError:
+        return 5
 
 
 def clean_answer_text(text: str) -> str:
@@ -223,6 +232,9 @@ def synthesize(
         for c in hits[i - 1][1]:
             if c not in cites:
                 cites.append(c)
+    from application.utils.comprehension import paths
+
+    cites = paths.order_and_cap(cites, max_resources())
     out, number = renumber_citations(out, hits, used, cites)
     _record_evidence(hits, used, number)
     return out, cites
