@@ -1,6 +1,6 @@
 """mcp_oauth_clients / mcp_oauth_refresh_tokens: Google sign-in for the remote MCP server
 
-Revision ID: a7b8c9d0e1f2
+Revision ID: c4d5e6f7a8b9
 Revises: d1e2f3a4b5c6
 """
 
@@ -8,7 +8,7 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "a7b8c9d0e1f2"
+revision = "c4d5e6f7a8b9"
 down_revision = "d1e2f3a4b5c6"
 branch_labels = None
 depends_on = None
