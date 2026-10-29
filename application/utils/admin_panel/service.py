@@ -61,6 +61,9 @@ YAML_MAX_BYTES = 4 * 1024 * 1024
 YAML_MAX_LABEL = "4MiB"
 AGENT_RESOURCE_ID = "owasp-agent"
 HARVEST_KINDS = ("oie_repo", "owasp_agent")
+# External knowledge sources live in the same table but are managed by admin_panel.external_targets
+# (their own tab); the OIE target list, runs and scheduler never see them.
+EXTERNAL_KINDS = ("external_site", "youtube_channel")
 TARGET_KINDS = ("oie_repo", "import_source")
 
 
@@ -614,6 +617,7 @@ def list_targets() -> List[Dict[str, Any]]:
     seed_targets_from_yaml_if_empty()
     rows = (
         sqla.session.query(db.IngestionTarget)
+        .filter(db.IngestionTarget.kind.notin_(EXTERNAL_KINDS))
         .order_by(db.IngestionTarget.name.asc())
         .all()
     )
@@ -624,7 +628,12 @@ def list_targets() -> List[Dict[str, Any]]:
 
 def seed_targets_from_yaml_if_empty() -> None:
     try:
-        if sqla.session.query(db.IngestionTarget).first() is not None:
+        if (
+            sqla.session.query(db.IngestionTarget)
+            .filter(db.IngestionTarget.kind.notin_(EXTERNAL_KINDS))
+            .first()
+            is not None
+        ):
             return
         if not REPOS_YAML.is_file():
             return
@@ -1226,6 +1235,8 @@ def start_ingestion(
                 .first()
             )
             if not target:
+                raise KeyError("target not found")
+            if target.kind in EXTERNAL_KINDS:
                 raise KeyError("target not found")
             if not target.enabled:
                 raise ValueError("target is disabled")
