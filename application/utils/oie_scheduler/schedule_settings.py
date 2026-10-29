@@ -30,10 +30,16 @@ def effective_interval_minutes(job: str, default: int) -> int:
     return value
 
 
+#: Jobs that crawl third-party sites stay off until an admin switches them on.
+DEFAULT_OFF = frozenset({"external_sources"})
+
+
 def job_enabled(job: str) -> bool:
-    """Jobs run unless an admin switched them off."""
+    """Jobs run unless an admin switched them off; ``DEFAULT_OFF`` jobs only once switched on."""
     raw = runtime_settings.get_setting(_key(job, "ENABLED"))
-    return raw is None or raw.strip().lower() in ("1", "true", "yes", "on")
+    if raw is None:
+        return job not in DEFAULT_OFF
+    return raw.strip().lower() in ("1", "true", "yes", "on")
 
 
 def validate_update(

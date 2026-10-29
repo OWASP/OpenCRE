@@ -164,7 +164,11 @@ def run_due_jobs(
     **kwargs: Any,
 ) -> List[RunOutcome]:
     """Run each requested job (default all, in ``JOB_ORDER``) for its current slot."""
-    names = jobs or list(JOB_ORDER)
+    names = jobs or [
+        n
+        for n in JOB_ORDER
+        if n not in schedule_settings.DEFAULT_OFF or schedule_settings.job_enabled(n)
+    ]
     return [
         run_job(collection, name, cache_file=cache_file, **kwargs) for name in names
     ]
