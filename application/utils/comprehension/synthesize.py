@@ -97,6 +97,13 @@ AS_OF_RULE = (
     "involved), say 'as of <fetched date>' in the answer."
 )
 
+NO_TRANSCRIPT_RULE = (
+    "\nSome sources are video catalogue entries containing 'Transcript: not indexed'. When the question "
+    "asks what was said or covered in such a talk, answer with its title, speaker, event, date and the "
+    "video link, and say plainly that the transcript is not indexed so you cannot say what was said. "
+    "Whenever a source gives a video link for a talk you mention, include that link in the answer."
+)
+
 
 def renumber_citations(
     answer: str,
@@ -217,6 +224,8 @@ def synthesize(
         system += HISTORY_RULE
     if any("| fetched " in t for t, _ in hits):
         system += AS_OF_RULE
+    if any("Transcript: not indexed" in t for t, _ in hits):
+        system += NO_TRANSCRIPT_RULE
     if flags.on("EDITION"):
         system += EDITION_RULE
     if flags.on("COMPLETE"):

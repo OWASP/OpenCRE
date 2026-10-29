@@ -1207,6 +1207,24 @@ class TestExternalAliases(unittest.TestCase):
         self.assertNotIn("as of <fetched date>", seen[0])
         self.assertIn("as of <fetched date>", seen[1])
 
+    def test_no_transcript_rule_only_for_metadata_only_videos(self):
+        from application.utils.comprehension import synthesize
+
+        seen = []
+
+        def llm(system, user):
+            seen.append(system)
+            return "x [1]"
+
+        synthesize.synthesize("q", [("plain text", ["https://a"])], llm)
+        synthesize.synthesize(
+            "q",
+            [("Talk: T\nTranscript: not indexed (metadata only)", ["https://v"])],
+            llm,
+        )
+        self.assertNotIn("transcript is not indexed", seen[0])
+        self.assertIn("transcript is not indexed", seen[1])
+
 
 class TestExternalDoesNotCountAgainstProjectLimit(unittest.TestCase):
     def test_one_repo_plus_one_external_source_are_both_read(self):
