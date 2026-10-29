@@ -112,7 +112,20 @@ def main(argv: List[str] | None = None) -> int:
         return 0
 
     written = 0
+    failed = 0
     for spec in specs:
+        if not spec.playlist_id and ys.handle_of(spec.channel_id):
+            try:
+                resolved = api.resolve_channel_id(spec.channel_id)
+            except (ValueError, RuntimeError) as exc:
+                print(f"{ext.slug_for(spec)}: {exc}", file=sys.stderr, flush=True)
+                failed += 1
+                continue
+            print(
+                f"{ext.slug_for(spec)}: resolved {spec.channel_id} -> {resolved}",
+                flush=True,
+            )
+            spec.channel_id = resolved
         videos, chunks, with_caps = collect(
             spec,
             api,
@@ -150,7 +163,7 @@ def main(argv: List[str] | None = None) -> int:
         f"chunks written: {written}" if a.apply else "dry run: nothing written",
         flush=True,
     )
-    return 0
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

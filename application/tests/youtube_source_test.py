@@ -1,4 +1,6 @@
+import contextlib
 import importlib.util
+import io
 import json
 import os
 import tempfile
@@ -220,6 +222,69 @@ class DripTest(unittest.TestCase):
             self.assertEqual(lim.remaining(), 0)
 
 
+def handle_http(items):
+    calls = []
+
+    def get(url, params, headers):
+        calls.append((url.rsplit("/", 1)[-1], dict(params)))
+        if params.get("forHandle"):
+            return {"items": items}
+        return fake_http(PAGES)(url, params, headers)
+
+    get.calls = calls
+    return get
+
+
+class HandleTest(unittest.TestCase):
+    def test_handle_forms_and_passthrough(self):
+        self.assertEqual(ys.handle_of("@FooSec"), "@FooSec")
+        self.assertEqual(
+            ys.handle_of("https://www.youtube.com/@FooSec/videos"), "@FooSec"
+        )
+        self.assertEqual(ys.handle_of("UCabc"), "")
+        http = handle_http([])
+        self.assertEqual(ys.resolve_channel_id("UCabc", http), "UCabc")
+        self.assertEqual(
+            ys.resolve_channel_id("https://youtube.com/channel/UCabc", http), "UCabc"
+        )
+        self.assertEqual(http.calls, [])
+
+    def test_resolves_spec_caches_and_hides_key(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            http = handle_http([{"id": "UCfoo"}])
+            api = ys.YouTubeApi("SECRET", http, cache_dir=tmp)
+            spec = ext.ExternalSpec(
+                id="a-b", name="n", kind=ext.KIND_YOUTUBE, channel_id="@FooSec"
+            )
+            self.assertEqual(ys.resolve_channel_id(spec, api), "UCfoo")
+            self.assertEqual(api.quota_used, 1)
+            self.assertEqual(http.calls[0][1]["forHandle"], "@FooSec")
+            self.assertEqual(http.calls[0][1]["part"], "id")
+            api2 = ys.YouTubeApi("SECRET", handle_http([]), cache_dir=tmp)
+            self.assertEqual(api2.resolve_channel_id("@FooSec"), "UCfoo")
+            self.assertEqual(api2.quota_used, 0)
+            for f in Path(tmp).iterdir():
+                self.assertNotIn("SECRET", f.name + f.read_text())
+
+    def test_listing_path_resolves_handle(self):
+        http = handle_http([{"id": "UCfoo"}])
+        spec = ext.ExternalSpec(
+            id="a-b", name="n", kind=ext.KIND_YOUTUBE, channel_id="@FooSec"
+        )
+        vids = ys.YouTubeApi("KEY", http).channel_videos(spec)
+        self.assertEqual(len(vids), 2)
+        ch = [c[1] for c in http.calls if c[0] == "channels" and "id" in c[1]]
+        self.assertEqual(ch[0]["id"], "UCfoo")
+
+    def test_not_found_and_ambiguous(self):
+        with self.assertRaisesRegex(ValueError, "not found"):
+            ys.resolve_channel_id("@Nope", ys.YouTubeApi("K", handle_http([])))
+        with self.assertRaisesRegex(ValueError, "ambiguous"):
+            ys.resolve_channel_id(
+                "@Dup", ys.YouTubeApi("K", handle_http([{"id": "UC1"}, {"id": "UC2"}]))
+            )
+
+
 def load_script():
     path = Path(__file__).resolve().parents[2] / "scripts" / "ingest_youtube.py"
     spec = importlib.util.spec_from_file_location("ingest_youtube", path)
@@ -268,6 +333,27 @@ class IngestScriptTest(unittest.TestCase):
         rc, write_raw = self.run_main()
         self.assertEqual(rc, 0)
         write_raw.assert_not_called()
+
+    def test_dry_run_prints_resolved_handle_and_reports_missing(self):
+        script = load_script()
+        spec = json.dumps({**json.loads(self.SPEC), "channel_id": "@FooSec"})
+        for items, rc_expected, needle in (
+            ([{"id": "UCfoo"}], 0, "resolved @FooSec -> UCfoo"),
+            ([], 1, "not found"),
+        ):
+            out, err = io.StringIO(), io.StringIO()
+            with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(
+                os.environ, {"YOUTUBE_API_KEY": "KEY"}
+            ), mock.patch.object(
+                ys, "_requests_get", handle_http(items)
+            ), contextlib.redirect_stdout(
+                out
+            ), contextlib.redirect_stderr(
+                err
+            ):
+                rc = script.main(["--spec-json", spec, "--cache-dir", tmp])
+            self.assertEqual(rc, rc_expected)
+            self.assertIn(needle, out.getvalue() + err.getvalue())
 
     def test_apply_calls_write_raw_with_slug_and_url(self):
         rc, write_raw = self.run_main("--apply")

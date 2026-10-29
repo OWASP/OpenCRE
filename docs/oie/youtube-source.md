@@ -13,6 +13,8 @@ routes are used; there is no page scraping, yt-dlp or unofficial transcript libr
 | `YOUTUBE_OAUTH_CLIENT_ID`, `YOUTUBE_OAUTH_CLIENT_SECRET`, `YOUTUBE_OAUTH_REFRESH_TOKEN` | Optional `captions.download`. Works only for videos owned by the authorising account, so only for channels we run. Off unless all three are set. |
 | none | Captions for other channels: the owner exports `<video_id>.<lang>.vtt` or `.srt` from YouTube Studio; point `--captions-dir` at them. |
 
+**Status: we do not have a `YOUTUBE_API_KEY` yet, so nothing here has been run against live YouTube.** Everything is tested with mocked HTTP.
+
 The key is never logged; errors report only the HTTP status.
 
 ## Quota
@@ -37,3 +39,24 @@ many have captions, chunks, estimated tokens and cost (embedding cost, plus a pi
 about $0.01 per talk, i.e. about $16 for 1,600 talks) and writes nothing. Add `--apply` to embed and
 write. `--people-file` (one name per line, e.g. Nest leaders) enables speaker linking: a speaker is
 set only on an exact, unambiguous name match (case and diacritics ignored), otherwise it stays `unknown`.
+
+
+## Channel handles
+
+`channel_id` may be a handle (`@FooSec`) or a `youtube.com/@handle` URL. It is resolved with
+`channels.list?part=id&forHandle=@handle` (1 quota unit, cached in `<cache-dir>/api` like every other
+call) automatically before the uploads playlist is read, and the dry run prints `resolved @FooSec -> UC...`.
+An unknown or ambiguous handle is reported as an error for that channel (exit code 1); other channels
+still run. A full `youtube.com/channel/UC...` URL is reduced to its id without a call.
+
+## Speaker names file
+
+`scripts/nest_people_file.py` writes the `--people-file` (one full name per line, deduplicated, sorted)
+from OWASP Nest project leaders:
+
+```bash
+# live: reads every project once, needs NEST_API_KEY (and optionally NEST_API_BASE), same as nest_loader.py
+python scripts/nest_people_file.py --out leaders.txt --save-json nest-projects.json
+# offline, from a saved dump (a list of project records, or {"projects": [...]}, each with leaders[].name)
+python scripts/nest_people_file.py --from-json nest-projects.json --out leaders.txt
+```

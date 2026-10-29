@@ -92,7 +92,12 @@ class YouTubeApi:
             cache_file.write_text(json.dumps(out), encoding="utf-8")
         return out
 
+    def resolve_channel_id(self, value: str) -> str:
+        """A ``UC...`` channel id for an id, ``@handle`` or youtube.com URL (``channels.list?forHandle``, 1 unit)."""
+        return resolve_channel_id(value, self)
+
     def uploads_playlist(self, channel_id: str) -> str:
+        channel_id = self.resolve_channel_id(channel_id)
         data = self._call("channels", {"part": "contentDetails", "id": channel_id})
         items = data.get("items") or []
         if not items:
@@ -141,6 +146,45 @@ class YouTubeApi:
     def channel_videos(self, spec: Any, limit: int = 0) -> List[Video]:
         playlist = spec.playlist_id or self.uploads_playlist(spec.channel_id)
         return self.videos(self.playlist_video_ids(playlist, limit=limit))
+
+
+_HANDLE_URL = re.compile(r"youtube\.com/(@[^/?#\s]+)", re.I)
+_CHANNEL_URL = re.compile(r"youtube\.com/channel/(UC[^/?#\s]+)", re.I)
+
+
+def handle_of(value: str) -> str:
+    """``@handle`` for '@handle' or a youtube.com/@handle URL; '' for anything else (e.g. a UC... id)."""
+    v = (value or "").strip()
+    if v.startswith("@"):
+        return v
+    m = _HANDLE_URL.search(v)
+    return m.group(1) if m else ""
+
+
+def resolve_channel_id(spec_or_value: Any, api_or_http: Any = None) -> str:
+    """Channel id for a spec (its ``channel_id``) or a plain value; ids pass through at no cost.
+
+    Handles (``@FooSec``) and youtube.com URLs are looked up with ``channels.list?part=id&forHandle=``.
+    ``api_or_http`` is a ``YouTubeApi`` or a bare ``HttpGet`` callable (tests, no network).
+    Raises ``ValueError`` when the handle is unknown or matches more than one channel.
+    """
+    value = str(getattr(spec_or_value, "channel_id", spec_or_value) or "").strip()
+    handle = handle_of(value)
+    if not handle:
+        m = _CHANNEL_URL.search(value)
+        return m.group(1) if m else value
+    api = api_or_http
+    if not isinstance(api, YouTubeApi):
+        api = YouTubeApi(http_get=api_or_http)
+    items = (
+        api._call("channels", {"part": "id", "forHandle": handle}).get("items") or []
+    )
+    ids = sorted({str(i.get("id") or "") for i in items if i.get("id")})
+    if not ids:
+        raise ValueError(f"YouTube handle {handle} not found")
+    if len(ids) > 1:
+        raise ValueError(f"YouTube handle {handle} is ambiguous: {', '.join(ids)}")
+    return ids[0]
 
 
 _ISO_DUR = re.compile(r"^P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$")

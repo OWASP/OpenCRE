@@ -95,6 +95,17 @@ def profile_text(detail: Dict[str, Any], fetched: str) -> str:
     return "\n".join(lines)
 
 
+def leader_names(details: Iterator[Dict[str, Any]]) -> List[str]:
+    """Distinct leader full names across project detail records, sorted (case-insensitive)."""
+    seen: Dict[str, str] = {}
+    for d in details:
+        for leader in d.get("leaders") or []:
+            name = re.sub(r"\s+", " ", str((leader or {}).get("name") or "")).strip()
+            if name:
+                seen.setdefault(name.lower(), name)
+    return sorted(seen.values(), key=str.lower)
+
+
 def issues_by_repo(
     items: Iterator[Dict[str, Any]], limit: int = 0
 ) -> Dict[str, List[Dict[str, Any]]]:
