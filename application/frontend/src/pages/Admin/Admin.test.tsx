@@ -154,6 +154,71 @@ describe('Admin', () => {
     expect(JSON.parse(put!.init.body)).toEqual({ weights: { 'www-project-ai-exchange': 1.2 } });
   });
 
+  it('lists suggested external sources and accepts with edits or rejects', async () => {
+    loggedIn();
+    const calls: { url: string; init?: any }[] = [];
+    (global as any).fetch = jest.fn((url: string, init?: any) => {
+      calls.push({ url: String(url), init });
+      if (String(url).includes('/admin/external/') && init?.method === 'POST') {
+        return jsonRes({ id: 'foo-conf-org', status: 'approved' });
+      }
+      if (String(url).endsWith('/admin/external')) {
+        return jsonRes({
+          external: [
+            {
+              id: 'foo-conf-org',
+              kind: 'external_site',
+              name: 'Foo Conf',
+              status: 'suggested',
+              score: 6.5,
+              spec: {
+                start_urls: ['https://foo-conf.org/'],
+                found_in: [{ repo: 'OWASP/foo', file: 'README.md', link_text: 'website' }],
+              },
+            },
+            {
+              id: 'yt-bar',
+              kind: 'youtube_channel',
+              name: 'bar',
+              status: 'suggested',
+              score: 2,
+              spec: { channel_id: '@bar' },
+            },
+            { id: 'done', kind: 'external_site', name: 'Done', status: 'approved', spec: {} },
+          ],
+        });
+      }
+      if (String(url).endsWith('/admin/targets')) return jsonRes({ targets: [] });
+      return jsonRes({});
+    });
+    const { getByText, queryByTestId, findByTestId, getByLabelText, findByText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    fireEvent.click(getByText('Workbench'));
+    const card = await findByTestId('suggestion-foo-conf-org');
+    expect(card.textContent).toContain('OWASP/foo');
+    expect(card.textContent).toContain('score 6.5');
+    expect(queryByTestId('suggestion-done')).toBeNull();
+    fireEvent.click(card.querySelector('button')!);
+    fireEvent.change(getByLabelText('max pages'), { target: { value: '40' } });
+    fireEvent.change(getByLabelText('start url'), { target: { value: 'https://foo-conf.org/schedule' } });
+    fireEvent.click(getByText('Confirm accept'));
+    expect(await findByText(/Foo Conf: accepted/)).toBeTruthy();
+    const post = calls.find((c) => c.init?.method === 'POST' && c.url.endsWith('/foo-conf-org/accept'));
+    expect(JSON.parse(post!.init.body)).toMatchObject({
+      start_urls: ['https://foo-conf.org/schedule'],
+      max_pages: 40,
+      refresh_days: 30,
+      weight: 1,
+    });
+    const yt = await findByTestId('suggestion-yt-bar');
+    fireEvent.click(yt.querySelectorAll('button')[1]);
+    expect(await findByText(/bar: rejected/)).toBeTruthy();
+    expect(calls.some((c) => c.url.endsWith('/yt-bar/reject'))).toBe(true);
+  });
+
   it('loads import runs and links to MyOpenCRE', async () => {
     loggedIn();
     (global as any).fetch = jest.fn((url: string) => {

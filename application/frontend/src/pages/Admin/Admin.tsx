@@ -894,6 +894,193 @@ function GraphManagementTab({ origin }: { origin: string }) {
   );
 }
 
+function ExternalSuggestions({ origin }: { origin: string }) {
+  const [items, setItems] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    url: '',
+    prefixes: '',
+    maxPages: '200',
+    refreshDays: '30',
+    weight: '1',
+  });
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    fetch(`${origin}/admin/external`, { credentials: 'include' })
+      .then(async (res) => {
+        const body = await readJson(res);
+        if (!res.ok) throw new Error(apiError(body, res));
+        setItems((body.external || []).filter((e: any) => e.status === 'suggested'));
+      })
+      .catch((err) => setError(String(err)));
+  }, [origin]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const startEdit = (e: any) => {
+    const spec = e.spec || {};
+    setEditing(e.id);
+    setForm({
+      url:
+        e.kind === 'youtube_channel'
+          ? spec.channel_id || spec.playlist_id || ''
+          : (spec.start_urls || [])[0] || '',
+      prefixes: (spec.allow_prefixes || []).join(', '),
+      maxPages: String(spec.max_pages ?? 200),
+      refreshDays: String(spec.refresh_days ?? 30),
+      weight: String(spec.weight ?? 1),
+    });
+  };
+
+  const send = async (e: any, action: 'accept' | 'reject', overrides: Record<string, unknown> = {}) => {
+    setBusy(e.id);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch(`${origin}/admin/external/${encodeURIComponent(e.id)}/${action}`, {
+        method: 'POST',
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(overrides),
+      });
+      const body = await readJson(res);
+      if (!res.ok) throw new Error(apiError(body, res));
+      setNotice(`${e.name}: ${action === 'accept' ? 'accepted' : 'rejected'}`);
+      setEditing(null);
+      load();
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const accept = (e: any) => {
+    const overrides: Record<string, unknown> = {
+      allow_prefixes: form.prefixes
+        .split(',')
+        .map((p) => p.trim())
+        .filter(Boolean),
+      max_pages: Number(form.maxPages),
+      refresh_days: Number(form.refreshDays),
+      weight: Number(form.weight),
+    };
+    if (e.kind === 'youtube_channel')
+      overrides[(form.url || '').startsWith('PL') ? 'playlist_id' : 'channel_id'] = form.url;
+    else overrides.start_urls = [form.url.trim()];
+    return send(e, 'accept', overrides);
+  };
+
+  return (
+    <div className="admin-card">
+      <h3>Suggested external sources</h3>
+      <p className="admin-card__sub">
+        Websites and YouTube channels linked from harvested repos. Nothing is crawled until you accept.
+      </p>
+      {error && <Message negative>{error}</Message>}
+      {notice && <Message>{notice}</Message>}
+      {!items.length && <p className="admin-help">No suggestions.</p>}
+      {items.map((e) => {
+        const spec = e.spec || {};
+        const found = spec.found_in || [];
+        return (
+          <article className="admin-review-item" key={e.id} data-testid={`suggestion-${e.id}`}>
+            <div
+              style={{
+                padding: '0.65rem 0.75rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: '1rem',
+              }}
+            >
+              <div>
+                <code>{e.id}</code> <span className="admin-pill muted">{e.kind}</span>{' '}
+                <span className="admin-pill muted">score {e.score ?? 0}</span>
+                <div className="admin-help">{e.name}</div>
+                {found.slice(0, 3).map((f: any, i: number) => (
+                  <div className="admin-help" key={i}>
+                    {f.repo} · {f.file}
+                    {f.link_text ? ` · "${f.link_text}"` : ''}
+                  </div>
+                ))}
+                {found.length > 3 && <div className="admin-help">+{found.length - 3} more</div>}
+              </div>
+              <div>
+                <Button size="mini" primary disabled={busy === e.id} onClick={() => startEdit(e)}>
+                  Accept
+                </Button>{' '}
+                <Button size="mini" disabled={busy === e.id} onClick={() => send(e, 'reject')}>
+                  Reject
+                </Button>
+              </div>
+            </div>
+            {editing === e.id && (
+              <div className="admin-review-item__body">
+                <label>
+                  {e.kind === 'youtube_channel' ? 'Channel or playlist id' : 'Start URL'}{' '}
+                  <input
+                    aria-label="start url"
+                    value={form.url}
+                    onChange={(ev) => setForm({ ...form, url: ev.target.value })}
+                  />
+                </label>{' '}
+                {e.kind !== 'youtube_channel' && (
+                  <label>
+                    Allowed prefixes{' '}
+                    <input
+                      aria-label="allowed prefixes"
+                      placeholder="comma separated, default same host"
+                      value={form.prefixes}
+                      onChange={(ev) => setForm({ ...form, prefixes: ev.target.value })}
+                    />
+                  </label>
+                )}{' '}
+                <label>
+                  Max pages{' '}
+                  <input
+                    aria-label="max pages"
+                    type="number"
+                    value={form.maxPages}
+                    onChange={(ev) => setForm({ ...form, maxPages: ev.target.value })}
+                  />
+                </label>{' '}
+                <label>
+                  Refresh days{' '}
+                  <input
+                    aria-label="refresh days"
+                    type="number"
+                    value={form.refreshDays}
+                    onChange={(ev) => setForm({ ...form, refreshDays: ev.target.value })}
+                  />
+                </label>{' '}
+                <label>
+                  Weight{' '}
+                  <input
+                    aria-label="weight"
+                    type="number"
+                    step={0.05}
+                    min={0}
+                    max={3}
+                    value={form.weight}
+                    onChange={(ev) => setForm({ ...form, weight: ev.target.value })}
+                  />
+                </label>{' '}
+                <Button size="mini" primary disabled={busy === e.id} onClick={() => accept(e)}>
+                  Confirm accept
+                </Button>
+              </div>
+            )}
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
 function WorkbenchTab({ origin }: { origin: string }) {
   const [targets, setTargets] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -1049,6 +1236,7 @@ function WorkbenchTab({ origin }: { origin: string }) {
           </Button>
         </p>
       </div>
+      <ExternalSuggestions origin={origin} />
     </div>
   );
 }

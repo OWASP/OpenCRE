@@ -92,6 +92,11 @@ def main() -> int:
     )
     ap.add_argument("--profile", choices=["standard", "people"], default="standard")
     ap.add_argument("--dry-run", action="store_true", help="no embeddings/DB writes")
+    ap.add_argument(
+        "--suggest-links",
+        action="store_true",
+        help="also record external links found in each repo as suggested external sources (no crawling, no network)",
+    )
     ap.add_argument("--limit-docs", type=int, default=0)
     ap.add_argument("--workers", type=int, default=16)
     ap.add_argument("--dump", help="write the digest JSON here")
@@ -178,6 +183,22 @@ def main() -> int:
             return 0
         for repo in repos:
             try:
+                if a.suggest_links:
+                    from application.utils.admin_panel import external_targets
+                    from application.utils.comprehension import link_suggestions
+
+                    cands = link_suggestions.suggest_links(
+                        {repo: sources.chunks_for_repo(database.session, repo)},
+                        external_targets.registered_hosts(database.session),
+                    )
+                    res = external_targets.upsert_suggestions(
+                        cands, session=database.session
+                    )
+                    print(
+                        f"{repo}: link suggestions {len(res['created'])} new, "
+                        f"{len(res['merged'])} merged",
+                        flush=True,
+                    )
                 if a.raw:
                     import tempfile
 

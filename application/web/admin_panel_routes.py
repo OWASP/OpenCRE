@@ -9,7 +9,7 @@ logger = get_logger(__name__)
 
 from flask import g, jsonify, request, session
 
-from application.utils.admin_panel import service
+from application.utils.admin_panel import external_targets, service
 
 
 def _err(status: int, description: str) -> Tuple[Any, int]:
@@ -137,6 +137,49 @@ def register_admin_panel_routes(
         except ValueError as exc:
             return _err(400, _exc_message(exc))
         return jsonify({"deleted": target_id})
+
+    @bp.route("/admin/external", methods=["GET"])
+    @login_required
+    @imports_enabled
+    def admin_external_list() -> Any:
+        try:
+            return jsonify({"external": external_targets.list_external()})
+        except Exception as exc:
+            logger.exception("list external sources failed")
+            return _err(500, f"failed to list external sources: {exc}")
+
+    @bp.route("/admin/external", methods=["POST"])
+    @login_required
+    @imports_enabled
+    def admin_external_add() -> Any:
+        body = request.get_json(silent=True) or {}
+        try:
+            return jsonify(external_targets.add_manual(body)), 201
+        except ValueError as exc:
+            return _err(400, _exc_message(exc))
+
+    @bp.route("/admin/external/<target_id>/accept", methods=["POST"])
+    @login_required
+    @imports_enabled
+    def admin_external_accept(target_id: str) -> Any:
+        body = request.get_json(silent=True) or {}
+        try:
+            return jsonify(external_targets.accept(target_id, body))
+        except KeyError:
+            return _err(404, "external source not found")
+        except ValueError as exc:
+            return _err(400, _exc_message(exc))
+
+    @bp.route("/admin/external/<target_id>/reject", methods=["POST"])
+    @login_required
+    @imports_enabled
+    def admin_external_reject(target_id: str) -> Any:
+        try:
+            return jsonify(external_targets.reject(target_id))
+        except KeyError:
+            return _err(404, "external source not found")
+        except ValueError as exc:
+            return _err(400, _exc_message(exc))
 
     @bp.route("/admin/repos.yaml", methods=["GET"])
     @login_required
