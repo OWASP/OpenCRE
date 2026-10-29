@@ -195,3 +195,24 @@ class TestCompoundClausesKeepTheirSubject(unittest.TestCase):
             ),
         )
         self.assertIn("how long is it", out["response"])
+
+
+class TestTalkAsksAboutAnIndexedEventGoToEvidence(unittest.TestCase):
+    def test_talk_question_naming_an_event_is_not_answered_with_dates_only(self):
+        class Q:
+            def find_events(self, text):
+                return [{"name": "OWASP AppSec Days Portugal 2026"}]
+
+        class Probe(r.OwaspAgentRouter):
+            def __init__(self):
+                self.queries = Q()
+
+        probe = Probe()
+        talk = "Did Diogo Sousa give a talk at OWASP AppSec Days Portugal 2026?"
+        self.assertEqual(
+            probe._index_event_intent("talk_lookup", talk), "cre_normative"
+        )
+        when = "When is OWASP AppSec Days Portugal 2026?"
+        self.assertEqual(
+            probe._index_event_intent("cre_normative", when), "event_lookup"
+        )

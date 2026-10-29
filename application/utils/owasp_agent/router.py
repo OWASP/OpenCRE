@@ -214,6 +214,10 @@ class OwaspAgentRouter:
             return intent
         try:
             if self.queries.find_events(text):
+                if _TALK_ASK_RE.search(text):
+                    # Talks of an indexed event are in the evidence index (YouTube catalogue + event
+                    # pages): answer from there, not with the event's dates only.
+                    return "cre_normative"
                 return "event_lookup"
         except Exception:
             pass
@@ -1058,6 +1062,11 @@ MAX_PROMPT_CHARS = 4096
 
 _CHAPTER_CUE_RE = re.compile(
     r"\b(leads?|leaders?|runs?|organi[sz]\w*|chapter|group|meetups?|president|chair|active|inactive|status)\b",
+    re.I,
+)
+_TALK_ASK_RE = re.compile(
+    r"\b(talks?|sessions?|keynotes?|presentations?|presented|presenting|gave|given|give a talk|"
+    r"recordings?|videos?|watch|webinars?)\b",
     re.I,
 )
 _EVENT_CUE_RE = re.compile(

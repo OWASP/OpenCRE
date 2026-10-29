@@ -1317,3 +1317,36 @@ class TestTalkLaneAndWatchLinks(unittest.TestCase):
         urls = [h.url for h in merged]
         self.assertEqual(urls[6:9], [h.url for h in lane])
         self.assertEqual(len(urls), len(base) + len(lane))
+
+
+class TestWatchLines(unittest.TestCase):
+    def test_used_catalogue_entries_get_a_watch_link_once(self):
+        from application.utils.comprehension import synthesize
+
+        entry = "Title: Threat Modeling for AI\nVideo: https://www.youtube.com/watch?v=zroXcBDsal4\nDescription: x"
+        other = "Title: Other\nVideo: https://www.youtube.com/watch?v=abcdefghijk"
+        out = synthesize.watch_lines(
+            "A talk exists [1].", [entry, other, "no video here"]
+        )
+        self.assertIn(
+            "Watch: Threat Modeling for AI - https://www.youtube.com/watch?v=zroXcBDsal4",
+            out,
+        )
+        self.assertEqual(out.count("Watch:"), 2)
+        self.assertEqual(
+            synthesize.watch_lines(
+                "See https://www.youtube.com/watch?v=zroXcBDsal4 [1]", [entry]
+            ),
+            "",
+        )
+
+    def test_synthesize_appends_the_link_when_the_model_only_cites(self):
+        from application.utils.comprehension import synthesize
+
+        entry = "Title: Threat Modeling for AI\nVideo: https://www.youtube.com/watch?v=zroXcBDsal4"
+        answer, cites = synthesize.synthesize(
+            "q",
+            [(entry, ["https://www.youtube.com/watch?v=zroXcBDsal4"])],
+            lambda s, u: "Yes, there is a talk [1].",
+        )
+        self.assertIn("https://www.youtube.com/watch?v=zroXcBDsal4", answer)

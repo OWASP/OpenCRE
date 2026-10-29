@@ -76,6 +76,30 @@ def _keep_watch_link(m: "re.Match[str]") -> str:
     return m.group(0) if _WATCH_URL.match(url) else ""
 
 
+_VIDEO_LINE = re.compile(
+    r"^Video: (https://www\.youtube\.com/watch\?v=[\w-]{6,})\s*$", re.M
+)
+_TITLE_LINE = re.compile(r"^Title: (.+)$", re.M)
+
+
+def watch_lines(answer: str, texts: Sequence[str], limit: int = 3) -> str:
+    """ "Watch: <title> <link>" lines for the YouTube catalogue entries an answer used.
+
+    The model is told to give the video link but often only cites it, so the links of the used
+    talks are added deterministically (never repeating a link already in the answer).
+    """
+    lines: List[str] = []
+    for text in texts:
+        m = _VIDEO_LINE.search(text or "")
+        if not m or m.group(1) in answer or any(m.group(1) in x for x in lines):
+            continue
+        t = _TITLE_LINE.search(text)
+        lines.append(f"Watch: {t.group(1).strip() if t else 'video'} - {m.group(1)}")
+        if len(lines) >= limit:
+            break
+    return "\n".join(lines)
+
+
 def max_resources() -> int:
     """Most resource links one answer shows (stricter = fewer, better ones)."""
     try:
@@ -262,6 +286,9 @@ def synthesize(
     from application.utils.comprehension import paths
 
     cites = paths.order_and_cap(cites, max_resources())
+    extra = watch_lines(out, [hits[i - 1][0] for i in used])
+    if extra:
+        out = out.rstrip() + "\n\n" + extra
     out, number = renumber_citations(out, hits, used, cites)
     _record_evidence(hits, used, number)
     return out, cites
