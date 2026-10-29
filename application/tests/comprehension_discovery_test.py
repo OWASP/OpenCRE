@@ -200,7 +200,9 @@ class RelevanceTest(unittest.TestCase):
         cands = discovery.candidates_from_crawl(
             site_spec(), res, registered_hosts=["rejected.org"], now=NOW
         )
-        self.assertEqual([c["host"] for c in cands], ["appsec.eu"])
+        # docs.src.org is a sibling subdomain of the crawled site and event-like (path /conference)
+        self.assertEqual([c["host"] for c in cands], ["appsec.eu", "docs.src.org"])
+        self.assertEqual([c["subdomain"] for c in cands], [False, True])
         c = cands[0]
         self.assertEqual(c["url"], "https://2026.appsec.eu/program")
         self.assertEqual(c["allow_prefixes"], ["https://2026.appsec.eu/"])
@@ -341,6 +343,39 @@ class StoreTest(unittest.TestCase):
         )
         self.assertEqual(out["candidates"], 0)
         self.assertEqual(out["created"], [])
+
+    def test_yearly_subdomain_of_a_registered_site_is_suggested_for_its_talks(self):
+        et.add_manual(
+            {"id": "appsec", "name": "AppSec", "start_urls": ["https://appsec.eu/"]}
+        )
+        out = discovery.suggest_from_crawl(
+            site_spec(),
+            result_with(
+                ("https://2027.appsec.eu/speakers", "Speakers", "https://src.org/e"),
+                # same site, not an event: skipped
+                ("https://blog.appsec.eu/", "Our blog", "https://src.org/e"),
+                # the registered host itself: skipped
+                ("https://appsec.eu/news", "News", "https://src.org/e"),
+            ),
+            sqla.session,
+            resolver=lambda u: (u, ""),
+            now=NOW,
+        )
+        self.assertEqual(out["created"], ["2027-appsec-eu"])
+        spec = external.spec_from_target(
+            sqla.session.query(db.IngestionTarget).filter_by(id="2027-appsec-eu").one()
+        )
+        self.assertEqual(spec.status, external.STATUS_SUGGESTED)
+        self.assertEqual(spec.start_urls, ["https://2027.appsec.eu/speakers"])
+        # the registered apex is still never re-suggested
+        again = discovery.suggest_from_crawl(
+            site_spec(),
+            self.links("https://appsec.eu/conference"),
+            sqla.session,
+            resolver=lambda u: (u, ""),
+            now=NOW,
+        )
+        self.assertEqual(again["created"], [])
 
     def test_resolution_into_a_registered_host_is_dropped(self):
         et.add_manual({"id": "reg", "name": "Reg", "start_urls": ["https://reg.org/"]})

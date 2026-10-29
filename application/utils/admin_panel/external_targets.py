@@ -85,7 +85,10 @@ def external_dict(row: Any) -> Dict[str, Any]:
 
 
 def registered_hosts(session: Any = None) -> set:
-    """Registrable hosts of every external target (any status, so rejected ones are never re-suggested)."""
+    """Hosts (without ``www.``) of every external target, any status, so rejected ones are never re-suggested.
+
+    Exact hosts, not registrable ones: callers that only care about the site collapse them with
+    ``registrable_host``; discovery keeps them apart to suggest sibling subdomains."""
     session = session or sqla.session
     hosts = set()
     for row in _rows(session):
@@ -95,7 +98,7 @@ def registered_hosts(session: Any = None) -> set:
         ):
             h = urlparse(str(u)).hostname
             if h:
-                hosts.add(registrable_host(h[4:] if h.startswith("www.") else h))
+                hosts.add((h[4:] if h.startswith("www.") else h).lower())
     return hosts
 
 
@@ -171,9 +174,13 @@ def upsert_suggestions(
                 _write(row, spec, score)
                 merged.append(cid)
                 continue
-            if (
-                cand.get("kind") != "youtube"
-                and registrable_host(cand.get("host", "")) in known_hosts
+            host = str(cand.get("host", "")).lower()
+            sibling = bool(cand.get("subdomain"))
+            if cand.get("kind") != "youtube" and (
+                host in known_hosts
+                if sibling
+                else registrable_host(host)
+                in {registrable_host(h) for h in known_hosts}
             ):
                 skipped.append(cid)
                 continue
@@ -192,7 +199,7 @@ def upsert_suggestions(
         session.add(row)
         created.append(cid)
         if spec.kind == ext.KIND_SITE:
-            known_hosts.add(registrable_host(cand.get("host", "")))
+            known_hosts.add(str(cand.get("host", "")).lower())
     session.commit()
     return {"created": created, "merged": merged, "skipped": skipped}
 

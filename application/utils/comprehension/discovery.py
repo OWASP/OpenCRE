@@ -71,6 +71,9 @@ _EVENT_WORDS = (
     "event",
     "chapter",
     "summit",
+    "talk",
+    "session",
+    "keynote",
 )
 _YEAR = re.compile(r"(?<!\d)(20\d\d)(?!\d)")
 
@@ -133,14 +136,19 @@ def candidates_from_crawl(
     now: Optional[datetime] = None,
 ) -> List[Dict[str, Any]]:
     """Ranked candidates (``link_suggestions`` shape) from ``result.external_links`` of a crawl of ``spec``."""
-    own = {
-        link_suggestions.registrable_host(link_suggestions.host_of(u))
+
+    def bare(h: str) -> str:
+        return h[4:] if h.startswith("www.") else h
+
+    own_exact = {
+        bare(link_suggestions.host_of(u))
         for u in list(spec.start_urls) + list(spec.allow_prefixes)
     }
-    skip = own | {link_suggestions.registrable_host(h) for h in registered_hosts}
+    exact_known = own_exact | {bare(h.lower()) for h in registered_hosts}
+    reg_known = {link_suggestions.registrable_host(h) for h in exact_known}
     groups: Dict[str, Dict[str, Any]] = {}
     for url, text, page in result.external_links:
-        host = link_suggestions.host_of(url)
+        host = bare(link_suggestions.host_of(url))
         if (
             not host
             or urlparse(url).scheme not in ("http", "https")
@@ -149,11 +157,19 @@ def candidates_from_crawl(
         ):
             continue
         reg = link_suggestions.registrable_host(host)
-        if reg in skip or _skipped(reg):
+        if _skipped(reg) or host in exact_known:
             continue
         score, event_like = score_link(url, text, now)
+        key, sibling = reg, False
+        if reg in reg_known:
+            # A sibling subdomain of a site we already have (2027.example.org next to example.org):
+            # event sites move to yearly subdomains, so it is suggested when it looks like an event.
+            if not event_like:
+                continue
+            key, sibling = host, True
         g = groups.setdefault(
-            reg, {"best": None, "score": -99.0, "event": False, "links": []}
+            key,
+            {"best": None, "score": -99.0, "event": False, "links": [], "sub": sibling},
         )
         g["links"].append((score, url, text, page))
         g["event"] = g["event"] or event_like
@@ -175,6 +191,7 @@ def candidates_from_crawl(
                 "url": url,
                 "host": reg,
                 "kind": "site",
+                "subdomain": bool(g["sub"]),
                 "name_guess": link_suggestions._name_guess(
                     reg, [x[2] for x in g["links"] if x[2]]
                 ),
