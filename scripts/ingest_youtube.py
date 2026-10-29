@@ -4,6 +4,9 @@
     python scripts/ingest_youtube.py                       # dry run over approved youtube_channel targets
     python scripts/ingest_youtube.py --spec-json spec.json --captions-dir ./captions --limit 20
     python scripts/ingest_youtube.py --apply               # embed and write
+    python scripts/ingest_youtube.py --extract             # dry run: LLM calls, tokens and cost for speaker/event extraction
+    python scripts/ingest_youtube.py --extract --sample 5 --fixture /tmp/yt_catalogue.json   # show records, write nothing
+    python scripts/ingest_youtube.py --apply --extract     # rewrite catalogue chunks (same ids, so they replace the old ones)
 
 Needs YOUTUBE_API_KEY (YouTube Data API v3, 1 quota unit per list call). Captions come from exported
 ``<video_id>.<lang>.vtt|srt`` files in --captions-dir; with the optional YOUTUBE_OAUTH_* variables
@@ -17,9 +20,10 @@ import argparse
 import json
 import os
 import sys
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 
 from application.utils.comprehension import external as ext
+from application.utils.comprehension import youtube_extract as yx
 from application.utils.comprehension import youtube_source as ys
 
 CHARS_PER_TOKEN = 4.0
@@ -42,10 +46,13 @@ def collect(
     people: List[str],
     limit: int,
     downloader: Any = None,
+    extractor: Optional[yx.Extractor] = None,
 ) -> Tuple[List[ys.Video], List[Tuple[str, int, str]], int]:
     """(videos, chunks, videos_with_captions) for one channel spec."""
     videos = api.channel_videos(spec, limit=limit)
     ys.link_speakers(videos, people)
+    if extractor is not None:
+        extractor.run(videos)
     chunks: List[Tuple[str, int, str]] = []
     with_captions = 0
     for v in videos:
@@ -55,6 +62,24 @@ def collect(
         with_captions += bool(cues)
         chunks += ys.video_chunks(v, cues, spec.name)
     return videos, chunks, with_captions
+
+
+def print_sample(videos: List[ys.Video], n: int, extractor: yx.Extractor) -> None:
+    """Extracted records for the first ``n`` videos; needs GEMINI_API_KEY unless cached. Writes nothing."""
+    chosen = videos[:n]
+    if extractor.pending(chosen) and not os.environ.get("GEMINI_API_KEY"):
+        print(
+            f"sample: {len(extractor.pending(chosen))} of {len(chosen)} videos need an LLM call but "
+            "GEMINI_API_KEY is not set; nothing called",
+            flush=True,
+        )
+        return
+    extractor.run(chosen)
+    for v in chosen:
+        print(
+            json.dumps({"id": v.id, "title": v.title, "extracted": v.extracted}),
+            flush=True,
+        )
 
 
 def open_database() -> Any:
@@ -88,7 +113,39 @@ def main(argv: List[str] | None = None) -> int:
         "--apply", action="store_true", help="embed and write (default: dry run)"
     )
     ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument(
+        "--extract",
+        action="store_true",
+        help="LLM-extract speakers/event/date from titles and descriptions (dry run prints cost)",
+    )
+    ap.add_argument(
+        "--sample",
+        type=int,
+        default=0,
+        help="with --extract: print N extracted records",
+    )
+    ap.add_argument(
+        "--fixture",
+        default="",
+        help="with --extract: a catalogue JSON export instead of the YouTube API (never writes)",
+    )
     a = ap.parse_args(argv)
+
+    extractor = None
+    if a.extract:
+        extractor = yx.Extractor(
+            yx.default_llm() if (a.apply or a.sample) else (lambda s, u: ""),
+            cache_dir=os.path.join(a.cache_dir, "extract"),
+        )
+    if a.fixture:
+        if not extractor:
+            ap.error("--fixture needs --extract")
+        videos = yx.videos_from_catalogue(a.fixture, a.limit)
+        print(yx.describe_run(videos, extractor), flush=True)
+        if a.sample:
+            print_sample(videos, a.sample, extractor)
+        print("fixture mode: nothing written", flush=True)
+        return 0
 
     people = load_people(a.people_file)
     api = ys.YouTubeApi(cache_dir=os.path.join(a.cache_dir, "api"))
@@ -133,7 +190,13 @@ def main(argv: List[str] | None = None) -> int:
             people,
             a.limit,
             downloader if downloader.enabled() else None,
+            extractor=extractor if a.apply else None,
         )
+        if extractor is not None:
+            if not a.apply:
+                print(yx.describe_run(videos, extractor), flush=True)
+            if a.sample:
+                print_sample(videos, a.sample, extractor)
         chars = sum(len(c[2]) for c in chunks)
         tokens = chars / CHARS_PER_TOKEN
         print(

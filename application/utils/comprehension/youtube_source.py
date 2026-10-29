@@ -53,6 +53,9 @@ class Video:
     published: str = ""  # ISO date YYYY-MM-DD
     duration_seconds: int = 0
     speaker: str = ""
+    extracted: Optional[Dict[str, Any]] = (
+        None  # youtube_extract record, when --extract ran
+    )
 
 
 class YouTubeApi:
@@ -449,24 +452,74 @@ def _duration_text(sec: int) -> str:
 
 
 def header_line(v: Video, channel_name: str) -> str:
+    x = v.extracted
+    if x is None:
+        return (
+            f"Talk: {v.title} | Speaker: {v.speaker or 'unknown'} | "
+            f"Published: {v.published or 'unknown'} | Channel: {channel_name}"
+        )
     return (
-        f"Talk: {v.title} | Speaker: {v.speaker or 'unknown'} | "
-        f"Published: {v.published or 'unknown'} | Channel: {channel_name}"
+        f"Talk: {x.get('talk_title') or v.title} | "
+        f"Speaker: {', '.join(x.get('speakers') or []) or v.speaker or 'unknown'} | "
+        f"Event: {x.get('event') or 'unknown'} | Event date: {x.get('event_date') or 'unknown'} | "
+        f"Published (upload): {v.published or 'unknown'} | Channel: {channel_name}"
     )
 
 
-def catalogue_chunk(v: Video, channel_name: str) -> Tuple[str, int, str]:
+MAX_CHAPTERS = 15
+_CHAPTER = re.compile(
+    r"^\s*[(\[]?((?:\d{1,2}:)?\d{1,2}:\d{2})[)\]]?\s*[-–—:.]?\s*(\S.*?)\s*$"
+)
+
+
+def parse_chapters(description: str) -> List[Tuple[int, str, str]]:
+    """(seconds, clock text, label) from timestamped description lines; needs 2+ lines, capped at 15."""
+    found: List[Tuple[int, str, str]] = []
+    for line in (description or "").splitlines():
+        m = _CHAPTER.match(line)
+        if not m:
+            continue
+        parts = [int(p) for p in m.group(1).split(":")]
+        sec = 0
+        for p in parts:
+            sec = sec * 60 + p
+        found.append((sec, m.group(1), m.group(2)[:120]))
+    return found[:MAX_CHAPTERS] if len(found) >= 2 else []
+
+
+def watch_url(video_id: str, seconds: int = 0) -> str:
+    base = f"https://www.youtube.com/watch?v={video_id}"
+    return f"{base}&t={seconds}s" if seconds else base
+
+
+def catalogue_chunk(
+    v: Video, channel_name: str, has_captions: bool = False
+) -> Tuple[str, int, str]:
+    x = v.extracted
+    speaker = (", ".join(x.get("speakers") or []) if x else "") or v.speaker
     lines = [
         header_line(v, channel_name),
         f"Title: {v.title}",
-        f"Speaker: {v.speaker or 'unknown'}",
-        f"Published: {v.published or 'unknown'}",
-        (
-            f"Duration: {_duration_text(v.duration_seconds)}"
-            if v.duration_seconds
-            else "Duration: unknown"
-        ),
+        f"Speaker: {speaker or 'unknown'}",
     ]
+    if x:
+        lines += [
+            f"Event: {x.get('event') or 'unknown'}",
+            f"Event date: {x.get('event_date') or 'unknown'}",
+            f"Published (upload): {v.published or 'unknown'}",
+        ]
+    else:
+        lines.append(f"Published: {v.published or 'unknown'}")
+    lines.append(
+        f"Duration: {_duration_text(v.duration_seconds)}"
+        if v.duration_seconds
+        else "Duration: unknown"
+    )
+    lines.append(f"Video: {watch_url(v.id)}")
+    if not has_captions:
+        lines.append("Transcript: not indexed (metadata only)")
+    for sec, clock, label in parse_chapters(v.description):
+        lines.append(f"Chapters: {clock} {label} -> {watch_url(v.id, sec)}")
     if v.description:
         lines.append("Description: " + v.description[:2000])
     return (v.id, 0, "\n".join(lines))
@@ -494,7 +547,7 @@ def video_chunks(
     v: Video, cues: List[Cue], channel_name: str
 ) -> List[Tuple[str, int, str]]:
     """Catalogue chunk first, then one chunk per caption window (``<id>#t=<seconds>``)."""
-    chunks = [catalogue_chunk(v, channel_name)]
+    chunks = [catalogue_chunk(v, channel_name, has_captions=bool(cues))]
     head = header_line(v, channel_name)
     for i, (start, text) in enumerate(caption_windows(cues), start=1):
         chunks.append((f"{v.id}#t={start}", i, f"{head}\n{text}"))
