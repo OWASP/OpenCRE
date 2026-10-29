@@ -144,6 +144,45 @@ class McpRemoteHttpTest(unittest.TestCase):
         payload = json.loads(first.text)
         self.assertTrue(payload["ok"])
 
+    def test_ask_over_the_daily_budget_is_refused_and_ask_costs_are_charged(
+        self,
+    ) -> None:
+        from application.utils import rate_limit, spend
+
+        rate_limit.reset_memory()
+        spend.reset_memory()
+        self.addCleanup(spend.reset_memory)
+        token = self._mint(self.admin)
+
+        def costly_ask(*_a: Any, **_k: Any) -> dict:
+            self.assertEqual(spend.current_account(), "admin@example.com")
+            with patch("litellm.completion_cost", return_value=5.0):
+                spend.record(object(), "m")
+            return {"ok": True, "channel": "security", "items": []}
+
+        with patch.dict(
+            os.environ, {"BUDGET_DAILY_USD": "1", "RATE_LIMIT_ADMIN_MULTIPLIER": "1"}
+        ), patch.object(spend, "_redis", return_value=None), patch(
+            "application.mcp.server.run_ask", side_effect=costly_ask
+        ) as ask_mock:
+            first = self._call_tool(
+                ASK_TOOL_NAME,
+                {"prompt": "q1", "corpus": "security"},
+                authorization=f"Bearer {token}",
+            )
+            second = self._call_tool(
+                ASK_TOOL_NAME,
+                {"prompt": "q2", "corpus": "security"},
+                authorization=f"Bearer {token}",
+            )
+            self.assertEqual(ask_mock.call_count, 1)
+        self.assertFalse(first.is_error)
+        self.assertTrue(second.is_error)
+        text = second.content[0]
+        assert isinstance(text, types.TextContent)
+        self.assertIn("429", text.text)
+        self.assertIn("usage budget", text.text)
+
     def test_ask_with_non_allowlisted_jwt_denied(self) -> None:
         token = self._mint(self.outsider)
         with patch("application.mcp.server.run_ask") as ask_mock:

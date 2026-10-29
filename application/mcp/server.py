@@ -183,6 +183,7 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
         del ctx
         name = params.name
         arguments: Dict[str, Any] = dict(params.arguments or {})
+        caller = None
         try:
             from application.mcp import remote_auth
 
@@ -211,18 +212,36 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
                             ],
                             is_error=True,
                         )
+            if caller is not None and name in (ASK_TOOL_NAME, "owasp_meta_ask"):
+                from application.utils import roles, spend
+
+                try:
+                    spend.check_budget(caller.email, roles.role_for(caller.email))
+                except spend.BudgetExceeded as over:
+                    return types.CallToolResult(
+                        content=[
+                            types.TextContent(type="text", text=f"429 {over.message()}")
+                        ],
+                        is_error=True,
+                    )
+            charge_to = caller.email if caller is not None else None
             if name == ASK_TOOL_NAME:
+                from application.utils import spend as _spend
+
                 data = await run_blocking_with_app(
-                    lambda: run_ask(
-                        str(arguments.get("prompt") or ""),
-                        corpus=str(arguments.get("corpus") or "auto"),
-                        place=(
-                            str(arguments["place"])
-                            if arguments.get("place") is not None
-                            else None
+                    lambda: _spend.run_charged(
+                        charge_to,
+                        lambda: run_ask(
+                            str(arguments.get("prompt") or ""),
+                            corpus=str(arguments.get("corpus") or "auto"),
+                            place=(
+                                str(arguments["place"])
+                                if arguments.get("place") is not None
+                                else None
+                            ),
+                            history=arguments.get("history"),
+                            rest_client=client,
                         ),
-                        history=arguments.get("history"),
-                        rest_client=client,
                     )
                 )
                 payload = json.dumps(data, ensure_ascii=False, default=str)
@@ -250,7 +269,10 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
                         lambda: call_owasp_meta_tool(name, arguments)
                     )
                 else:
-                    data = call_owasp_meta_tool(name, arguments)
+                    from application.utils import spend as _spend
+
+                    with _spend.charging(charge_to):
+                        data = call_owasp_meta_tool(name, arguments)
                 payload = json.dumps(data, ensure_ascii=False, default=str)
                 return types.CallToolResult(
                     content=[types.TextContent(type="text", text=payload)],
