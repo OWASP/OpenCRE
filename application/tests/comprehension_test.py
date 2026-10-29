@@ -1206,3 +1206,46 @@ class TestExternalAliases(unittest.TestCase):
         )
         self.assertNotIn("as of <fetched date>", seen[0])
         self.assertIn("as of <fetched date>", seen[1])
+
+
+class TestExternalDoesNotCountAgainstProjectLimit(unittest.TestCase):
+    def test_one_repo_plus_one_external_source_are_both_read(self):
+        from unittest import mock
+
+        from application.utils.comprehension import retrieve
+
+        retrieve._EXT_ALIAS_CACHE.update(
+            at=__import__("time").time(),
+            map={"ext-owasp-benelux": ["owasp benelux"]},
+        )
+        asked = []
+
+        class Conn:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+            def execute(self, sql, params=None):
+                asked.append((params or {}).get("pat"))
+                return mock.Mock(fetchall=lambda: [])
+
+        class Bind:
+            def connect(self):
+                return Conn()
+
+        try:
+            with mock.patch(
+                "application.utils.comprehension.retrieve._known_slugs",
+                return_value=["owasp-www-project-pwnzzai", "ext-owasp-benelux"],
+            ), mock.patch("application.sqla.session") as sess:
+                sess.get_bind.return_value = Bind()
+                retrieve.project_sources(
+                    "What is the PwnzzAI training at OWASP Benelux?", None
+                )
+        finally:
+            retrieve._EXT_ALIAS_CACHE.update(at=0.0, map={})
+        pats = [p for p in asked if p]
+        self.assertTrue(any("ext-owasp-benelux" in p for p in pats), pats)
+        self.assertTrue(any("pwnzzai" in p for p in pats), pats)

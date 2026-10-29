@@ -582,7 +582,17 @@ def project_sources(question: str, max_projects: int | None = None) -> List[tupl
 
         limit = max_projects or longctx_max_projects()
         with sqla.session.get_bind().connect() as conn:
-            slugs = matched_slugs(question, _known_slugs(conn), limit=limit + 1)
+            slugs = matched_slugs(question, _known_slugs(conn), limit=limit + 3)
+            # External sites are small and do not count against the project limit: "PwnzzAI training
+            # at OWASP BeNeLux Days" reads the PwnzzAI project and the BeNeLux site, both whole.
+            from application.utils.comprehension import external as _external
+
+            ext_slugs = [s for s in slugs if _external.is_external_slug(s)][:2]
+            repo_slugs = [s for s in slugs if not _external.is_external_slug(s)]
+            if len(repo_slugs) > limit:
+                return []
+            slugs = repo_slugs + ext_slugs
+            limit += len(ext_slugs)
             _PICK_STATE.set("")
             if not slugs:
                 from application.utils.comprehension import flags
