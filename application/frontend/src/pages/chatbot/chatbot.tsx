@@ -44,6 +44,7 @@ export const Chatbot = () => {
     owaspCitations?: string[];
     answerId?: string;
     rating?: 'up' | 'down';
+    commented?: boolean;
   };
 
   interface ChatState {
@@ -59,6 +60,7 @@ export const Chatbot = () => {
   const [error, setError] = useState<string>('');
   const [chat, setChat] = useState<ChatState>(DEFAULT_CHAT_STATE);
   const [user, setUser] = useState('');
+  const [commentDraft, setCommentDraft] = useState<{ idx: number; text: string } | null>(null);
   const [continueConversation, setContinueConversation] = useState<boolean>(false);
   const [modelName, setModelName] = useState<string>('');
 
@@ -162,25 +164,40 @@ export const Chatbot = () => {
   const HISTORY_MESSAGES = 2;
 
   /** Thumbs up/down: show the choice at once, tell the server, and undo it if that fails. */
-  function rateAnswer(idx: number, rating: 'up' | 'down') {
+  function rateAnswer(idx: number, rating: 'up' | 'down', comment?: string) {
     const answerId = chatMessages[idx]?.answerId;
     if (!answerId) return;
     const previous = chatMessages[idx].rating;
     const setRating = (value?: 'up' | 'down') =>
       setChatMessages((prev) => prev.map((m, i) => (i === idx ? { ...m, rating: value } : m)));
     setRating(rating);
+    // A thumbs down opens a one-line "what was wrong?" box; the comment is sent as a second
+    // rating call (the server keeps the latest rating and comment for the answer).
+    if (comment === undefined) setCommentDraft(rating === 'down' ? { idx, text: '' } : null);
     fetch(`${apiUrl}/answer_feedback`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ answer_id: answerId, rating }),
+      body: JSON.stringify(
+        comment ? { answer_id: answerId, rating, comment } : { answer_id: answerId, rating }
+      ),
     })
       .then((res) => {
         if (!res.ok) throw new Error(`rating failed (${res.status})`);
+        if (comment)
+          setChatMessages((prev) => prev.map((m, i) => (i === idx ? { ...m, commented: true } : m)));
       })
       .catch((err) => {
         console.error(err);
         setRating(previous);
+        setCommentDraft(null);
       });
+  }
+
+  function submitComment() {
+    if (!commentDraft) return;
+    const text = commentDraft.text.trim();
+    if (text) rateAnswer(commentDraft.idx, 'down', text);
+    setCommentDraft(null);
   }
 
   async function onSubmit() {
@@ -388,6 +405,30 @@ export const Chatbot = () => {
                             >
                               <Icon name="thumbs down outline" />
                             </button>
+                            {commentDraft?.idx === idx ? (
+                              <form
+                                className="rate-comment"
+                                onSubmit={(e) => {
+                                  e.preventDefault();
+                                  submitComment();
+                                }}
+                              >
+                                <input
+                                  type="text"
+                                  autoFocus
+                                  maxLength={500}
+                                  aria-label="What was wrong with this answer?"
+                                  placeholder="What was wrong? (optional)"
+                                  value={commentDraft.text}
+                                  onChange={(e) => setCommentDraft({ idx, text: e.target.value })}
+                                />
+                                <button type="submit" className="rate-btn" aria-label="Send feedback">
+                                  Send
+                                </button>
+                              </form>
+                            ) : m.commented ? (
+                              <span className="rate-thanks">Thanks for the feedback</span>
+                            ) : null}
                           </div>
                         ) : null}
 

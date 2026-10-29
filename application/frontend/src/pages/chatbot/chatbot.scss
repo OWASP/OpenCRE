@@ -478,8 +478,30 @@ h1.ui.header.chatbot-title {
 
 .rate-answer {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 0.25rem;
   margin-top: 0.5rem;
+
+  .rate-comment {
+    display: flex;
+    flex: 1 1 14rem;
+    gap: 0.25rem;
+
+    input {
+      flex: 1;
+      border: 1px solid #c8cdd3;
+      border-radius: 4px;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.85rem;
+    }
+  }
+
+  .rate-thanks {
+    color: #6b7280;
+    font-size: 0.85rem;
+    margin-left: 0.25rem;
+  }
 
   .rate-btn {
     background: none;
