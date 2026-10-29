@@ -26,6 +26,7 @@ def main() -> int:
         "--like", help="only repos whose source_repo matches this SQL ILIKE"
     )
     ap.add_argument("--top", type=int, default=30, help="candidates to print")
+    ap.add_argument("--limit", type=int, default=25, help="max new suggestions stored")
     ap.add_argument(
         "--apply", action="store_true", help="write suggestions (default: dry run)"
     )
@@ -33,21 +34,16 @@ def main() -> int:
 
     from application import create_app
     from application.database import db as db_mod
-    from application.utils.admin_panel import external_targets
-    from application.utils.comprehension import link_suggestions, sources
+    from application.utils.comprehension import discovery
 
     app = create_app(mode=os.environ.get("FLASK_CONFIG", "production"))
     with app.app_context():
         database = db_mod.Node_collection()
-        q = database.session.query(db_mod.HarvestInput.source_repo).distinct()
-        if a.like:
-            q = q.filter(db_mod.HarvestInput.source_repo.ilike(a.like))
-        repos = sorted(r[0] for r in q if r[0])
-        repo_chunks = {r: sources.chunks_for_repo(database.session, r) for r in repos}
-        cands = link_suggestions.suggest_links(
-            repo_chunks, external_targets.registered_hosts(database.session)
+        res = discovery.suggest_from_repos(
+            database.session, a.limit, like=a.like, apply=a.apply
         )
-        print(f"{len(repos)} repos, {len(cands)} candidates", flush=True)
+        cands = res["ranked"]
+        print(f"{res['repos']} repos, {len(cands)} candidates", flush=True)
         for c in cands[: a.top]:
             first = c["found_in"][0]
             print(
@@ -57,10 +53,9 @@ def main() -> int:
                 flush=True,
             )
         if a.apply:
-            res = external_targets.upsert_suggestions(cands, session=database.session)
             print(
                 f"applied: {len(res['created'])} new, {len(res['merged'])} merged, "
-                f"{len(res['skipped'])} skipped",
+                f"{len(res['skipped'])} skipped, {res['resolved']} redirects resolved",
                 flush=True,
             )
         else:

@@ -431,6 +431,22 @@ def stage_external_sources(ctx: JobContext) -> StageResult:
     )
 
 
+def stage_external_discovery(ctx: JobContext) -> StageResult:
+    from application.utils.comprehension import discovery
+
+    res = discovery.suggest_from_repos(ctx.session, apply=not ctx.dry_run)
+    summary = {
+        "repos": res["repos"],
+        "candidates": res["candidates"],
+        "created": res["created"],
+        "merged": len(res["merged"]),
+        "resolved": res["resolved"],
+    }
+    return StageResult(
+        "external_discovery", "ok", f"{len(res['created'])} new suggestions", summary
+    )
+
+
 def run_stage(name: str, fn: StageFn, ctx: JobContext) -> StageResult:
     """Run one stage, turning an exception into an ``error`` result."""
     started = time.monotonic()
@@ -474,10 +490,16 @@ JOBS: Dict[str, JobSpec] = {
         description="Re-crawl approved external sites whose refresh_days have passed (off until enabled)",
         stages=(("external_sources", stage_external_sources),),
     ),
+    "external_discovery": JobSpec(
+        name="external_discovery",
+        interval_minutes=1440,
+        description="Suggest external sites found in harvested repos (suggestions only, admin approves)",
+        stages=(("external_discovery", stage_external_discovery),),
+    ),
 }
 
 #: Order a full tick runs due jobs in: metadata/harvest first, expansion last.
-JOB_ORDER = ("owasp", "cre_expansion", "external_sources")
+JOB_ORDER = ("owasp", "cre_expansion", "external_discovery", "external_sources")
 
 
 def job_status(stages: List[StageResult]) -> str:

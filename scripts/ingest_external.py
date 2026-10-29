@@ -52,6 +52,12 @@ def main() -> int:
         action="store_true",
         help="LLM context sentence and likely questions per chunk",
     )
+    ap.add_argument(
+        "--discover",
+        action="store_true",
+        help="dry run: print the suggestions the crawl's external links would add "
+        "(with --apply they are stored as suggestions automatically)",
+    )
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument(
         "--debug", action="store_true", help="log every request and queue step"
@@ -75,7 +81,7 @@ def main() -> int:
         if spec.kind != external.KIND_SITE:
             ap.error("--spec-json must be an external_site")
         if not a.apply:  # ad-hoc dry run needs no app or database
-            ingest_spec(spec, apply=False, max_pages=a.max_pages)
+            ingest_spec(spec, apply=False, max_pages=a.max_pages, discover=a.discover)
             return 0
         specs = [spec]
     else:
@@ -118,6 +124,7 @@ def main() -> int:
                     database=database,
                     embed=embed,
                     enrich_fn=enrich_fn,
+                    discover=a.discover,
                 )
             except Exception as exc:  # noqa: BLE001
                 print(f"{spec.id}: FAILED {str(exc)[:200]}", flush=True)

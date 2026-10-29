@@ -38,6 +38,7 @@ def ingest_spec(
     database: Any = None,
     embed: Any = None,
     enrich_fn: Any = None,
+    discover: bool = False,
 ) -> dict:
     """Crawl one site and (when ``apply``) write its chunks. Returns counts for the caller/scheduler."""
     from application.utils.comprehension import store
@@ -66,4 +67,43 @@ def ingest_spec(
             url_for=lambda p: p,
         )
         print(f"{slug}: raw chunks written: {written}", flush=True)
-    return {"pages": len(result.pages), "chunks": len(chunks), "written": written}
+    counts = {"pages": len(result.pages), "chunks": len(chunks), "written": written}
+    if (
+        apply
+        and getattr(database, "session", None) is not None
+        and result.external_links
+    ):
+        counts["suggested"] = suggest_from_crawl(spec, result, database.session)
+    elif discover:
+        preview_discovery(spec, result, database)
+    return counts
+
+
+def preview_discovery(spec: external.ExternalSpec, result: Any, database: Any) -> None:
+    """Dry run: print what the crawl's external links would add as suggestions (nothing stored)."""
+    from application.utils.admin_panel import external_targets
+    from application.utils.comprehension import discovery
+
+    hosts = external_targets.registered_hosts(database.session) if database else ()
+    cands = discovery.candidates_from_crawl(spec, result, hosts)
+    print(f"{spec.id}: {len(cands)} would-be suggestions (dry run)", flush=True)
+    for c in cands:
+        page = c["found_in"][0]["page"]
+        print(f"  {c['score']:6.2f}  {c['url']}  (found on {page})", flush=True)
+
+
+def suggest_from_crawl(spec: external.ExternalSpec, result: Any, session: Any) -> int:
+    """Queue links found while crawling as suggestions; failure here never fails the crawl."""
+    from application.utils.comprehension import discovery
+
+    try:
+        res = discovery.suggest_from_crawl(spec, result, session)
+    except Exception as exc:  # noqa: BLE001 - discovery is best effort
+        session.rollback()
+        print(f"{spec.id}: discovery failed: {type(exc).__name__}: {exc}", flush=True)
+        return 0
+    print(
+        f"{spec.id}: discovery: {len(res['created'])} new, {len(res['merged'])} merged suggestions",
+        flush=True,
+    )
+    return len(res["created"])

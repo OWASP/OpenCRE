@@ -424,7 +424,8 @@ class ExternalSourcesJobTest(unittest.TestCase):
             runner.run_due_jobs(mock.Mock(), cache_file="x")
             health.evaluate_health(mock.Mock())
         self.assertEqual(
-            [c.args[1] for c in run_job.call_args_list], ["owasp", "cre_expansion"]
+            [c.args[1] for c in run_job.call_args_list],
+            ["owasp", "cre_expansion", "external_discovery"],
         )
         self.assertNotIn(
             "external_sources", [c.args[1] for c in job_health.call_args_list]

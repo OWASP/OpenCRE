@@ -184,6 +184,17 @@ describe('Admin', () => {
               score: 2,
               spec: { channel_id: '@bar' },
             },
+            {
+              id: 'appsec-eu',
+              kind: 'external_site',
+              name: 'AppSec EU',
+              status: 'suggested',
+              score: 5,
+              spec: {
+                start_urls: ['https://2026.appsec.eu/'],
+                found_in: [{ source: 'crawl', page: 'https://owasp.org/events', link_text: 'AppSec EU' }],
+              },
+            },
             { id: 'done', kind: 'external_site', name: 'Done', status: 'approved', spec: {} },
           ],
         });
@@ -199,6 +210,10 @@ describe('Admin', () => {
     fireEvent.click(getByText('Workbench'));
     const card = await findByTestId('suggestion-foo-conf-org');
     expect(card.textContent).toContain('OWASP/foo');
+    expect(card.textContent).toContain('GitHub');
+    const crawled = await findByTestId('suggestion-appsec-eu');
+    expect(crawled.textContent).toContain('crawl');
+    expect(crawled.textContent).toContain('found on https://owasp.org/events');
     expect(card.textContent).toContain('score 6.5');
     expect(queryByTestId('suggestion-done')).toBeNull();
     fireEvent.click(card.querySelector('button')!);
