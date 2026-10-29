@@ -216,3 +216,33 @@ class TestTalkAsksAboutAnIndexedEventGoToEvidence(unittest.TestCase):
         self.assertEqual(
             probe._index_event_intent("cre_normative", when), "event_lookup"
         )
+
+
+class TestCatalogueFallback(unittest.TestCase):
+    def test_closest_talks_with_links_and_honest_wording(self):
+        from types import SimpleNamespace as H
+
+        def hit(vid, title, url_kind="ext-yt-owasp"):
+            return H(
+                url=f"owasp-agent://evidence/comprehension-{url_kind}-raw-{vid}",
+                content=f"Title: {title}\nPublished: 2026-10-27\nVideo: https://www.youtube.com/watch?v={vid}\n",
+            )
+
+        hits = [
+            hit("abcdefghijk", "Talk A"),
+            H(url="owasp-agent://evidence/comprehension-aisvs-raw-1", content="x"),
+            hit("lmnopqrstuv", "Talk B"),
+            hit("abcdefghijk", "Talk A again"),
+        ]
+        text, cites = r._catalogue_fallback(hits)
+        self.assertEqual(
+            cites,
+            [
+                "https://www.youtube.com/watch?v=abcdefghijk",
+                "https://www.youtube.com/watch?v=lmnopqrstuv",
+            ],
+        )
+        self.assertIn("could not find a talk that matches exactly", text)
+        self.assertIn("not what was said", text)
+        self.assertNotIn("key=", text)
+        self.assertIsNone(r._catalogue_fallback([hits[1]]))
