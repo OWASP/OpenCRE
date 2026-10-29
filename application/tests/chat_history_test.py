@@ -169,3 +169,29 @@ class TestCleanAnswerText(unittest.TestCase):
         self.assertEqual(
             clean_answer_text("SAMM has 3 levels [1][2]."), "SAMM has 3 levels [1][2]."
         )
+
+
+class TestCompoundClausesKeepTheirSubject(unittest.TestCase):
+    def test_later_clauses_get_earlier_clauses_as_background(self):
+        seen = []
+
+        class Probe(r.OwaspAgentRouter):
+            def __init__(self):  # no store needed for this probe
+                pass
+
+            def handle(self, prompt, history=None, _clause=False):
+                seen.append((prompt, history))
+                return {"response": f"Answer: {prompt}", "accurate": True}
+
+        out = Probe()._handle_compound(
+            ["Who runs the PwnzzAI training", "how long is it"], None
+        )
+        self.assertEqual(seen[0], ("Who runs the PwnzzAI training", None))
+        self.assertEqual(
+            seen[1],
+            (
+                "how long is it",
+                [{"role": "user", "content": "Who runs the PwnzzAI training"}],
+            ),
+        )
+        self.assertIn("how long is it", out["response"])

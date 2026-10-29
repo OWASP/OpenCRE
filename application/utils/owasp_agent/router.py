@@ -225,8 +225,14 @@ class OwaspAgentRouter:
         """Answer every clause the agent can; say which ones it handed back."""
         answered: List[Dict[str, Any]] = []
         handed_back: List[str] = []
-        for clause in clauses:
-            resp = self.handle(clause, history=history, _clause=True)
+        for idx, clause in enumerate(clauses):
+            # Later clauses may lean on earlier ones ("who runs the training ... and how long is it"):
+            # the earlier clauses are background for the standalone rewrite, like chat history.
+            earlier = " ".join(clauses[:idx]).strip()
+            clause_history = list(history or []) + (
+                [{"role": "user", "content": earlier}] if earlier else []
+            )
+            resp = self.handle(clause, history=clause_history or None, _clause=True)
             if resp is None:
                 handed_back.append(clause)
             else:
