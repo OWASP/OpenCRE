@@ -500,3 +500,41 @@ class WiringTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MalformedLinksTest(unittest.TestCase):
+    def test_malformed_urls_are_ignored_not_fatal(self):
+        self.assertEqual(ls.host_of("http://[bad"), "")
+        got = ls.suggest_links(
+            {
+                "r": [
+                    (
+                        "README.md",
+                        0,
+                        "See [the conference](http://[bad) and https://[x now",
+                    )
+                ]
+            }
+        )
+        self.assertEqual(got, [])
+        res = result_with(("http://[bad", "Conference", "https://src.org/e"))
+        self.assertEqual(discovery.candidates_from_crawl(site_spec(), res, now=NOW), [])
+
+    def test_a_page_with_a_bad_link_is_still_crawled(self):
+        site = Site(
+            {
+                "/": ok(html("Home", links=["http://[bad", "/a"])),
+                "/a": ok(html("A")),
+                "/robots.txt": (404, {}, ""),
+            }
+        )
+        self.addCleanup(site.close)
+        spec = external.ExternalSpec(
+            id="s",
+            name="S",
+            status=external.STATUS_APPROVED,
+            start_urls=[site.base + "/"],
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            res = Crawler(spec, delay=0, cache_dir=Path(tmp)).crawl()
+        self.assertEqual(len(res.pages), 2)

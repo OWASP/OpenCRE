@@ -86,7 +86,7 @@ def _skipped(host: str) -> bool:
 
 def event_years(url: str) -> List[int]:
     """Years (20xx) mentioned in the host or path of a URL."""
-    u = urlparse(url)
+    u = link_suggestions.safe_urlparse(url)
     return [int(y) for y in _YEAR.findall((u.hostname or "") + u.path)]
 
 
@@ -99,7 +99,7 @@ def score_link(
     higher when it is this year or last (live conference sites), and clearly lower when older.
     """
     year = (now or datetime.now(timezone.utc)).year
-    u = urlparse(url)
+    u = link_suggestions.safe_urlparse(url)
     text = (link_text or "").lower()
     where = ((u.hostname or "") + u.path).lower()
     score = 0.0
@@ -125,7 +125,7 @@ def score_link(
 
 
 def _root(url: str) -> str:
-    u = urlparse(url)
+    u = link_suggestions.safe_urlparse(url)
     return f"{u.scheme}://{u.netloc}/"
 
 
@@ -151,8 +151,10 @@ def candidates_from_crawl(
         host = bare(link_suggestions.host_of(url))
         if (
             not host
-            or urlparse(url).scheme not in ("http", "https")
-            or link_suggestions._IMG_EXT.search(urlparse(url).path)
+            or link_suggestions.safe_urlparse(url).scheme not in ("http", "https")
+            or link_suggestions._IMG_EXT.search(
+                link_suggestions.safe_urlparse(url).path
+            )
             or _skipped(host)
         ):
             continue

@@ -691,12 +691,19 @@ class Crawler:
                 continue
             if "nofollow" in (a.get("rel") or "").lower():
                 continue
-            target = normalize_url(urljoin(base, href))
-            if not self.in_scope(target):
-                self._add_external(target, a.text_content(), base)
-                continue
-            if target not in out and not _SKIP_EXTENSIONS.search(urlparse(target).path):
-                out.append(target)
+            try:
+                target = normalize_url(urljoin(base, href))
+                if not self.in_scope(target):
+                    self._add_external(target, a.text_content(), base)
+                    continue
+                if target not in out and not _SKIP_EXTENSIONS.search(
+                    urlparse(target).path
+                ):
+                    out.append(target)
+            except (
+                ValueError
+            ):  # a malformed href (e.g. "http://[bad") must not stop the crawl
+                logger.debug("ignored malformed link %r on %s", href, base)
         return out
 
     def _add_external(self, url: str, text: str, found_on: str) -> None:

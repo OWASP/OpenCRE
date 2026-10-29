@@ -92,8 +92,16 @@ def _strip_url(url: str) -> str:
     return url.rstrip(".,;:!?*_`'\"")
 
 
+def safe_urlparse(url: str):
+    """``urlparse`` that never raises: a malformed link (e.g. ``http://[bad``) parses as empty."""
+    try:
+        return urlparse(url)
+    except ValueError:
+        return urlparse("")
+
+
 def host_of(url: str) -> str:
-    h = (urlparse(url).hostname or "").lower()
+    h = (safe_urlparse(url).hostname or "").lower()
     return h[4:] if h.startswith("www.") else h
 
 
@@ -156,7 +164,7 @@ def _is_root_doc(path: str) -> bool:
 
 def _youtube_ref(url: str) -> Optional[Dict[str, str]]:
     """Channel / playlist / handle reference of a YouTube URL; ``None`` for watch links and the like."""
-    u = urlparse(url)
+    u = safe_urlparse(url)
     host = host_of(url)
     if host not in ("youtube.com", "m.youtube.com"):
         return None
@@ -230,7 +238,7 @@ def rank_candidates(
     for ln in links:
         url = ln["url"]
         host = host_of(url)
-        if not host or _IMG_EXT.search(urlparse(url).path):
+        if not host or _IMG_EXT.search(safe_urlparse(url).path):
             continue
         yt = _youtube_ref(url)
         if yt:
@@ -241,7 +249,7 @@ def rank_candidates(
             if _skipped_host(host) or reg in registered or _skipped_host(reg):
                 continue
             # owasp.org project/chapter pages are GitHub-backed, already covered as repos
-            if reg == "owasp.org" and urlparse(url).path.startswith("/www-"):
+            if reg == "owasp.org" and safe_urlparse(url).path.startswith("/www-"):
                 continue
             key, kind = reg, "site"
         g = groups.setdefault(
