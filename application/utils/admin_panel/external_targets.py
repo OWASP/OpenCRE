@@ -120,6 +120,17 @@ def _suggested_spec(cand: Dict[str, Any], cid: str) -> ext.ExternalSpec:
             "status": ext.STATUS_SUGGESTED,
             "start_urls": [cand["url"]],
             "found_in": cand.get("found_in") or [],
+            **{
+                k: cand[k]
+                for k in (
+                    "allow_prefixes",
+                    "max_pages",
+                    "max_depth",
+                    "refresh_days",
+                    "notes",
+                )
+                if k in cand
+            },
         }
     )
 
@@ -129,7 +140,7 @@ def _merge_found_in(
 ) -> List[Dict[str, Any]]:
     out, seen = [], set()
     for f in list(old) + list(new):
-        k = (f.get("repo"), f.get("file"), f.get("url"))
+        k = (f.get("repo"), f.get("file"), f.get("page"), f.get("url"))
         if k not in seen:
             seen.add(k)
             out.append(f)

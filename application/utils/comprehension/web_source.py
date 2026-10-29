@@ -45,6 +45,9 @@ MAX_PDF_PAGES = 40  # Docling is slow on CPU: long documents are cut off, not wa
 MAX_BODY_SECONDS = 60.0  # a server that trickles a response is abandoned
 MAX_REDIRECTS = 3
 MAX_SITEMAPS = 20
+MAX_EXTERNAL_LINKS = 500  # out-of-scope links remembered per crawl (discovery input)
+NAV_LINE_SHARE = 0.6  # a line on this share of the pages is site chrome, not content
+NAV_MIN_PAGES = 4
 MAX_CRAWL_DELAY = 30.0  # a Crawl-delay above this is capped, not obeyed to the letter
 
 # Content-Usage keys whose "n" means we must not index the page for AI retrieval.
@@ -312,6 +315,8 @@ class CrawlResult:
     stopped: str = (
         ""  # why the crawl ended early ("time-budget"), empty when it ran to its caps
     )
+    # out-of-scope http(s) links seen on crawled pages, never fetched: (url, anchor_text, found_on_page)
+    external_links: List[Tuple[str, str, str]] = field(default_factory=list)
 
 
 def _html_to_markdown(html: str, url: str) -> Tuple[str, str]:
@@ -594,6 +599,8 @@ class Crawler:
         headers = dict(resp.headers)
         if resp.status_code == 304:
             self.result.not_modified += 1
+            for ext_url, text, page in cached.get("external") or []:
+                self._add_external(ext_url, text, page)
             return list(cached.get("links") or [])
         if resp.status_code != 200:
             skip.append((url, f"http-{resp.status_code}"))
@@ -646,6 +653,7 @@ class Crawler:
                 "etag": headers.get("ETag", ""),
                 "last_modified": last_mod,
                 "links": links,
+                "external": [e for e in self.result.external_links if e[2] == url],
             },
         )
         if len(markdown) < MIN_PAGE_CHARS:
@@ -684,13 +692,24 @@ class Crawler:
             if "nofollow" in (a.get("rel") or "").lower():
                 continue
             target = normalize_url(urljoin(base, href))
-            if (
-                self.in_scope(target)
-                and target not in out
-                and not _SKIP_EXTENSIONS.search(urlparse(target).path)
-            ):
+            if not self.in_scope(target):
+                self._add_external(target, a.text_content(), base)
+                continue
+            if target not in out and not _SKIP_EXTENSIONS.search(urlparse(target).path):
                 out.append(target)
         return out
+
+    def _add_external(self, url: str, text: str, found_on: str) -> None:
+        """Remember an out-of-scope link (never fetched); deduped by URL and capped."""
+        if (
+            urlparse(url).scheme not in ("http", "https")
+            or len(self.result.external_links) >= MAX_EXTERNAL_LINKS
+            or _SKIP_EXTENSIONS.search(urlparse(url).path)
+            or any(e[0] == url for e in self.result.external_links)
+        ):
+            return
+        text = re.sub(r"\s+", " ", text or "").strip()[:120]
+        self.result.external_links.append((url, text, found_on))
 
     def _over_budget(self) -> bool:
         if self._started is None:
@@ -717,6 +736,7 @@ class Crawler:
                 if len(self.result.pages) >= self.max_pages or self._over_budget():
                     break
                 self._fetch_page(url, 0)
+            strip_nav(self.result.pages)
             return self.result
         seen: Set[str] = set(starts)
         queue: List[Tuple[str, int]] = [(u, 0) for u in starts]
@@ -738,7 +758,26 @@ class Crawler:
                 if link not in seen:
                     seen.add(link)
                     queue.append((link, depth + 1))
+        strip_nav(self.result.pages)
         return self.result
+
+
+def strip_nav(pages: List[Page]) -> None:
+    """Drop lines repeated verbatim on most pages (site menus, footers) from every page's markdown."""
+    if len(pages) < NAV_MIN_PAGES:
+        return
+    counts: Dict[str, int] = {}
+    for page in pages:
+        for line in {ln.strip() for ln in page.markdown.splitlines()}:
+            if re.search(r"\w", line):
+                counts[line] = counts.get(line, 0) + 1
+    chrome = {ln for ln, n in counts.items() if n >= NAV_LINE_SHARE * len(pages)}
+    if not chrome:
+        return
+    for page in pages:
+        page.markdown = "\n".join(
+            ln for ln in page.markdown.splitlines() if ln.strip() not in chrome
+        ).strip()
 
 
 def _parse_sitemap(data: bytes) -> Tuple[List[str], List[str]]:

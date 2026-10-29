@@ -1003,7 +1003,8 @@ function ExternalSuggestions({ origin }: { origin: string }) {
                 <div className="admin-help">{e.name}</div>
                 {found.slice(0, 3).map((f: any, i: number) => (
                   <div className="admin-help" key={i}>
-                    {f.repo} · {f.file}
+                    <span className="admin-pill muted">{f.source === 'crawl' ? 'crawl' : 'GitHub'}</span>{' '}
+                    {f.source === 'crawl' ? `found on ${f.page}` : `${f.repo} · ${f.file}`}
                     {f.link_text ? ` · "${f.link_text}"` : ''}
                   </div>
                 ))}
