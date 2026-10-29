@@ -137,6 +137,15 @@ Run one MCP worker: the pending sign-in and authorization code live in process m
 Tunnel: also route `/.well-known/oauth-*`, `/register`, `/authorize`, `/token`, `/revoke`
 and `/oauth/*` to the MCP service (`:5002`).
 
+### Per-account daily budget
+
+Besides the question-count limits (`application/utils/rate_limit.py`), each account has a daily
+LLM spend budget (`application/utils/spend.py`), shared by the chatbot and MCP `ask` /
+`owasp_meta_ask`. Cost comes from LiteLLM's price table for every call made through
+`prompt_client/litellm_router.py`; an account that has used its budget gets a 429 until 00:00 UTC.
+`BUDGET_DAILY_USD` (default `1.00`), admins get `RATE_LIMIT_ADMIN_MULTIPLIER` times that,
+`RATE_LIMIT_EXEMPT_EMAILS` are never limited, `BUDGET_ENABLED=0` turns it off.
+
 Tunnel path routing: `/mcp*` → `127.0.0.1:5002`, everything else → `:5001`
 (see `docs/oie/staging-homeserver.md`). Run **one** uvicorn worker for sessionful
 clients; if scaling later, use sticky sessions.
