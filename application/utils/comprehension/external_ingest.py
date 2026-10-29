@@ -17,6 +17,8 @@ def summarize(spec: external.ExternalSpec, chunks: List[Any], result: Any) -> st
         f"({result.requests} requests, sitemap={'yes' if result.used_sitemap else 'no'}, "
         f"{result.not_modified} not modified, {len(result.skipped)} skipped)"
     ]
+    if getattr(result, "stopped", ""):
+        lines.append(f"  STOPPED EARLY: {result.stopped} (partial crawl)")
     for page in result.pages:
         n = sum(1 for c in chunks if c[0] == page.url)
         lines.append(f"  page {page.url}  chunks={n}  {page.title[:60]!r}")

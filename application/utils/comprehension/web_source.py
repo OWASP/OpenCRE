@@ -19,6 +19,7 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
+import logging
 import os
 import re
 import tempfile
@@ -33,11 +34,15 @@ from urllib.parse import urldefrag, urljoin, urlparse, urlunparse
 from application.utils.comprehension.external import ExternalSpec
 from application.utils.comprehension.sources import split_markdown
 
+logger = logging.getLogger("opencrebot.crawler")
+
 USER_AGENT = "OpenCREBot/1.0 (+https://opencre.org; contact via repo issues)"
 ROBOTS_TOKEN = "opencrebot"
 MIN_PAGE_CHARS = 80
 MAX_HTML_BYTES = 5_000_000
 MAX_PDF_BYTES = 20_000_000
+MAX_PDF_PAGES = 40  # Docling is slow on CPU: long documents are cut off, not waited for
+MAX_BODY_SECONDS = 60.0  # a server that trickles a response is abandoned
 MAX_REDIRECTS = 3
 MAX_SITEMAPS = 20
 MAX_CRAWL_DELAY = 30.0  # a Crawl-delay above this is capped, not obeyed to the letter
@@ -50,6 +55,24 @@ _SKIP_EXTENSIONS = re.compile(
     r"docx?|xlsx?|pptx?|woff2?|ttf|eot|rss|atom)$",
     re.IGNORECASE,
 )
+
+
+def max_seconds() -> float:
+    """Wall-clock budget of one crawl (OWASP_CRAWL_MAX_SECONDS, default 15 minutes)."""
+    try:
+        return max(5.0, float(os.environ.get("OWASP_CRAWL_MAX_SECONDS", "900")))
+    except ValueError:
+        return 900.0
+
+
+def pdf_enabled() -> bool:
+    """PDFs go through Docling (slow on CPU): off unless OWASP_CRAWL_PDF=1."""
+    return (os.environ.get("OWASP_CRAWL_PDF", "0") or "0").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
 
 
 def default_delay() -> float:
@@ -286,6 +309,9 @@ class CrawlResult:
     requests: int = 0
     not_modified: int = 0
     used_sitemap: bool = False
+    stopped: str = (
+        ""  # why the crawl ended early ("time-budget"), empty when it ran to its caps
+    )
 
 
 def _html_to_markdown(html: str, url: str) -> Tuple[str, str]:
@@ -303,13 +329,34 @@ def _html_to_markdown(html: str, url: str) -> Tuple[str, str]:
     return (text or "").strip(), ((meta.title if meta else "") or "").strip()
 
 
-def _pdf_to_markdown(data: bytes) -> str:
-    from docling.document_converter import DocumentConverter
+_PDF_CONVERTER: Any = None
 
+
+def _pdf_converter() -> Any:
+    """One Docling converter per process (loading its models takes ~10 s)."""
+    global _PDF_CONVERTER
+    if _PDF_CONVERTER is None:
+        from docling.datamodel.base_models import InputFormat
+        from docling.datamodel.pipeline_options import PdfPipelineOptions
+        from docling.document_converter import DocumentConverter, PdfFormatOption
+
+        opts = PdfPipelineOptions()
+        opts.do_ocr = False  # OCR and table recognition are very slow on CPU
+        opts.do_table_structure = False
+        _PDF_CONVERTER = DocumentConverter(
+            format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=opts)}
+        )
+    return _PDF_CONVERTER
+
+
+def _pdf_to_markdown(data: bytes) -> str:
+    """PDF text via Docling without OCR or table recognition."""
+    converter = _pdf_converter()
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "doc.pdf"
         path.write_bytes(data)
-        return DocumentConverter().convert(str(path)).document.export_to_markdown()
+        result = converter.convert(str(path), max_num_pages=MAX_PDF_PAGES)
+        return result.document.export_to_markdown()
 
 
 class Crawler:
@@ -326,6 +373,7 @@ class Crawler:
         sleep: Callable[[float], None] = time.sleep,
         clock: Callable[[], float] = time.monotonic,
         now: Optional[Callable[[], datetime]] = None,
+        budget_seconds: Optional[float] = None,
     ) -> None:
         import requests
 
@@ -338,6 +386,8 @@ class Crawler:
         self.session.headers["User-Agent"] = USER_AGENT
         self._sleep, self._clock = sleep, clock
         self._now = now or (lambda: datetime.now(timezone.utc))
+        self._budget = max_seconds() if budget_seconds is None else budget_seconds
+        self._started: Optional[float] = None
         self._last: Dict[str, float] = {}
         self._robots: Dict[str, RobotsRules] = {}
         self.result = CrawlResult()
@@ -372,6 +422,8 @@ class Crawler:
             host = urlparse(url).netloc.lower()
             self._throttle(host, self._robots_for(url).crawl_delay() if url else 0.0)
             self.result.requests += 1
+            logger.debug("GET %s", url)
+            began = self._clock()
             resp = self.session.get(
                 url,
                 headers=headers or {},
@@ -390,12 +442,19 @@ class Crawler:
                 url = nxt
                 continue
             resp.url = url
+            logger.info(
+                "GET %s -> %s in %.1fs", url, resp.status_code, self._clock() - began
+            )
             return resp
         return None
 
     def _body(self, resp: Any, limit: int) -> Optional[bytes]:
         data = b""
+        deadline = self._clock() + MAX_BODY_SECONDS
         for part in resp.iter_content(65536):
+            if self._clock() > deadline:
+                logger.warning("abandoned slow response %s", getattr(resp, "url", ""))
+                return None
             data += part
             if len(data) > limit:
                 resp.close()
@@ -490,6 +549,18 @@ class Crawler:
     def _fetch_page(self, url: str, depth: int) -> List[str]:
         """Fetch and (if allowed) record one URL; returns the in-scope links found on it."""
         skip = self.result.skipped
+        before_skips, before_pages = len(skip), len(self.result.pages)
+        try:
+            return self._fetch_page_inner(url, depth)
+        finally:
+            for u, why in skip[before_skips:]:
+                logger.info("skipped %s (%s)", u, why)
+            if len(self.result.pages) > before_pages:
+                page = self.result.pages[-1]
+                logger.info("page ok %s (%d chars)", page.url, len(page.markdown))
+
+    def _fetch_page_inner(self, url: str, depth: int) -> List[str]:
+        skip = self.result.skipped
         if not self._robots_for(url).allowed(url):
             skip.append((url, "robots"))
             return []
@@ -530,6 +601,9 @@ class Crawler:
         ctype = (headers.get("Content-Type") or "").split(";")[0].strip().lower()
         last_mod = headers.get("Last-Modified", "")
         if ctype == "application/pdf":
+            if not pdf_enabled():
+                skip.append((url, "pdf-disabled"))
+                return []
             reason = exclusion_reason(headers)
             if reason:
                 skip.append((url, reason))
@@ -538,8 +612,16 @@ class Crawler:
             if data is None:
                 skip.append((url, "too-large"))
                 return []
+            logger.info(
+                "PDF %s: %d bytes, converting (max %d pages)",
+                url,
+                len(data),
+                MAX_PDF_PAGES,
+            )
+            began = self._clock()
             try:
                 markdown, title, links = _pdf_to_markdown(data).strip(), "", []
+                logger.info("PDF %s converted in %.1fs", url, self._clock() - began)
             except Exception as exc:  # noqa: BLE001
                 skip.append((url, f"pdf-error:{type(exc).__name__}"))
                 return []
@@ -610,21 +692,45 @@ class Crawler:
                 out.append(target)
         return out
 
+    def _over_budget(self) -> bool:
+        if self._started is None:
+            self._started = self._clock()
+        if self._clock() - self._started > self._budget:
+            if not self.result.stopped:
+                logger.warning(
+                    "crawl stopped: %.0fs time budget used (%d pages so far)",
+                    self._budget,
+                    len(self.result.pages),
+                )
+            self.result.stopped = "time-budget"
+            return True
+        return False
+
     def crawl(self) -> CrawlResult:
+        self._started = self._clock()
         starts = [normalize_url(u) for u in self.spec.start_urls]
         mapped = self.sitemap_urls()
         if mapped:
             self.result.used_sitemap = True
             order = list(dict.fromkeys(starts + mapped))
             for url in order:
-                if len(self.result.pages) >= self.max_pages:
+                if len(self.result.pages) >= self.max_pages or self._over_budget():
                     break
                 self._fetch_page(url, 0)
             return self.result
         seen: Set[str] = set(starts)
         queue: List[Tuple[str, int]] = [(u, 0) for u in starts]
         while queue and len(self.result.pages) < self.max_pages:
+            if self._over_budget():
+                break
             url, depth = queue.pop(0)
+            logger.debug(
+                "crawl: %d/%d pages, %d queued, depth %d",
+                len(self.result.pages),
+                self.max_pages,
+                len(queue),
+                depth,
+            )
             links = self._fetch_page(url, depth)
             if depth >= self.spec.max_depth:
                 continue

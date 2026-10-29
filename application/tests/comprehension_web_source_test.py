@@ -192,6 +192,35 @@ class WebSourceTest(unittest.TestCase):
         c = Crawler(spec_for(site, max_pages=4), max_pages=50, delay=0)
         self.assertEqual(c.max_pages, 4)
 
+    def test_time_budget_stops_a_runaway_crawl(self):
+        site = self.site()
+        ticks = iter(range(0, 1000, 10))  # every clock read advances 10 "seconds"
+        res = self.crawler(
+            site, clock=lambda: float(next(ticks)), budget_seconds=25
+        ).crawl()
+        self.assertEqual(res.stopped, "time-budget")
+        self.assertLess(len(res.pages), 5)
+
+    def test_progress_is_logged_so_a_stall_shows_where(self):
+        site = self.site()
+        with self.assertLogs("opencrebot.crawler", level="DEBUG") as cm:
+            self.crawler(site, max_pages=2).crawl()
+        text = "\n".join(cm.output)
+        self.assertIn("GET ", text)
+        self.assertIn("page ok ", text)
+        self.assertIn("crawl: ", text)
+
+    def test_pdfs_are_off_unless_enabled(self):
+        from unittest import mock
+
+        from application.utils.comprehension import web_source
+
+        with mock.patch.dict("os.environ", {}, clear=False):
+            __import__("os").environ.pop("OWASP_CRAWL_PDF", None)
+            self.assertFalse(web_source.pdf_enabled())
+        with mock.patch.dict("os.environ", {"OWASP_CRAWL_PDF": "1"}):
+            self.assertTrue(web_source.pdf_enabled())
+
     def test_throttle_between_requests(self):
         site = self.site()
         sleeps = []
