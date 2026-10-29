@@ -64,6 +64,28 @@ describe('Chatbot thumbs up/down', () => {
     expect(JSON.parse(post!.init.body)).toEqual({ answer_id: 'ans-1', rating: 'up' });
   });
 
+  it('asks for a short comment after a thumbs down and sends it with the rating', async () => {
+    const { ask, findByLabelText, findByPlaceholderText, queryByPlaceholderText, calls } = setup('ans-3');
+    await ask();
+    fireEvent.click(await findByLabelText('Bad answer'));
+    const box = await findByPlaceholderText('What was wrong? (optional)');
+    fireEvent.change(box, { target: { value: 'wrong standard' } });
+    fireEvent.click(await findByLabelText('Send feedback'));
+    await waitFor(() => expect(queryByPlaceholderText('What was wrong? (optional)')).toBeNull());
+    const posts = calls.filter((c) => c.url.endsWith('/answer_feedback')).map((c) => JSON.parse(c.init.body));
+    expect(posts).toEqual([
+      { answer_id: 'ans-3', rating: 'down' },
+      { answer_id: 'ans-3', rating: 'down', comment: 'wrong standard' },
+    ]);
+  });
+
+  it('does not ask for a comment after a thumbs up', async () => {
+    const { ask, findByLabelText, queryByPlaceholderText } = setup('ans-4');
+    await ask();
+    fireEvent.click(await findByLabelText('Good answer'));
+    expect(queryByPlaceholderText('What was wrong? (optional)')).toBeNull();
+  });
+
   it('undoes the highlight when the server rejects the rating', async () => {
     const { ask, findByLabelText } = setup('ans-2', 500);
     await ask();
