@@ -434,6 +434,52 @@ class TestMain(unittest.TestCase):
             ]
             self.assertCountEqual(expected, actual)
 
+    @patch.object(db, "Node_collection")
+    def test_find_node_by_name_caps_items_per_page(self, db_mock) -> None:
+        """find_node_by_name clamps items_per_page to MAX_ITEMS_PER_PAGE."""
+        db_mock.return_value.get_nodes_with_pagination.return_value = (1, [], [])
+
+        with self.app.test_client() as client:
+            client.get(
+                "/rest/v1/standard/OWASP%20Top%2010?items_per_page=9999",
+                headers={"Content-Type": "application/json"},
+            )
+
+        _, kwargs = db_mock.return_value.get_nodes_with_pagination.call_args
+        self.assertEqual(kwargs["items_per_page"], web_main.MAX_ITEMS_PER_PAGE)
+
+    def test_find_node_by_name_items_per_page_cap_integration(self) -> None:
+        """find_node_by_name caps items_per_page at MAX_ITEMS_PER_PAGE against a real database."""
+        collection = db.Node_collection()
+        standard_name = "CapTestStandard"
+        for i in range(110):
+            collection.add_node(
+                defs.Standard(
+                    name=standard_name,
+                    section=f"section-{i}",
+                )
+            )
+        collection.session.commit()
+
+        with self.app.test_client() as client:
+            # Requesting more than MAX should be silently capped.
+            response = client.get(
+                f"/rest/v1/standard/{standard_name}?items_per_page=9999&page=1",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            body = json.loads(response.data)
+            self.assertLessEqual(len(body["standards"]), web_main.MAX_ITEMS_PER_PAGE)
+
+            # Default (no items_per_page) should apply ITEMS_PER_PAGE.
+            response = client.get(
+                f"/rest/v1/standard/{standard_name}?page=1",
+                headers={"Content-Type": "application/json"},
+            )
+            self.assertEqual(200, response.status_code)
+            body = json.loads(response.data)
+            self.assertEqual(len(body["standards"]), web_main.ITEMS_PER_PAGE)
+
     def test_find_document_by_tag(self) -> None:
         collection = db.Node_collection()
         cres = {
