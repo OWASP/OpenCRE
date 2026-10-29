@@ -53,7 +53,20 @@ def main() -> int:
         help="LLM context sentence and likely questions per chunk",
     )
     ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument(
+        "--debug", action="store_true", help="log every request and queue step"
+    )
     a = ap.parse_args()
+    import logging
+
+    handler = logging.StreamHandler()
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s crawler %(message)s", "%H:%M:%S")
+    )
+    crawl_log = logging.getLogger("opencrebot")
+    crawl_log.addHandler(handler)
+    crawl_log.setLevel(logging.DEBUG if a.debug else logging.INFO)
+    crawl_log.propagate = False
     if a.apply and a.dry_run:
         ap.error("--apply and --dry-run are exclusive")
 

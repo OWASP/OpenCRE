@@ -29,6 +29,6 @@ fetch, robots and politeness in our own small code on `requests`. Reasons:
 - robots.txt is parsed with the stdlib `urllib.robotparser` (RFC 9309 semantics: longest match, `*` fallback).
 - Playwright fallback for JS-only sites is deliberately **not** built yet; no approved site needs it. If one does,
   render with the already installed Playwright and feed the HTML to the same extractor.
-- PDFs go through Docling (already a dependency).
+- PDFs go through Docling (already a dependency), but they are OFF unless OWASP_CRAWL_PDF=1: with OCR and table recognition disabled and at most 40 pages, one converter load still costs ~10 s on CPU. The crawl also has a wall-clock budget (OWASP_CRAWL_MAX_SECONDS, default 900) and logs every request, page and skip (logger `opencrebot`; `--debug` in the script adds queue steps).
 
 Added dependency: `trafilatura` (requirements.txt).
