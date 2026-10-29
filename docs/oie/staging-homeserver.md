@@ -13,7 +13,7 @@ Login: Google + `LOGIN_ALLOWED_EMAILS` (Spyros / Rob / Rock only).
 
 - Tunnel: `opencre-staging`
 - Ingress (path order matters — more specific first):
-  - `staging.opencre.org/mcp*` → `http://127.0.0.1:5002` (Compose `mcp` / Streamable HTTP)
+  - `staging.opencre.org/mcp*` and, for MCP Google sign-in, `/.well-known/oauth-*`, `/register`, `/authorize`, `/token`, `/revoke`, `/oauth/*` → `http://127.0.0.1:5002` (Compose `mcp` / Streamable HTTP)
   - `staging.opencre.org` → `http://127.0.0.1:5001` (Compose `web`)
 - DNS: `staging.opencre.org` → `{tunnel_id}.cfargotunnel.com` (proxied)
 - Connector token: operator machine `/tmp/opencre_staging_tunnel_token` — copy into Compose secrets; **never commit**

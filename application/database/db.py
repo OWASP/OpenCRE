@@ -321,6 +321,31 @@ class AdminRuntimeSettingAudit(BaseModel):  # type: ignore
     __table_args__ = (sqla.Index("ix_admin_runtime_setting_audit_key", "key"),)
 
 
+class McpOAuthClient(BaseModel):  # type: ignore
+    """An MCP client registered through dynamic client registration (RFC 7591)."""
+
+    __tablename__ = "mcp_oauth_clients"
+    client_id = sqla.Column(sqla.String, primary_key=True)
+    info_json = sqla.Column(sqla.Text, nullable=False)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+
+
+class McpOAuthRefreshToken(BaseModel):  # type: ignore
+    """A refresh token issued to an MCP client. Only the SHA-256 of the token is stored."""
+
+    __tablename__ = "mcp_oauth_refresh_tokens"
+    token_hash = sqla.Column(sqla.String, primary_key=True)
+    client_id = sqla.Column(sqla.String, nullable=False)
+    user_id = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("users.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+    expires_at = sqla.Column(sqla.DateTime, nullable=False)
+    revoked_at = sqla.Column(sqla.DateTime, nullable=True)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+
+
 class AnswerLog(BaseModel):  # type: ignore
     """Every answer the system gives, with an optional thumbs up/down from the asker."""
 

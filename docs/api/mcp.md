@@ -114,6 +114,29 @@ Cursor config (mint a token in Admin → API keys on staging; prefer env interpo
 }
 ```
 
+### Google sign-in (OAuth) for remote MCP
+
+Set `OPENCRE_MCP_OAUTH=1` and MCP clients (Claude Code, Claude Desktop, Cursor) sign users
+in with Google in the browser, the same as the chatbot. Every `/mcp` request then needs a
+token. The SDK serves the OAuth endpoints (`/.well-known/oauth-*`, `/register`, `/authorize`,
+`/token`, `/revoke`); `application/mcp/oauth.py` signs the user in with Google and issues
+short-lived API-key tokens, so roles, rate limits and revocation behave as before. Personal
+API keys keep working as Bearer tokens.
+
+| Variable | Meaning | Default |
+|----------|---------|---------|
+| `OPENCRE_MCP_OAUTH` | Turn Google sign-in on | off |
+| `OPENCRE_MCP_PUBLIC_URL` | Public origin (issuer) | `https://staging.opencre.org` |
+| `OPENCRE_MCP_ALLOWED_DOMAINS` | Email domains that may sign in (`*` = any); roles still apply | `LOGIN_ALLOWED_DOMAINS` |
+| `OPENCRE_MCP_GOOGLE_CLIENT_ID` / `_SECRET` | Google OAuth client | `GOOGLE_CLIENT_ID` / `_SECRET` |
+| `OPENCRE_MCP_ACCESS_TOKEN_MINUTES` / `OPENCRE_MCP_REFRESH_DAYS` | Token lifetimes | `60` / `30` |
+
+Google Cloud: add `<public url>/oauth/google/callback` to the client's authorized redirect
+URIs. Run `flask db upgrade` (new tables `mcp_oauth_clients`, `mcp_oauth_refresh_tokens`).
+Run one MCP worker: the pending sign-in and authorization code live in process memory.
+Tunnel: also route `/.well-known/oauth-*`, `/register`, `/authorize`, `/token`, `/revoke`
+and `/oauth/*` to the MCP service (`:5002`).
+
 Tunnel path routing: `/mcp*` → `127.0.0.1:5002`, everything else → `:5001`
 (see `docs/oie/staging-homeserver.md`). Run **one** uvicorn worker for sessionful
 clients; if scaling later, use sticky sessions.
