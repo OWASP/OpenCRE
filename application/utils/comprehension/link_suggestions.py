@@ -66,6 +66,49 @@ SKIP_HOSTS = frozenset(
 _IMG_EXT = re.compile(r"\.(png|jpe?g|gif|svg|webp|ico|bmp|pdf|zip|tar|gz)$", re.I)
 _SECOND_LEVEL = {"co", "com", "org", "net", "ac", "gov", "edu"}
 
+# Documentation, vendor and generic hosting sites that many projects link to for background reading:
+# a link from several repos to these says "common reference", not "this project's own site".
+VENDOR_HOSTS = frozenset(
+    {
+        "amazon.com",
+        "amazonaws.com",
+        "google.com",
+        "googleapis.com",
+        "microsoft.com",
+        "azure.com",
+        "docker.com",
+        "atlassian.net",
+        "atlassian.com",
+        "readthedocs.io",
+        "readthedocs.org",
+        "mkdocs.org",
+        "github.io",
+        "netlify.app",
+        "vercel.app",
+        "pages.dev",
+        "herokuapp.com",
+        "wikipedia.org",
+        "stackoverflow.com",
+        "medium.com",
+        "npmjs.com",
+        "pypi.org",
+        "mozilla.org",
+        "w3.org",
+        "iso.org",
+        "creativecommons.org",
+        "apache.org",
+        "python.org",
+        "nodejs.org",
+        "kubernetes.io",
+        "hashicorp.com",
+        "redhat.com",
+        "oracle.com",
+        "ibm.com",
+        "cloudflare.com",
+        "opencre.org",
+    }
+)
+
 _FRONT_KEYS = {"homepage", "website", "url", "site"}
 _TEXT_HINTS = (
     "website",
@@ -116,7 +159,21 @@ def registrable_host(host: str) -> str:
 
 
 def _skipped_host(host: str) -> bool:
-    return any(host == s or host.endswith("." + s) for s in SKIP_HOSTS)
+    return any(host == s or host.endswith("." + s) for s in SKIP_HOSTS | VENDOR_HOSTS)
+
+
+def _tokens(text: str) -> Set[str]:
+    return {t for t in re.split(r"[^a-z0-9]+", (text or "").lower()) if len(t) >= 3}
+
+
+def _affinity(host: str, repo: str) -> float:
+    """How much a host looks like the project's own site: owaspsamm.org for OWASP/SAMM."""
+    label = registrable_host(host).split(".")[0].lower()
+    bonus = 1.5 if "owasp" in label or "owasp" in host else 0.0
+    repo_tokens = _tokens(repo.split("/")[-1]) - {"www", "project", "owasp"}
+    if any(t in label for t in repo_tokens):
+        bonus += 2.5
+    return bonus
 
 
 def _clean_text(text: str) -> str:
@@ -262,7 +319,11 @@ def rank_candidates(
     out = []
     for key, g in groups.items():
         projects = {ln["repo"] for ln in g["links"]}
-        score = g["best"]["signal"] + min(len(projects) - 1, 5) * 1.5
+        score = g["best"]["signal"] + min(len(projects) - 1, 2) * 0.75
+        if g["kind"] == "site":
+            score += max(_affinity(g["host"], ln["repo"]) for ln in g["links"])
+            if len(projects) >= 4 and "owasp" not in g["host"]:
+                score -= 3.0  # linked by many unrelated projects: a common reference, not a project site
         found_in = []
         seen = set()
         for ln in sorted(g["links"], key=lambda x: -x["signal"]):

@@ -538,3 +538,41 @@ class MalformedLinksTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             res = Crawler(spec, delay=0, cache_dir=Path(tmp)).crawl()
         self.assertEqual(len(res.pages), 2)
+
+
+class GithubRankingTest(unittest.TestCase):
+    def test_vendor_docs_do_not_outrank_project_sites(self):
+        def link(repo, url, text, front=""):
+            return {
+                "repo": repo,
+                "file": "README.md",
+                "link_text": text,
+                "url": url,
+                "signal": ls._signal(
+                    {"front_key": front, "link_text": text}, "README.md"
+                ),
+            }
+
+        links = [
+            link(
+                "OWASP/www-project-eks-goat",
+                "https://docs.aws.amazon.com/eks",
+                "AWS EKS Documentation",
+            ),
+            link("OWASP/DockSec", "https://docs.docker.com/", "Docker docs"),
+            link("OWASP/other", "https://example-vendor.com/docs", "Vendor docs"),
+            link("OWASP/other2", "https://example-vendor.com/docs", "Vendor docs"),
+            link("OWASP/other3", "https://example-vendor.com/docs", "Vendor docs"),
+            link("OWASP/other4", "https://example-vendor.com/docs", "Vendor docs"),
+            link("OWASP/SAMM", "https://owaspsamm.org/", "web site"),
+            link(
+                "OWASP/www-project-ai-security-and-privacy-guide",
+                "https://owaspai.org/",
+                "OWASP AI Exchange website",
+            ),
+        ]
+        hosts = [c["host"] for c in ls.rank_candidates(links)]
+        self.assertNotIn("amazon.com", hosts)
+        self.assertNotIn("docker.com", hosts)
+        self.assertEqual(set(hosts[:2]), {"owaspsamm.org", "owaspai.org"})
+        self.assertGreater(hosts.index("example-vendor.com"), 1)
