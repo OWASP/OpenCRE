@@ -67,6 +67,15 @@ _DOUBLE_MARK = re.compile(r"\[\[(\d+)\]\]")
 _BARE_URL = re.compile(r"https?://[^\s)\]>]+")
 
 
+_WATCH_URL = re.compile(r"^https://(www\.)?youtube\.com/watch\?v=[\w-]{6,}(&t=\d+s?)?$")
+
+
+def _keep_watch_link(m: "re.Match[str]") -> str:
+    """A YouTube watch link is the answer to "where can I watch it": keep it, drop other URLs."""
+    url = m.group(0).rstrip(".,;:")
+    return m.group(0) if _WATCH_URL.match(url) else ""
+
+
 def max_resources() -> int:
     """Most resource links one answer shows (stricter = fewer, better ones)."""
     try:
@@ -87,7 +96,7 @@ def clean_answer_text(text: str) -> str:
         lambda m: f"[{m.group(1)}]" if m.group(1).isdigit() else m.group(1), out
     )
     out = _DOUBLE_MARK.sub(lambda m: f"[{m.group(1)}]", out)
-    out = _BARE_URL.sub("", out)
+    out = _BARE_URL.sub(_keep_watch_link, out)
     return re.sub(r"[ \t]+([.,;:])", r"\1", out)
 
 

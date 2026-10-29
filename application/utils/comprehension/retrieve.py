@@ -269,6 +269,51 @@ def _feature_projects(conn: Any, q: str, dense: List[LaneHit]) -> None:
     authority.set_featured(urls)
 
 
+_TALK_Q = re.compile(
+    r"\b(talks?|sessions?|keynotes?|webinars?|recordings?|videos?|watch|presentations?|speakers?|"
+    r"panels?|workshops?)\b",
+    re.I,
+)
+
+
+def _with_talk_lane(
+    conn: Any, question: str, hits: List[LaneHit], take: int = 10
+) -> List[LaneHit]:
+    """Talk questions also get the best catalogue entries of the YouTube sources.
+
+    The catalogue is ~1,700 short entries next to hundreds of thousands of repository chunks, so
+    "which talks were at X" would otherwise be answered from event pages that name no talks.
+    """
+    if not _TALK_Q.search(question or ""):
+        return hits
+    try:
+        from application.utils.comprehension.embedcache import embed_many
+        from application.utils.comprehension.shared import shared_handler
+        from application.database import db as db_mod
+        from application.database.pgvector_utils import to_pgvector_literal
+
+        vec = embed_many(
+            [question], shared_handler(db_mod.Node_collection()).get_text_embeddings
+        )[0]
+        lane = _dense(
+            conn,
+            to_pgvector_literal(list(vec)),
+            "embeddings_url LIKE :pat",
+            take,
+            {"pat": "owasp-agent://evidence/comprehension-ext-yt-%-raw-%"},
+        )
+    except Exception:  # noqa: BLE001 - an extra lane must never fail an answer
+        return hits
+    seen = {h.url for h in lane}
+    rest = [h for h in hits if h.url not in seen]
+    head = 6
+    out = rest[:head] + lane + rest[head:]
+    top = float(out[0].score) if out else 0.0
+    for i, h in enumerate(out):  # keep this order under later score sorts
+        h.score = top - i * 1e-4
+    return out
+
+
 def _slug_of(hit: LaneHit) -> str:
     m = _SLUG_RE.match(hit.url or "")
     return m.group(1) if m else ""
@@ -374,6 +419,7 @@ def fetch_comprehension_hits(
                 hits = rrf(rankings, key=lambda h: h.url)
             if keyword_hits:
                 hits = supplement_with_keyword(hits, keyword_hits)
+            hits = _with_talk_lane(conn, question, hits)
             hits = _apply_authority(hits)
             if flags.on("EXPAND"):
                 _expand(conn, hits[: max(k, 12)])

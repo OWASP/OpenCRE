@@ -1267,3 +1267,53 @@ class TestExternalDoesNotCountAgainstProjectLimit(unittest.TestCase):
         pats = [p for p in asked if p]
         self.assertTrue(any("ext-owasp-benelux" in p for p in pats), pats)
         self.assertTrue(any("pwnzzai" in p for p in pats), pats)
+
+
+class TestTalkLaneAndWatchLinks(unittest.TestCase):
+    def test_watch_links_survive_answer_cleanup_other_urls_do_not(self):
+        from application.utils.comprehension.synthesize import clean_answer_text
+
+        out = clean_answer_text(
+            "Watch it at https://www.youtube.com/watch?v=zroXcBDsal4&t=760s. "
+            "More at https://example.org/x and [the site](https://example.org/y) [1]."
+        )
+        self.assertIn("https://www.youtube.com/watch?v=zroXcBDsal4&t=760s", out)
+        self.assertNotIn("example.org", out)
+        self.assertIn("the site", out)
+
+    def test_talk_lane_only_for_talk_questions_and_merges_catalogue_entries(self):
+        from types import SimpleNamespace as H
+        from unittest import mock
+
+        from application.utils.comprehension import retrieve
+
+        def hit(url, score):
+            return H(url=url, score=score, content="", doc_type="")
+
+        base = [
+            hit(f"owasp-agent://evidence/comprehension-r-raw-{i}", 0.9 - i / 100)
+            for i in range(8)
+        ]
+        lane = [
+            hit(f"owasp-agent://evidence/comprehension-ext-yt-owasp-raw-{i}", 0.5)
+            for i in range(3)
+        ]
+        with mock.patch.object(retrieve, "_dense", return_value=lane), mock.patch(
+            "application.utils.comprehension.embedcache.embed_many",
+            return_value=[[0.1]],
+        ), mock.patch(
+            "application.utils.comprehension.shared.shared_handler"
+        ), mock.patch(
+            "application.database.pgvector_utils.to_pgvector_literal",
+            return_value="[0.1]",
+        ):
+            same = retrieve._with_talk_lane(
+                None, "what is the OWASP Top 10?", list(base)
+            )
+            self.assertEqual([h.url for h in same], [h.url for h in base])
+            merged = retrieve._with_talk_lane(
+                None, "Which talks were at BeNeLux Day 2018?", list(base)
+            )
+        urls = [h.url for h in merged]
+        self.assertEqual(urls[6:9], [h.url for h in lane])
+        self.assertEqual(len(urls), len(base) + len(lane))
