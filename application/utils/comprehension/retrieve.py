@@ -29,19 +29,48 @@ _REPO_CACHE: dict = {"at": 0.0, "slugs": []}
 _STRIP = re.compile(r"^(?:owasp-)?(?:www-project-|www-)?")
 
 
+_EXT_ALIAS_CACHE: dict = {"at": 0.0, "map": {}}
+
+
 def alias_phrase(slug: str) -> str:
     """Words a person would use for a repo slug: owasp-www-project-top-ten -> 'top ten'."""
+    if slug.startswith("ext-"):  # external source: ext-owasp-benelux -> 'benelux'
+        slug = slug[len("ext-") :]
     return _STRIP.sub("", slug).replace("-", " ").strip()
+
+
+def _external_aliases() -> dict:
+    """{ext slug: [lower-case phrases]} from the approved external sources (10 min cache)."""
+    if time.time() - _EXT_ALIAS_CACHE["at"] < 600:
+        return _EXT_ALIAS_CACHE["map"]
+    out: dict = {}
+    try:
+        from application import sqla
+        from application.utils.comprehension import external
+
+        for spec in external.load_specs(sqla.session):
+            phrases = [spec.name, *spec.aliases]
+            out[external.slug_for(spec)] = [
+                " ".join(re.sub(r"[^a-z0-9]+", " ", p.lower()).split())
+                for p in phrases
+                if p
+            ]
+    except Exception:  # noqa: BLE001 - registry trouble must not break retrieval
+        out = {}
+    _EXT_ALIAS_CACHE.update(at=time.time(), map=out)
+    return out
 
 
 def matched_slugs(question: str, slugs: List[str], limit: int = 3) -> List[str]:
     """Repo slugs whose alias phrase appears as whole words in the question (longest first)."""
     q = " " + re.sub(r"[^a-z0-9]+", " ", (question or "").lower()).strip() + " "
     found = []
+    ext = _external_aliases()
     for slug in slugs:
-        phrase = alias_phrase(slug)
-        if len(phrase) >= 4 and f" {phrase} " in q:
-            found.append((len(phrase), slug))
+        for phrase in [alias_phrase(slug), *ext.get(slug, [])]:
+            if len(phrase) >= 4 and f" {phrase} " in q:
+                found.append((len(phrase), slug))
+                break
     found.sort(reverse=True)
     return [s for _, s in found[:limit]]
 
@@ -75,6 +104,13 @@ def _known_slugs(conn) -> List[str]:
             )
         ).fetchall()
         slugs = sorted({m.group(1) for (u,) in rows if (m := _SLUG_RE.match(u))})
+    ext_rows = conn.execute(
+        sql_text(
+            "SELECT DISTINCT substring(embeddings_url from 'comprehension-(ext-.+?)-raw-') "
+            "FROM embeddings WHERE embeddings_url LIKE 'owasp-agent://evidence/comprehension-ext-%-raw-%'"
+        )
+    ).fetchall()
+    slugs = sorted(set(slugs) | {r[0] for r in ext_rows if r[0]})
     _REPO_CACHE.update(at=time.time(), slugs=slugs, key=cache_key)
     return slugs
 

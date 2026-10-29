@@ -91,6 +91,13 @@ def clean_answer_text(text: str) -> str:
     return re.sub(r"[ \t]+([.,;:])", r"\1", out)
 
 
+AS_OF_RULE = (
+    "\nSome sources start with a line like 'Source: <url> | fetched <date>'. They are web pages that "
+    "can change. When the question is about something current or upcoming (events, dates, who is "
+    "involved), say 'as of <fetched date>' in the answer."
+)
+
+
 def renumber_citations(
     answer: str,
     hits: Sequence[Tuple[str, List[str]]],
@@ -208,6 +215,8 @@ def synthesize(
 
     if get_history():
         system += HISTORY_RULE
+    if any("| fetched " in t for t, _ in hits):
+        system += AS_OF_RULE
     if flags.on("EDITION"):
         system += EDITION_RULE
     if flags.on("COMPLETE"):

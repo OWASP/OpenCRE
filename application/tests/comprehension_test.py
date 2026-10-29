@@ -1171,3 +1171,38 @@ class WideMatchTest(unittest.TestCase):
         from application.utils.comprehension import flags
 
         self.assertIn("WIDEMATCH", flags.NAMES)
+
+
+class TestExternalAliases(unittest.TestCase):
+    def test_external_slug_phrase_and_registry_aliases_match_questions(self):
+        from application.utils.comprehension import retrieve
+
+        self.assertEqual(retrieve.alias_phrase("ext-owasp-benelux"), "benelux")
+        retrieve._EXT_ALIAS_CACHE.update(
+            at=__import__("time").time(),
+            map={"ext-owasp-benelux": ["owasp benelux", "benelux day"]},
+        )
+        try:
+            got = retrieve.matched_slugs(
+                "When is the next OWASP Benelux event?",
+                ["owasp-aisvs", "ext-owasp-benelux"],
+            )
+            self.assertEqual(got, ["ext-owasp-benelux"])
+        finally:
+            retrieve._EXT_ALIAS_CACHE.update(at=0.0, map={})
+
+    def test_as_of_rule_only_for_dated_web_sources(self):
+        from application.utils.comprehension import synthesize
+
+        seen = []
+
+        def llm(system, user):
+            seen.append(system)
+            return "x [1]"
+
+        synthesize.synthesize("q", [("plain text", ["https://a"])], llm)
+        synthesize.synthesize(
+            "q", [("Source: https://s | fetched 2026-10-29\ntext", ["https://s"])], llm
+        )
+        self.assertNotIn("as of <fetched date>", seen[0])
+        self.assertIn("as of <fetched date>", seen[1])
