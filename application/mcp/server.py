@@ -146,6 +146,19 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
                 ),
             )
         )
+        tools.append(
+            types.Tool(
+                name=RATE_TOOL["name"],
+                description=RATE_TOOL["summary"],
+                input_schema=RATE_TOOL["input_schema"],
+                annotations=types.ToolAnnotations(
+                    read_only_hint=False,
+                    destructive_hint=False,
+                    idempotent_hint=True,
+                    open_world_hint=False,
+                ),
+            )
+        )
         # Optional OWASP metadata channel (chat/MCP only — not CRE REST).
         if is_owasp_agent_enabled():
             for meta in OWASP_META_TOOLS:
