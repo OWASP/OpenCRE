@@ -419,6 +419,18 @@ def stage_gap_analysis(ctx: JobContext) -> StageResult:
     )
 
 
+def stage_external_sources(ctx: JobContext) -> StageResult:
+    from application.utils.oie_scheduler import external_sources
+
+    summary = external_sources.run(ctx)
+    if not summary["due"]:
+        return StageResult("external_sources", "skipped", "no site is due", summary)
+    failed = [k for k, v in summary["sites"].items() if "error" in v]
+    return StageResult(
+        "external_sources", "degraded" if failed else "ok", ", ".join(failed), summary
+    )
+
+
 def run_stage(name: str, fn: StageFn, ctx: JobContext) -> StageResult:
     """Run one stage, turning an exception into an ``error`` result."""
     started = time.monotonic()
@@ -456,10 +468,16 @@ JOBS: Dict[str, JobSpec] = {
             ("gap_analysis", stage_gap_analysis),
         ),
     ),
+    "external_sources": JobSpec(
+        name="external_sources",
+        interval_minutes=1440,
+        description="Re-crawl approved external sites whose refresh_days have passed (off until enabled)",
+        stages=(("external_sources", stage_external_sources),),
+    ),
 }
 
 #: Order a full tick runs due jobs in: metadata/harvest first, expansion last.
-JOB_ORDER = ("owasp", "cre_expansion")
+JOB_ORDER = ("owasp", "cre_expansion", "external_sources")
 
 
 def job_status(stages: List[StageResult]) -> str:
