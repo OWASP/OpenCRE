@@ -944,11 +944,21 @@ def add_header(response):
         from application.utils.api_tokens.audit import record_api_key_audit
 
         record_api_key_audit(response.status_code)
-    if request.path in (
-        "/rest/v1/user/resources",
-        "/rest/v1/user/mcp_grants",
-        "/rest/v1/auth/user",
-        "/rest/v1/user",
+    # The login redirects carry per-attempt OAuth state and PKCE material, so a
+    # replayed cached 302 sends a returning user to Google with a stale challenge.
+    if (
+        request.path.startswith("/rest/v1/auth/")
+        or request.path.startswith("/rest/v1/my-api-keys")
+        or request.path
+        in (
+            "/rest/v1/user/resources",
+            "/rest/v1/user/mcp_grants",
+            "/rest/v1/user",
+            "/rest/v1/me",
+            "/rest/v1/login",
+            "/rest/v1/callback",
+            "/rest/v1/logout",
+        )
     ):
         response.cache_control.no_store = True
         return response
@@ -1822,11 +1832,15 @@ def auth_login():
 def auth_user():
     if os.environ.get("NO_LOGIN") == "1":
         return "foobar"
-    return session.get("email")
+    return session.get("email") or ""
 
 
 @app.route("/rest/v1/auth/callback")
 def auth_callback():
+    if "user_id" in session:
+        # Back/refresh on the callback after a successful login: the Google code
+        # is single use, so exchanging it again would fail with a 500.
+        return redirect("/chatbot")
     flow_instance = CREFlow.instance(state=session.get("state"))
     try:
         flow_instance.flow.fetch_token(
@@ -1835,7 +1849,12 @@ def auth_callback():
         )  # cloud run (and others) rewrite https to http at the container
     except oauthlib.oauth2.rfc6749.errors.MismatchingStateError as mse:
         return redirect("/chatbot")
-    if not session.get("state") or session.get("state") != request.args["state"]:
+    except oauthlib.oauth2.rfc6749.errors.OAuth2Error as err:
+        # Cancel/deny on Google's consent screen, an expired or replayed code:
+        # not a server fault, and not worth bouncing straight back to Google.
+        logger.info("OAuth callback refused: %s", type(err).__name__)
+        return redirect("/")
+    if not session.get("state") or session.get("state") != request.args.get("state"):
         return redirect(url_for("web.auth_login"))  # State does not match!
     credentials = flow_instance.flow.credentials
     token_request = google.auth.transport.requests.Request()
@@ -1849,23 +1868,30 @@ def auth_callback():
     session["name"] = id_info.get("name")
     session["email"] = id_info.get("email")
     email = (id_info.get("email") or "").strip().lower()
-    allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
-    allowed_domains = allowed_domains.split(",") if allowed_domains else []
-    if not allowed_domains:
-        abort(
-            500,
-            "You have not set any domain in the allowed domains list, to ignore this set LOGIN_ALLOWED_DOMAINS to '*'",
-        )
-    if (
-        allowed_domains
-        and allowed_domains != ["*"]
-        and not any([email.endswith(x.strip().lower()) for x in allowed_domains])
-    ):
+    # A named admin may sign in from outside the allowed domains (role_for
+    # grants the role by address); everyone else must be on an allowed domain.
+    named_admin = (
+        account_roles.roles_enabled()
+        and account_roles.role_for(email) == account_roles.ADMIN
+    )
+    if not named_admin:
         allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
-        abort(
-            401,
-            description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
-        )
+        allowed_domains = allowed_domains.split(",") if allowed_domains else []
+        if not allowed_domains:
+            abort(
+                500,
+                "You have not set any domain in the allowed domains list, to ignore this set LOGIN_ALLOWED_DOMAINS to '*'",
+            )
+        if (
+            allowed_domains
+            and allowed_domains != ["*"]
+            and not any([email.endswith(x.strip().lower()) for x in allowed_domains])
+        ):
+            allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
+            abort(
+                401,
+                description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
+            )
     if account_roles.roles_enabled():
         # Two-role model: anyone on an allowed domain may log in; named admins get the admin role.
         if account_roles.role_for(email) is None:

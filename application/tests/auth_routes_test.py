@@ -83,6 +83,78 @@ class TestAuthRoutes(unittest.TestCase):
                 self.assertEqual(resp.status_code, 200)
                 self.assertEqual(resp.data.decode(), "member@owasp.org")
 
+    # --- sign-in hardening found by the adversarial review ---
+    def test_auth_redirects_are_not_browser_cacheable(self) -> None:
+        with patch.dict(os.environ, {"NO_LOGIN": "1", "INSECURE_REQUESTS": "1"}):
+            with self.app.test_client() as client:
+                for path in ("/rest/v1/auth/login", "/rest/v1/auth/logout"):
+                    resp = client.get(path)
+                    self.assertTrue(resp.cache_control.no_store, path)
+
+    def test_callback_replayed_after_login_redirects_without_exchange(self) -> None:
+        with patch.dict(os.environ, {"INSECURE_REQUESTS": "1"}):
+            with self.app.test_client() as client:
+                with client.session_transaction() as sess:
+                    sess["user_id"] = "uid"
+                with patch("application.web.web_main.CREFlow") as flow:
+                    resp = client.get("/rest/v1/auth/callback?state=x&code=used")
+                flow.instance.assert_not_called()
+                self.assertEqual(resp.status_code, 302)
+                self.assertTrue(resp.headers["Location"].endswith("/chatbot"))
+
+    @patch("application.web.web_main.CREFlow")
+    def test_callback_user_denied_consent_is_not_a_500(self, flow: Any) -> None:
+        from oauthlib.oauth2.rfc6749.errors import AccessDeniedError
+
+        flow.instance.return_value.flow.fetch_token.side_effect = AccessDeniedError()
+        with patch.dict(os.environ, {"INSECURE_REQUESTS": "1"}):
+            with self.app.test_client() as client:
+                with client.session_transaction() as sess:
+                    sess["state"] = "s"
+                resp = client.get("/rest/v1/auth/callback?error=access_denied&state=s")
+                self.assertEqual(resp.status_code, 302)
+                self.assertNotIn("/auth/login", resp.headers["Location"])
+
+    @patch("application.web.web_main.id_token")
+    @patch("application.web.web_main.CREFlow")
+    def test_callback_without_state_param_is_not_a_500(
+        self, flow: Any, id_token_mock: Any
+    ) -> None:
+        with patch.dict(os.environ, {"INSECURE_REQUESTS": "1"}):
+            with self.app.test_client() as client:
+                with client.session_transaction() as sess:
+                    sess["state"] = "s"
+                resp = client.get("/rest/v1/auth/callback")
+                self.assertEqual(resp.status_code, 302)
+
+    @patch("application.web.web_main.id_token")
+    @patch("application.web.web_main.CREFlow")
+    def test_named_admin_outside_allowed_domain_can_sign_in(
+        self, flow: Any, id_token_mock: Any
+    ) -> None:
+        id_token_mock.verify_oauth2_token.return_value = {
+            "sub": "sub-admin",
+            "name": "Admin",
+            "email": "Admin@gmail.com",
+        }
+        flow.instance.return_value.flow.credentials._id_token = "tok"
+        with patch.dict(
+            os.environ,
+            {
+                "CRE_ENABLE_LOGIN": "1",
+                "INSECURE_REQUESTS": "1",
+                "ADMIN_EMAILS": "admin@gmail.com",
+                "LOGIN_ALLOWED_DOMAINS": "owasp.org",
+            },
+        ):
+            with self.app.test_client() as client:
+                with client.session_transaction() as sess:
+                    sess["state"] = "s"
+                resp = client.get("/rest/v1/auth/callback?state=s")
+                self.assertEqual(resp.status_code, 302)
+                with client.session_transaction() as sess:
+                    self.assertIn("user_id", sess)
+
     def test_auth_user_returns_email_when_logged_in(self) -> None:
         with patch.dict(
             os.environ, {"CRE_ENABLE_LOGIN": "1", "INSECURE_REQUESTS": "1"}
