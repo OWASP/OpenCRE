@@ -102,6 +102,23 @@ class TestAuthRoutes(unittest.TestCase):
                     self.assertIn("user_id", sess)
         self.assertEqual(sqla.session.query(db.User).count(), 1)
 
+    @patch("application.web.web_main.id_token")
+    @patch("application.web.web_main.CREFlow")
+    def test_pkce_verifier_survives_login_to_callback(
+        self, cre_flow_mock: Any, id_token_mock: Any
+    ) -> None:
+        id_token_mock.verify_oauth2_token.return_value = {"sub": "s", "email": "a@b.c"}
+        """The callback's fresh flow must send the verifier the login created."""
+        login_flow = cre_flow_mock.instance.return_value.flow
+        login_flow.authorization_url.return_value = ("https://g/auth", "st")
+        login_flow.code_verifier = "verifier-123"
+        with patch.dict(os.environ, {"INSECURE_REQUESTS": "1"}):
+            with self.app.test_client() as client:
+                client.get("/rest/v1/auth/login")
+                client.get("/rest/v1/auth/callback?state=st")
+        kwargs = login_flow.fetch_token.call_args.kwargs
+        self.assertEqual(kwargs["code_verifier"], "verifier-123")
+
     @patch("application.web.web_main.CREFlow")
     def test_auth_callback_builds_flow_from_session_state(
         self, cre_flow_mock: Any

@@ -1827,6 +1827,11 @@ def auth_login():
     flow_instance = CREFlow.instance()
     authorization_url, state = flow_instance.flow.authorization_url()
     session["state"] = state
+    # PKCE: Google checks the code exchange against this verifier, and the
+    # per-login flow built in the callback does not have it.
+    verifier = getattr(flow_instance.flow, "code_verifier", None)
+    if isinstance(verifier, str):
+        session["code_verifier"] = verifier
     return redirect(authorization_url)
 
 
@@ -1843,7 +1848,8 @@ def auth_callback():
     flow_instance = CREFlow.instance(state=session.get("state"))
     try:
         flow_instance.flow.fetch_token(
-            authorization_response=request.url.replace("http://", "https://")
+            authorization_response=request.url.replace("http://", "https://"),
+            code_verifier=session.get("code_verifier"),
         )  # cloud run (and others) rewrite https to http at the container
     except oauthlib.oauth2.rfc6749.errors.MismatchingStateError as mse:
         return redirect("/chatbot")
