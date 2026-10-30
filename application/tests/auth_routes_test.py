@@ -102,6 +102,18 @@ class TestAuthRoutes(unittest.TestCase):
                     self.assertIn("user_id", sess)
         self.assertEqual(sqla.session.query(db.User).count(), 1)
 
+    @patch("application.web.web_main.CREFlow")
+    def test_auth_callback_builds_flow_from_session_state(
+        self, cre_flow_mock: Any
+    ) -> None:
+        """The pending state comes from the caller's cookie, not shared memory."""
+        with patch.dict(os.environ, {"INSECURE_REQUESTS": "1"}):
+            with self.app.test_client() as client:
+                with client.session_transaction() as sess:
+                    sess["state"] = "mine"
+                client.get("/rest/v1/auth/callback?state=other")
+        cre_flow_mock.instance.assert_called_once_with(state="mine")
+
     @patch("application.web.web_main.id_token")
     @patch("application.web.web_main.CREFlow")
     def test_auth_callback_rejects_email_not_on_allowlist(
