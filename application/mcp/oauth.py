@@ -89,6 +89,17 @@ def allowed_domains() -> List[str]:
     return [d.strip().lower().lstrip("@") for d in raw.split(",") if d.strip()]
 
 
+def account_may_sign_in(email: str) -> bool:
+    """Same rule as the web callback: a named admin may come from any domain,
+    everyone else needs an allowed domain and a role."""
+    from application.utils import roles
+
+    role = roles.role_for(email)
+    if role is None:
+        return False
+    return role == roles.ADMIN or domain_allowed(email)
+
+
 def domain_allowed(email: str) -> bool:
     domains = allowed_domains()
     if not domains:
@@ -231,7 +242,7 @@ class OpenCREOAuthProvider:
             return refuse("Your Google account has no verified email")
         from application.utils import roles
 
-        if not domain_allowed(email) or roles.role_for(email) is None:
+        if not account_may_sign_in(email):
             logger.info("MCP sign-in refused for a non-allowed account")
             return refuse("This account is not allowed to use OpenCRE")
 
