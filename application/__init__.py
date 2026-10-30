@@ -30,6 +30,9 @@ cache = Cache()
 
 
 def create_app(mode: str = "production", conf: any = None) -> Any:
+    from application.utils.error_reporting import init_error_reporting
+
+    init_error_reporting("web")  # no-op unless SENTRY_DSN is set
     app = Flask(__name__)
     if not conf:
         app.config.from_object(config[mode])
