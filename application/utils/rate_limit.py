@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 import os
 import threading
+import math
 import time
 from typing import Dict, List, Optional, Tuple
 
@@ -144,7 +145,7 @@ def check_and_count(
     counts = _counts([p[0] for p in plan])
     for (key, name, secs, cap), used in zip(plan, counts):
         if used >= cap:
-            raise RateLimited(name, cap, int(secs - (now % secs)))
+            raise RateLimited(name, cap, max(1, math.ceil(secs - (now % secs))))
     _incr([(key, secs) for key, _, secs, _ in plan])
 
 
