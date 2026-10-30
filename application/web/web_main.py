@@ -1763,41 +1763,43 @@ def _maybe_append_cre_followups(prompt: str, response):
 
 
 class CREFlow:
-    """ "This class handles authentication with google's oauth"""
+    """Builds a Google OAuth flow for one login attempt.
 
-    __instance = None
+    Each call returns a fresh flow. A shared flow keeps the pending ``state`` in
+    process memory, so concurrent logins overwrote each other and a callback
+    served by another worker (or after a restart) saw no state and looped. The
+    state now lives in the user's own session cookie and is handed back in.
+    """
+
     flow = None
 
     @classmethod
-    def instance(cls):
-        if cls.__instance is None:
-            cls.__instance = cls.__new__(cls)
-            client_secrets_file = os.path.join(
-                pathlib.Path(__file__).parent.parent.parent, "gcp_secret.json"
-            )
-            if not os.path.exists(client_secrets_file):
-                if os.environ.get("GOOGLE_SECRET_JSON"):
-                    with open(client_secrets_file, "w") as f:
-                        f.write(os.environ.get("GOOGLE_SECRET_JSON"))
-                else:
-                    logger.fatal(
-                        "neither file gcp_secret.json nor env GOOGLE_SECRET_JSON have been set"
-                    )
-            cls.flow = Flow.from_client_secrets_file(
-                client_secrets_file=client_secrets_file,
-                scopes=[
-                    "https://www.googleapis.com/auth/userinfo.profile",
-                    "https://www.googleapis.com/auth/userinfo.email",
-                    "openid",
-                ],
-                redirect_uri=(
-                    request.root_url.rstrip("/") + url_for("web.auth_callback")
-                ).replace("http://", "https://"),
-            )
-        return cls.__instance
-
-    def __init__(sel):
-        raise ValueError("class is a singleton, please call instance() instead")
+    def instance(cls, state=None):
+        client_secrets_file = os.path.join(
+            pathlib.Path(__file__).parent.parent.parent, "gcp_secret.json"
+        )
+        if not os.path.exists(client_secrets_file):
+            if os.environ.get("GOOGLE_SECRET_JSON"):
+                with open(client_secrets_file, "w") as f:
+                    f.write(os.environ.get("GOOGLE_SECRET_JSON"))
+            else:
+                logger.fatal(
+                    "neither file gcp_secret.json nor env GOOGLE_SECRET_JSON have been set"
+                )
+        built = cls.__new__(cls)
+        built.flow = Flow.from_client_secrets_file(
+            client_secrets_file=client_secrets_file,
+            scopes=[
+                "https://www.googleapis.com/auth/userinfo.profile",
+                "https://www.googleapis.com/auth/userinfo.email",
+                "openid",
+            ],
+            redirect_uri=(
+                request.root_url.rstrip("/") + url_for("web.auth_callback")
+            ).replace("http://", "https://"),
+            state=state,
+        )
+        return built
 
 
 @app.route("/rest/v1/auth/login")
@@ -1838,7 +1840,7 @@ def auth_user():
 
 @app.route("/rest/v1/auth/callback")
 def auth_callback():
-    flow_instance = CREFlow.instance()
+    flow_instance = CREFlow.instance(state=session.get("state"))
     try:
         flow_instance.flow.fetch_token(
             authorization_response=request.url.replace("http://", "https://")
