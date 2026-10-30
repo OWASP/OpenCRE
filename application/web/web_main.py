@@ -1836,7 +1836,7 @@ def auth_login():
 
 
 @app.route("/rest/v1/auth/user")
-@login_required
+@user_required
 def auth_user():
     if os.environ.get("NO_LOGIN") == "1":
         return "foobar"
