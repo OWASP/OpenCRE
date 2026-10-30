@@ -61,6 +61,28 @@ class TestAuthRoutes(unittest.TestCase):
                 with client.session_transaction() as sess:
                     self.assertIn("user_id", sess)
 
+    def test_auth_user_allows_non_admin_with_a_role(self) -> None:
+        """/auth/user only reports who is signed in; a plain user must get 200,
+        not the admin 403 that made the SPA loop through login."""
+        with patch.dict(
+            os.environ,
+            {
+                "CRE_ENABLE_LOGIN": "1",
+                "INSECURE_REQUESTS": "1",
+                "ADMIN_EMAILS": "boss@owasp.org",
+                "LOGIN_ALLOWED_DOMAINS": "@owasp.org",
+            },
+        ):
+            with self.app.test_client() as client:
+                with client.session_transaction() as sess:
+                    sess["user_id"] = "uid"
+                    sess["email"] = "member@owasp.org"
+                resp = client.get(
+                    "/rest/v1/auth/user", headers={"Accept": "application/json"}
+                )
+                self.assertEqual(resp.status_code, 200)
+                self.assertEqual(resp.data.decode(), "member@owasp.org")
+
     def test_auth_user_returns_email_when_logged_in(self) -> None:
         with patch.dict(
             os.environ, {"CRE_ENABLE_LOGIN": "1", "INSECURE_REQUESTS": "1"}
