@@ -5,7 +5,7 @@ import { marked } from 'marked';
 import React, { useEffect, useRef, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Button, Container, Form, GridRow, Header, Icon } from 'semantic-ui-react';
+import { Button, Checkbox, Container, Form, GridRow, Header, Icon } from 'semantic-ui-react';
 import { Grid } from 'semantic-ui-react';
 
 import { useEnvironment } from '../../hooks';
@@ -17,6 +17,23 @@ export function renderChatMarkdown(markdown: string): string {
   return DOMPurify.sanitize(String(parsed), { USE_PROFILES: { html: true } });
 }
 
+/** Turn [n] markers into links to the n-th cited source (the backend numbers them to match the list). */
+export function linkifyCitations(markdown: string, urls: string[] | undefined): string {
+  if (!urls || urls.length === 0) return markdown;
+  const safe = (url: string) => {
+    try {
+      const protocol = new URL(url).protocol;
+      return protocol === 'http:' || protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+  return markdown.replace(/\[(\d+)\]/g, (marker, num) => {
+    const url = urls[Number(num) - 1];
+    return url && safe(url) ? `[${marker}](${url})` : marker;
+  });
+}
+
 export const Chatbot = () => {
   type chatMessage = {
     timestamp: string;
@@ -25,6 +42,9 @@ export const Chatbot = () => {
     data: Document[] | null;
     accurate: boolean;
     owaspCitations?: string[];
+    answerId?: string;
+    rating?: 'up' | 'down';
+    commented?: boolean;
   };
 
   interface ChatState {
@@ -40,6 +60,8 @@ export const Chatbot = () => {
   const [error, setError] = useState<string>('');
   const [chat, setChat] = useState<ChatState>(DEFAULT_CHAT_STATE);
   const [user, setUser] = useState('');
+  const [commentDraft, setCommentDraft] = useState<{ idx: number; text: string } | null>(null);
+  const [continueConversation, setContinueConversation] = useState<boolean>(false);
   const [modelName, setModelName] = useState<string>('');
 
   function getModelDisplayName(modelName: string): string {
@@ -56,6 +78,8 @@ export const Chatbot = () => {
   }
 
   const hasMessages = chatMessages.length > 0;
+  // Thumbs only appear when the deployment stores answers; the "not stored" privacy paragraph is then hidden.
+  const feedbackOn = chatMessages.some((m) => m.answerId);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
@@ -93,8 +117,12 @@ export const Chatbot = () => {
       .then((response) => {
         if (response.status === 200) {
           response.text().then((user) => setUser(user));
-        } else {
+        } else if (response.status === 401) {
           window.location.href = `${apiUrl}/auth/login`;
+        } else {
+          // 403/5xx are not "signed out"; looping through login would hide the fault.
+          setError(`Could not check your sign-in (status ${response.status})`);
+          setLoading(false);
         }
       })
       .catch((error) => {
@@ -110,7 +138,7 @@ export const Chatbot = () => {
     }
   }, []);
 
-  function processResponse(response: string) {
+  function processResponse(response: string, citations?: string[]) {
     const responses = response.split('```');
     const res: React.ReactElement[] = [];
 
@@ -120,7 +148,7 @@ export const Chatbot = () => {
           <p
             key={i}
             dangerouslySetInnerHTML={{
-              __html: renderChatMarkdown(txt),
+              __html: renderChatMarkdown(linkifyCitations(txt, citations)),
             }}
           />
         );
@@ -136,14 +164,44 @@ export const Chatbot = () => {
     return res;
   }
 
-  const HISTORY_CAP = 20;
+  // "Continue conversation" sends only the last question and its answer.
+  const HISTORY_MESSAGES = 2;
 
-  function startNewChat() {
-    setChatMessages([]);
-    setError('');
-    setChat(DEFAULT_CHAT_STATE);
-    setModelName('');
-    setShowScrollToBottom(false);
+  /** Thumbs up/down: show the choice at once, tell the server, and undo it if that fails. */
+  function rateAnswer(idx: number, rating: 'up' | 'down', comment?: string) {
+    const answerId = chatMessages[idx]?.answerId;
+    if (!answerId) return;
+    const previous = chatMessages[idx].rating;
+    const setRating = (value?: 'up' | 'down') =>
+      setChatMessages((prev) => prev.map((m, i) => (i === idx ? { ...m, rating: value } : m)));
+    setRating(rating);
+    // A thumbs down opens a one-line "what was wrong?" box; the comment is sent as a second
+    // rating call (the server keeps the latest rating and comment for the answer).
+    if (comment === undefined) setCommentDraft(rating === 'down' ? { idx, text: '' } : null);
+    fetch(`${apiUrl}/answer_feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(
+        comment ? { answer_id: answerId, rating, comment } : { answer_id: answerId, rating }
+      ),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`rating failed (${res.status})`);
+        if (comment)
+          setChatMessages((prev) => prev.map((m, i) => (i === idx ? { ...m, commented: true } : m)));
+      })
+      .catch((err) => {
+        console.error(err);
+        setRating(previous);
+        setCommentDraft(null);
+      });
+  }
+
+  function submitComment() {
+    if (!commentDraft) return;
+    const text = commentDraft.text.trim();
+    if (text) rateAnswer(commentDraft.idx, 'down', text);
+    setCommentDraft(null);
   }
 
   async function onSubmit() {
@@ -154,7 +212,7 @@ export const Chatbot = () => {
     setChat({ ...chat, term: '' });
     setLoading(true);
 
-    const prior = chatMessages.slice(-(HISTORY_CAP - 1)).map((m) => ({
+    const prior = (continueConversation ? chatMessages.slice(-HISTORY_MESSAGES) : []).map((m) => ({
       role: m.role === 'assistant' ? 'assistant' : 'user',
       content: m.message,
     }));
@@ -215,6 +273,7 @@ export const Chatbot = () => {
               : data.table,
             accurate: data.accurate,
             owaspCitations: Array.isArray(data?.owasp_agent?.citations) ? data.owasp_agent.citations : [],
+            answerId: typeof data?.answer_id === 'string' ? data.answer_id : undefined,
           },
         ]);
       })
@@ -231,6 +290,22 @@ export const Chatbot = () => {
     const dt = String(d.doctype).toLowerCase();
     if (dt === 'owaspmeta' || dt === 'owasp_meta' || dt === 'concept') {
       return null;
+    }
+
+    if (dt === 'cre' && d.id) {
+      // A Common Requirement: link to its own page (the /node/... form is for standard sections).
+      return (
+        <div className="reference-card">
+          <a href={`/cre/${encodeURIComponent(d.id)}`}>
+            <strong>
+              {d.id} — {d.name}
+            </strong>
+          </a>
+          <div className="reference-link">
+            <a href={`/cre/${encodeURIComponent(d.id)}`}>View in OpenCRE</a>
+          </div>
+        </div>
+      );
     }
 
     let link = `/node/${d.doctype.toLowerCase()}/${d.name}`;
@@ -256,25 +331,29 @@ export const Chatbot = () => {
   }
 
   function displayOwaspCitations(urls: string[]) {
-    const safe = urls.filter((url) => {
+    const isSafe = (url: string) => {
       try {
         const parsed = new URL(url);
         return parsed.protocol === 'http:' || parsed.protocol === 'https:';
       } catch {
         return false;
       }
-    });
-    if (!safe.length) return null;
+    };
+    if (!urls.some(isSafe)) return null;
     return (
       <div className="references">
         <div className="references-title">OWASP community sources</div>
-        {safe.map((url, i) => (
-          <div className="reference-card" key={i}>
-            <a href={url} target="_blank" rel="noopener noreferrer">
-              {url}
-            </a>
-          </div>
-        ))}
+        {urls.map((url, i) =>
+          isSafe(url) ? (
+            // The number is the position in the full list, so [n] in the answer always matches.
+            <div className="reference-card" key={i} id={`source-${i + 1}`}>
+              <span className="reference-number">[{i + 1}] </span>
+              <a href={url} target="_blank" rel="noopener noreferrer">
+                {url}
+              </a>
+            </div>
+          ) : null
+        )}
       </div>
     );
   }
@@ -288,13 +367,6 @@ export const Chatbot = () => {
           <Header as="h1" className="chatbot-title">
             OWASP OpenCRE Chat
           </Header>
-          {hasMessages ? (
-            <div className="chatbot-toolbar">
-              <Button type="button" size="small" basic onClick={startNewChat}>
-                <Icon name="plus" /> New chat
-              </Button>
-            </div>
-          ) : null}
 
           <Container>
             <div className={`chat-container ${hasMessages ? 'chat-active' : 'chat-landing'}`}>
@@ -315,7 +387,54 @@ export const Chatbot = () => {
                           <span className="message-timestamp">{m.timestamp}</span>
                         </div>
 
-                        <div className="message-body">{processResponse(m.message)}</div>
+                        <div className="message-body">{processResponse(m.message, m.owaspCitations)}</div>
+
+                        {m.role === 'assistant' && m.answerId ? (
+                          <div className="rate-answer" role="group" aria-label="Rate this answer">
+                            <button
+                              type="button"
+                              className={`rate-btn ${m.rating === 'up' ? 'is-selected' : ''}`}
+                              aria-label="Good answer"
+                              aria-pressed={m.rating === 'up'}
+                              onClick={() => rateAnswer(idx, 'up')}
+                            >
+                              <Icon name="thumbs up outline" />
+                            </button>
+                            <button
+                              type="button"
+                              className={`rate-btn ${m.rating === 'down' ? 'is-selected' : ''}`}
+                              aria-label="Bad answer"
+                              aria-pressed={m.rating === 'down'}
+                              onClick={() => rateAnswer(idx, 'down')}
+                            >
+                              <Icon name="thumbs down outline" />
+                            </button>
+                            {commentDraft?.idx === idx ? (
+                              <form
+                                className="rate-comment"
+                                onSubmit={(e) => {
+                                  e.preventDefault();
+                                  submitComment();
+                                }}
+                              >
+                                <input
+                                  type="text"
+                                  autoFocus
+                                  maxLength={500}
+                                  aria-label="What was wrong with this answer?"
+                                  placeholder="What was wrong? (optional)"
+                                  value={commentDraft.text}
+                                  onChange={(e) => setCommentDraft({ idx, text: e.target.value })}
+                                />
+                                <button type="submit" className="rate-btn" aria-label="Send feedback">
+                                  Send
+                                </button>
+                              </form>
+                            ) : m.commented ? (
+                              <span className="rate-thanks">Thanks for the feedback</span>
+                            ) : null}
+                          </div>
+                        ) : null}
 
                         {m.data && m.data.length > 0 && (
                           <div className="references">
@@ -373,6 +492,14 @@ export const Chatbot = () => {
                     onChange={(e) => setChat({ ...chat, term: e.target.value })}
                     placeholder="Type your infosec question here…"
                   />
+                  {hasMessages ? (
+                    <Checkbox
+                      className="chat-continue"
+                      label="Continue conversation (uses your last question and its answer)"
+                      checked={continueConversation}
+                      onChange={(_, d) => setContinueConversation(!!d.checked)}
+                    />
+                  ) : null}
                   <Button primary fluid size="small">
                     <Icon name="send" /> Ask
                   </Button>
@@ -392,11 +519,15 @@ export const Chatbot = () => {
                 Model operation is generously sponsored by{' '}
                 <a href="https://www.softwareimprovementgroup.com">Software Improvement Group</a>.
                 <br />
-                <br />
-                Privacy & Security: Your question is sent to Heroku, the hosting provider for OpenCRE, and
-                then to GCP, all via protected connections. Your data isn't stored on OpenCRE servers. The
-                OpenCRE team employed extensive measures to ensure privacy and security. To review the code:
-                https://github.com/owasp/OpenCRE
+                {!feedbackOn && (
+                  <>
+                    <br />
+                    Privacy & Security: Your question is sent to Heroku, the hosting provider for OpenCRE, and
+                    then to GCP, all via protected connections. Your data isn't stored on OpenCRE servers. The
+                    OpenCRE team employed extensive measures to ensure privacy and security. To review the
+                    code: https://github.com/owasp/OpenCRE
+                  </>
+                )}
               </i>
             </div>
           </Container>

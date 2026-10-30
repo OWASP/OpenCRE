@@ -43,9 +43,13 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
         app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
             "SQLALCHEMY_DATABASE_URI"
         )
-    GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
-    app.secret_key = GOOGLE_CLIENT_SECRET
-    if os.environ.get("NO_LOGIN"):
+    # A stable key, or session cookies stop verifying whenever a worker restarts
+    # and every login (state kept in the session) bounces back to /auth/login.
+    app.secret_key = os.environ.get("SECRET_KEY") or os.environ.get(
+        "GOOGLE_CLIENT_SECRET"
+    )
+    # Only "1" disables login, as everywhere else; NO_LOGIN=0 is truthy as a string.
+    if os.environ.get("NO_LOGIN") == "1":
         letters = string.ascii_lowercase
         app.secret_key = "".join(random.choice(letters) for i in range(20))
 
@@ -92,4 +96,8 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
     compress.init_app(app)
     cache.init_app(app)
 
+    if mode != "test":
+        from application.utils.comprehension.shared import start_background_warm_up
+
+        start_background_warm_up(app)  # no-op unless OWASP_WARMUP_WEB=1
     return app

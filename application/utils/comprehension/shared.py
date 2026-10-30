@@ -10,6 +10,14 @@ _LOCK = threading.Lock()
 _HANDLER: Any = None
 
 
+def _interactive(handler: Any) -> Any:
+    """This handler serves people waiting for answers: the interactive layer
+    (litellm_router.quick_retry / resilient_completion) does the retrying, so the bulk-job sleeps
+    inside the handler are switched off."""
+    handler._llm_max_retries = 0
+    return handler
+
+
 def shared_handler(database: Any) -> Any:
     """A lazily created, cached PromptHandler(load_all_embeddings=False)."""
     from application.prompt_client import prompt_client
@@ -21,10 +29,14 @@ def shared_handler(database: Any) -> Any:
         "no",
         "off",
     ):
-        return prompt_client.PromptHandler(database, load_all_embeddings=False)
+        return _interactive(
+            prompt_client.PromptHandler(database, load_all_embeddings=False)
+        )
     with _LOCK:
         if _HANDLER is None:
-            _HANDLER = prompt_client.PromptHandler(database, load_all_embeddings=False)
+            _HANDLER = _interactive(
+                prompt_client.PromptHandler(database, load_all_embeddings=False)
+            )
         return _HANDLER
 
 
@@ -57,3 +69,25 @@ def warm_up() -> bool:
         return True
     except Exception:  # noqa: BLE001 - warm-up must never stop the server
         return False
+
+
+def start_background_warm_up(app: Any) -> bool:
+    """Warm a freshly started web worker in the background so the first chat is not the slow one.
+
+    Opt-in with OWASP_WARMUP_WEB=1 (command-line jobs that also call create_app must not start it).
+    """
+    if (os.environ.get("OWASP_WARMUP_WEB", "") or "").strip().lower() not in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    ):
+        return False
+    import threading
+
+    def _run() -> None:
+        with app.app_context():
+            warm_up()
+
+    threading.Thread(target=_run, name="opencre-web-warmup", daemon=True).start()
+    return True

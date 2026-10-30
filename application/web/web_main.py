@@ -13,7 +13,7 @@ import io
 import pathlib
 import re
 import urllib.parse
-from typing import Any
+from typing import Any, Optional
 
 from rq import job, exceptions
 from rq import Queue
@@ -944,11 +944,21 @@ def add_header(response):
         from application.utils.api_tokens.audit import record_api_key_audit
 
         record_api_key_audit(response.status_code)
-    if request.path in (
-        "/rest/v1/user/resources",
-        "/rest/v1/user/mcp_grants",
-        "/rest/v1/auth/user",
-        "/rest/v1/user",
+    # The login redirects carry per-attempt OAuth state and PKCE material, so a
+    # replayed cached 302 sends a returning user to Google with a stale challenge.
+    if (
+        request.path.startswith("/rest/v1/auth/")
+        or request.path.startswith("/rest/v1/my-api-keys")
+        or request.path
+        in (
+            "/rest/v1/user/resources",
+            "/rest/v1/user/mcp_grants",
+            "/rest/v1/user",
+            "/rest/v1/me",
+            "/rest/v1/login",
+            "/rest/v1/callback",
+            "/rest/v1/logout",
+        )
     ):
         response.cache_control.no_store = True
         return response
@@ -1001,6 +1011,9 @@ def _auth_challenge():
     )
 
 
+from application.utils import roles as account_roles
+
+
 def _is_production_config() -> bool:
     return (os.environ.get("FLASK_CONFIG") or "").strip().lower() == "production"
 
@@ -1010,16 +1023,18 @@ def _login_emails_raw() -> str:
 
 
 def _login_email_allowed(email: str | None) -> bool:
-    """True when ``email`` is on LOGIN_ALLOWED_EMAILS.
+    """Admin-level gate: True when ``email`` has the admin role.
 
-    Dev/test: unset/empty allowlist allows anyone (local convenience).
-    ``FLASK_CONFIG=production``: empty allowlist fails closed.
+    Legacy mode (``ADMIN_EMAILS`` unset): the account is on LOGIN_ALLOWED_EMAILS; dev/test with an
+    empty allowlist allows anyone; ``FLASK_CONFIG=production`` with an empty allowlist fails closed.
+    Roles mode (``ADMIN_EMAILS`` set): the account is one of the named admins.
     """
-    raw = _login_emails_raw()
-    if not raw:
-        return not _is_production_config()
-    allowed = {e.strip().lower() for e in raw.split(",") if e.strip()}
-    return (email or "").strip().lower() in allowed
+    return account_roles.has_role(email, account_roles.ADMIN)
+
+
+def _user_email_allowed(email: str | None) -> bool:
+    """User-level gate: any account with a role (user or admin)."""
+    return account_roles.has_role(email, account_roles.USER)
 
 
 def _ensure_csrf_token() -> str:
@@ -1059,15 +1074,21 @@ def _require_same_origin_admin() -> None:
         abort(403, description="Cross-origin admin mutation refused")
 
 
-def login_required(f):
+def _auth_gate(f, allowed, role_label):
+    """Shared body of ``login_required`` (admin) and ``user_required`` (any role)."""
+
     @wraps(f)
-    def login_r(*args, **kwargs):
+    def gated(*args, **kwargs):
         if os.environ.get("NO_LOGIN") == "1":
             return f(*args, **kwargs)
-        if _is_production_config() and not _login_emails_raw():
+        if (
+            _is_production_config()
+            and not _login_emails_raw()
+            and not account_roles.roles_enabled()
+        ):
             abort(
                 403,
-                description="LOGIN_ALLOWED_EMAILS must be set when FLASK_CONFIG=production",
+                description="LOGIN_ALLOWED_EMAILS (or ADMIN_EMAILS) must be set when FLASK_CONFIG=production",
             )
         if not _is_logged_in():
             from application.utils.api_tokens import verify as api_verify
@@ -1077,26 +1098,40 @@ def login_required(f):
                 identity = api_verify.verify_api_token(raw)
                 if identity is None:
                     abort(401, description="Invalid or expired API key")
-                if not _login_email_allowed(identity.email):
+                if not allowed(identity.email):
                     abort(
                         403,
-                        description="API key owner is not on the allowlist for this environment.",
+                        description=f"API key owner does not have the {role_label} role in this environment.",
                     )
                 api_verify.bind_api_key_identity(identity)
             else:
                 return _auth_challenge()
-        # Defense in depth: drop sessions that are no longer allowlisted.
+        # Defense in depth: re-check the role on every request.
         email = session.get("email") or getattr(g, "api_key_email", None)
-        if not _login_email_allowed(email):
-            if "user_id" in session:
-                session.clear()
+        if not allowed(email):
+            if "user_id" in session and not _user_email_allowed(email):
+                session.clear()  # no role at all any more: drop the session
             abort(
                 403,
-                description="Your Google account is not on the allowlist for this environment.",
+                description=(
+                    "Your Google account is not on the allowlist for this environment."
+                    if not _user_email_allowed(email)
+                    else f"The {role_label} role is required for this action."
+                ),
             )
         return f(*args, **kwargs)
 
-    return login_r
+    return gated
+
+
+def login_required(f):
+    """Admin-level gate (named admins). Used by the admin panel and API-key management."""
+    return _auth_gate(f, _login_email_allowed, "admin")
+
+
+def user_required(f):
+    """Any account with a role: the chatbot and answer feedback."""
+    return _auth_gate(f, _user_email_allowed, "user")
 
 
 def login_or_mcp_required(f):
@@ -1140,10 +1175,10 @@ def _admin_google_session_required(f):
     def wrapped(*args, **kwargs):
         if getattr(g, "api_key_jti", None) or not session.get("user_id"):
             abort(403, description="API key management requires Google login")
-        if not _login_emails_raw():
+        if not _login_emails_raw() and not account_roles.roles_enabled():
             abort(
                 403,
-                description="LOGIN_ALLOWED_EMAILS must be set to mint API keys",
+                description="LOGIN_ALLOWED_EMAILS (or ADMIN_EMAILS) must be set to mint API keys",
             )
         if not _login_email_allowed(session.get("email")):
             abort(403, description="Only allowlisted admins can manage API keys")
@@ -1532,13 +1567,57 @@ def admin_import_run_apply(run_id: str) -> Any:
 
 
 @app.route("/rest/v1/completion", methods=["POST"])
-@login_required
+@user_required
 def chat_cre() -> Any:
     message = request.get_json(force=True)
     if posthog:
         posthog.capture("chat_cre", "")
 
     database = db.Node_collection()
+
+    from application.utils import rate_limit
+
+    if os.environ.get("NO_LOGIN") != "1":
+        _who = session.get("email") or getattr(g, "api_key_email", None)
+        try:
+            rate_limit.check_and_count(_who, account_roles.role_for(_who), "ask")
+        except rate_limit.RateLimited as limited:
+            resp = jsonify({"error": limited.message()})
+            resp.status_code = 429
+            resp.headers["Retry-After"] = str(limited.retry_after)
+            return resp
+
+    from application.utils.chat_history import split_prompt_and_history
+
+    user_prompt, chat_history = split_prompt_and_history(
+        message if isinstance(message, dict) else {}
+    )
+    # Same routing and answer pipeline as MCP `ask` (application.utils.owasp_agent.service);
+    # the web chat additionally passes its conversation history.
+    from application.utils.owasp_agent.service import (
+        OwaspAgentUnavailable,
+        route_question,
+    )
+
+    try:
+        agent_response = route_question(user_prompt or "", chat_history)
+    except OwaspAgentUnavailable:
+        return (
+            jsonify(
+                {
+                    "error": (
+                        "OWASP metadata agent failed. "
+                        "Not falling back to CRE RAG for community/meta questions."
+                    )
+                }
+            ),
+            503,
+        )
+    if agent_response is not None:
+        return jsonify(_with_answer_id(agent_response, user_prompt))
+
+    # Only questions the OWASP agent does not handle need the CRE retrieval handler. Building it costs
+    # 2-3 s per request (16 s in a fresh process), so it is created here and never for agent answers.
     # Lazy import to avoid loading heavy prompt/ML dependencies at web boot.
     try:
         from application.prompt_client import llm_error_utils, prompt_client
@@ -1557,51 +1636,6 @@ def chat_cre() -> Any:
             503,
             "Chat is unavailable on this deployment (ML/LLM dependencies not installed).",
         )
-
-    from application.utils.chat_history import split_prompt_and_history
-
-    user_prompt, chat_history = split_prompt_and_history(
-        message if isinstance(message, dict) else {}
-    )
-    # Experimental OIE OWASP metadata agent (feature-flagged). Logistics/meta
-    # questions must not be forced through CRE RAG — see owasp_agent router.
-    try:
-        from application.utils.owasp_agent import (
-            OwaspAgentRouter,
-            is_owasp_agent_enabled,
-        )
-
-        if is_owasp_agent_enabled():
-            agent_response = OwaspAgentRouter().handle(
-                user_prompt or "", history=chat_history
-            )
-            if agent_response is not None:
-                return jsonify(agent_response)
-    except Exception:
-        logger.exception("owasp agent router failed")
-        # If this looks like a meta question, do not fall through to CRE RAG.
-        try:
-            from application.utils.owasp_agent.router import classify_intent
-
-            if classify_intent(user_prompt or "") != "cre_normative":
-                return (
-                    jsonify(
-                        {
-                            "error": (
-                                "OWASP metadata agent failed. "
-                                "Not falling back to CRE RAG for community/meta questions."
-                            )
-                        }
-                    ),
-                    503,
-                )
-        except Exception:
-            logger.exception("owasp agent classify_intent also failed")
-            return (
-                jsonify({"error": "OWASP metadata agent unavailable"}),
-                503,
-            )
-
     try:
         response = prompt.generate_text(user_prompt, history=chat_history)
     except Exception as e:
@@ -1622,8 +1656,72 @@ def chat_cre() -> Any:
             jsonify({"error": f"AI Service Error: {str(e)}"}),
             status_code,
         )
+    response = _block_unverified_answer(response, user_prompt)
     response = _maybe_append_cre_followups(user_prompt or "", response)
-    return jsonify(response)
+    return jsonify(_with_answer_id(response, user_prompt))
+
+
+def _block_unverified_answer(response: Any, question: Optional[str]) -> Any:
+    """Do not show free-form model text that no source backs (it can be a confident hallucination).
+
+    ``generate_text`` marks an answer ``accurate`` only when a CRE/standard node matched the question.
+    Otherwise the model answered from its own memory ("who started opencre" -> a made-up founder), so the
+    user gets an honest "couldn't find it" instead. CHAT_BLOCK_UNVERIFIED=0 restores the old behaviour.
+    """
+    blocking = (
+        os.environ.get("CHAT_BLOCK_UNVERIFIED", "1") or "1"
+    ).strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
+    if not blocking or not isinstance(response, dict) or response.get("accurate"):
+        return response
+    from application.utils.comprehension.answer import ABSTAIN_MESSAGE
+
+    logger.info(
+        "blocked an unverified chat answer for %r: %s",
+        (question or "")[:120],
+        str(response.get("response") or "")[:300].replace("\n", " "),
+    )
+    return {**response, "response": ABSTAIN_MESSAGE, "table": "", "accurate": False}
+
+
+def _with_answer_id(response: Any, question: Optional[str]) -> Any:
+    """Log a chat answer and add its ``answer_id`` so the UI can offer thumbs up/down."""
+    if not isinstance(response, dict):
+        return response
+    from application.utils.answer_feedback import log_answer
+
+    citations = (response.get("owasp_agent") or {}).get("citations") or []
+    answer_id = log_answer(
+        source="chat",
+        question=question or "",
+        answer=str(response.get("response") or ""),
+        citations=citations,
+    )
+    return {**response, "answer_id": answer_id} if answer_id else response
+
+
+@app.route("/rest/v1/answer_feedback", methods=["POST"])
+@user_required
+def answer_feedback_post() -> Any:
+    """Thumbs up/down for an answer: ``{"answer_id", "rating": "up"|"down", "comment"?}``."""
+    from application.utils.answer_feedback import record_rating
+
+    body = request.get_json(silent=True) or {}
+    try:
+        result = record_rating(
+            str(body.get("answer_id") or ""),
+            str(body.get("rating") or ""),
+            str(body["comment"]) if body.get("comment") else None,
+        )
+    except ValueError as exc:
+        abort(400, str(exc))
+    except KeyError:
+        abort(404, "unknown answer_id")
+    return jsonify(result)
 
 
 def _maybe_append_cre_followups(prompt: str, response):
@@ -1657,41 +1755,43 @@ def _maybe_append_cre_followups(prompt: str, response):
 
 
 class CREFlow:
-    """ "This class handles authentication with google's oauth"""
+    """Builds a Google OAuth flow for one login attempt.
 
-    __instance = None
+    Each call returns a fresh flow. A shared flow keeps the pending ``state`` in
+    process memory, so concurrent logins overwrote each other and a callback
+    served by another worker (or after a restart) saw no state and looped. The
+    state now lives in the user's own session cookie and is handed back in.
+    """
+
     flow = None
 
     @classmethod
-    def instance(cls):
-        if cls.__instance is None:
-            cls.__instance = cls.__new__(cls)
-            client_secrets_file = os.path.join(
-                pathlib.Path(__file__).parent.parent.parent, "gcp_secret.json"
-            )
-            if not os.path.exists(client_secrets_file):
-                if os.environ.get("GOOGLE_SECRET_JSON"):
-                    with open(client_secrets_file, "w") as f:
-                        f.write(os.environ.get("GOOGLE_SECRET_JSON"))
-                else:
-                    logger.fatal(
-                        "neither file gcp_secret.json nor env GOOGLE_SECRET_JSON have been set"
-                    )
-            cls.flow = Flow.from_client_secrets_file(
-                client_secrets_file=client_secrets_file,
-                scopes=[
-                    "https://www.googleapis.com/auth/userinfo.profile",
-                    "https://www.googleapis.com/auth/userinfo.email",
-                    "openid",
-                ],
-                redirect_uri=(
-                    request.root_url.rstrip("/") + url_for("web.auth_callback")
-                ).replace("http://", "https://"),
-            )
-        return cls.__instance
-
-    def __init__(sel):
-        raise ValueError("class is a singleton, please call instance() instead")
+    def instance(cls, state=None):
+        client_secrets_file = os.path.join(
+            pathlib.Path(__file__).parent.parent.parent, "gcp_secret.json"
+        )
+        if not os.path.exists(client_secrets_file):
+            if os.environ.get("GOOGLE_SECRET_JSON"):
+                with open(client_secrets_file, "w") as f:
+                    f.write(os.environ.get("GOOGLE_SECRET_JSON"))
+            else:
+                logger.fatal(
+                    "neither file gcp_secret.json nor env GOOGLE_SECRET_JSON have been set"
+                )
+        built = cls.__new__(cls)
+        built.flow = Flow.from_client_secrets_file(
+            client_secrets_file=client_secrets_file,
+            scopes=[
+                "https://www.googleapis.com/auth/userinfo.profile",
+                "https://www.googleapis.com/auth/userinfo.email",
+                "openid",
+            ],
+            redirect_uri=(
+                request.root_url.rstrip("/") + url_for("web.auth_callback")
+            ).replace("http://", "https://"),
+            state=state,
+        )
+        return built
 
 
 @app.route("/rest/v1/auth/login")
@@ -1719,27 +1819,42 @@ def auth_login():
     flow_instance = CREFlow.instance()
     authorization_url, state = flow_instance.flow.authorization_url()
     session["state"] = state
+    # PKCE: Google checks the code exchange against this verifier, and the
+    # per-login flow built in the callback does not have it.
+    verifier = getattr(flow_instance.flow, "code_verifier", None)
+    if isinstance(verifier, str):
+        session["code_verifier"] = verifier
     return redirect(authorization_url)
 
 
 @app.route("/rest/v1/auth/user")
-@login_required
+@user_required
 def auth_user():
     if os.environ.get("NO_LOGIN") == "1":
         return "foobar"
-    return session.get("email")
+    return session.get("email") or ""
 
 
 @app.route("/rest/v1/auth/callback")
 def auth_callback():
-    flow_instance = CREFlow.instance()
+    if "user_id" in session:
+        # Back/refresh on the callback after a successful login: the Google code
+        # is single use, so exchanging it again would fail with a 500.
+        return redirect("/chatbot")
+    flow_instance = CREFlow.instance(state=session.get("state"))
     try:
         flow_instance.flow.fetch_token(
-            authorization_response=request.url.replace("http://", "https://")
+            authorization_response=request.url.replace("http://", "https://"),
+            code_verifier=session.get("code_verifier"),
         )  # cloud run (and others) rewrite https to http at the container
     except oauthlib.oauth2.rfc6749.errors.MismatchingStateError as mse:
         return redirect("/chatbot")
-    if not session.get("state") or session.get("state") != request.args["state"]:
+    except oauthlib.oauth2.rfc6749.errors.OAuth2Error as err:
+        # Cancel/deny on Google's consent screen, an expired or replayed code:
+        # not a server fault, and not worth bouncing straight back to Google.
+        logger.info("OAuth callback refused: %s", type(err).__name__)
+        return redirect("/")
+    if not session.get("state") or session.get("state") != request.args.get("state"):
         return redirect(url_for("web.auth_login"))  # State does not match!
     credentials = flow_instance.flow.credentials
     token_request = google.auth.transport.requests.Request()
@@ -1753,25 +1868,43 @@ def auth_callback():
     session["name"] = id_info.get("name")
     session["email"] = id_info.get("email")
     email = (id_info.get("email") or "").strip().lower()
-    allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
-    allowed_domains = allowed_domains.split(",") if allowed_domains else []
-    if not allowed_domains:
-        abort(
-            500,
-            "You have not set any domain in the allowed domains list, to ignore this set LOGIN_ALLOWED_DOMAINS to '*'",
-        )
-    if (
-        allowed_domains
-        and allowed_domains != ["*"]
-        and not any([email.endswith(x.strip().lower()) for x in allowed_domains])
-    ):
+    # A named admin may sign in from outside the allowed domains (role_for
+    # grants the role by address); everyone else must be on an allowed domain.
+    named_admin = (
+        account_roles.roles_enabled()
+        and account_roles.role_for(email) == account_roles.ADMIN
+    )
+    if not named_admin:
         allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
-        abort(
-            401,
-            description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
-        )
-    # Optional exact-email allowlist (staging): further restricts who may log in.
-    allowed_emails_raw = (os.environ.get("LOGIN_ALLOWED_EMAILS") or "").strip()
+        allowed_domains = allowed_domains.split(",") if allowed_domains else []
+        if not allowed_domains:
+            abort(
+                500,
+                "You have not set any domain in the allowed domains list, to ignore this set LOGIN_ALLOWED_DOMAINS to '*'",
+            )
+        if (
+            allowed_domains
+            and allowed_domains != ["*"]
+            and not any([email.endswith(x.strip().lower()) for x in allowed_domains])
+        ):
+            allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
+            abort(
+                401,
+                description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
+            )
+    if account_roles.roles_enabled():
+        # Two-role model: anyone on an allowed domain may log in; named admins get the admin role.
+        if account_roles.role_for(email) is None:
+            abort(
+                403,
+                description="Your Google account has no access to this environment.",
+            )
+    # Legacy exact-email allowlist (staging): further restricts who may log in.
+    allowed_emails_raw = (
+        ""
+        if account_roles.roles_enabled()
+        else (os.environ.get("LOGIN_ALLOWED_EMAILS") or "").strip()
+    )
     if allowed_emails_raw:
         allowed_emails = {
             e.strip().lower() for e in allowed_emails_raw.split(",") if e.strip()
@@ -2172,6 +2305,93 @@ def delete_user_mcp_grant() -> Any:
 #         res = [doc.todict() for doc in documents]
 #         return jsonify({"data": res, "page": page, "total_pages": total_pages})
 #     abort(404)
+
+
+def _own_key_session_required(f):
+    """Personal API keys: any role, Google session only (not another API key), CSRF on writes."""
+
+    @wraps(f)
+    @user_required
+    def wrapped(*args, **kwargs):
+        if getattr(g, "api_key_jti", None) or not session.get("user_id"):
+            abort(403, description="API key management requires Google login")
+        if os.environ.get("NO_LOGIN") != "1" and request.method in (
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE",
+        ):
+            _ensure_csrf_token()
+            _require_csrf()
+        return f(*args, **kwargs)
+
+    return wrapped
+
+
+@app.route("/rest/v1/me", methods=["GET"])
+@user_required
+def whoami() -> Any:
+    """The signed-in account and its role, so clients know which features to show."""
+    email = session.get("email") or getattr(g, "api_key_email", None)
+    return jsonify({"email": email, "role": account_roles.role_for(email) or "none"})
+
+
+@app.route("/rest/v1/my-api-keys", methods=["POST"])
+@_own_key_session_required
+def create_my_api_key() -> Any:
+    """Mint a personal API key for MCP/CLI use (shown once). Any account with a role."""
+    from application.utils.api_tokens import mint as api_mint
+
+    body = request.get_json(silent=True) or {}
+    name = body.get("name") if isinstance(body, dict) else None
+    expires_days = body.get("expires_days") if isinstance(body, dict) else None
+    database = db.Node_collection()
+    user = _resolve_current_user(database)
+    if user is None:
+        abort(401, description="Not authenticated")
+    try:
+        minted = api_mint.mint_api_token(
+            user=user,
+            name=str(name or "api-key"),
+            expires_days=int(expires_days) if expires_days is not None else None,
+        )
+    except (TypeError, ValueError) as exc:
+        abort(400, description=str(exc))
+    return (
+        jsonify(
+            {
+                "token": minted.token,
+                "jti": minted.jti,
+                "name": minted.name,
+                "expires_at": minted.expires_at.isoformat() + "Z",
+            }
+        ),
+        201,
+    )
+
+
+@app.route("/rest/v1/my-api-keys", methods=["GET"])
+@_own_key_session_required
+def list_my_api_keys() -> Any:
+    from application.utils.api_tokens import mint as api_mint
+
+    user = _resolve_current_user(db.Node_collection())
+    if user is None:
+        abort(401, description="Not authenticated")
+    return jsonify({"keys": api_mint.list_api_tokens(user_id=user.id)})
+
+
+@app.route("/rest/v1/my-api-keys/<jti>", methods=["DELETE"])
+@_own_key_session_required
+def revoke_my_api_key(jti: str) -> Any:
+    from application.utils.api_tokens import mint as api_mint
+
+    user = _resolve_current_user(db.Node_collection())
+    if user is None:
+        abort(401, description="Not authenticated")
+    if not api_mint.revoke_api_token(jti, user_id=user.id):
+        abort(404, description="API key not found")
+    return ("", 204)
 
 
 @app.route("/rest/v1/api-keys", methods=["POST"])

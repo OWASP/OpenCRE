@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import re
+from contextvars import ContextVar
 import time
 from typing import Any, List
 
@@ -48,16 +49,33 @@ def matched_slugs(question: str, slugs: List[str], limit: int = 3) -> List[str]:
 def _known_slugs(conn) -> List[str]:
     from sqlalchemy import text as sql_text
 
-    if time.time() - _REPO_CACHE["at"] < 600 and _REPO_CACHE["slugs"]:
+    from application.utils.comprehension import flags
+
+    wide = flags.on("WIDEMATCH")
+    cache_key = "wide" if wide else "digested"
+    if (
+        _REPO_CACHE.get("key") == cache_key
+        and time.time() - _REPO_CACHE["at"] < 600
+        and _REPO_CACHE["slugs"]
+    ):
         return _REPO_CACHE["slugs"]
-    rows = conn.execute(
-        sql_text(
-            "SELECT DISTINCT embeddings_url FROM embeddings "
-            "WHERE embeddings_url LIKE 'owasp-agent://evidence/comprehension-%-overview'"
-        )
-    ).fetchall()
-    slugs = sorted({m.group(1) for (u,) in rows if (m := _SLUG_RE.match(u))})
-    _REPO_CACHE.update(at=time.time(), slugs=slugs)
+    if wide:
+        rows = conn.execute(
+            sql_text(
+                "SELECT DISTINCT substring(embeddings_url from 'comprehension-(.+?)-raw-') "
+                "FROM embeddings WHERE embeddings_url LIKE 'owasp-agent://evidence/comprehension-%-raw-%'"
+            )
+        ).fetchall()
+        slugs = sorted({r[0] for r in rows if r[0]})
+    else:
+        rows = conn.execute(
+            sql_text(
+                "SELECT DISTINCT embeddings_url FROM embeddings "
+                "WHERE embeddings_url LIKE 'owasp-agent://evidence/comprehension-%-overview'"
+            )
+        ).fetchall()
+        slugs = sorted({m.group(1) for (u,) in rows if (m := _SLUG_RE.match(u))})
+    _REPO_CACHE.update(at=time.time(), slugs=slugs, key=cache_key)
     return slugs
 
 
@@ -119,6 +137,15 @@ def _dense(
     from application.utils.owasp_agent.lane_similarity import cosine_exprs
 
     dist, score = cosine_exprs()
+    if limit > 40:  # the HNSW index returns at most ef_search (default 40) rows
+        try:
+            conn.execute(
+                sql_text(f"SET LOCAL hnsw.ef_search = {min(1000, int(limit))}")
+            )
+        except (
+            Exception
+        ):  # noqa: BLE001 - non-pgvector / older pgvector: keep the default
+            pass
     rows = conn.execute(
         sql_text(_DENSE_SQL.format(where=where, dist=dist, score=score)),
         {"q": q, "channel": CHANNEL_AGENT, "limit": limit, **(params or {})},
@@ -176,6 +203,61 @@ def _expand(conn: Any, hits: List[LaneHit]) -> None:
             h.content = merge_neighbours(h.content, prev, nxt)
 
 
+def _feature_projects(conn: Any, q: str, dense: List[LaneHit]) -> None:
+    """Remember each featured project's best chunk when it is close enough to the best match."""
+    from application.utils.comprehension import authority
+
+    try:
+        featured = {s: w for s, w in authority.weights().items() if w > 1.0}
+    except Exception:  # noqa: BLE001
+        return
+    if not featured or not dense:
+        return
+    best = max(float(h.score) for h in dense)
+    urls = authority.featured_urls()
+    for slug, w in featured.items():
+        top = _dense(
+            conn,
+            q,
+            "embeddings_url LIKE :pat",
+            1,
+            {"pat": f"owasp-agent://evidence/comprehension-{slug}-%"},
+        )
+        if top and float(top[0].score) >= best - authority.tolerance(w):
+            _, _, tail = top[0].content.partition("\n\nCitations:")
+            cite = next(
+                (c.strip() for c in tail.split(",") if c.strip().startswith("http")), ""
+            )
+            if cite and cite not in urls:
+                urls.append(cite)
+    authority.set_featured(urls)
+
+
+def _slug_of(hit: LaneHit) -> str:
+    m = _SLUG_RE.match(hit.url or "")
+    return m.group(1) if m else ""
+
+
+def _apply_authority(hits: List[LaneHit]) -> List[LaneHit]:
+    """Admin authority weights, then (TOPPROJECTS) the best 3 projects each get a share."""
+    from application.utils.comprehension import authority, flags, paths
+
+    for (
+        h
+    ) in hits:  # file path as a signal: archives, tests, changelogs rank a little lower
+        _, _, tail = (h.content or "").partition("\n\nCitations:")
+        cite = next(
+            (c.strip() for c in tail.split(",") if c.strip().startswith("http")), ""
+        )
+        if cite:
+            h.score = float(h.score) * paths.priority(cite)
+    hits.sort(key=lambda h: -float(h.score))
+    hits = authority.bias(hits, _slug_of)
+    if flags.on("TOPPROJECTS"):
+        hits = authority.diversify(hits, _slug_of, projects=3, per=5)
+    return hits
+
+
 def fetch_comprehension_hits(
     question: str, queries: List[str] | None = None
 ) -> List[LaneHit]:
@@ -198,6 +280,9 @@ def fetch_comprehension_hits(
         from application.utils.comprehension.shared import shared_handler
 
         handler = shared_handler(database)
+        from application.utils.comprehension import authority as _authority
+
+        _authority.reset_featured()
         texts = [question] + [q for q in (queries or []) if q and q != question]
         k = retrieval_k()
         wide = k * 2 if flags.on("RERANK") else k
@@ -210,8 +295,15 @@ def fetch_comprehension_hits(
             vecs = embed_many(texts, handler.get_text_embeddings)
             for t, vec in zip(texts, vecs):
                 q = to_pgvector_literal(list(vec))
-                dense = _dense(conn, q, docs_where(), wide)
+                dense = _dense(
+                    conn,
+                    q,
+                    docs_where(),
+                    max(wide, 300) if flags.on("TOPPROJECTS") else wide,
+                )
                 rankings.append(dense)
+                if t == question:
+                    _feature_projects(conn, q, dense)
                 if flags.on("HYBRID"):
                     keyword_hits += _keyword(conn, t, wide)
                 scoped = matched_slugs(t, slugs)
@@ -246,6 +338,7 @@ def fetch_comprehension_hits(
                 hits = rrf(rankings, key=lambda h: h.url)
             if keyword_hits:
                 hits = supplement_with_keyword(hits, keyword_hits)
+            hits = _apply_authority(hits)
             if flags.on("EXPAND"):
                 _expand(conn, hits[: max(k, 12)])
         return hits
@@ -364,6 +457,75 @@ def route_project(conn: Any, question: str) -> List[str]:
     return [m.group(1)] if m else []
 
 
+PICK_SYSTEM = (
+    "You decide which single OWASP project a question is about. Candidates are numbered with a "
+    'snippet of their text. Answer with JSON only: {"project": <candidate number or null>, '
+    '"confidence": <0 to 1>}. Use null when the question could be about several candidates, '
+    "about none of them, or does not make clear which project it means."
+)
+_PICK_STATE: "ContextVar[str]" = ContextVar("comprehension_pick", default="")
+
+
+def last_pick() -> str:
+    """Readable name of the project chosen by PICK for the current question ('' if none)."""
+    return _PICK_STATE.get()
+
+
+def pick_candidates(conn: Any, question: str, limit: int = 8) -> List[tuple]:
+    """(slug, snippet) of the best-matching distinct projects, best first."""
+    from application.database import db as db_mod
+    from application.database.pgvector_utils import to_pgvector_literal
+    from application.utils.comprehension.embedcache import embed_many
+    from application.utils.comprehension.shared import shared_handler
+
+    handler = shared_handler(db_mod.Node_collection())
+    vec = embed_many([question], handler.get_text_embeddings)[0]
+    hits = _dense(conn, to_pgvector_literal(list(vec)), docs_where(), 60)
+    seen: dict = {}
+    for h in hits:
+        m = _SLUG_RE.match(h.url or "")
+        if not m or m.group(1) in seen:
+            continue
+        body = (
+            (h.content or "")
+            .split("\n\nCitations:")[0]
+            .split("\n\nRelated questions:")[0]
+        )
+        seen[m.group(1)] = " ".join(body.split())[:220]
+        if len(seen) >= limit:
+            break
+    return list(seen.items())
+
+
+def pick_project(conn: Any, question: str, llm: Any = None) -> str:
+    """Slug of the project the question is about, chosen by a cheap model; '' when unsure."""
+    from application.utils.comprehension import extras, flags
+
+    llm = llm or flags.helper_llm()
+    if llm is None:
+        return ""
+    cands = pick_candidates(conn, question)
+    if len(cands) < 2:
+        return ""
+    menu = "\n".join(
+        f"{i}. {alias_phrase(slug)}: {snippet}"
+        for i, (slug, snippet) in enumerate(cands, 1)
+    )
+    try:
+        data = extras.parse_json(
+            llm(PICK_SYSTEM, f"Question: {question}\n\nCandidates:\n{menu}")
+        )
+        n = int(data.get("project"))
+        conf = float(data.get("confidence") or 0)
+    except Exception:  # noqa: BLE001 - null / malformed means "unsure"
+        return ""
+    if conf < float(os.environ.get("OWASP_CX_PICK_MIN", "0.7")) or not 1 <= n <= len(
+        cands
+    ):
+        return ""
+    return cands[n - 1][0]
+
+
 def named_slugs(question: str, limit: int = 4) -> List[str]:
     """Repo slugs of the projects the question names (up to ``limit``); [] on any failure."""
     try:
@@ -385,11 +547,17 @@ def project_sources(question: str, max_projects: int | None = None) -> List[tupl
         limit = max_projects or longctx_max_projects()
         with sqla.session.get_bind().connect() as conn:
             slugs = matched_slugs(question, _known_slugs(conn), limit=limit + 1)
+            _PICK_STATE.set("")
             if not slugs:
                 from application.utils.comprehension import flags
 
                 if flags.on("PROJROUTE"):
                     slugs = route_project(conn, question)
+                elif flags.on("PICK"):
+                    chosen = pick_project(conn, question)
+                    if chosen:
+                        slugs = [chosen]
+                        _PICK_STATE.set(alias_phrase(chosen).title())
             if not slugs or len(slugs) > limit:
                 return []
             rows: List[tuple] = []

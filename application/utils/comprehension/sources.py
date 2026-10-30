@@ -6,6 +6,8 @@ import re
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Tuple
 
+from application.utils.comprehension.paths import is_asset_path
+
 # Boilerplate that says nothing about the standard itself.
 _NOISE_NAMES = re.compile(
     r"(code[_-]?of[_-]?conduct|license|licence|contributing|security\.md|"
@@ -34,7 +36,7 @@ class SourceDoc:
 
 
 def is_noise_path(path: str) -> bool:
-    return bool(_NOISE_NAMES.search(path or ""))
+    return bool(_NOISE_NAMES.search(path or "")) or is_asset_path(path)
 
 
 def docs_from_rows(rows: Iterable[Tuple[str, str, Dict[str, Any]]]) -> List[SourceDoc]:
@@ -114,7 +116,7 @@ def chunks_for_repo(session: Any, source_repo: str) -> List[Tuple[str, int, str]
         )
         text = str((payload or {}).get("text") or "").strip()
         idx = int(((payload or {}).get("span") or {}).get("index") or 0)
-        if _RAW_NOISE.search(path or "") or len(text) < 60:
+        if _RAW_NOISE.search(path or "") or is_asset_path(path) or len(text) < 60:
             continue
         if (path, idx) in seen:
             continue
@@ -173,7 +175,12 @@ def supplement_chunks(
     out: List[Tuple[str, int, str]] = []
     for f in sorted(dest.rglob("*.md")):
         rel = str(f.relative_to(dest))
-        if ".git/" in rel or _RAW_NOISE.search(rel) or rel in have:
+        if (
+            ".git/" in rel
+            or _RAW_NOISE.search(rel)
+            or is_asset_path(rel)
+            or rel in have
+        ):
             continue
         if any(h.endswith(rel) or rel.endswith(h) for h in have):
             continue
@@ -183,4 +190,60 @@ def supplement_chunks(
         for i, piece in enumerate(split_markdown(text)):
             if len(piece) >= 60:
                 out.append((rel, i, piece[:6000]))
+    return out
+
+
+_WIKI_EXT = (
+    ".md",
+    ".markdown",
+    ".txt",
+    ".textile",
+    ".rdoc",
+    ".mediawiki",
+    ".asciidoc",
+    ".rst",
+    ".org",
+)
+
+
+def wiki_chunks(repo: str, clone_dir: str) -> List[Tuple[str, int, str]]:
+    """Chunks of the repository's GitHub wiki (a separate git repo); [] when it has none."""
+    import os
+    import subprocess
+    from pathlib import Path
+
+    dest = Path(clone_dir) / (repo.replace("/", "__") + "__wiki")
+    if not dest.exists():
+        done = subprocess.run(
+            [
+                "git",
+                "clone",
+                "--depth",
+                "1",
+                "-q",
+                f"https://github.com/{repo}.wiki.git",
+                str(dest),
+            ],
+            capture_output=True,
+            timeout=120,
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+        )
+        if done.returncode != 0:
+            return []
+    out: List[Tuple[str, int, str]] = []
+    for f in sorted(dest.rglob("*")):
+        rel = str(f.relative_to(dest))
+        if (
+            not f.is_file()
+            or ".git/" in rel
+            or rel.startswith(".git")
+            or not rel.lower().endswith(_WIKI_EXT)
+        ):
+            continue
+        text = f.read_text(errors="ignore")
+        if len(text.strip()) < 80:
+            continue
+        for i, piece in enumerate(split_markdown(text)):
+            if len(piece) >= 60:
+                out.append((f"wiki/{rel}", i, piece[:6000]))
     return out

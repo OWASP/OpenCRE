@@ -10,6 +10,7 @@ from cre_logging import get_logger
 
 logger = get_logger(__name__)
 
+import time
 from typing import Any, Dict, List, Mapping, Optional, Set, Tuple
 
 from application.mcp.rest_client import (
@@ -61,12 +62,45 @@ ASK_TOOL: Dict[str, Any] = {
                 "type": "string",
                 "description": "Optional place hint for geo-sensitive meta questions",
             },
+            "history": {
+                "type": "array",
+                "description": (
+                    "Optional earlier turns [{role: user|assistant, content}] so follow-up "
+                    "questions keep their context (the web chat sends the same)."
+                ),
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "role": {"type": "string", "enum": ["user", "assistant"]},
+                        "content": {"type": "string"},
+                    },
+                    "required": ["role", "content"],
+                },
+            },
         },
         "required": ["prompt"],
         "additionalProperties": False,
     },
 }
 
+
+RATE_TOOL: Dict[str, Any] = {
+    "name": "rate_answer",
+    "summary": (
+        "Give a thumbs up or down to an earlier ask answer, using its answer_id. "
+        "Optional comment says what was wrong or good. Ratings are used to improve answers."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "answer_id": {"type": "string", "description": "answer_id returned by ask"},
+            "rating": {"type": "string", "enum": ["up", "down"]},
+            "comment": {"type": "string", "description": "Optional short reason"},
+        },
+        "required": ["answer_id", "rating"],
+        "additionalProperties": False,
+    },
+}
 
 _APP = None
 
@@ -82,28 +116,37 @@ def _ensure_app():
     return _APP
 
 
-def _router_handle(prompt: str) -> Optional[Dict[str, Any]]:
-    """Run OwaspAgentRouter inside an app context so the sim gate can use pgvector.
+def _router_handle(
+    prompt: str, history: Optional[List[Dict[str, str]]] = None
+) -> Optional[Dict[str, Any]]:
+    """Run the shared OWASP agent entry point inside an app context.
 
-    MCP stdio has no request context; unit tests may call without Flask — fall
-    back to a bare handle() if app bootstrap is unavailable.
+    MCP stdio has no request context; the sim gate needs one for pgvector. Raises
+    ``OwaspAgentUnavailable`` (same rule as the web chat) when the agent crashes on a meta question.
     """
+    from application.utils.owasp_agent.service import route_question
+
     try:
         from flask import has_app_context
 
         if has_app_context():
-            return OwaspAgentRouter().handle(prompt)
-    except Exception:
+            return route_question(prompt, history)
+    except ImportError:
         pass
-    try:
-        app = _ensure_app()
-        with app.app_context():
-            return OwaspAgentRouter().handle(prompt)
-    except Exception:
-        try:
-            return OwaspAgentRouter().handle(prompt)
-        except Exception:
-            return None
+    app = _ensure_app()
+    with app.app_context():
+        return route_question(prompt, history)
+
+
+def _in_app_context(fn: Any) -> Any:
+    """Run ``fn`` inside a Flask app context (MCP has none); None if the app cannot start."""
+    from flask import has_app_context
+
+    if has_app_context():
+        return fn()
+    app = _ensure_app()
+    with app.app_context():
+        return fn()
 
 
 def ask(
@@ -111,6 +154,42 @@ def ask(
     *,
     corpus: str = CORPUS_AUTO,
     place: Optional[str] = None,
+    history: Optional[List[Dict[str, str]]] = None,
+    rest_client: Optional[RestClient] = None,
+) -> Dict[str, Any]:
+    """Route ``prompt`` and return a fact pack; the pack carries an ``answer_id`` for rating."""
+    started = time.monotonic()
+    result = _ask_impl(
+        prompt, corpus=corpus, place=place, history=history, rest_client=rest_client
+    )
+    try:
+        from application.utils.answer_feedback import attach_answer_id
+
+        elapsed = int((time.monotonic() - started) * 1000)
+        return _in_app_context(
+            lambda: attach_answer_id(
+                result, question=prompt, source="mcp", latency_ms=elapsed
+            )
+        )
+    except Exception:  # noqa: BLE001 -- rating support must never break answering
+        return result
+
+
+def rate_answer(
+    answer_id: str, rating: str, comment: Optional[str] = None
+) -> Dict[str, Any]:
+    """Record a thumbs up/down for an earlier answer."""
+    from application.utils.answer_feedback import record_rating
+
+    return _in_app_context(lambda: record_rating(answer_id, rating, comment))
+
+
+def _ask_impl(
+    prompt: str,
+    *,
+    corpus: str = CORPUS_AUTO,
+    place: Optional[str] = None,
+    history: Optional[List[Dict[str, str]]] = None,
     rest_client: Optional[RestClient] = None,
 ) -> Dict[str, Any]:
     """Route ``prompt`` and return a fact pack for the chosen corpus."""
@@ -127,16 +206,23 @@ def ask(
     if place_text and corpus_key in (CORPUS_AUTO, CORPUS_OWASP_META):
         effective = f"{text} near {place_text}"
 
+    from application.utils.chat_history import normalize_chat_messages
+
+    history = normalize_chat_messages(history) or None
     intent = classify_intent(effective)
 
     if corpus_key == CORPUS_SECURITY:
         return _security_facts(text, rest_client=rest_client, intent=intent)
 
     if corpus_key == CORPUS_OWASP_META:
-        return _owasp_meta_facts(effective, intent=intent, allow_cre_defer=False)
+        return _owasp_meta_facts(
+            effective, intent=intent, allow_cre_defer=False, history=history
+        )
 
     # auto: meta answer wins when the router handled it; otherwise CRE facts.
-    meta = _owasp_meta_facts(effective, intent=intent, allow_cre_defer=True)
+    meta = _owasp_meta_facts(
+        effective, intent=intent, allow_cre_defer=True, history=history
+    )
     if meta.get("defer_to_security") or meta.get("channel") == "none":
         return _security_facts(text, rest_client=rest_client, intent=intent)
     return meta
@@ -147,6 +233,7 @@ def _owasp_meta_facts(
     *,
     intent: str,
     allow_cre_defer: bool,
+    history: Optional[List[Dict[str, str]]] = None,
 ) -> Dict[str, Any]:
     if not is_owasp_agent_enabled():
         if allow_cre_defer:
@@ -169,7 +256,18 @@ def _owasp_meta_facts(
 
     # Always try the meta/sim router first — evidence and community cards can
     # answer prompts that classify_intent labels as cre_normative.
-    resp = _router_handle(prompt)
+    from application.utils.owasp_agent.service import OwaspAgentUnavailable
+
+    try:
+        resp = _router_handle(prompt, history)
+    except OwaspAgentUnavailable:
+        # Same rule as the web chat: never answer a community/meta question from CRE retrieval.
+        return {
+            "ok": False,
+            "channel": CORPUS_OWASP_META,
+            "intent": intent,
+            "message": "The OWASP agent hit a temporary problem. Please try again.",
+        }
     if resp is None:
         if intent == "cre_normative" and not allow_cre_defer:
             return {
@@ -219,8 +317,24 @@ def _owasp_meta_facts(
     }
 
 
+class EmbeddingRetrievalError(RuntimeError):
+    """The embedding lookup itself failed (provider, database, app setup).
+
+    Kept distinct from "nothing matched": a crash must not read as an empty result.
+    """
+
+    def __init__(self, kind: str, detail: str) -> None:
+        super().__init__(f"{kind}: {detail}")
+        self.kind = kind
+        self.detail = detail
+
+
 def _retrieve_nearest_standard(prompt: str) -> Any:
-    """Same embedding retrieval as the chatbot; runs under Flask app context."""
+    """Same embedding retrieval as the chatbot; runs under Flask app context.
+
+    Returns the nearest hit, or ``None`` when nothing is above the threshold.
+    Raises ``EmbeddingRetrievalError`` when the lookup itself fails.
+    """
     from application.database import db as db_mod
     from application.prompt_client import prompt_client
 
@@ -230,23 +344,29 @@ def _retrieve_nearest_standard(prompt: str) -> Any:
         return handler.retrieve_nearest_standard_for_prompt(prompt)
 
     try:
-        from flask import has_app_context
+        return _in_app_context(_run)
+    except Exception as exc:
+        logger.warning("ask: embedding retrieval failed", exc_info=True)
+        raise EmbeddingRetrievalError(type(exc).__name__, str(exc)[:300]) from exc
 
-        if has_app_context():
-            return _run()
-    except Exception:
-        pass
+
+def _standard_embeddings_exist() -> Optional[bool]:
+    """True/False when we can tell whether any Standard embeddings are stored, else None."""
+    from application.database import db as db_mod
+    from application.defs import cre_defs
+
+    def _check() -> bool:
+        database = db_mod.Node_collection()
+        found, _pages, _page = database.get_embeddings_by_doc_type_paginated(
+            doc_type=cre_defs.Credoctypes.Standard.value, page=1, per_page=1
+        )
+        return bool(found)
+
     try:
-        app = _ensure_app()
-        with app.app_context():
-            return _run()
+        return bool(_in_app_context(_check))
     except Exception:
-        logger.info("ask: embedding retrieval failed", exc_info=True)
-        try:
-            return _run()
-        except Exception:
-            logger.info("ask: embedding retrieval bare fallback failed", exc_info=True)
-            return None
+        logger.info("ask: could not check for stored embeddings", exc_info=True)
+        return None
 
 
 def _cre_ids_from_node(node: Any) -> List[str]:
@@ -297,17 +417,42 @@ def _security_facts(
 ) -> Dict[str, Any]:
     """Retrieve via chatbot embedding similarity; return fact pack (no narrative LLM)."""
     client = rest_client or RestClient()
-    hit = _retrieve_nearest_standard(prompt)
-    if hit is None:
+    empty: Dict[str, Any] = {
+        "ok": False,
+        "channel": CORPUS_SECURITY,
+        "intent": intent,
+        "matched_standard": None,
+        "items": [],
+        "citations": [],
+        "standards_filter": "all_mapped",
+    }
+    try:
+        hit = _retrieve_nearest_standard(prompt)
+    except EmbeddingRetrievalError as exc:
         return {
-            "ok": False,
-            "channel": CORPUS_SECURITY,
-            "intent": intent,
-            "matched_standard": None,
-            "items": [],
+            **empty,
+            "reason": "retrieval_error",
+            "error": {"type": exc.kind, "detail": exc.detail},
+            "message": (
+                f"Embedding retrieval failed ({exc.kind}). This is a server-side "
+                "error, not an absence of matches."
+            ),
+        }
+    if hit is None:
+        if _standard_embeddings_exist() is False:
+            return {
+                **empty,
+                "reason": "no_embeddings",
+                "message": (
+                    "No Standard embeddings are stored in this deployment's database, "
+                    "so security facts cannot be matched (the embedding job has not "
+                    "been run for standards)."
+                ),
+            }
+        return {
+            **empty,
+            "reason": "no_match_above_threshold",
             "message": "No CRE/standard embedding match above similarity threshold.",
-            "citations": [],
-            "standards_filter": "all_mapped",
         }
 
     matched = _matched_standard_payload(hit)

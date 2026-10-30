@@ -275,6 +275,12 @@ class OwaspAgentRouter:
         """
         if not is_owasp_agent_enabled():
             return None
+        if not _clause:
+            from application.utils.comprehension.synthesize import set_history
+
+            set_history(
+                history
+            )  # native multi-turn for the answer call (background, not a question)
         text = fix_key_typos(
             (prompt or "").strip()[:MAX_PROMPT_CHARS].replace("\u2019", "'")
         )
@@ -372,7 +378,25 @@ class OwaspAgentRouter:
             from application.utils.comprehension.synthesize import take_evidence
 
             comp_hits = [c for c in cands if is_comprehension_hit(c)]
-            comp = answer_from_candidates(normalized, cands, default_completion_fn())
+            from application.utils.comprehension.answer import (
+                TEMPORARY_PROBLEM_MESSAGE,
+                AnswerUnavailable,
+            )
+
+            try:
+                comp = answer_from_candidates(
+                    normalized, cands, default_completion_fn()
+                )
+            except AnswerUnavailable:
+                return format_chat_response(
+                    QueryResult(
+                        ok=False,
+                        kind="error",
+                        message=TEMPORARY_PROBLEM_MESSAGE,
+                        citations=[],
+                        data={"pick_reason": "comprehension_unavailable"},
+                    )
+                )
             if comp is not None:
                 return format_chat_response(
                     QueryResult(
@@ -2310,10 +2334,103 @@ def _clean_project_name(raw: str) -> str:
     return name
 
 
-def _effective_prompt(
-    prompt: str, history: Optional[List[Dict[str, Any]]] = None
+_FOLLOW_UP_START = re.compile(
+    r"^(and|but|also|so|then|what about|how about|why|how so|what else|more|go on|tell me more|"
+    r"can you|could you|please|ok(ay)?|yes|no|sure)\b",
+    re.IGNORECASE,
+)
+_PRONOUN = re.compile(
+    r"\b(it|its|they|them|their|this|that|these|those|he|she|there|one)\b",
+    re.IGNORECASE,
+)
+_STANDALONE_SYSTEM = (
+    "Rewrite the user's LAST message as one standalone question, using the earlier conversation ONLY to "
+    "fill in what the last message refers to (the subject, project, standard or place it leaves out). "
+    "Do not answer anything. Do not add, repeat or combine the earlier questions. Keep it short. "
+    "If the last message already stands on its own, return it unchanged. Reply with the question only."
+)
+
+
+def needs_context(prompt: str) -> bool:
+    """True when the message cannot be understood without the conversation (short, elliptical, pronouns)."""
+    text = (prompt or "").strip()
+    words = text.split()
+    if not words:
+        return False
+    if len(words) <= 5 or _FOLLOW_UP_START.match(text):
+        return True
+    if _PRONOUN.search(text):
+        # A pronoun with a named subject elsewhere ("Does ASVS cover it?") still needs the referent,
+        # but a full sentence naming a project or standard is treated as standalone.
+        named = [
+            w for w in words[1:] if w[:1].isupper() or any(ch.isdigit() for ch in w)
+        ]
+        return not named
+    return False
+
+
+def _history_text(history: Optional[List[Dict[str, Any]]], limit: int = 4) -> str:
+    turns = []
+    for turn in history or []:
+        if not isinstance(turn, dict):
+            continue
+        role = str(turn.get("role") or "").lower()
+        content = " ".join(str(turn.get("content") or "").split())
+        if role in ("user", "assistant") and content:
+            turns.append(f"{role}: {content[:400]}")
+    return "\n".join(turns[-limit:])
+
+
+def standalone_question(
+    prompt: str,
+    history: Optional[List[Dict[str, Any]]] = None,
+    llm: Optional[Any] = None,
 ) -> str:
-    """Join recent user turns so clarify follow-ups keep prior slots/context."""
+    """The question to answer: the current message, made self-contained when it depends on the chat.
+
+    The conversation is background, never a second question. A message that already stands on its own is
+    returned untouched (history ignored). A follow-up ("What are some key risks?") is rewritten by a cheap
+    model into a standalone question; if that fails, the current message is used on its own.
+    ``OWASP_HISTORY_MODE=concat`` restores the old behaviour (earlier user turns glued in front).
+    """
+    mode = (os.environ.get("OWASP_HISTORY_MODE") or "rewrite").strip().lower()
+    if mode == "concat":
+        return _concat_prompt(prompt, history)
+    text = (prompt or "").strip()
+    context = _history_text(history)
+    if not context or not needs_context(text):
+        return text
+    try:
+        if llm is None:
+            from application.prompt_client import litellm_router
+
+            llm = litellm_router.system_user_fn(
+                os.environ.get("OWASP_REWRITE_MODEL", "gemini/gemini-2.5-flash-lite"),
+                temperature=0.0,
+                extra_try_kwargs={"reasoning_effort": "disable"},
+                interactive=True,
+            )
+        out = " ".join(
+            (
+                llm(
+                    _STANDALONE_SYSTEM,
+                    f"Conversation:\n{context}\n\nLast message: {text}",
+                )
+                or ""
+            ).split()
+        )
+    except (
+        Exception
+    ):  # noqa: BLE001 - on any failure answer the current message alone, never the history
+        return text
+    out = out.strip().strip('"')
+    if not out or len(out) > 400 or out.count("?") > 1:
+        return text  # empty, rambling, or several questions glued together: not a standalone question
+    return out
+
+
+def _concat_prompt(prompt: str, history: Optional[List[Dict[str, Any]]] = None) -> str:
+    """Old behaviour: join recent user turns so clarify follow-ups keep prior slots/context."""
     prior: List[str] = []
     for turn in history or []:
         if not isinstance(turn, dict):
@@ -2328,3 +2445,9 @@ def _effective_prompt(
     if not prior:
         return prompt
     return (" ".join(prior[-3:]) + "\n" + prompt).strip()
+
+
+def _effective_prompt(
+    prompt: str, history: Optional[List[Dict[str, Any]]] = None
+) -> str:
+    return standalone_question(prompt, history)
