@@ -24,6 +24,8 @@ import os
 import re
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeout
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -76,6 +78,24 @@ def pdf_enabled() -> bool:
         "yes",
         "on",
     )
+
+
+def js_enabled() -> bool:
+    """Render script-only pages in a headless browser: off unless OWASP_CRAWL_JS=1."""
+    return (os.environ.get("OWASP_CRAWL_JS", "0") or "0").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+
+
+def pdf_seconds() -> float:
+    """Wall-clock cap for converting one PDF (OWASP_CRAWL_PDF_SECONDS, default 60)."""
+    try:
+        return max(1.0, float(os.environ.get("OWASP_CRAWL_PDF_SECONDS", "60")))
+    except ValueError:
+        return 60.0
 
 
 def default_delay() -> float:
@@ -364,6 +384,35 @@ def _pdf_to_markdown(data: bytes) -> str:
         return result.document.export_to_markdown()
 
 
+RENDER_TIMEOUT_MS = 30_000
+
+
+def render_with_playwright(url: str) -> str:
+    """Rendered HTML of ``url`` from headless Firefox (the browser the images install).
+
+    Requests to other hosts are blocked, so a page cannot pull the crawler into third parties.
+    """
+    from playwright.sync_api import sync_playwright
+
+    host = urlparse(url).netloc.lower()
+    with sync_playwright() as pw:
+        browser = pw.firefox.launch(headless=True)
+        try:
+            page = browser.new_page(user_agent=USER_AGENT)
+            page.route(
+                "**/*",
+                lambda route: (
+                    route.continue_()
+                    if urlparse(route.request.url).netloc.lower() == host
+                    else route.abort()
+                ),
+            )
+            page.goto(url, wait_until="networkidle", timeout=RENDER_TIMEOUT_MS)
+            return page.content()
+        finally:
+            browser.close()
+
+
 class Crawler:
     def __init__(
         self,
@@ -379,8 +428,11 @@ class Crawler:
         clock: Callable[[], float] = time.monotonic,
         now: Optional[Callable[[], datetime]] = None,
         budget_seconds: Optional[float] = None,
+        renderer: Optional[Callable[[str], str]] = None,
     ) -> None:
         import requests
+
+        self._renderer = renderer or render_with_playwright
 
         self.spec = spec
         self.max_pages = min(max_pages or spec.max_pages, spec.max_pages)
@@ -627,8 +679,12 @@ class Crawler:
             )
             began = self._clock()
             try:
-                markdown, title, links = _pdf_to_markdown(data).strip(), "", []
+                markdown, title, links = self._pdf_text(data).strip(), "", []
                 logger.info("PDF %s converted in %.1fs", url, self._clock() - began)
+            except TimeoutError:
+                logger.warning("PDF %s: gave up after %.0fs", url, pdf_seconds())
+                skip.append((url, "pdf-timeout"))
+                return []
             except Exception as exc:  # noqa: BLE001
                 skip.append((url, f"pdf-error:{type(exc).__name__}"))
                 return []
@@ -644,6 +700,17 @@ class Crawler:
                 return []
             links = [] if _nofollow(headers, html) else self._links(url, html)
             markdown, title = _html_to_markdown(html, url)
+            if len(markdown) < MIN_PAGE_CHARS and js_enabled():
+                rendered = self._render(url, skip)
+                if rendered is None:
+                    return links
+                html = rendered
+                reason = exclusion_reason(headers, html)
+                if reason:
+                    skip.append((url, reason))
+                    return []
+                links = [] if _nofollow(headers, html) else self._links(url, html)
+                markdown, title = _html_to_markdown(html, url)
         else:
             skip.append((url, f"type:{ctype or 'unknown'}"))
             return []
@@ -676,6 +743,30 @@ class Crawler:
             )
         )
         return links
+
+    def _pdf_text(self, data: bytes) -> str:
+        """Convert in a worker thread so a slow PDF costs at most ``pdf_seconds()``.
+
+        Docling cannot be interrupted: after a timeout the worker finishes in the background
+        (bounded by MAX_PDF_PAGES) while the crawl moves on.
+        """
+        pool = ThreadPoolExecutor(max_workers=1)
+        future = pool.submit(_pdf_to_markdown, data)
+        pool.shutdown(wait=False)
+        try:
+            return future.result(timeout=pdf_seconds())
+        except FutureTimeout as exc:
+            raise TimeoutError from exc
+
+    def _render(self, url: str, skip: List[Tuple[str, str]]) -> Optional[str]:
+        """HTML of a script-only page from the browser fallback; None (and a skip) on failure."""
+        self._throttle(urlparse(url).netloc.lower())
+        logger.info("JS fallback: rendering %s", url)
+        try:
+            return self._renderer(url)
+        except Exception as exc:  # noqa: BLE001
+            skip.append((url, f"js-error:{type(exc).__name__}"))
+            return None
 
     def _links(self, base: str, html: str) -> List[str]:
         import lxml.html

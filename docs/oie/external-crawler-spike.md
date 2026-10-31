@@ -27,8 +27,7 @@ fetch, robots and politeness in our own small code on `requests`. Reasons:
 - Scrapy's robots handling is opt-in and it brings a reactor into a Flask/cron codebase; Crawl4AI is a browser
   stack (heavy install, attribution clause) for a crawl of at most a few hundred static chapter pages.
 - robots.txt is parsed with the stdlib `urllib.robotparser` (RFC 9309 semantics: longest match, `*` fallback).
-- Playwright fallback for JS-only sites is deliberately **not** built yet; no approved site needs it. If one does,
-  render with the already installed Playwright and feed the HTML to the same extractor.
-- PDFs go through Docling (already a dependency), but they are OFF unless OWASP_CRAWL_PDF=1: with OCR and table recognition disabled and at most 40 pages, one converter load still costs ~10 s on CPU. The crawl also has a wall-clock budget (OWASP_CRAWL_MAX_SECONDS, default 900) and logs every request, page and skip (logger `opencrebot`; `--debug` in the script adds queue steps).
+- Playwright fallback for JS-only sites (7.12): OFF unless `OWASP_CRAWL_JS=1`. Only a page whose static HTML yields almost no text is re-rendered in headless **Firefox** (the browser `playwright install --with-deps firefox` puts in the staging image; `make dev`/`make staging` install all browsers). Rendering waits for network idle (30 s cap), blocks requests to other hosts, shares the per-host throttle and crawl budget, and the rendered HTML goes through the same robots/noai checks and extractor. A failure is a skip (`js-error:<Type>`). Prod/Heroku images do not install browsers: leave the flag off there.
+- PDFs go through Docling (already a dependency), but they are OFF unless OWASP_CRAWL_PDF=1 (each PDF is capped at OWASP_CRAWL_PDF_SECONDS, default 60, then skipped as `pdf-timeout`): with OCR and table recognition disabled and at most 40 pages, one converter load still costs ~10 s on CPU. The crawl also has a wall-clock budget (OWASP_CRAWL_MAX_SECONDS, default 900) and logs every request, page and skip (logger `opencrebot`; `--debug` in the script adds queue steps).
 
 Added dependency: `trafilatura` (requirements.txt).
