@@ -18,7 +18,10 @@ SHELL = (
     "<html><head><title>App</title><script src='/app.js'></script></head>"
     "<body><div id='root'></div></body></html>"
 )
-ROBOTS = ("/robots.txt", lambda site: ok("User-agent: *\n", **{"Content-Type": "text/plain"}))
+ROBOTS = (
+    "/robots.txt",
+    lambda site: ok("User-agent: *\n", **{"Content-Type": "text/plain"}),
+)
 
 
 class JsFallbackTest(unittest.TestCase):
@@ -54,9 +57,7 @@ class JsFallbackTest(unittest.TestCase):
         renderer.assert_not_called()
 
     def test_shell_page_is_rendered_when_on(self):
-        renderer = mock.Mock(
-            return_value=html("Rendered Home", ["/next"], paras=3)
-        )
+        renderer = mock.Mock(return_value=html("Rendered Home", ["/next"], paras=3))
         routes = {"/": ok(SHELL), "/next": ok(html("Next"))}
         result, _ = self.crawl(routes, renderer)
         renderer.assert_called_once()
