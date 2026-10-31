@@ -68,7 +68,7 @@
   {
     "section_id": "AISVS12",
     "section": "Monitoring, Logging & Anomaly Detection",
-    "hyperlink": "https://github.com/OWASP/AISVS/tree/main/1.0/en/0x10-C12-Monitoring-and-Logging.md",
+    "hyperlink": "https://github.com/OWASP/AISVS/blob/main/1.0/en/0x10-C12-Monitoring-and-Logging.md",
     "cre_ids": ["058-083", "148-420", "402-706", "843-841"]
   }
 ]
