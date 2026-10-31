@@ -1171,3 +1171,182 @@ class WideMatchTest(unittest.TestCase):
         from application.utils.comprehension import flags
 
         self.assertIn("WIDEMATCH", flags.NAMES)
+
+
+class TestExternalAliases(unittest.TestCase):
+    def test_external_slug_phrase_and_registry_aliases_match_questions(self):
+        from application.utils.comprehension import retrieve
+
+        self.assertEqual(retrieve.alias_phrase("ext-owasp-benelux"), "benelux")
+        retrieve._EXT_ALIAS_CACHE.update(
+            at=__import__("time").time(),
+            map={"ext-owasp-benelux": ["owasp benelux", "benelux day"]},
+        )
+        try:
+            got = retrieve.matched_slugs(
+                "When is the next OWASP Benelux event?",
+                ["owasp-aisvs", "ext-owasp-benelux"],
+            )
+            self.assertEqual(got, ["ext-owasp-benelux"])
+        finally:
+            retrieve._EXT_ALIAS_CACHE.update(at=0.0, map={})
+
+    def test_as_of_rule_only_for_dated_web_sources(self):
+        from application.utils.comprehension import synthesize
+
+        seen = []
+
+        def llm(system, user):
+            seen.append(system)
+            return "x [1]"
+
+        synthesize.synthesize("q", [("plain text", ["https://a"])], llm)
+        synthesize.synthesize(
+            "q", [("Source: https://s | fetched 2026-10-29\ntext", ["https://s"])], llm
+        )
+        self.assertNotIn("as of <fetched date>", seen[0])
+        self.assertIn("as of <fetched date>", seen[1])
+
+    def test_no_transcript_rule_only_for_metadata_only_videos(self):
+        from application.utils.comprehension import synthesize
+
+        seen = []
+
+        def llm(system, user):
+            seen.append(system)
+            return "x [1]"
+
+        synthesize.synthesize("q", [("plain text", ["https://a"])], llm)
+        synthesize.synthesize(
+            "q",
+            [("Talk: T\nTranscript: not indexed (metadata only)", ["https://v"])],
+            llm,
+        )
+        self.assertNotIn("transcript is not indexed", seen[0])
+        self.assertIn("transcript is not indexed", seen[1])
+
+
+class TestExternalDoesNotCountAgainstProjectLimit(unittest.TestCase):
+    def test_one_repo_plus_one_external_source_are_both_read(self):
+        from unittest import mock
+
+        from application.utils.comprehension import retrieve
+
+        retrieve._EXT_ALIAS_CACHE.update(
+            at=__import__("time").time(),
+            map={"ext-owasp-benelux": ["owasp benelux"]},
+        )
+        asked = []
+
+        class Conn:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+            def execute(self, sql, params=None):
+                asked.append((params or {}).get("pat"))
+                return mock.Mock(fetchall=lambda: [])
+
+        class Bind:
+            def connect(self):
+                return Conn()
+
+        try:
+            with mock.patch(
+                "application.utils.comprehension.retrieve._known_slugs",
+                return_value=["owasp-www-project-pwnzzai", "ext-owasp-benelux"],
+            ), mock.patch("application.sqla.session") as sess:
+                sess.get_bind.return_value = Bind()
+                retrieve.project_sources(
+                    "What is the PwnzzAI training at OWASP Benelux?", None
+                )
+        finally:
+            retrieve._EXT_ALIAS_CACHE.update(at=0.0, map={})
+        pats = [p for p in asked if p]
+        self.assertTrue(any("ext-owasp-benelux" in p for p in pats), pats)
+        self.assertTrue(any("pwnzzai" in p for p in pats), pats)
+
+
+class TestTalkLaneAndWatchLinks(unittest.TestCase):
+    def test_watch_links_survive_answer_cleanup_other_urls_do_not(self):
+        from application.utils.comprehension.synthesize import clean_answer_text
+
+        out = clean_answer_text(
+            "Watch it at https://www.youtube.com/watch?v=zroXcBDsal4&t=760s. "
+            "More at https://example.org/x and [the site](https://example.org/y) [1]."
+        )
+        self.assertIn("https://www.youtube.com/watch?v=zroXcBDsal4&t=760s", out)
+        self.assertNotIn("example.org", out)
+        self.assertIn("the site", out)
+
+    def test_talk_lane_only_for_talk_questions_and_merges_catalogue_entries(self):
+        from types import SimpleNamespace as H
+        from unittest import mock
+
+        from application.utils.comprehension import retrieve
+
+        def hit(url, score):
+            return H(url=url, score=score, content="", doc_type="")
+
+        base = [
+            hit(f"owasp-agent://evidence/comprehension-r-raw-{i}", 0.9 - i / 100)
+            for i in range(8)
+        ]
+        lane = [
+            hit(f"owasp-agent://evidence/comprehension-ext-yt-owasp-raw-{i}", 0.5)
+            for i in range(3)
+        ]
+        with mock.patch.object(retrieve, "_dense", return_value=lane), mock.patch(
+            "application.utils.comprehension.embedcache.embed_many",
+            return_value=[[0.1]],
+        ), mock.patch(
+            "application.utils.comprehension.shared.shared_handler"
+        ), mock.patch(
+            "application.database.pgvector_utils.to_pgvector_literal",
+            return_value="[0.1]",
+        ):
+            same = retrieve._with_talk_lane(
+                None, "what is the OWASP Top 10?", list(base)
+            )
+            self.assertEqual([h.url for h in same], [h.url for h in base])
+            merged = retrieve._with_talk_lane(
+                None, "Which talks were at BeNeLux Day 2018?", list(base)
+            )
+        urls = [h.url for h in merged]
+        self.assertEqual(urls[6:9], [h.url for h in lane])
+        self.assertEqual(len(urls), len(base) + len(lane))
+
+
+class TestWatchLines(unittest.TestCase):
+    def test_used_catalogue_entries_get_a_watch_link_once(self):
+        from application.utils.comprehension import synthesize
+
+        entry = "Title: Threat Modeling for AI\nVideo: https://www.youtube.com/watch?v=zroXcBDsal4\nDescription: x"
+        other = "Title: Other\nVideo: https://www.youtube.com/watch?v=abcdefghijk"
+        out = synthesize.watch_lines(
+            "A talk exists [1].", [entry, other, "no video here"]
+        )
+        self.assertIn(
+            "Watch: Threat Modeling for AI - https://www.youtube.com/watch?v=zroXcBDsal4",
+            out,
+        )
+        self.assertEqual(out.count("Watch:"), 2)
+        self.assertEqual(
+            synthesize.watch_lines(
+                "See https://www.youtube.com/watch?v=zroXcBDsal4 [1]", [entry]
+            ),
+            "",
+        )
+
+    def test_synthesize_appends_the_link_when_the_model_only_cites(self):
+        from application.utils.comprehension import synthesize
+
+        entry = "Title: Threat Modeling for AI\nVideo: https://www.youtube.com/watch?v=zroXcBDsal4"
+        answer, cites = synthesize.synthesize(
+            "q",
+            [(entry, ["https://www.youtube.com/watch?v=zroXcBDsal4"])],
+            lambda s, u: "Yes, there is a talk [1].",
+        )
+        self.assertIn("https://www.youtube.com/watch?v=zroXcBDsal4", answer)

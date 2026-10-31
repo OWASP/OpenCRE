@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Print the stack tip on GitHub vs the commit the staging web image was built from.
-# Usage: STAGING_HOST=sg@100.74.143.62 ./scripts/sync_check_staging.sh [branch]
+# Usage: STAGING_HOST=user@staging-host ./scripts/sync_check_staging.sh [branch]
 set -euo pipefail
 BRANCH="${1:-feat/answer-feedback}"
 HOST="${STAGING_HOST:?set STAGING_HOST, e.g. user@host}"

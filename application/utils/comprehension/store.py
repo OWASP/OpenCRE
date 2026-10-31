@@ -271,3 +271,60 @@ def changed_chunks(
             continue
         out.append(chunk)
     return out
+
+
+MAX_STALE_FRACTION = 0.5
+
+
+def stale_raw_urls(
+    database: Any, repo: str, chunks: List[Tuple[str, int, str]]
+) -> List[str]:
+    """Stored raw-document ids of ``repo`` that the current ``chunks`` no longer produce."""
+    from sqlalchemy import text as sql_text
+
+    prefix = f"owasp-agent://evidence/{SLUG_PREFIX}{repo_slug(repo)}-raw-"
+    stored = [
+        r[0]
+        for r in database.session.execute(
+            sql_text(
+                "SELECT embeddings_url FROM embeddings WHERE embeddings_url LIKE :p"
+            ),
+            {"p": prefix + "%"},
+        ).fetchall()
+    ]
+    current = {f"owasp-agent://evidence/{d[0]}" for d in raw_documents(repo, chunks)}
+    return sorted(u for u in stored if u not in current)
+
+
+def delete_stale_raw(
+    database: Any,
+    repo: str,
+    chunks: List[Tuple[str, int, str]],
+    *,
+    force: bool = False,
+) -> int:
+    """Delete stored raw documents that a complete re-ingest no longer produces.
+
+    Used for sources whose terms require removed content to disappear (YouTube videos made private
+    or deleted). Guards: an empty run never deletes (an API outage must not wipe a source), and
+    removing more than MAX_STALE_FRACTION of what is stored needs ``force``.
+    """
+    from sqlalchemy import text as sql_text
+
+    if not chunks:
+        raise ValueError("refusing to delete stale documents after an empty run")
+    stale = stale_raw_urls(database, repo, chunks)
+    if not stale:
+        return 0
+    current = len(chunks)
+    if not force and len(stale) > MAX_STALE_FRACTION * (current + len(stale)):
+        raise ValueError(
+            f"{len(stale)} of {current + len(stale)} stored documents would be deleted; "
+            "check the run was complete, then pass force"
+        )
+    for url in stale:
+        database.session.execute(
+            sql_text("DELETE FROM embeddings WHERE embeddings_url = :u"), {"u": url}
+        )
+    database.session.commit()
+    return len(stale)

@@ -30,6 +30,7 @@ pathspec
 
 # auth + HTTP
 requests
+trafilatura
 oauthlib
 google-auth
 google-api-core

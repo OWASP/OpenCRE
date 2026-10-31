@@ -38,6 +38,7 @@ ALL_OK = {
     "librarian": _ok("librarian"),
     "file_graph": _ok("file_graph"),
     "gap_analysis": _ok("gap_analysis"),
+    "external_discovery": _ok("external_discovery"),
 }
 
 
@@ -152,8 +153,10 @@ class RunDueJobsTest(SchedulerTestBase):
             config=SchedulerConfig(),
             overrides=dict(ALL_OK),
         )
-        self.assertEqual([o.job for o in first], ["owasp", "cre_expansion"])
-        self.assertEqual([o.status for o in first], ["ok", "ok"])
+        self.assertEqual(
+            [o.job for o in first], ["owasp", "cre_expansion", "external_discovery"]
+        )
+        self.assertEqual([o.status for o in first], ["ok", "ok", "ok"])
         second = run_due_jobs(
             self.collection,
             cache_file="unused",
@@ -161,9 +164,7 @@ class RunDueJobsTest(SchedulerTestBase):
             config=SchedulerConfig(),
             overrides=dict(ALL_OK),
         )
-        self.assertEqual(
-            [o.status for o in second], ["skipped_already_ran", "skipped_already_ran"]
-        )
+        self.assertEqual([o.status for o in second], ["skipped_already_ran"] * 3)
         third = run_due_jobs(
             self.collection,
             cache_file="unused",
@@ -171,7 +172,7 @@ class RunDueJobsTest(SchedulerTestBase):
             config=SchedulerConfig(),
             overrides=dict(ALL_OK),
         )
-        self.assertEqual([o.status for o in third], ["ok", "ok"])
+        self.assertEqual([o.status for o in third], ["ok", "ok", "ok"])
 
     def test_subset_of_jobs(self) -> None:
         out = run_due_jobs(
@@ -420,7 +421,7 @@ class HealthTest(SchedulerTestBase):
         self.assertEqual(report["queues"]["harvest_input_pending"], 0)
 
     def test_recent_success_is_healthy(self) -> None:
-        for name in ("owasp", "cre_expansion"):
+        for name in ("owasp", "cre_expansion", "external_discovery"):
             self.run_job(name)
         report = health.evaluate_health(sqla.session, NOW + timedelta(minutes=1))
         self.assertTrue(report["healthy"])
@@ -428,7 +429,7 @@ class HealthTest(SchedulerTestBase):
         self.assertIsNotNone(report["jobs"]["owasp"]["last_success_at"])
 
     def test_old_success_is_stale(self) -> None:
-        for name in ("owasp", "cre_expansion"):
+        for name in ("owasp", "cre_expansion", "external_discovery"):
             self.run_job(name)
         later = run_log.utcnow() + timedelta(days=4)
         report = health.evaluate_health(sqla.session, later)
@@ -437,7 +438,7 @@ class HealthTest(SchedulerTestBase):
         self.assertFalse(report["healthy"])
 
     def test_staleness_follows_the_admin_set_interval(self) -> None:
-        for name in ("owasp", "cre_expansion"):
+        for name in ("owasp", "cre_expansion", "external_discovery"):
             self.run_job(name)
         later = run_log.utcnow() + timedelta(hours=2)
         report = health.evaluate_health(sqla.session, later)

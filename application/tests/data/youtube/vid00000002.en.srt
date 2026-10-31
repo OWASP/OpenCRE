@@ -1,0 +1,8 @@
+1
+00:00:00,500 --> 00:00:03,000
+Hello from the SRT file.
+
+2
+00:00:03,000 --> 00:00:06,250
+Second line
+spanning two lines.

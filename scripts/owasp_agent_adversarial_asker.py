@@ -722,6 +722,10 @@ def _staging_docker_exec_args() -> List[str]:
     ]
 
 
+def _missing_staging_host() -> str:
+    raise SystemExit("set STAGING_HOST (user@host) to use the staging ssh transport")
+
+
 def _staging_ssh_params() -> Any:
     from mcp import StdioServerParameters
 
@@ -732,7 +736,7 @@ def _staging_ssh_params() -> Any:
             "BatchMode=yes",
             "-o",
             "ConnectTimeout=30",
-            "sg@100.74.143.62",
+            os.environ.get("STAGING_HOST") or _missing_staging_host(),
             "docker",
             *_staging_docker_exec_args(),
         ],

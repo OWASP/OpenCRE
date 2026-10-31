@@ -29,19 +29,48 @@ _REPO_CACHE: dict = {"at": 0.0, "slugs": []}
 _STRIP = re.compile(r"^(?:owasp-)?(?:www-project-|www-)?")
 
 
+_EXT_ALIAS_CACHE: dict = {"at": 0.0, "map": {}}
+
+
 def alias_phrase(slug: str) -> str:
     """Words a person would use for a repo slug: owasp-www-project-top-ten -> 'top ten'."""
+    if slug.startswith("ext-"):  # external source: ext-owasp-benelux -> 'benelux'
+        slug = slug[len("ext-") :]
     return _STRIP.sub("", slug).replace("-", " ").strip()
+
+
+def _external_aliases() -> dict:
+    """{ext slug: [lower-case phrases]} from the approved external sources (10 min cache)."""
+    if time.time() - _EXT_ALIAS_CACHE["at"] < 600:
+        return _EXT_ALIAS_CACHE["map"]
+    out: dict = {}
+    try:
+        from application import sqla
+        from application.utils.comprehension import external
+
+        for spec in external.load_specs(sqla.session):
+            phrases = [spec.name, *spec.aliases]
+            out[external.slug_for(spec)] = [
+                " ".join(re.sub(r"[^a-z0-9]+", " ", p.lower()).split())
+                for p in phrases
+                if p
+            ]
+    except Exception:  # noqa: BLE001 - registry trouble must not break retrieval
+        out = {}
+    _EXT_ALIAS_CACHE.update(at=time.time(), map=out)
+    return out
 
 
 def matched_slugs(question: str, slugs: List[str], limit: int = 3) -> List[str]:
     """Repo slugs whose alias phrase appears as whole words in the question (longest first)."""
     q = " " + re.sub(r"[^a-z0-9]+", " ", (question or "").lower()).strip() + " "
     found = []
+    ext = _external_aliases()
     for slug in slugs:
-        phrase = alias_phrase(slug)
-        if len(phrase) >= 4 and f" {phrase} " in q:
-            found.append((len(phrase), slug))
+        for phrase in [alias_phrase(slug), *ext.get(slug, [])]:
+            if len(phrase) >= 4 and f" {phrase} " in q:
+                found.append((len(phrase), slug))
+                break
     found.sort(reverse=True)
     return [s for _, s in found[:limit]]
 
@@ -75,6 +104,13 @@ def _known_slugs(conn) -> List[str]:
             )
         ).fetchall()
         slugs = sorted({m.group(1) for (u,) in rows if (m := _SLUG_RE.match(u))})
+    ext_rows = conn.execute(
+        sql_text(
+            "SELECT DISTINCT substring(embeddings_url from 'comprehension-(ext-.+?)-raw-') "
+            "FROM embeddings WHERE embeddings_url LIKE 'owasp-agent://evidence/comprehension-ext-%-raw-%'"
+        )
+    ).fetchall()
+    slugs = sorted(set(slugs) | {r[0] for r in ext_rows if r[0]})
     _REPO_CACHE.update(at=time.time(), slugs=slugs, key=cache_key)
     return slugs
 
@@ -233,6 +269,51 @@ def _feature_projects(conn: Any, q: str, dense: List[LaneHit]) -> None:
     authority.set_featured(urls)
 
 
+_TALK_Q = re.compile(
+    r"\b(talks?|sessions?|keynotes?|webinars?|recordings?|videos?|watch|presentations?|speakers?|"
+    r"panels?|workshops?)\b",
+    re.I,
+)
+
+
+def _with_talk_lane(
+    conn: Any, question: str, hits: List[LaneHit], take: int = 10
+) -> List[LaneHit]:
+    """Talk questions also get the best catalogue entries of the YouTube sources.
+
+    The catalogue is ~1,700 short entries next to hundreds of thousands of repository chunks, so
+    "which talks were at X" would otherwise be answered from event pages that name no talks.
+    """
+    if not _TALK_Q.search(question or ""):
+        return hits
+    try:
+        from application.utils.comprehension.embedcache import embed_many
+        from application.utils.comprehension.shared import shared_handler
+        from application.database import db as db_mod
+        from application.database.pgvector_utils import to_pgvector_literal
+
+        vec = embed_many(
+            [question], shared_handler(db_mod.Node_collection()).get_text_embeddings
+        )[0]
+        lane = _dense(
+            conn,
+            to_pgvector_literal(list(vec)),
+            "embeddings_url LIKE :pat",
+            take,
+            {"pat": "owasp-agent://evidence/comprehension-ext-yt-%-raw-%"},
+        )
+    except Exception:  # noqa: BLE001 - an extra lane must never fail an answer
+        return hits
+    seen = {h.url for h in lane}
+    rest = [h for h in hits if h.url not in seen]
+    head = 6
+    out = rest[:head] + lane + rest[head:]
+    top = float(out[0].score) if out else 0.0
+    for i, h in enumerate(out):  # keep this order under later score sorts
+        h.score = top - i * 1e-4
+    return out
+
+
 def _slug_of(hit: LaneHit) -> str:
     m = _SLUG_RE.match(hit.url or "")
     return m.group(1) if m else ""
@@ -338,6 +419,7 @@ def fetch_comprehension_hits(
                 hits = rrf(rankings, key=lambda h: h.url)
             if keyword_hits:
                 hits = supplement_with_keyword(hits, keyword_hits)
+            hits = _with_talk_lane(conn, question, hits)
             hits = _apply_authority(hits)
             if flags.on("EXPAND"):
                 _expand(conn, hits[: max(k, 12)])
@@ -546,7 +628,17 @@ def project_sources(question: str, max_projects: int | None = None) -> List[tupl
 
         limit = max_projects or longctx_max_projects()
         with sqla.session.get_bind().connect() as conn:
-            slugs = matched_slugs(question, _known_slugs(conn), limit=limit + 1)
+            slugs = matched_slugs(question, _known_slugs(conn), limit=limit + 3)
+            # External sites are small and do not count against the project limit: "PwnzzAI training
+            # at OWASP BeNeLux Days" reads the PwnzzAI project and the BeNeLux site, both whole.
+            from application.utils.comprehension import external as _external
+
+            ext_slugs = [s for s in slugs if _external.is_external_slug(s)][:2]
+            repo_slugs = [s for s in slugs if not _external.is_external_slug(s)]
+            if len(repo_slugs) > limit:
+                return []
+            slugs = repo_slugs + ext_slugs
+            limit += len(ext_slugs)
             _PICK_STATE.set("")
             if not slugs:
                 from application.utils.comprehension import flags

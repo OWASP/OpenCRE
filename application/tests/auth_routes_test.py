@@ -155,6 +155,16 @@ class TestAuthRoutes(unittest.TestCase):
                 with client.session_transaction() as sess:
                     self.assertIn("user_id", sess)
 
+    def test_mcp_sign_in_rule_matches_web(self) -> None:
+        from application.mcp.oauth import account_may_sign_in
+
+        env = {"ADMIN_EMAILS": "boss@gmail.com", "LOGIN_ALLOWED_DOMAINS": "owasp.org"}
+        with patch.dict(os.environ, env):
+            self.assertTrue(account_may_sign_in("boss@gmail.com"))
+            self.assertTrue(account_may_sign_in("member@owasp.org"))
+            self.assertFalse(account_may_sign_in("stranger@gmail.com"))
+            self.assertFalse(account_may_sign_in("x@evilowasp.org"))
+
     def test_auth_user_returns_email_when_logged_in(self) -> None:
         with patch.dict(
             os.environ, {"CRE_ENABLE_LOGIN": "1", "INSECURE_REQUESTS": "1"}
