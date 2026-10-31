@@ -14,6 +14,10 @@ COPY ./scripts/prod-docker-entrypoint.sh /code
 # Default stays prod requirements.txt for Heroku slug size.
 ARG REQUIREMENTS_FILE=requirements.txt
 RUN pip install -r "${REQUIREMENTS_FILE}" gunicorn
+# Headless Firefox for Playwright: the embedding job (prompt_client) and the crawler's JS fallback need it.
+# Off by default (prod/Heroku keep the small image); staging compose sets INSTALL_BROWSERS=1.
+ARG INSTALL_BROWSERS=0
+RUN if [ "${INSTALL_BROWSERS}" = "1" ]; then playwright install --with-deps firefox; fi
 
 ENV INSECURE_REQUESTS=1
 ENV FLASK_CONFIG="production"
