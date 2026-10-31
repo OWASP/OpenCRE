@@ -65,3 +65,30 @@ class StaleRawTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ApiCacheTtlTest(unittest.TestCase):
+    def test_old_cached_responses_are_refetched(self):
+        import os
+        import tempfile
+        import time
+
+        from application.utils.comprehension import youtube_source as ys
+
+        calls = []
+
+        def get(url, params, headers):
+            calls.append(url)
+            return {"items": [len(calls)]}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            api = ys.YouTubeApi(api_key="k", http_get=get, cache_dir=tmp)
+            self.assertEqual(api._call("videos", {"id": "a"}), {"items": [1]})
+            self.assertEqual(
+                api._call("videos", {"id": "a"}), {"items": [1]}
+            )  # fresh: cached
+            self.assertEqual(len(calls), 1)
+            for f in os.listdir(tmp):  # age the cache past the TTL
+                old = time.time() - ys.CACHE_MAX_AGE_SECONDS - 60
+                os.utime(os.path.join(tmp, f), (old, old))
+            self.assertEqual(api._call("videos", {"id": "a"}), {"items": [2]})

@@ -307,12 +307,15 @@ class IngestScriptTest(unittest.TestCase):
     def run_main(self, *extra):
         script = load_script()
         write_raw = mock.Mock(return_value=7)
+        self.delete_stale = mock.Mock(return_value=2)
         with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(
             os.environ, {"YOUTUBE_API_KEY": "KEY"}
         ), mock.patch.object(ys, "_requests_get", fake_http(PAGES)), mock.patch.object(
             script, "open_database", return_value=object()
         ), mock.patch(
             "application.utils.comprehension.store.write_raw", write_raw
+        ), mock.patch(
+            "application.utils.comprehension.store.delete_stale_raw", self.delete_stale
         ), mock.patch(
             "application.utils.comprehension.shared.shared_handler"
         ):
@@ -328,6 +331,14 @@ class IngestScriptTest(unittest.TestCase):
                 ]
             )
         return rc, write_raw
+
+    def test_full_apply_removes_stale_videos_but_a_limited_run_does_not(self):
+        rc, _ = self.run_main("--apply")
+        self.assertEqual(rc, 0)
+        self.delete_stale.assert_called_once()
+        self.assertEqual(self.delete_stale.call_args[0][1], "ext-owasp-yt")
+        rc, _ = self.run_main("--apply", "--limit", "1")
+        self.delete_stale.assert_not_called()
 
     def test_dry_run_writes_nothing(self):
         rc, write_raw = self.run_main()

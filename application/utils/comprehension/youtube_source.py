@@ -23,6 +23,9 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 API_BASE = "https://www.googleapis.com/youtube/v3"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
+# Cached API answers older than this are fetched again: YouTube terms require stored API data to be
+# refreshed within 30 days, and a refresh must notice videos that were removed.
+CACHE_MAX_AGE_SECONDS = 24 * 3600
 LIST_COST = 1  # quota units per channels/playlistItems/videos list call
 CAPTION_DOWNLOAD_COST = 200
 DEFAULT_DAILY_DOWNLOADS = 45  # 45 * 200 = 9,000 of the 10,000 default daily units
@@ -85,7 +88,10 @@ class YouTubeApi:
                 f"{endpoint}-{json.dumps(params, sort_keys=True)}",
             )
             cache_file = self.cache / (tag[:180] + ".json")
-            if cache_file.exists():
+            if (
+                cache_file.exists()
+                and time.time() - cache_file.stat().st_mtime < CACHE_MAX_AGE_SECONDS
+            ):
                 return json.loads(cache_file.read_text(encoding="utf-8"))
         if not self._key:
             raise RuntimeError("YOUTUBE_API_KEY is not set")
