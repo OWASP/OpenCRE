@@ -407,7 +407,11 @@ def render_with_playwright(url: str) -> str:
                     else route.abort()
                 ),
             )
-            page.goto(url, wait_until="networkidle", timeout=RENDER_TIMEOUT_MS)
+            page.goto(url, wait_until="load", timeout=RENDER_TIMEOUT_MS)
+            try:  # scripts usually finish soon after load; sites that never go idle are not waited for
+                page.wait_for_load_state("networkidle", timeout=5_000)
+            except Exception:  # noqa: BLE001
+                pass
             return page.content()
         finally:
             browser.close()
