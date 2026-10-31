@@ -112,6 +112,12 @@ def main(argv: List[str] | None = None) -> int:
     ap.add_argument(
         "--apply", action="store_true", help="embed and write (default: dry run)"
     )
+    ap.add_argument(
+        "--force-delete",
+        action="store_true",
+        help="allow deleting more than half of a source's stored videos "
+        "(videos made private/deleted are removed on a full --apply run)",
+    )
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument(
         "--extract",
@@ -222,6 +228,24 @@ def main(argv: List[str] | None = None) -> int:
             workers=a.workers,
             url_for=lambda p, s=spec: ext.page_url(s, p),
         )
+        if a.limit:
+            print("--limit set: partial run, not removing stale videos", flush=True)
+        else:
+            try:
+                gone = store.delete_stale_raw(
+                    database, ext.slug_for(spec), chunks, force=a.force_delete
+                )
+                print(
+                    f"{ext.slug_for(spec)}: removed {gone} chunks of videos no longer on YouTube",
+                    flush=True,
+                )
+            except ValueError as exc:
+                print(
+                    f"{ext.slug_for(spec)}: stale cleanup skipped: {exc}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                failed += 1
     print(
         f"chunks written: {written}" if a.apply else "dry run: nothing written",
         flush=True,
