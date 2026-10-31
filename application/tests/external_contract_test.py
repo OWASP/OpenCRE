@@ -41,6 +41,20 @@ class TestExternalContract(unittest.TestCase):
             with self.assertRaises(ValueError, msg=str(bad)):
                 ext.validate_spec(bad)
 
+    def test_youtube_refresh_is_capped_at_30_days(self):
+        """YouTube API Services policy III.E.4: stored API data is refreshed or deleted within 30 days."""
+        yt = {
+            "id": "yt-owasp",
+            "name": "OWASP",
+            "kind": ext.KIND_YOUTUBE,
+            "channel_id": "UC123",
+        }
+        self.assertEqual(ext.validate_spec(dict(yt)).refresh_days, 30)
+        self.assertEqual(ext.validate_spec(dict(yt, refresh_days=7)).refresh_days, 7)
+        with self.assertRaises(ValueError):
+            ext.validate_spec(dict(yt, refresh_days=31))
+        self.assertEqual(ext.validate_spec(site(refresh_days=90)).refresh_days, 90)
+
     def test_youtube_spec_and_page_url(self):
         s = ext.validate_spec(
             {

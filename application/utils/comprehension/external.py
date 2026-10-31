@@ -22,6 +22,7 @@ from urllib.parse import urlparse
 
 KIND_SITE = "external_site"
 KIND_YOUTUBE = "youtube_channel"
+YOUTUBE_MAX_REFRESH_DAYS = 30
 KINDS = (KIND_SITE, KIND_YOUTUBE)
 
 # suggested: found by us, nothing is crawled; approved: crawl allowed; rejected: never suggest again.
@@ -109,6 +110,12 @@ def validate_spec(raw: Dict[str, Any]) -> ExternalSpec:
         v = getattr(spec, field_name)
         if isinstance(v, bool) or not isinstance(v, int) or not lo <= v <= hi:
             raise ValueError(f"{field_name} must be an integer between {lo} and {hi}")
+    if spec.kind == KIND_YOUTUBE and spec.refresh_days > YOUTUBE_MAX_REFRESH_DAYS:
+        # YouTube API Services Developer Policies III.E.4: stored API data must be refreshed or
+        # deleted within 30 calendar days.
+        raise ValueError(
+            f"refresh_days for a youtube source must be at most {YOUTUBE_MAX_REFRESH_DAYS}"
+        )
     if spec.kind == KIND_SITE:
         if not spec.start_urls or not all(_http_url(u) for u in spec.start_urls):
             raise ValueError("a site needs at least one http(s) start URL")

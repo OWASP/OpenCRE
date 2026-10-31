@@ -13,7 +13,15 @@ routes are used; there is no page scraping, yt-dlp or unofficial transcript libr
 | `YOUTUBE_OAUTH_CLIENT_ID`, `YOUTUBE_OAUTH_CLIENT_SECRET`, `YOUTUBE_OAUTH_REFRESH_TOKEN` | Optional `captions.download`. Works only for videos owned by the authorising account, so only for channels we run. Off unless all three are set. |
 | none | Captions for other channels: the owner exports `<video_id>.<lang>.vtt` or `.srt` from YouTube Studio; point `--captions-dir` at them. |
 
-**Status: we do not have a `YOUTUBE_API_KEY` yet, so nothing here has been run against live YouTube.** Everything is tested with mocked HTTP.
+**Status (2026-10-31):** a `YOUTUBE_API_KEY` is in the staging `.env` and the OWASP channel catalogue (1,737 videos, metadata only, no captions) was ingested on 2026-10-29. Code paths are also covered by mocked-HTTP tests.
+
+## Storage terms (YouTube API Services Developer Policies, III.E.4; page last updated 2026-10-15)
+
+Stored API data may be kept at most 30 calendar days, then it must be refreshed or deleted. So `youtube_channel` targets
+cannot have `refresh_days` above 30 (enforced in `validate_spec`), and the catalogue ingested on 2026-10-29 must be
+re-ingested (or deleted) by 2026-11-28. The same policy says clients must not use API data "to create new or derived
+data or metrics"; whether LLM speaker/event extraction (EXT-1.14) and embeddings count is a legal call for the owner,
+not settled here. Scraping YouTube or obtaining scraped YouTube data is prohibited, hence no unofficial transcript tools.
 
 The key is never logged; errors report only the HTTP status.
 

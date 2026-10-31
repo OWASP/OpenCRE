@@ -42,12 +42,12 @@ class JsFallbackTest(unittest.TestCase):
             )
             return crawler.crawl(), site
 
-    def test_js_is_off_by_default(self):
+    def test_js_is_on_by_default_and_can_be_switched_off(self):
         with mock.patch.dict(os.environ, {}, clear=False):
             os.environ.pop("OWASP_CRAWL_JS", None)
-            self.assertFalse(web_source.js_enabled())
-        with mock.patch.dict(os.environ, {"OWASP_CRAWL_JS": "1"}):
             self.assertTrue(web_source.js_enabled())
+        with mock.patch.dict(os.environ, {"OWASP_CRAWL_JS": "0"}):
+            self.assertFalse(web_source.js_enabled())
 
     def test_shell_page_is_skipped_and_renderer_untouched_when_off(self):
         renderer = mock.Mock()
@@ -93,14 +93,7 @@ class PdfTimeCapTest(unittest.TestCase):
         with mock.patch.dict(os.environ, {"OWASP_CRAWL_PDF_SECONDS": "x"}):
             self.assertEqual(web_source.pdf_seconds(), 60.0)
 
-    def test_slow_pdf_is_skipped_with_timeout_reason(self):
-        release = threading.Event()
-        self.addCleanup(release.set)
-
-        def slow(_data):
-            release.wait(5)
-            return "late"
-
+    def crawl_pdf(self, local, llm, extra_env=None):
         site = Site(
             {
                 "/": ok(html("Home", ["/doc.pdf"])),
@@ -112,14 +105,56 @@ class PdfTimeCapTest(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         env = {"OWASP_CRAWL_PDF": "1", "OWASP_CRAWL_PDF_SECONDS": "0.2"}
+        env.update(extra_env or {})
         with mock.patch.dict(os.environ, env), mock.patch.object(
-            web_source, "_pdf_to_markdown", slow
-        ):
-            result = Crawler(
+            web_source, "_pdf_to_markdown", local
+        ), mock.patch.object(web_source, "_pdf_via_llm", llm):
+            return Crawler(
                 spec_for(site, max_depth=1), delay=0, cache_dir=Path(tmp.name)
             ).crawl()
+
+    def slow_local(self):
+        release = threading.Event()
+        self.addCleanup(release.set)
+
+        def slow(_data):
+            release.wait(5)
+            return "late"
+
+        return slow
+
+    def test_slow_pdf_with_no_fallback_is_skipped_as_timeout(self):
+        llm = mock.Mock()
+        result = self.crawl_pdf(self.slow_local(), llm, {"OWASP_CRAWL_PDF_LLM": "0"})
         self.assertEqual([p.title for p in result.pages], ["Home"])
         self.assertTrue(any(r == "pdf-timeout" for _, r in result.skipped))
+        llm.assert_not_called()
+
+    def test_slow_pdf_falls_back_to_the_llm(self):
+        text = "# Programme\n\n" + PARA_LONG
+        result = self.crawl_pdf(self.slow_local(), mock.Mock(return_value=text))
+        self.assertEqual(len(result.pages), 2)
+        self.assertIn("Programme", result.pages[1].markdown)
+
+    def test_docling_error_falls_back_to_the_llm(self):
+        def broken(_data):
+            raise ValueError("bad pdf")
+
+        text = "# Doc\n\n" + PARA_LONG
+        result = self.crawl_pdf(broken, mock.Mock(return_value=text))
+        self.assertEqual(len(result.pages), 2)
+
+    def test_both_routes_failing_keeps_the_original_reason(self):
+        llm = mock.Mock(side_effect=RuntimeError("no key"))
+        result = self.crawl_pdf(self.slow_local(), llm)
+        self.assertTrue(any(r == "pdf-timeout" for _, r in result.skipped))
+        self.assertEqual([p.title for p in result.pages], ["Home"])
+
+
+PARA_LONG = (
+    "The programme lists keynotes, training days and the venue for the chapter conference. "
+    * 4
+)
 
 
 def _skips(result):
