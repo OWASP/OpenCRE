@@ -78,6 +78,7 @@ class ChangeDetectorTests(unittest.TestCase):
                         "repo-under-test",
                         "diff",
                         "--name-only",
+                        "--diff-filter=d",
                         "resolved_base",
                         "resolved_target",
                     ],
