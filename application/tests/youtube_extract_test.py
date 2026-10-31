@@ -281,3 +281,57 @@ class TestScripts(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EventProgramJoinTest(unittest.TestCase):
+    SITES = [
+        {
+            "name": "OWASP AppSec Days Portugal 2026",
+            "year": 2026,
+            "program_url": "https://appsecdays.pt/program/",
+        },
+        {
+            "name": "OWASP BeNeLux Days 2025",
+            "year": 2025,
+            "program_url": "https://2025.owaspbenelux.eu/program/",
+        },
+        {
+            "name": "OWASP BeNeLux Days 2026",
+            "year": 2026,
+            "program_url": "https://2026.owaspbenelux.eu/program/",
+        },
+        {"name": "OWASP Day Poland", "year": 2025, "program_url": ""},
+    ]
+
+    def url(self, event, date=""):
+        return ys.event_program_url(event, date, self.SITES)
+
+    def test_matches_on_distinctive_name_and_year(self):
+        self.assertEqual(
+            self.url("AppSec Days Portugal, Porto", "2026-09-23"),
+            "https://appsecdays.pt/program/",
+        )
+        self.assertEqual(
+            self.url("OWASP BeNeLux Days 2025"), "https://2025.owaspbenelux.eu/program/"
+        )
+
+    def test_year_must_agree(self):
+        self.assertEqual(self.url("AppSec Days Portugal", "2024-09"), "")
+        self.assertEqual(
+            self.url("BeNeLux Days", ""), ""
+        )  # no year anywhere: not guessed
+
+    def test_site_without_program_or_unknown_event_gives_nothing(self):
+        self.assertEqual(self.url("OWASP Day Poland 2025"), "")
+        self.assertEqual(self.url("", "2026"), "")
+        self.assertEqual(self.url("Some other conference 2026"), "")
+
+    def test_catalogue_chunk_carries_the_program_link(self):
+        v = vid()
+        v.extracted = record(0, event="AppSec Days Portugal", event_date="2026-09-23")
+        text = ys.catalogue_chunk(v, "Ch", programs=self.SITES)[2]
+        self.assertIn("Event program: https://appsecdays.pt/program/", text)
+        v.extracted = record(0, event="Unknown meetup", event_date="2026-09-23")
+        self.assertNotIn(
+            "Event program", ys.catalogue_chunk(v, "Ch", programs=self.SITES)[2]
+        )

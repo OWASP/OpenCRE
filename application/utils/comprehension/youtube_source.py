@@ -19,7 +19,7 @@ import unicodedata
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 API_BASE = "https://www.googleapis.com/youtube/v3"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
@@ -498,8 +498,70 @@ def watch_url(video_id: str, seconds: int = 0) -> str:
     return f"{base}&t={seconds}s" if seconds else base
 
 
+_GENERIC_EVENT_WORDS = {
+    "owasp", "global", "days", "day", "appsec", "app", "conference", "security",
+    "application", "the", "of", "and", "chapter", "sched", "registration", "glue", "up",
+}  # fmt: skip
+
+
+def _event_tokens(name: str) -> Set[str]:
+    name = re.sub(r"\(.*?\)", " ", name.lower())
+    words = set(re.findall(r"[a-z0-9]+", name))
+    return {
+        w
+        for w in words
+        if w not in _GENERIC_EVENT_WORDS and not re.fullmatch(r"\d{4}", w)
+    }
+
+
+def event_program_url(
+    event: str, event_date: str, sites: Optional[List[Dict[str, Any]]] = None
+) -> str:
+    """Program page of the event site that an extracted event name refers to ('' when unsure).
+
+    A site matches when every distinctive word of its name (e.g. 'portugal', 'benelux') appears in the
+    event text AND the year agrees (from the event date, else a year in the event text).
+    """
+    text = f"{event or ''}".lower()
+    if not text.strip():
+        return ""
+    year = re.match(r"\d{4}", event_date or "") or re.search(r"\b(20\d{2})\b", text)
+    year_s = year.group(0) if year else ""
+    words = set(re.findall(r"[a-z0-9]+", text))
+    for site in sites if sites is not None else _seed_sites():
+        tokens = _event_tokens(str(site.get("name") or ""))
+        if (
+            tokens
+            and tokens <= words
+            and year_s
+            and str(site.get("year")) == year_s
+            and site.get("program_url")
+        ):
+            return str(site["program_url"])
+    return ""
+
+
+_SEED_SITES: Optional[List[Dict[str, Any]]] = None
+
+
+def _seed_sites() -> List[Dict[str, Any]]:
+    """Curated OWASP event sites (docs/oie/owasp-event-sites.json); empty when the file is absent."""
+    global _SEED_SITES
+    if _SEED_SITES is None:
+        try:
+            from application.utils.comprehension import event_seed
+
+            _SEED_SITES = event_seed.load_sites()
+        except Exception:  # noqa: BLE001 - a missing/odd seed file only loses the link
+            _SEED_SITES = []
+    return _SEED_SITES
+
+
 def catalogue_chunk(
-    v: Video, channel_name: str, has_captions: bool = False
+    v: Video,
+    channel_name: str,
+    has_captions: bool = False,
+    programs: Optional[List[Dict[str, Any]]] = None,
 ) -> Tuple[str, int, str]:
     x = v.extracted
     speaker = (", ".join(x.get("speakers") or []) if x else "") or v.speaker
@@ -522,6 +584,15 @@ def catalogue_chunk(
         else "Duration: unknown"
     )
     lines.append(f"Video: {watch_url(v.id)}")
+    program = (
+        event_program_url(
+            str(x.get("event") or ""), str(x.get("event_date") or ""), programs
+        )
+        if x
+        else ""
+    )
+    if program:
+        lines.append(f"Event program: {program}")
     if not has_captions:
         lines.append("Transcript: not indexed (metadata only)")
     for sec, clock, label in parse_chapters(v.description):
