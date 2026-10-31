@@ -21,7 +21,20 @@ _META = re.compile(
     re.I,
 )
 
-_PROMOTE_CAP = 4
+_PROMOTE_CAP = 8
+
+
+def _promote_cap() -> int:
+    """``CRE_LIBRARIAN_UMBRELLA_PROMOTE_CAP`` (default 8; d1-winner E5)."""
+    import os
+
+    raw = os.getenv("CRE_LIBRARIAN_UMBRELLA_PROMOTE_CAP")
+    if raw is None or not str(raw).strip():
+        return _PROMOTE_CAP
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return _PROMOTE_CAP
 
 
 def _norm_name(text: str) -> str:
@@ -129,7 +142,7 @@ class ParentIndex:
                 pname = self.parent_names.get(parent, "")
                 if _tokens_overlap(_significant_tokens(pname), title_toks):
                     out.append(parent)
-            if len(out) >= _PROMOTE_CAP:
+            if len(out) >= _promote_cap():
                 break
         return out
 

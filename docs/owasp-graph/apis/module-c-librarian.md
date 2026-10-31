@@ -90,7 +90,7 @@ Mapping to existing `cre_defs.Document` + `register_standard` is an implementati
 | `pipeline_run_id` | string | yes | |
 | `created_at` | string (date-time) | yes | |
 | `status` | `review_required` | yes | |
-| `reason_code` | string | yes | `BELOW_THRESHOLD`, `NO_CANDIDATES`, `ADVERSARIAL_FLAG`, `UPDATE_AMBIGUOUS` |
+| `reason_code` | string | yes | `BELOW_THRESHOLD`, `NO_CANDIDATES`, `ADVERSARIAL_FLAG`, `UPDATE_AMBIGUOUS`, `CRE_GAP` |
 | `knowledge` | `KnowledgeSnapshot` | yes | |
 | `retrieval` | `RetrievalAudit` | yes | Maintainer needs top candidates |
 | `suggested_links` | `ProposedLink[]` | no | Best guess even if below threshold |

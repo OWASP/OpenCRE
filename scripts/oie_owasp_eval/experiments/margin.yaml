@@ -1,0 +1,7 @@
+experiment_id: margin
+description: >
+  Step 3 — margin cutoff (NOT HYBRID_GAMMA). Report B2 hit and decision-FP when
+  FP hook exists. Flag not yet wired in config_loader.
+flags:
+  CRE_LIBRARIAN_MARGIN_GAMMA: "0.85"
+include_agentic: false
