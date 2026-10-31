@@ -20,6 +20,8 @@ from typing import Set
 
 import sqlalchemy as sa
 
+from application.utils.postgres_url import is_postgres_url, sqlalchemy_postgres_url
+
 
 def _normalized_db_url() -> str:
     url = (os.environ.get("DATABASE_URL") or "").strip()
@@ -27,8 +29,10 @@ def _normalized_db_url() -> str:
         url = (os.environ.get("SQLALCHEMY_DATABASE_URI") or "").strip()
     if not url:
         raise RuntimeError("DATABASE_URL/SQLALCHEMY_DATABASE_URI is not set")
-    if url.startswith("postgres://"):
-        return "postgresql://" + url[len("postgres://") :]
+    # Heroku emits postgres://. SQLAlchemy 2.1 maps bare postgresql:// to
+    # psycopg v3, which this app does not install.
+    if is_postgres_url(url):
+        return sqlalchemy_postgres_url(url)
     return url
 
 
