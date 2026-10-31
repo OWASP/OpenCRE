@@ -24,44 +24,13 @@ from typing import Any, List, Optional, Tuple
 
 from application.utils.comprehension import external as ext
 from application.utils.comprehension import youtube_extract as yx
+from application.utils.comprehension import youtube_ingest as yi
 from application.utils.comprehension import youtube_source as ys
 
 CHARS_PER_TOKEN = 4.0
 EMBED_PRICE_PER_M = 0.15  # USD per million tokens (cost.PRICE["embed_in"])
 # Earlier pilot: ~$16 for ~1,600 talks including LLM enrichment, i.e. about a cent per talk.
 PILOT_USD_PER_TALK = 0.01
-
-
-def load_people(path: str) -> List[str]:
-    if not path:
-        return []
-    with open(path, encoding="utf-8") as fh:
-        return [l.strip() for l in fh if l.strip()]
-
-
-def collect(
-    spec: ext.ExternalSpec,
-    api: ys.YouTubeApi,
-    captions_dir: str,
-    people: List[str],
-    limit: int,
-    downloader: Any = None,
-    extractor: Optional[yx.Extractor] = None,
-) -> Tuple[List[ys.Video], List[Tuple[str, int, str]], int]:
-    """(videos, chunks, videos_with_captions) for one channel spec."""
-    videos = api.channel_videos(spec, limit=limit)
-    ys.link_speakers(videos, people)
-    if extractor is not None:
-        extractor.run(videos)
-    chunks: List[Tuple[str, int, str]] = []
-    with_captions = 0
-    for v in videos:
-        cues = ys.read_captions(captions_dir, v.id)
-        if not cues and downloader is not None:
-            cues = downloader.fetch(v.id)
-        with_captions += bool(cues)
-        chunks += ys.video_chunks(v, cues, spec.name)
-    return videos, chunks, with_captions
 
 
 def print_sample(videos: List[ys.Video], n: int, extractor: yx.Extractor) -> None:
@@ -153,7 +122,7 @@ def main(argv: List[str] | None = None) -> int:
         print("fixture mode: nothing written", flush=True)
         return 0
 
-    people = load_people(a.people_file)
+    people = yi.load_people(a.people_file)
     api = ys.YouTubeApi(cache_dir=os.path.join(a.cache_dir, "api"))
     limiter = ys.DripLimiter(os.path.join(a.cache_dir, "caption-downloads.json"))
     downloader = ys.CaptionDownloader(
@@ -189,7 +158,7 @@ def main(argv: List[str] | None = None) -> int:
                 flush=True,
             )
             spec.channel_id = resolved
-        videos, chunks, with_caps = collect(
+        videos, chunks, with_caps = yi.collect(
             spec,
             api,
             a.captions_dir,

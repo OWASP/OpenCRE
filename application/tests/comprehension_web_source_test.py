@@ -381,7 +381,8 @@ class ExternalSourcesJobTest(unittest.TestCase):
             external_sources, "last_run", side_effect=lambda i: last.get(i)
         ):
             due = external_sources.due_specs(specs, self.NOW)
-        self.assertEqual([s.id for s in due], ["never", "stale"])
+        # approved YouTube channels are refreshed by the same job (see external_sources_youtube_test)
+        self.assertEqual([s.id for s in due], ["never", "stale", "yt"])
 
     def test_refresh_days_is_per_spec(self):
         with mock.patch.object(
