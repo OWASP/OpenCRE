@@ -1,0 +1,1153 @@
+{
+  "run_id": "orch-docling-20260830T110540Z",
+  "base_url": "https://opencre.org",
+  "rule": {
+    "ASVS": "chunk: \u22651 of top-2 suggested CRE external_ids \u2208 section gold",
+    "CheatSheetSeries": "sheet: union of top-2 across chunks; hit if \u2229 sheet gold nonempty"
+  },
+  "resources": [
+    "ASVS",
+    "CheatSheetSeries"
+  ],
+  "decisions_total": 61,
+  "scorable": 37,
+  "unaligned": 0,
+  "hits": 33,
+  "accuracy": 0.8919,
+  "pass_gt_60": true,
+  "by_grain": {
+    "ASVS_chunk": {
+      "scorable": 34,
+      "hits": 30,
+      "accuracy": 0.8824
+    },
+    "CheatSheetSeries_sheet": {
+      "scorable": 3,
+      "hits": 3,
+      "accuracy": 1.0
+    }
+  },
+  "details": [
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:12",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "346-640",
+        "101-217"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "042-550",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "2.6",
+        "2.6.1",
+        "2.6.2",
+        "2.6.3",
+        "4.0"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:16",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "524-446",
+        "354-752"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530",
+        "101-217"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "2.9",
+        "4.0",
+        "4.0/en/0x11-v2-authentication.md",
+        "v2.9",
+        "v4.0"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:15",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "841-757",
+        "002-801"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530",
+        "101-217"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "2.8",
+        "2.8.1",
+        "2.8.2",
+        "2.8.3",
+        "2.8.4"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:10",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "622-203",
+        "082-530"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530",
+        "101-217"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "2.4",
+        "2.4.1",
+        "2.4.2",
+        "2.4.3",
+        "2.4.4"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:19",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "553-413",
+        "576-042"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530",
+        "101-217"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "4.0",
+        "4.0/en/0x11-v2-authentication.md",
+        "v4.0"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:2",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "060-472",
+        "727-043"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530",
+        "101-217"
+      ],
+      "hit": false,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "4.0",
+        "4.0/en/0x11-v2-authentication.md",
+        "6.2",
+        "v4.0",
+        "v6.2"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x12-V3-Session-management.md:3",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "177-260",
+        "727-043"
+      ],
+      "gold_sample": [
+        "002-630",
+        "052-821",
+        "065-782",
+        "232-034",
+        "238-346",
+        "342-055",
+        "402-133",
+        "455-358"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x12 v3 session management",
+        "0x12-v3-session-management",
+        "0x12-v3-session-management.md",
+        "3.2",
+        "4.0",
+        "4.0/en/0x12-v3-session-management.md",
+        "v3.2",
+        "v4.0"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:20",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "558-807",
+        "201-246"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530",
+        "101-217"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "4.0",
+        "4.0/en/0x11-v2-authentication.md",
+        "v4.0"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x12-V3-Session-management.md:8",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "065-782",
+        "727-043"
+      ],
+      "gold_sample": [
+        "002-630",
+        "052-821",
+        "065-782",
+        "232-034",
+        "238-346",
+        "342-055",
+        "402-133",
+        "455-358"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x12 v3 session management",
+        "0x12-v3-session-management",
+        "0x12-v3-session-management.md",
+        "3.6",
+        "3.6.1",
+        "3.6.2",
+        "4.0",
+        "4.0/en/0x12-v3-session-management.md"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:18",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "543-428",
+        "342-764"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530",
+        "101-217"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "2.10",
+        "2.10.1",
+        "2.10.2",
+        "2.10.3",
+        "2.10.4"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:17",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "002-801",
+        "841-757"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530",
+        "101-217"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "2.9",
+        "2.9.1",
+        "2.9.2",
+        "2.9.3",
+        "4.0"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:11",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "354-752",
+        "354-753"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530",
+        "101-217"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "2.5",
+        "2.5.1",
+        "2.5.2",
+        "2.5.3",
+        "2.5.4"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:13",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "354-753",
+        "816-631"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "031-447",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "2.7",
+        "2.7.1",
+        "2.7.2",
+        "2.7.3",
+        "2.7.4"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x12-V3-Session-management.md:10",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "114-277",
+        "002-630"
+      ],
+      "gold_sample": [
+        "002-630",
+        "052-821",
+        "065-782",
+        "232-034",
+        "238-346",
+        "342-055",
+        "402-133",
+        "455-358"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x12 v3 session management",
+        "0x12-v3-session-management",
+        "0x12-v3-session-management.md",
+        "3.7",
+        "3.7.1",
+        "4.0",
+        "4.0/en/0x12-v3-session-management.md",
+        "v3.7"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x12-V3-Session-management.md:1",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "177-260",
+        "716-526"
+      ],
+      "gold_sample": [
+        "002-630",
+        "052-821",
+        "065-782",
+        "232-034",
+        "238-346",
+        "342-055",
+        "402-133",
+        "455-358"
+      ],
+      "hit": false,
+      "keys_sample": [
+        "0x12 v3 session management",
+        "0x12-v3-session-management",
+        "0x12-v3-session-management.md",
+        "3.1",
+        "3.1.1",
+        "4.0",
+        "4.0/en/0x12-v3-session-management.md",
+        "v3.1"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x12-V3-Session-management.md:2",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "455-358",
+        "688-081"
+      ],
+      "gold_sample": [
+        "002-630",
+        "052-821",
+        "065-782",
+        "232-034",
+        "238-346",
+        "342-055",
+        "402-133",
+        "455-358"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x12 v3 session management",
+        "0x12-v3-session-management",
+        "0x12-v3-session-management.md",
+        "3.1",
+        "3.2.1",
+        "3.2.2",
+        "3.2.3",
+        "3.2.4"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x12-V3-Session-management.md:11",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "177-260",
+        "114-277"
+      ],
+      "gold_sample": [
+        "002-630",
+        "052-821",
+        "065-782",
+        "232-034",
+        "238-346",
+        "342-055",
+        "402-133",
+        "455-358"
+      ],
+      "hit": false,
+      "keys_sample": [
+        "0x12 v3 session management",
+        "0x12-v3-session-management",
+        "0x12-v3-session-management.md",
+        "4.0",
+        "4.0/en/0x12-v3-session-management.md",
+        "v4.0"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:6",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "201-246",
+        "354-753"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530",
+        "101-217"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "2.2",
+        "4.0",
+        "4.0/en/0x11-v2-authentication.md",
+        "v2.2",
+        "v4.0"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x12-V3-Session-management.md:0",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "804-220",
+        "065-782"
+      ],
+      "gold_sample": [
+        "002-630",
+        "052-821",
+        "065-782",
+        "232-034",
+        "238-346",
+        "342-055",
+        "402-133",
+        "455-358"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x12 v3 session management",
+        "0x12-v3-session-management",
+        "0x12-v3-session-management.md",
+        "4.0",
+        "4.0/en/0x12-v3-session-management.md",
+        "v4.0"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:21",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "772-358",
+        "201-246"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530",
+        "101-217"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "4.0",
+        "4.0/en/0x11-v2-authentication.md",
+        "v4.0"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x12-V3-Session-management.md:9",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "455-358",
+        "342-055"
+      ],
+      "gold_sample": [
+        "002-630",
+        "052-821",
+        "065-782",
+        "232-034",
+        "238-346",
+        "342-055",
+        "402-133",
+        "455-358"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x12 v3 session management",
+        "0x12-v3-session-management",
+        "0x12-v3-session-management.md",
+        "3.7",
+        "4.0",
+        "4.0/en/0x12-v3-session-management.md",
+        "v3.7",
+        "v4.0"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x12-V3-Session-management.md:5",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "673-736",
+        "238-346"
+      ],
+      "gold_sample": [
+        "002-630",
+        "052-821",
+        "065-782",
+        "232-034",
+        "238-346",
+        "342-055",
+        "402-133",
+        "455-358"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x12 v3 session management",
+        "0x12-v3-session-management",
+        "0x12-v3-session-management.md",
+        "3.3",
+        "3.3.1",
+        "3.3.2",
+        "3.3.3",
+        "3.3.4"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:14",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "524-446",
+        "102-811"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530",
+        "101-217"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "2.8",
+        "4.0",
+        "4.0/en/0x11-v2-authentication.md",
+        "v2.8",
+        "v4.0"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x12-V3-Session-management.md:7",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "716-526",
+        "002-630"
+      ],
+      "gold_sample": [
+        "002-630",
+        "052-821",
+        "065-782",
+        "232-034",
+        "238-346",
+        "240-274",
+        "342-055",
+        "402-133"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x12 v3 session management",
+        "0x12-v3-session-management",
+        "0x12-v3-session-management.md",
+        "3.5",
+        "3.5.1",
+        "3.5.2",
+        "3.5.3",
+        "4.0"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:4",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "354-753",
+        "524-446"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530",
+        "101-217"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "2.1",
+        "4.0",
+        "4.0/en/0x11-v2-authentication.md",
+        "v2.1",
+        "v4.0"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:5",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "576-042",
+        "751-176"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530",
+        "101-217"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "2.1",
+        "2.1.1",
+        "2.1.10",
+        "2.1.11",
+        "2.1.12"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:0",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "524-446",
+        "354-753"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530",
+        "101-217"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "4.0",
+        "4.0/en/0x11-v2-authentication.md",
+        "v4.0"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:3",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "553-413",
+        "060-472"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530",
+        "101-217"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "4.0",
+        "4.0/en/0x11-v2-authentication.md",
+        "v4.0"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:1",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "576-042",
+        "201-246"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530",
+        "101-217"
+      ],
+      "hit": false,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "4.0",
+        "4.0/en/0x11-v2-authentication.md",
+        "v4.0"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x12-V3-Session-management.md:4",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "177-260",
+        "704-530"
+      ],
+      "gold_sample": [
+        "002-630",
+        "052-821",
+        "065-782",
+        "232-034",
+        "238-346",
+        "342-055",
+        "402-133",
+        "455-358"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x12 v3 session management",
+        "0x12-v3-session-management",
+        "0x12-v3-session-management.md",
+        "3.3",
+        "4.0",
+        "4.0/en/0x12-v3-session-management.md",
+        "v3.3",
+        "v4.0"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:7",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "354-752",
+        "060-472"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530",
+        "101-217"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "2.2",
+        "2.2.1",
+        "2.2.2",
+        "2.2.3",
+        "2.2.4"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x12-V3-Session-management.md:6",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "114-277",
+        "727-043"
+      ],
+      "gold_sample": [
+        "002-630",
+        "052-821",
+        "065-782",
+        "067-050",
+        "232-034",
+        "238-346",
+        "342-055",
+        "402-133"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x12 v3 session management",
+        "0x12-v3-session-management",
+        "0x12-v3-session-management.md",
+        "3.4",
+        "3.4.1",
+        "3.4.2",
+        "3.4.3",
+        "3.4.4"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:8",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "553-413",
+        "201-246"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530",
+        "101-217"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "2.3",
+        "4.0",
+        "4.0/en/0x11-v2-authentication.md",
+        "v2.3",
+        "v4.0"
+      ]
+    },
+    {
+      "chunk_id": "chk:art:OWASP/ASVS:4.0/en/0x11-V2-Authentication.md:9",
+      "resource": "ASVS",
+      "grain": "chunk",
+      "aligned": true,
+      "top2": [
+        "002-630",
+        "816-631"
+      ],
+      "gold_sample": [
+        "002-801",
+        "027-555",
+        "065-183",
+        "076-470",
+        "077-781",
+        "078-427",
+        "082-530",
+        "101-217"
+      ],
+      "hit": true,
+      "keys_sample": [
+        "0x11 v2 authentication",
+        "0x11-v2-authentication",
+        "0x11-v2-authentication.md",
+        "2.3",
+        "2.3.1",
+        "2.3.2",
+        "2.3.3",
+        "4.0"
+      ]
+    },
+    {
+      "sheet": "authentication_cheat_sheet",
+      "resource": "CheatSheetSeries",
+      "grain": "sheet",
+      "aligned": true,
+      "predicted": [
+        "060-472",
+        "113-133",
+        "201-246",
+        "206-254",
+        "238-346",
+        "258-115",
+        "278-413",
+        "342-055",
+        "342-764",
+        "354-752",
+        "402-133",
+        "405-411"
+      ],
+      "gold_sample": [
+        "333-858",
+        "354-752",
+        "524-446",
+        "525-361",
+        "558-807",
+        "802-056",
+        "808-425"
+      ],
+      "hit": true,
+      "path": "cheatsheets/Authentication_Cheat_Sheet.md"
+    },
+    {
+      "sheet": "forgot_password_cheat_sheet",
+      "resource": "CheatSheetSeries",
+      "grain": "sheet",
+      "aligned": true,
+      "predicted": [
+        "238-346",
+        "543-621",
+        "576-651",
+        "581-525",
+        "622-835"
+      ],
+      "gold_sample": [
+        "102-811",
+        "168-186",
+        "206-254",
+        "235-658",
+        "270-634",
+        "327-505",
+        "342-764",
+        "354-753",
+        "358-860",
+        "455-885",
+        "487-305",
+        "543-621"
+      ],
+      "hit": true,
+      "path": "cheatsheets/Forgot_Password_Cheat_Sheet.md"
+    },
+    {
+      "sheet": "password_storage_cheat_sheet",
+      "resource": "CheatSheetSeries",
+      "grain": "sheet",
+      "aligned": true,
+      "predicted": [
+        "082-530",
+        "543-621",
+        "581-525",
+        "622-203",
+        "622-835",
+        "821-832"
+      ],
+      "gold_sample": [
+        "077-781",
+        "078-427",
+        "082-530",
+        "622-203",
+        "767-435"
+      ],
+      "hit": true,
+      "path": "cheatsheets/Password_Storage_Cheat_Sheet.md"
+    }
+  ]
+}
