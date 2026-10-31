@@ -41,7 +41,7 @@ class DecideTest(unittest.TestCase):
         r = decide(TAU - 1e-9, CANDS, threshold=TAU)
         self.assertEqual(r.decision, Decision.review)
         self.assertEqual(r.reason_code, ReasonCode.below_threshold)
-        self.assertEqual(r.cre_ids, ("616-305",))  # best-guess suggestion kept
+        self.assertEqual(r.cre_ids, ("616-305", "764-507"))  # top-2 suggestions
 
     def test_no_candidates_reviews_even_when_confident(self):
         r = decide(0.99, (), threshold=TAU)
@@ -59,10 +59,10 @@ class DecideTest(unittest.TestCase):
         self.assertEqual(r.decision, Decision.review)
         self.assertEqual(r.reason_code, ReasonCode.update_ambiguous)
 
-    def test_precedence_no_candidates_beats_everything(self):
-        # empty shortlist + a flag + high confidence -> still NO_CANDIDATES.
+    def test_precedence_adversarial_beats_empty_shortlist(self):
+        # Safety flags must surface even when retrieval yielded nothing.
         r = decide(0.99, (), threshold=TAU, adversarial=True, update_ambiguous=True)
-        self.assertEqual(r.reason_code, ReasonCode.no_candidates)
+        self.assertEqual(r.reason_code, ReasonCode.adversarial_flag)
 
     def test_precedence_adversarial_beats_below_threshold(self):
         r = decide(0.10, CANDS, threshold=TAU, adversarial=True)
