@@ -48,7 +48,9 @@ class SchedulerConfig:
     # Default off: Module C decisions stay for review until an operator enables filing.
     filing_enabled: bool = False
     harvest_events: bool = False
-    embed_filed_nodes: bool = True
+    # Default off: embedding spends provider tokens and writes the irreplaceable
+    # embeddings table; an operator opts in with OIE_EMBED_FILED_NODES=1.
+    embed_filed_nodes: bool = False
     repos_yaml: Optional[str] = None
     agent_db: Optional[str] = None
 
@@ -67,8 +69,8 @@ class SchedulerConfig:
             filing_enabled=raw_filing in ("1", "true", "yes", "on"),
             harvest_events=os.getenv("OIE_HARVEST_EVENTS", "0").strip().lower()
             in ("1", "true", "yes", "on"),
-            embed_filed_nodes=os.getenv("OIE_EMBED_FILED_NODES", "1").strip().lower()
-            not in ("0", "false", "no", "off"),
+            embed_filed_nodes=os.getenv("OIE_EMBED_FILED_NODES", "0").strip().lower()
+            in ("1", "true", "yes", "on"),
             repos_yaml=os.getenv("OIE_REPOS_YAML") or None,
             agent_db=os.getenv("OWASP_AGENT_DB") or None,
         )
