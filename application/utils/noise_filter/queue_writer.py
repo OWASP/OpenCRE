@@ -46,6 +46,7 @@ def _row_values(
     source = record.source
     is_github = source.type == "github"
     is_rss = source.type == "rss"
+    is_url = source.type == "url"
     return {
         "id": generate_uuid(),
         "content_hash": content_hash,
@@ -56,8 +57,8 @@ def _row_values(
         "source_type": source.type,
         "source_repo": source.repo if is_github else None,
         "source_commit_sha": source.commit_sha if is_github else None,
-        "source_committed_at": source.committed_at if is_github else None,
-        "feed_url": source.feed_url if is_rss else None,
+        "source_committed_at": source.committed_at if (is_github or is_url) else None,
+        "feed_url": source.feed_url if is_rss else (source.url if is_url else None),
         "post_guid": source.post_guid if is_rss else None,
         "locator_kind": record.locator.kind,
         "locator_path": record.locator.path,

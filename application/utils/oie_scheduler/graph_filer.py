@@ -23,7 +23,8 @@ logger = get_logger(__name__)
 
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from typing import Any, Collection, Dict, List, Optional
+from typing import Any, Collection, Dict, Iterable, List, Optional
+from urllib.parse import urlparse
 
 from pydantic import ValidationError
 
@@ -34,6 +35,12 @@ from application.utils.oie_scheduler.run_log import naive_utc, utcnow
 
 #: Tag on auto-filed nodes so they are recognisable (and removable) in the graph.
 AUTO_FILED_TAG = "oie-auto-filed"
+#: Tag set by a human review (admin panel); an automatic run never takes it away.
+REVIEWED_TAG = "oie-reviewed"
+#: Provenance: every node added through the MyOpenCRE/OIE path, whoever filed it.
+#: Links have no tag column, so a link's provenance is its node's tag plus the
+#: link type (``Automatically linked to`` vs reviewer-set ``Linked To``).
+PROVENANCE_TAG = "provenance:myopencre"
 
 
 @dataclass
@@ -67,6 +74,23 @@ def standard_name_for_repo(repo: str) -> str:
     return repo if "/" in repo else f"OWASP/{repo}"
 
 
+def standard_name_for_source(proposal: Any) -> Optional[str]:
+    """The standard a section files under: ``OWASP/<repo>`` for repos, else the site host.
+
+    One rule for every source, so a website page and a repo file are filed the
+    same way (a reviewer can still override it).
+    """
+    source = proposal.knowledge.source
+    if source.repo:
+        return standard_name_for_repo(source.repo)
+    locator = proposal.knowledge.locator
+    url = locator.url or source.url
+    host = urlparse(str(url)).hostname if url else None
+    if not host:
+        return None
+    return host[4:] if host.startswith("www.") else host
+
+
 def _hyperlink(proposal: LinkProposal) -> str:
     locator = proposal.knowledge.locator
     if locator.url:
@@ -76,23 +100,52 @@ def _hyperlink(proposal: LinkProposal) -> str:
         return (
             f"https://github.com/{source.repo}/blob/{source.commit_sha}/{locator.path}"
         )
-    return ""
+    return str(source.url or "")
 
 
-def _node_for(proposal: LinkProposal) -> Optional[defs.Standard]:
-    source = proposal.knowledge.source
-    locator = proposal.knowledge.locator
-    if not source.repo:
+def node_for(
+    proposal: Any, standard_name: Optional[str] = None
+) -> Optional[defs.Standard]:
+    """A ``Standard`` node for one section, whatever its source (repo, website, feed)."""
+    name = (standard_name or "").strip() or standard_name_for_source(proposal)
+    if not name:
         return None
+    locator = proposal.knowledge.locator
     section_id = locator.path or locator.id
     return defs.Standard(
-        name=standard_name_for_repo(source.repo),
+        name=name,
         section=locator.title or section_id,
         sectionID=section_id,
         hyperlink=_hyperlink(proposal),
         description=(proposal.knowledge.security_summary or "")[:1000],
-        tags=[AUTO_FILED_TAG],
+        tags=[AUTO_FILED_TAG, PROVENANCE_TAG],
     )
+
+
+_node_for = node_for  # kept for callers that used the repo-only name
+
+
+def existing_tags(session: Any, node: defs.Standard) -> List[str]:
+    """Tags the graph already holds for this node identity (``add_node`` overwrites them)."""
+    row = (
+        session.query(db.Node)
+        .filter(
+            db.Node.name == node.name,
+            db.Node.section == node.section,
+            db.Node.section_id == node.sectionID,
+        )
+        .first()
+    )
+    return [t.strip() for t in (row.tags or "").split(",") if t.strip()] if row else []
+
+
+def merge_node_tags(
+    existing: Iterable[str], *, add: Iterable[str], drop: Iterable[str] = ()
+) -> List[str]:
+    """Keep what is there, add ``add``, remove only ``drop``; no duplicates."""
+    dropped = set(drop)
+    kept = [t for t in existing if t not in dropped]
+    return list(dict.fromkeys(kept + [t for t in add if t not in dropped]))
 
 
 def file_linked_decisions(
@@ -150,7 +203,8 @@ def file_linked_decisions(
             continue
 
         repo = proposal.knowledge.source.repo or ""
-        if repo.casefold() in skip:
+        name = standard_name_for_source(proposal) or ""
+        if repo.casefold() in skip or name.casefold() in skip:
             result.skipped_standard_repo += 1
             continue
 
@@ -159,10 +213,16 @@ def file_linked_decisions(
             result.below_floor += 1
             continue
 
-        node = _node_for(proposal)
+        node = node_for(proposal)
         if node is None:
             result.invalid += 1
             continue
+        have = existing_tags(session, node)
+        # A human already owns a reviewed node: never relabel it as automatic.
+        node.tags = merge_node_tags(
+            have,
+            add=[PROVENANCE_TAG] + ([] if REVIEWED_TAG in have else [AUTO_FILED_TAG]),
+        )
 
         db_cres = []
         for link in sure:

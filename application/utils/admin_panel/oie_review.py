@@ -19,7 +19,6 @@ logger = get_logger(__name__)
 
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Sequence
-from urllib.parse import urlparse
 
 from pydantic import ValidationError
 
@@ -29,7 +28,7 @@ from application.defs import cre_defs as defs
 from application.utils.librarian.schemas import LinkProposal, ReviewItem
 from application.utils.oie_scheduler import graph_filer
 
-REVIEWED_TAG = "oie-reviewed"
+REVIEWED_TAG = graph_filer.REVIEWED_TAG
 ACTIONS = ("approve", "reject", "repoint")
 _TEXT_LIMIT = 1500
 MAX_PAGE_SIZE = 200
@@ -85,60 +84,6 @@ def _latest_reviews(target_ids: Sequence[str]) -> Dict[str, Any]:
         .all()
     )
     return {r.target_id: r for r in rows}  # later rows win
-
-
-def _suggested_standard_name(proposal: Any) -> Optional[str]:
-    """``OWASP/<repo>`` for repo sources, else the site's host (no ``www.``)."""
-    source = proposal.knowledge.source
-    if source.repo:
-        return graph_filer.standard_name_for_repo(source.repo)
-    locator = proposal.knowledge.locator
-    url = locator.url or source.url
-    host = urlparse(str(url)).hostname if url else None
-    if not host:
-        return None
-    return host[4:] if host.startswith("www.") else host
-
-
-def _node_for_review(proposal: Any, standard_name: Optional[str]) -> Any:
-    """A ``Standard`` for a reviewed decision; repo, website and feed sources alike."""
-    name = (standard_name or "").strip() or _suggested_standard_name(proposal)
-    if not name:
-        raise ValueError(
-            "cannot work out a standard name for this source; pass standard_name"
-        )
-    locator = proposal.knowledge.locator
-    section_id = locator.path or locator.id
-    return defs.Standard(
-        name=name,
-        section=locator.title or section_id,
-        sectionID=section_id,
-        hyperlink=graph_filer._hyperlink(proposal) or str(locator.url or ""),
-        description=(proposal.knowledge.security_summary or "")[:1000],
-        tags=[REVIEWED_TAG],
-    )
-
-
-def _merge_review_tags(node: Any) -> None:
-    """Keep the tags an existing node already has; swap only ``oie-auto-filed``.
-
-    ``add_node`` overwrites tags on an existing node, so merge them in first.
-    """
-    existing = (
-        sqla.session.query(db.Node)
-        .filter(
-            db.Node.name == node.name,
-            db.Node.section == node.section,
-            db.Node.section_id == node.sectionID,
-        )
-        .first()
-    )
-    kept = [
-        t.strip()
-        for t in ((existing.tags or "").split(",") if existing else [])
-        if t.strip() and t.strip() != graph_filer.AUTO_FILED_TAG
-    ]
-    node.tags = list(dict.fromkeys(kept + [REVIEWED_TAG]))
 
 
 def search_cres(query: str, *, limit: int = 15) -> List[Dict[str, Any]]:
@@ -231,9 +176,8 @@ def list_decisions(
                 "repo": knowledge.source.repo,
                 "path": knowledge.locator.path,
                 "title": knowledge.locator.title,
-                "hyperlink": graph_filer._hyperlink(proposal)
-                or str(knowledge.locator.url or ""),
-                "standard_name": _suggested_standard_name(proposal),
+                "hyperlink": graph_filer._hyperlink(proposal),
+                "standard_name": graph_filer.standard_name_for_source(proposal),
             }
             for link in _proposed(proposal):
                 cre = _find_cre(link.cre_id)
@@ -296,8 +240,16 @@ def review_decision(
             if cre is None:
                 raise ValueError(f"unknown CRE {ref}")
             db_cres.append(cre)
-        node = _node_for_review(proposal, standard_name)
-        _merge_review_tags(node)
+        node = graph_filer.node_for(proposal, standard_name)
+        if node is None:
+            raise ValueError(
+                "cannot work out a standard name for this source; pass standard_name"
+            )
+        node.tags = graph_filer.merge_node_tags(
+            graph_filer.existing_tags(session, node),
+            add=[REVIEWED_TAG, graph_filer.PROVENANCE_TAG],
+            drop=[graph_filer.AUTO_FILED_TAG],
+        )
         collection = db.Node_collection()
         db_node = collection.add_node(node)
         if db_node is None:

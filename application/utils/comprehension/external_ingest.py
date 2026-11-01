@@ -39,6 +39,7 @@ def ingest_spec(
     embed: Any = None,
     enrich_fn: Any = None,
     discover: bool = False,
+    oie_run_id: str = "",
 ) -> dict:
     """Crawl one site and (when ``apply``) write its chunks. Returns counts for the caller/scheduler."""
     from application.utils.comprehension import store
@@ -47,6 +48,25 @@ def ingest_spec(
         spec, max_pages=max_pages or None, write_cache=apply
     )
     print(summarize(spec, chunks, result), flush=True)
+    oie_staged = None
+    if oie_run_id:
+        # Same crawl, second destination: the one OIE pipeline (A -> B -> C -> filer).
+        from application.utils.comprehension import oie_bridge
+
+        payloads = oie_bridge.chunks_to_payloads(
+            spec,
+            chunks,
+            {page.url: page.title for page in result.pages},
+            run_id=oie_run_id,
+        )
+        oie_staged = oie_bridge.stage_harvest(
+            database.session, oie_run_id, payloads, dry_run=not apply
+        )
+        print(
+            f"{spec.id}: {oie_staged} harvest records "
+            f"{'staged' if apply else 'would be staged'} for OIE run {oie_run_id}",
+            flush=True,
+        )
     written = 0
     if apply and chunks:
         slug = external.slug_for(spec)
@@ -68,6 +88,8 @@ def ingest_spec(
         )
         print(f"{slug}: raw chunks written: {written}", flush=True)
     counts = {"pages": len(result.pages), "chunks": len(chunks), "written": written}
+    if oie_staged is not None:
+        counts["oie_staged"] = oie_staged
     if (
         apply
         and getattr(database, "session", None) is not None

@@ -169,6 +169,7 @@ class OieReviewTest(_Fixture):
         )
         node = sqla.session.query(db.Node).one()
         self.assertIn(oie_review.REVIEWED_TAG, node.tags)
+        self.assertIn(graph_filer.PROVENANCE_TAG, node.tags.split(","))
         row = sqla.session.get(db.DecisionQueueItem, did)
         self.assertIsNotNone(row.consumed_at)
 
