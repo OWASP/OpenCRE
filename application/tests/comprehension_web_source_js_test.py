@@ -123,6 +123,14 @@ class PdfTimeCapTest(unittest.TestCase):
 
         return slow
 
+    def test_llm_gets_its_own_longer_timeout(self):
+        with mock.patch.dict(os.environ, {"OWASP_CRAWL_PDF_SECONDS": "1"}):
+            self.assertEqual(web_source.pdf_llm_seconds(), 180.0)
+        with mock.patch.dict(os.environ, {"OWASP_CRAWL_PDF_LLM_SECONDS": "30"}):
+            self.assertEqual(web_source.pdf_llm_seconds(), 30.0)
+        with mock.patch.dict(os.environ, {"OWASP_CRAWL_PDF_LLM_SECONDS": "x"}):
+            self.assertEqual(web_source.pdf_llm_seconds(), 180.0)
+
     def test_slow_pdf_with_no_fallback_is_skipped_as_timeout(self):
         llm = mock.Mock()
         result = self.crawl_pdf(self.slow_local(), llm, {"OWASP_CRAWL_PDF_LLM": "0"})

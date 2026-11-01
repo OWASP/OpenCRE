@@ -424,6 +424,15 @@ PDF_LLM_PROMPT = (
 )
 
 
+def pdf_llm_seconds() -> float:
+    """Timeout of the Gemini fallback call (OWASP_CRAWL_PDF_LLM_SECONDS, default 180): independent
+    of the local conversion cap, because a large PDF can need minutes."""
+    try:
+        return max(1.0, float(os.environ.get("OWASP_CRAWL_PDF_LLM_SECONDS", "180")))
+    except ValueError:
+        return 180.0
+
+
 def pdf_llm_model() -> str:
     return os.environ.get("OWASP_CRAWL_PDF_MODEL", "gemini/gemini-2.5-flash")
 
@@ -443,7 +452,7 @@ def _pdf_via_llm(data: bytes) -> str:
         model=pdf_llm_model(),
         temperature=0.0,
         max_tokens=16000,
-        timeout=pdf_seconds(),
+        timeout=pdf_llm_seconds(),
         messages=[
             {
                 "role": "user",
