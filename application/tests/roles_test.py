@@ -1,11 +1,12 @@
 import os
 import unittest
+from typing import Any
 from unittest import mock
 
 from application.utils import roles
 
 
-def env(**kw):
+def env(**kw: str) -> Any:
     base = {
         "ADMIN_EMAILS": "",
         "LOGIN_ALLOWED_EMAILS": "",
@@ -42,7 +43,7 @@ class RolesTest(unittest.TestCase):
         with env(ADMIN_EMAILS="a@x.org", LOGIN_ALLOWED_DOMAINS="*"):
             self.assertEqual(roles.role_for("u@anything.io"), roles.USER)
 
-    def test_domain_allowed_ignores_a_leading_dot_or_at(self):
+    def test_domain_allowed_ignores_a_leading_dot_or_at(self) -> None:
         with env(LOGIN_ALLOWED_DOMAINS=".edu"):
             self.assertTrue(roles.domain_allowed("m@mit.edu"))
             self.assertTrue(roles.domain_allowed("m@cs.mit.edu"))
@@ -61,12 +62,12 @@ class RolesTest(unittest.TestCase):
             self.assertTrue(roles.domain_allowed("m@mit.edu"))
             self.assertFalse(roles.domain_allowed("u@gmail.com"))
 
-    def test_domain_allowed_roles_use_the_same_rule(self):
+    def test_domain_allowed_roles_use_the_same_rule(self) -> None:
         with env(ADMIN_EMAILS="a@x.org", LOGIN_ALLOWED_DOMAINS=".edu"):
             self.assertEqual(roles.role_for("m@mit.edu"), roles.USER)
             self.assertIsNone(roles.role_for("m@evil-edu.com"))
 
-    def test_domain_allowed_refuses_degenerate_input(self):
+    def test_domain_allowed_refuses_degenerate_input(self) -> None:
         with env(LOGIN_ALLOWED_DOMAINS="owasp.org"):
             self.assertFalse(roles.domain_allowed("owasp.org"))  # no "@"
             self.assertFalse(roles.domain_allowed("u@"))
