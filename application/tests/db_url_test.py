@@ -1,4 +1,7 @@
+import importlib.util
+import sys
 import unittest
+from pathlib import Path
 
 from application.utils.db_url import (
     assert_local_clone_url,
@@ -77,6 +80,43 @@ class RedactDbUrlTest(unittest.TestCase):
             redact_db_url("postgres://u:p%40ss:word@db.example.com/x"),
             "postgres://u:***@db.example.com/x",
         )
+
+
+def _load_script(relative_path: str, name: str):  # type: ignore[no-untyped-def]
+    path = Path(__file__).resolve().parents[2] / relative_path
+    spec = importlib.util.spec_from_file_location(name, path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    sys.path.insert(0, str(path.parent))
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.path.remove(str(path.parent))
+    return module
+
+
+class EvalScriptsRefuseUnsafeDatabasesTest(unittest.TestCase):
+    """Eval scripts empty the OIE queue tables, so they must refuse a remote
+    database before touching it. The URLs below use the reserved .invalid TLD, so
+    nothing can connect even if a guard is missing. Never point these tests at a
+    local database: without the guard the script would clear its queue tables.
+    The `cre`-database rule is covered by AssertLocalCloneUrlTest."""
+
+    def test_run_full_pipeline_refuses_remote_host(self) -> None:
+        module = _load_script(
+            "scripts/oie_owasp_eval/run_full_pipeline.py", "run_full_pipeline_guard"
+        )
+        with self.assertRaises(SystemExit):
+            module.main(["--cache_file", "postgresql://cre:pw@db.invalid:5432/x"])
+
+    def test_run_b2_pr_mappings_refuses_remote_host(self) -> None:
+        module = _load_script(
+            "scripts/oie_owasp_eval/run_b2_pr_mappings.py", "run_b2_guard"
+        )
+        with self.assertRaises(SystemExit):
+            module.run_pipeline(
+                "rid", "postgresql://cre:pw@db.invalid:5432/x", keep_all_knowledge=False
+            )
 
 
 if __name__ == "__main__":

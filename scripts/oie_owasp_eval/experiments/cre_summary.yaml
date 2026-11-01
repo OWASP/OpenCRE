@@ -1,0 +1,6 @@
+experiment_id: cre_summary
+description: >
+  Step 2 one-factor — CRE_LIBRARIAN_CRE_SUMMARY alone (search-only blurbs).
+flags:
+  CRE_LIBRARIAN_CRE_SUMMARY: "1"
+include_agentic: false

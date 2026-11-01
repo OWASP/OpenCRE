@@ -226,3 +226,5 @@ Then in a separate terminal
 <pre>cd application/frontend</pre>
 and finally start the frontend in a debug session:
 <pre>yarn start</pre>
+
+`make frontend` / `yarn build` regenerates `application/frontend/www/bundle.js` (and `index.html` / `bundle.js.LICENSE.txt`). Those files are committed so production Heroku can serve the UI without a Node buildpack. Do not include them in a PR unless you intentionally changed the frontend. After `make install` they should not change; if they do, discard the diffs.

@@ -11,6 +11,7 @@ docling>=2.0.0
 llama-index-core>=0.14.0
 llama-index-readers-docling>=0.4.0
 llama-index-node-parser-docling>=0.4.0
+langgraph>=0.2.0
 
 # importer / embeddings scrape tooling (not needed for prod chat)
 playwright
