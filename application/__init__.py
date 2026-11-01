@@ -43,9 +43,13 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
         app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
             "SQLALCHEMY_DATABASE_URI"
         )
-    GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
-    app.secret_key = GOOGLE_CLIENT_SECRET
-    if os.environ.get("NO_LOGIN"):
+    # A stable key, or session cookies stop verifying whenever a worker restarts
+    # and every login (state kept in the session) bounces back to /auth/login.
+    app.secret_key = os.environ.get("SECRET_KEY") or os.environ.get(
+        "GOOGLE_CLIENT_SECRET"
+    )
+    # Only "1" disables login, as everywhere else; NO_LOGIN=0 is truthy as a string.
+    if os.environ.get("NO_LOGIN") == "1":
         letters = string.ascii_lowercase
         app.secret_key = "".join(random.choice(letters) for i in range(20))
 
@@ -77,7 +81,9 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
 
     # Credentialed browser calls are same-origin in prod/staging; keep CORS
     # narrow so cross-site pages cannot drive cookie auth. Admin mutations also
-    # require CSRF (see web_main.admin_imports_enabled_required).
+    # require CSRF (see web_main.admin_imports_enabled_required). Without an
+    # explicit allowlist, flask-cors would reflect any Origin together with
+    # credentials, so fall back to plain (credential-less) CORS as on main.
     cors_origins = [
         o.strip()
         for o in (os.environ.get("CORS_ALLOWED_ORIGINS") or "").split(",")
@@ -86,7 +92,7 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
     if cors_origins:
         CORS(app, origins=cors_origins, supports_credentials=True)
     else:
-        CORS(app, supports_credentials=True)
+        CORS(app)
     app.config["CORS_HEADERS"] = "Content-Type, X-CSRF-Token"
 
     compress.init_app(app)

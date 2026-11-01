@@ -496,8 +496,9 @@ if [[ -z "${GA_WORKER_COUNT}" ]]; then
         GA_WORKER_COUNT=0
     fi
 fi
-# Default 10 OIE RQ workers (A/B/C fan-out). Set CRE_OIE_WORKER_COUNT=0 to skip.
-OIE_WORKER_COUNT="${CRE_OIE_WORKER_COUNT:-10}"
+# OIE RQ workers (A/B/C fan-out) are opt-in: with workers > 0 this script expands
+# RUN_COUNT and forces Postgres. Set e.g. CRE_OIE_WORKER_COUNT=10 to enable.
+OIE_WORKER_COUNT="${CRE_OIE_WORKER_COUNT:-0}"
 if [[ -n "${CRE_GA_WORKER_COUNT:-}" && "${GA_WORKER_COUNT}" -gt "${RUN_COUNT}" ]]; then
     default_ga=$(( RUN_COUNT / 3 ))
     if [[ "${default_ga}" -lt 1 && "${RUN_COUNT}" -gt 1 ]]; then

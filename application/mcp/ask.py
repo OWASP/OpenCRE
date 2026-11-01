@@ -317,8 +317,24 @@ def _owasp_meta_facts(
     }
 
 
+class EmbeddingRetrievalError(RuntimeError):
+    """The embedding lookup itself failed (provider, database, app setup).
+
+    Kept distinct from "nothing matched": a crash must not read as an empty result.
+    """
+
+    def __init__(self, kind: str, detail: str) -> None:
+        super().__init__(f"{kind}: {detail}")
+        self.kind = kind
+        self.detail = detail
+
+
 def _retrieve_nearest_standard(prompt: str) -> Any:
-    """Same embedding retrieval as the chatbot; runs under Flask app context."""
+    """Same embedding retrieval as the chatbot; runs under Flask app context.
+
+    Returns the nearest hit, or ``None`` when nothing is above the threshold.
+    Raises ``EmbeddingRetrievalError`` when the lookup itself fails.
+    """
     from application.database import db as db_mod
     from application.prompt_client import prompt_client
 
@@ -328,23 +344,29 @@ def _retrieve_nearest_standard(prompt: str) -> Any:
         return handler.retrieve_nearest_standard_for_prompt(prompt)
 
     try:
-        from flask import has_app_context
+        return _in_app_context(_run)
+    except Exception as exc:
+        logger.warning("ask: embedding retrieval failed", exc_info=True)
+        raise EmbeddingRetrievalError(type(exc).__name__, str(exc)[:300]) from exc
 
-        if has_app_context():
-            return _run()
-    except Exception:
-        pass
+
+def _standard_embeddings_exist() -> Optional[bool]:
+    """True/False when we can tell whether any Standard embeddings are stored, else None."""
+    from application.database import db as db_mod
+    from application.defs import cre_defs
+
+    def _check() -> bool:
+        database = db_mod.Node_collection()
+        found, _pages, _page = database.get_embeddings_by_doc_type_paginated(
+            doc_type=cre_defs.Credoctypes.Standard.value, page=1, per_page=1
+        )
+        return bool(found)
+
     try:
-        app = _ensure_app()
-        with app.app_context():
-            return _run()
+        return bool(_in_app_context(_check))
     except Exception:
-        logger.info("ask: embedding retrieval failed", exc_info=True)
-        try:
-            return _run()
-        except Exception:
-            logger.info("ask: embedding retrieval bare fallback failed", exc_info=True)
-            return None
+        logger.info("ask: could not check for stored embeddings", exc_info=True)
+        return None
 
 
 def _cre_ids_from_node(node: Any) -> List[str]:
@@ -395,17 +417,42 @@ def _security_facts(
 ) -> Dict[str, Any]:
     """Retrieve via chatbot embedding similarity; return fact pack (no narrative LLM)."""
     client = rest_client or RestClient()
-    hit = _retrieve_nearest_standard(prompt)
-    if hit is None:
+    empty: Dict[str, Any] = {
+        "ok": False,
+        "channel": CORPUS_SECURITY,
+        "intent": intent,
+        "matched_standard": None,
+        "items": [],
+        "citations": [],
+        "standards_filter": "all_mapped",
+    }
+    try:
+        hit = _retrieve_nearest_standard(prompt)
+    except EmbeddingRetrievalError as exc:
         return {
-            "ok": False,
-            "channel": CORPUS_SECURITY,
-            "intent": intent,
-            "matched_standard": None,
-            "items": [],
+            **empty,
+            "reason": "retrieval_error",
+            "error": {"type": exc.kind, "detail": exc.detail},
+            "message": (
+                f"Embedding retrieval failed ({exc.kind}). This is a server-side "
+                "error, not an absence of matches."
+            ),
+        }
+    if hit is None:
+        if _standard_embeddings_exist() is False:
+            return {
+                **empty,
+                "reason": "no_embeddings",
+                "message": (
+                    "No Standard embeddings are stored in this deployment's database, "
+                    "so security facts cannot be matched (the embedding job has not "
+                    "been run for standards)."
+                ),
+            }
+        return {
+            **empty,
+            "reason": "no_match_above_threshold",
             "message": "No CRE/standard embedding match above similarity threshold.",
-            "citations": [],
-            "standards_filter": "all_mapped",
         }
 
     matched = _matched_standard_payload(hit)

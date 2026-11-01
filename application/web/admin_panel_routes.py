@@ -366,10 +366,10 @@ def register_admin_panel_routes(
 
         body = request.get_json(silent=True) or {}
         try:
-            current = dict(authority.weights(fresh=True))
-            current.update(body.get("weights") or {})
             if not isinstance(body.get("weights"), dict):
                 return _err(400, "weights object required")
+            current = dict(authority.weights(fresh=True))
+            current.update(body["weights"])
             actor = session.get("email") or getattr(g, "api_key_email", None)
             saved = authority.save(current, actor=actor)
         except ValueError as exc:

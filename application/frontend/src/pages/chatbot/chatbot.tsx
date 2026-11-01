@@ -117,8 +117,12 @@ export const Chatbot = () => {
       .then((response) => {
         if (response.status === 200) {
           response.text().then((user) => setUser(user));
-        } else {
+        } else if (response.status === 401) {
           window.location.href = `${apiUrl}/auth/login`;
+        } else {
+          // 403/5xx are not "signed out"; looping through login would hide the fault.
+          setError(`Could not check your sign-in (status ${response.status})`);
+          setLoading(false);
         }
       })
       .catch((error) => {

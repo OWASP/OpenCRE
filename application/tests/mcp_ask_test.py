@@ -15,6 +15,8 @@ from application.mcp.ask import (
     CORPUS_AUTO,
     CORPUS_OWASP_META,
     CORPUS_SECURITY,
+    EmbeddingRetrievalError,
+    _retrieve_nearest_standard,
     ask,
 )
 from application.mcp.rest_client import RestResult
@@ -412,6 +414,63 @@ class McpAskToolTest(unittest.TestCase):
         self.assertEqual(out["items"], [])
         self.assertIsNone(out["matched_standard"])
         self.assertEqual(client.calls, [])
+
+    @patch("application.mcp.ask._standard_embeddings_exist", return_value=True)
+    @patch("application.mcp.ask._retrieve_nearest_standard")
+    def test_below_threshold_says_so(
+        self, retrieve: MagicMock, _exists: MagicMock
+    ) -> None:
+        retrieve.return_value = None
+        out = ask(
+            "zzzz-no-match",
+            corpus=CORPUS_SECURITY,
+            rest_client=_FakeRestClient(),  # type: ignore[arg-type]
+        )
+        self.assertEqual(out["reason"], "no_match_above_threshold")
+        self.assertNotIn("error", out)
+
+    @patch("application.mcp.ask._standard_embeddings_exist", return_value=False)
+    @patch("application.mcp.ask._retrieve_nearest_standard")
+    def test_missing_standard_embeddings_is_reported_distinctly(
+        self, retrieve: MagicMock, _exists: MagicMock
+    ) -> None:
+        retrieve.return_value = None
+        out = ask(
+            "how do I prevent SQL injection",
+            corpus=CORPUS_SECURITY,
+            rest_client=_FakeRestClient(),  # type: ignore[arg-type]
+        )
+        self.assertFalse(out["ok"])
+        self.assertEqual(out["reason"], "no_embeddings")
+        self.assertIn("embedding", out["message"].lower())
+        self.assertNotIn("similarity threshold", out["message"].lower())
+
+    @patch("application.mcp.ask._retrieve_nearest_standard")
+    def test_retrieval_error_is_an_error_not_a_miss(self, retrieve: MagicMock) -> None:
+        retrieve.side_effect = EmbeddingRetrievalError("RuntimeError", "provider down")
+        client = _FakeRestClient()
+        out = ask(
+            "how do I prevent SQL injection",
+            corpus=CORPUS_SECURITY,
+            rest_client=client,  # type: ignore[arg-type]
+        )
+        self.assertFalse(out["ok"])
+        self.assertEqual(out["reason"], "retrieval_error")
+        self.assertEqual(out["error"]["type"], "RuntimeError")
+        self.assertIn("provider down", out["error"]["detail"])
+        self.assertIn("error", out["message"].lower())
+        self.assertNotIn("similarity threshold", out["message"].lower())
+        self.assertEqual(client.calls, [])
+
+    @patch("application.mcp.ask._in_app_context")
+    def test_retrieve_nearest_standard_raises_instead_of_returning_none(
+        self, in_ctx: MagicMock
+    ) -> None:
+        in_ctx.side_effect = RuntimeError("embedding provider unreachable")
+        with self.assertRaises(EmbeddingRetrievalError) as cm:
+            _retrieve_nearest_standard("anything")
+        self.assertEqual(cm.exception.kind, "RuntimeError")
+        self.assertIn("unreachable", cm.exception.detail)
 
     @patch("application.mcp.ask._retrieve_nearest_standard")
     def test_dispatch_tool_ask(self, retrieve: MagicMock) -> None:

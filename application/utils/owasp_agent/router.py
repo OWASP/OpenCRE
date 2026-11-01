@@ -1177,7 +1177,6 @@ def is_malicious_request(text: str) -> bool:
 def classify_intent(text: str, *, known_people: Optional[List[str]] = None) -> str:
     from application.utils.owasp_agent.person_resolve import match_indexed_person
 
-    t = text.lower().strip()
     t = re.sub(r"\bnumber of\b", "how many", text.lower().strip())
     # Strip markdown fences / chat-role wrappers for structural matching.
     t_flat = re.sub(r"[`*\n]+", " ", t)

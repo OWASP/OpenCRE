@@ -11,6 +11,7 @@ Usage (local DB)::
     python scripts/seed_node_facts.py
     python scripts/seed_node_facts.py --dry-run
     python scripts/seed_node_facts.py --skip-embed
+    python scripts/seed_node_facts.py --seed-nodes   # opt in: stamps node metadata
 
 Env: standard Flask/OpenCRE DB URL (same as the running app).
 """
@@ -190,7 +191,7 @@ def _reembed_evidence(
     return {"evidence": evidence_n}
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--dry-run",
@@ -202,7 +203,21 @@ def main(argv: Optional[List[str]] = None) -> int:
         action="store_true",
         help="Only merge metadata.facts; do not re-embed",
     )
-    args = parser.parse_args(argv)
+    parser.add_argument(
+        "--seed-nodes",
+        action="store_true",
+        help=(
+            "Also stamp metadata.facts onto every Node whose name equals a family "
+            "name (for ASVS that is every requirement row) and onto the listed "
+            "CREs. Node metadata is appended to node embedding text, so the next "
+            "embedding pass re-embeds all of those nodes. Off by default."
+        ),
+    )
+    return parser
+
+
+def main(argv: Optional[List[str]] = None) -> int:
+    args = _build_parser().parse_args(argv)
 
     os.environ.setdefault("FLASK_ENV", "development")
     from application import create_app
@@ -211,9 +226,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     app = create_app(mode="production")
     with app.app_context():
         database = db_mod.Node_collection()
-        print("Seeding node metadata.facts …", flush=True)
-        counts = _seed_nodes(database, dry_run=args.dry_run)
-        print(f"metadata updated: {counts}", flush=True)
+        if args.seed_nodes:
+            print("Seeding node metadata.facts …", flush=True)
+            counts = _seed_nodes(database, dry_run=args.dry_run)
+            print(f"metadata updated: {counts}", flush=True)
+        else:
+            print("Skipping node/CRE metadata.facts (pass --seed-nodes)", flush=True)
         print("Re-embedding evidence for node_facts …", flush=True)
         emb = _reembed_evidence(
             database, dry_run=args.dry_run, skip_embed=args.skip_embed

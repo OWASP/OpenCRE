@@ -944,11 +944,21 @@ def add_header(response):
         from application.utils.api_tokens.audit import record_api_key_audit
 
         record_api_key_audit(response.status_code)
-    if request.path in (
-        "/rest/v1/user/resources",
-        "/rest/v1/user/mcp_grants",
-        "/rest/v1/auth/user",
-        "/rest/v1/user",
+    # The login redirects carry per-attempt OAuth state and PKCE material, so a
+    # replayed cached 302 sends a returning user to Google with a stale challenge.
+    if (
+        request.path.startswith("/rest/v1/auth/")
+        or request.path.startswith("/rest/v1/my-api-keys")
+        or request.path
+        in (
+            "/rest/v1/user/resources",
+            "/rest/v1/user/mcp_grants",
+            "/rest/v1/user",
+            "/rest/v1/me",
+            "/rest/v1/login",
+            "/rest/v1/callback",
+            "/rest/v1/logout",
+        )
     ):
         response.cache_control.no_store = True
         return response
@@ -1665,7 +1675,6 @@ def chat_cre() -> Any:
             status_code,
         )
     response = _block_unverified_answer(response, user_prompt)
-    response = _maybe_append_cre_followups(user_prompt or "", response)
     return jsonify(_with_answer_id(response, user_prompt))
 
 
@@ -1732,72 +1741,44 @@ def answer_feedback_post() -> Any:
     return jsonify(result)
 
 
-def _maybe_append_cre_followups(prompt: str, response):
-    """Offer one more follow-up level for standards/ASVS-style CRE answers."""
-    if not isinstance(response, dict):
-        return response
-    text = str(response.get("response") or "")
-    if "Follow-up:" in text or "follow up" in text.lower():
-        return response
-    p = (prompt or "").lower()
-    follow = None
-    if "asvs" in p and ("l2" in p or "l3" in p or "level" in p):
-        follow = (
-            "Follow-up: Want me to map the specific ASVS authentication requirements "
-            "to related CREs, or compare session-management controls next?"
-        )
-    elif "cre" in p and ("xss" in p or "encoding" in p or "injection" in p):
-        follow = (
-            "Follow-up: I can list the exact CRE IDs and linked standards "
-            "(ASVS/WSTG/Cheat Sheets) for this control if you want a citation table."
-        )
-    elif "samm" in p or "wstg" in p or "cheat sheet" in p:
-        follow = (
-            "Follow-up: Want a CRE mapping for this practice, or a comparison "
-            "to a related OWASP standard?"
-        )
-    if follow:
-        response = dict(response)
-        response["response"] = text.rstrip() + "\n\n" + follow
-    return response
-
-
 class CREFlow:
-    """ "This class handles authentication with google's oauth"""
+    """Builds a Google OAuth flow for one login attempt.
 
-    __instance = None
+    Each call returns a fresh flow. A shared flow keeps the pending ``state`` in
+    process memory, so concurrent logins overwrote each other and a callback
+    served by another worker (or after a restart) saw no state and looped. The
+    state now lives in the user's own session cookie and is handed back in.
+    """
+
     flow = None
 
     @classmethod
-    def instance(cls):
-        if cls.__instance is None:
-            cls.__instance = cls.__new__(cls)
-            client_secrets_file = os.path.join(
-                pathlib.Path(__file__).parent.parent.parent, "gcp_secret.json"
-            )
-            if not os.path.exists(client_secrets_file):
-                if os.environ.get("GOOGLE_SECRET_JSON"):
-                    with open(client_secrets_file, "w") as f:
-                        f.write(os.environ.get("GOOGLE_SECRET_JSON"))
-                else:
-                    logger.fatal(
-                        "neither file gcp_secret.json nor env GOOGLE_SECRET_JSON have been set"
-                    )
-            cls.flow = Flow.from_client_secrets_file(
-                client_secrets_file=client_secrets_file,
-                scopes=[
-                    "https://www.googleapis.com/auth/userinfo.profile",
-                    "https://www.googleapis.com/auth/userinfo.email",
-                    "openid",
-                ],
-                redirect_uri=(
-                    request.root_url.rstrip("/") + url_for("web.auth_callback")
-                ).replace("http://", "https://"),
-            )
-        return cls.__instance
-
-    def __init__(sel):
-        raise ValueError("class is a singleton, please call instance() instead")
+    def instance(cls, state=None):
+        client_secrets_file = os.path.join(
+            pathlib.Path(__file__).parent.parent.parent, "gcp_secret.json"
+        )
+        if not os.path.exists(client_secrets_file):
+            if os.environ.get("GOOGLE_SECRET_JSON"):
+                with open(client_secrets_file, "w") as f:
+                    f.write(os.environ.get("GOOGLE_SECRET_JSON"))
+            else:
+                logger.fatal(
+                    "neither file gcp_secret.json nor env GOOGLE_SECRET_JSON have been set"
+                )
+        built = cls.__new__(cls)
+        built.flow = Flow.from_client_secrets_file(
+            client_secrets_file=client_secrets_file,
+            scopes=[
+                "https://www.googleapis.com/auth/userinfo.profile",
+                "https://www.googleapis.com/auth/userinfo.email",
+                "openid",
+            ],
+            redirect_uri=(
+                request.root_url.rstrip("/") + url_for("web.auth_callback")
+            ).replace("http://", "https://"),
+            state=state,
+        )
+        return built
 
 
 @app.route("/rest/v1/auth/login")
@@ -1825,27 +1806,42 @@ def auth_login():
     flow_instance = CREFlow.instance()
     authorization_url, state = flow_instance.flow.authorization_url()
     session["state"] = state
+    # PKCE: Google checks the code exchange against this verifier, and the
+    # per-login flow built in the callback does not have it.
+    verifier = getattr(flow_instance.flow, "code_verifier", None)
+    if isinstance(verifier, str):
+        session["code_verifier"] = verifier
     return redirect(authorization_url)
 
 
 @app.route("/rest/v1/auth/user")
-@login_required
+@user_required
 def auth_user():
     if os.environ.get("NO_LOGIN") == "1":
         return "foobar"
-    return session.get("email")
+    return session.get("email") or ""
 
 
 @app.route("/rest/v1/auth/callback")
 def auth_callback():
-    flow_instance = CREFlow.instance()
+    if "user_id" in session:
+        # Back/refresh on the callback after a successful login: the Google code
+        # is single use, so exchanging it again would fail with a 500.
+        return redirect("/chatbot")
+    flow_instance = CREFlow.instance(state=session.get("state"))
     try:
         flow_instance.flow.fetch_token(
-            authorization_response=request.url.replace("http://", "https://")
+            authorization_response=request.url.replace("http://", "https://"),
+            code_verifier=session.get("code_verifier"),
         )  # cloud run (and others) rewrite https to http at the container
     except oauthlib.oauth2.rfc6749.errors.MismatchingStateError as mse:
         return redirect("/chatbot")
-    if not session.get("state") or session.get("state") != request.args["state"]:
+    except oauthlib.oauth2.rfc6749.errors.OAuth2Error as err:
+        # Cancel/deny on Google's consent screen, an expired or replayed code:
+        # not a server fault, and not worth bouncing straight back to Google.
+        logger.info("OAuth callback refused: %s", type(err).__name__)
+        return redirect("/")
+    if not session.get("state") or session.get("state") != request.args.get("state"):
         return redirect(url_for("web.auth_login"))  # State does not match!
     credentials = flow_instance.flow.credentials
     token_request = google.auth.transport.requests.Request()
@@ -1859,23 +1855,30 @@ def auth_callback():
     session["name"] = id_info.get("name")
     session["email"] = id_info.get("email")
     email = (id_info.get("email") or "").strip().lower()
-    allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
-    allowed_domains = allowed_domains.split(",") if allowed_domains else []
-    if not allowed_domains:
-        abort(
-            500,
-            "You have not set any domain in the allowed domains list, to ignore this set LOGIN_ALLOWED_DOMAINS to '*'",
-        )
-    if (
-        allowed_domains
-        and allowed_domains != ["*"]
-        and not any([email.endswith(x.strip().lower()) for x in allowed_domains])
-    ):
+    # A named admin may sign in from outside the allowed domains (role_for
+    # grants the role by address); everyone else must be on an allowed domain.
+    named_admin = (
+        account_roles.roles_enabled()
+        and account_roles.role_for(email) == account_roles.ADMIN
+    )
+    if not named_admin:
         allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
-        abort(
-            401,
-            description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
-        )
+        allowed_domains = allowed_domains.split(",") if allowed_domains else []
+        if not allowed_domains:
+            abort(
+                500,
+                "You have not set any domain in the allowed domains list, to ignore this set LOGIN_ALLOWED_DOMAINS to '*'",
+            )
+        if (
+            allowed_domains
+            and allowed_domains != ["*"]
+            and not any([email.endswith(x.strip().lower()) for x in allowed_domains])
+        ):
+            allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
+            abort(
+                401,
+                description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
+            )
     if account_roles.roles_enabled():
         # Two-role model: anyone on an allowed domain may log in; named admins get the admin role.
         if account_roles.role_for(email) is None:
