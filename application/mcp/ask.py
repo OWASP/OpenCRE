@@ -234,19 +234,12 @@ def _retrieve_nearest_standard(prompt: str) -> Any:
 
         if has_app_context():
             return _run()
-    except Exception:
-        pass
-    try:
         app = _ensure_app()
         with app.app_context():
             return _run()
     except Exception:
         logger.info("ask: embedding retrieval failed", exc_info=True)
-        try:
-            return _run()
-        except Exception:
-            logger.info("ask: embedding retrieval bare fallback failed", exc_info=True)
-            return None
+        return None
 
 
 def _cre_ids_from_node(node: Any) -> List[str]:

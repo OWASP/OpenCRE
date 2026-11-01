@@ -19,6 +19,7 @@
 #   SKIP_MIGRATE=1              Skip flask db upgrade
 #   SKIP_UPSTREAM_SYNC=1        Do not pull CRE graph when cre/node tables are empty
 #   FORCE_UPSTREAM_SYNC=1       Always run cre.py --upstream_sync before Flask
+#   ADMIN_LOCAL_ALLOW_REMOTE=1  Allow a non-loopback Postgres host (refused by default)
 
 set -euo pipefail
 
@@ -59,6 +60,30 @@ while [[ $# -gt 0 ]]; do
     *) die "unknown arg: $1 (try --help)" ;;
   esac
 done
+
+# This script migrates (and create_all's) the target database and runs Flask with
+# NO_LOGIN=1, so it only accepts a loopback Postgres. Opt out knowingly.
+assert_local_pg() {
+  [[ "${ADMIN_LOCAL_ALLOW_REMOTE:-0}" == "1" ]] && return 0
+  local hosts
+  hosts="$(python3 - "${PG_URL}" <<'PY'
+import sys
+import urllib.parse as up
+
+p = up.urlparse(sys.argv[1])
+q = up.parse_qs(p.query)
+for h in [p.hostname or ""] + q.get("host", []) + q.get("hostaddr", []):
+    print(h.lower())
+PY
+)"
+  local h
+  while IFS= read -r h; do
+    case "${h}" in
+      ""|127.0.0.1|localhost|::1|/*) ;;
+      *) die "refusing non-loopback database host '${h}' (this script migrates the DB and runs with NO_LOGIN=1); set ADMIN_LOCAL_ALLOW_REMOTE=1 to override" ;;
+    esac
+  done <<<"${hosts}"
+}
 
 ensure_venv() {
   if [[ -d "${ROOT}/venv" ]]; then
@@ -255,6 +280,7 @@ run_flask() {
   exec flask run --host 127.0.0.1 --port "${PORT}"
 }
 
+assert_local_pg
 ensure_postgres
 migrate
 ensure_upstream_graph

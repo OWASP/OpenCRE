@@ -404,36 +404,6 @@ def main() -> None:
         action="store_true",
         help="with --run_scheduled: run stages without writing results",
     )
-    parser.add_argument(
-        "--ingest_github",
-        default="",
-        help=(
-            "Point-and-shoot: harvest a public GitHub repo URL, run Module B "
-            "noise filter, print KNOWLEDGE chunks to stdout"
-        ),
-    )
-    parser.add_argument(
-        "--ingest_branch",
-        default="",
-        help="optional branch override for --ingest_github",
-    )
-    parser.add_argument(
-        "--ingest_keep_all",
-        action="store_true",
-        help=(
-            "with --ingest_github: skip the LLM and treat every chunk as "
-            "KNOWLEDGE (offline dump; not a real classification test)"
-        ),
-    )
-    parser.add_argument(
-        "--ingest_model",
-        default="",
-        help=(
-            "with --ingest_github: LiteLLM model id for Module B "
-            "(sets CRE_NOISE_FILTER_LLM_MODEL), e.g. openai/gpt-4o-mini, "
-            "anthropic/claude-haiku-4-5, gemini/gemini-2.5-flash"
-        ),
-    )
 
     args = parser.parse_args()
     if args.export and not args.csv:
@@ -444,12 +414,6 @@ def main() -> None:
         parser.error("--run_harvester requires --run_id <pipeline_run_id>")
     if (args.scheduled_force or args.scheduled_dry_run) and not args.run_scheduled:
         parser.error("--scheduled_force / --scheduled_dry_run require --run_scheduled")
-    if (args.ingest_branch or args.ingest_keep_all or args.ingest_model) and not str(
-        getattr(args, "ingest_github", "") or ""
-    ).strip():
-        parser.error(
-            "--ingest_branch / --ingest_keep_all / --ingest_model require --ingest_github"
-        )
     # The live queue path takes its rows from the DB, so a fixture path would be
     # silently ignored rather than doing what the caller plainly asked for.
     if args.librarian_source and args.run_id.strip():

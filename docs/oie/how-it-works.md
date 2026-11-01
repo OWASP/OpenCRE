@@ -115,7 +115,7 @@ When two retrieval pools are not score-calibrated, [Reciprocal Rank Fusion
 combines ranks with `1 / (k + rank)`. Dual-index + RRF was evaluated and **not**
 promoted for the exact Links bar; see the
 [experimental feature flags](experimental-feature-flags.md)
-page (dead code; default off).
+page (the implementation was removed from the stack).
 
 ## What “a link” means in production
 

@@ -974,6 +974,27 @@ def _cre_hub_sqlite_path() -> Optional[Path]:
     return packaged if packaged.is_file() else None
 
 
+def _count_cre_embeddings(cache_file: str) -> int:
+    url = (
+        sqlalchemy_postgres_url(cache_file)
+        if is_postgres_url(cache_file)
+        else cache_file
+    )
+    engine = create_engine(url)
+    try:
+        with engine.connect() as conn:
+            return int(
+                conn.execute(
+                    text("SELECT COUNT(*) FROM embeddings WHERE doc_type = 'CRE'")
+                ).scalar()
+                or 0
+            )
+    except Exception:  # noqa: BLE001 — no embeddings table yet means empty
+        return 0
+    finally:
+        engine.dispose()
+
+
 def sync_cre_hub_embeddings(cache_file: str) -> Dict[str, Any]:
     """Load CRE embedding vectors into Postgres (required for Module C).
 
@@ -987,6 +1008,19 @@ def sync_cre_hub_embeddings(cache_file: str) -> Dict[str, Any]:
             "status": "skipped",
             "reason": "no CRE hub sqlite (set CRE_HUB_SQLITE or place standards_cache.sqlite)",
         }
+    replace = (os.getenv("ADMIN_REPLACE_CRE_HUB_EMBEDDINGS") or "").strip().lower()
+    if replace not in TRUE_VALUES:
+        existing = _count_cre_embeddings(cache_file)
+        if existing:
+            return {
+                "status": "ok",
+                "hub": str(hub),
+                "detail": (
+                    f"kept {existing} existing CRE embedding rows; the sync deletes "
+                    "and reloads them, so it only runs on an empty destination "
+                    "(set ADMIN_REPLACE_CRE_HUB_EMBEDDINGS=1 to replace)"
+                ),
+            }
     dest = (cache_file or "").replace("postgresql+psycopg2://", "postgresql://")
     argv = [
         sys.executable,
