@@ -81,15 +81,21 @@ def geocode_place(
     sess = session or requests.Session()
     _GEOCODE_LAST_CALL_S = time.time()
     _GEOCODE_MISS_TIMES.append(_GEOCODE_LAST_CALL_S)
-    resp = sess.get(
-        NOMINATIM_URL,
-        params={"q": query, "format": "json", "limit": 1},
-        headers={"User-Agent": "OpenCRE-owasp-agent/1.0 (research)"},
-        timeout=timeout,
-    )
+    try:
+        resp = sess.get(
+            NOMINATIM_URL,
+            params={"q": query, "format": "json", "limit": "1"},
+            headers={"User-Agent": "OpenCRE-owasp-agent/1.0 (research)"},
+            timeout=timeout,
+        )
+    except requests.RequestException as exc:
+        raise GeocodeError(f"geocoder network error: {exc}") from exc
     if resp.status_code >= 400:
         raise GeocodeError(f"geocoder HTTP {resp.status_code}")
-    data = resp.json()
+    try:
+        data = resp.json()
+    except ValueError as exc:
+        raise GeocodeError(f"geocoder bad JSON: {exc}") from exc
     if not isinstance(data, list) or not data:
         raise GeocodeError(f"no geocode result for {query!r}")
     lat = float(data[0]["lat"])

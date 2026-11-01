@@ -200,6 +200,9 @@ class Embeddings(BaseModel):  # type: ignore
     # vectors (legacy CSV ``embeddings`` column is dropped in that migration).
     # SQLite/tests: Text holding a pgvector literal ``[1.0,2.0,...]``.
     embedding_vec = sqla.Column(sqla.Text, nullable=False)
+    # Multi-lane chat routing: cre_graph | corpus | owasp_agent_meta
+    # (Alembic c9d0e1f2a3b4). Nullable for legacy rows until backfilled.
+    source_channel = sqla.Column(sqla.String, nullable=True, default=None)
 
 
 class GapAnalysisResults(BaseModel):
@@ -3112,6 +3115,7 @@ class Node_collection:
                     embedding_model_id=embedding_model_id,
                     embedding_dim=embedding_dim,
                     embedding_vec=embedding_vec_literal,
+                    source_channel="cre_graph",
                 )
             else:
                 emb = Embeddings(
@@ -3122,6 +3126,7 @@ class Node_collection:
                     embedding_model_id=embedding_model_id,
                     embedding_dim=embedding_dim,
                     embedding_vec=embedding_vec_literal,
+                    source_channel="corpus",
                 )
             self.session.add(emb)
             self.session.commit()

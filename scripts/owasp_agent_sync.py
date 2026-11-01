@@ -43,6 +43,7 @@ def main() -> int:
     os.environ.setdefault("NO_LOAD_GRAPH_DB", "1")
 
     from application.utils.owasp_agent.concepts import auto_concepts_from_index
+    from application.utils.owasp_agent.embed_sync import embed_meta_if_enabled
     from application.utils.owasp_agent.index_store import IndexStore
     from application.utils.owasp_agent.sync import sync_all
 
@@ -54,6 +55,7 @@ def main() -> int:
         github_chapter_repos=args.chapter_repo or None,
         github_project_repos=args.project_repo or None,
     )
+    embed_meta_if_enabled(store, report)
     concept_actions = []
     if args.auto_concepts:
         concept_actions = [

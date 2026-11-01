@@ -954,12 +954,17 @@ class PromptHandler:
             return vectors
         return vectors[0]
 
-    def create_chat_completion(self, prompt: str, closest_object_str: str) -> str:
+    def create_chat_completion(
+        self,
+        prompt: str,
+        closest_object_str: str,
+        history: Optional[List[Dict[str, str]]] = None,
+    ) -> str:
         rag_instruction = _render_chat_prompt(
             question=prompt,
             retrieved_knowledge=closest_object_str,
         )
-        messages = [
+        messages: List[Dict[str, str]] = [
             {
                 "role": "system",
                 "content": (
@@ -967,8 +972,13 @@ class PromptHandler:
                     "Follow the user instructions strictly."
                 ),
             },
-            {"role": "user", "content": rag_instruction},
         ]
+        for turn in history or []:
+            role = str(turn.get("role") or "").lower()
+            content = str(turn.get("content") or "").strip()
+            if role in ("user", "assistant") and content:
+                messages.append({"role": role, "content": content})
+        messages.append({"role": "user", "content": rag_instruction})
 
         resp = litellm_router.completion(
             model=self.chat_model,
@@ -1041,12 +1051,16 @@ class PromptHandler:
                 )
                 raise
 
-    def query_llm(self, raw_question: str) -> str:
+    def query_llm(
+        self,
+        raw_question: str,
+        history: Optional[List[Dict[str, str]]] = None,
+    ) -> str:
         direct_instruction = _render_chat_prompt(
             question=raw_question,
             retrieved_knowledge=None,
         )
-        messages = [
+        messages: List[Dict[str, str]] = [
             {
                 "role": "system",
                 "content": (
@@ -1054,8 +1068,13 @@ class PromptHandler:
                     "Follow the user instructions strictly."
                 ),
             },
-            {"role": "user", "content": direct_instruction},
         ]
+        for turn in history or []:
+            role = str(turn.get("role") or "").lower()
+            content = str(turn.get("content") or "").strip()
+            if role in ("user", "assistant") and content:
+                messages.append({"role": role, "content": content})
+        messages.append({"role": "user", "content": direct_instruction})
 
         resp = litellm_router.completion(
             model=self.chat_model,
@@ -1412,7 +1431,11 @@ class PromptHandler:
             return None, None
         return most_similar_id, max_similarity
 
-    def generate_text(self, prompt: str) -> Dict[str, str]:
+    def generate_text(
+        self,
+        prompt: str,
+        history: Optional[List[Dict[str, str]]] = None,
+    ) -> Dict[str, str]:
         """
         Generate text is a frontend method used for the chatbot
         It matches the prompt/user question to an embedding from our database and then sends both the
@@ -1420,6 +1443,7 @@ class PromptHandler:
 
         Args:
             prompt (str): user question
+            history: prior chat turns as native ``[{role, content}]`` messages
 
         Returns:
             Dict[str,str]: a dictionary with the response and the closest object
@@ -1477,6 +1501,7 @@ class PromptHandler:
             answer = self.ai_client.create_chat_completion(
                 prompt=prompt,
                 closest_object_str=closest_object_str,
+                history=history,
             )
             accurate = True
 
@@ -1488,7 +1513,7 @@ class PromptHandler:
                     row["embeddingsUrl"] = narrow
             table.append(row)
         else:
-            answer = self.ai_client.query_llm(prompt)
+            answer = self.ai_client.query_llm(prompt, history=history)
 
         logger.debug(f"retrieved completion for {prompt}")
         result = f"Answer: {answer}"

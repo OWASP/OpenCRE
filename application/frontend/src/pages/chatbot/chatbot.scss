@@ -70,6 +70,13 @@ h1.ui.header.chatbot-title {
   margin-bottom: 1rem !important;
 }
 
+.chatbot-toolbar {
+  display: flex;
+  justify-content: center;
+  margin: 0 auto 0.5rem;
+  max-width: 960px;
+}
+
 /* Tablet & below */
 @media (max-width: 768px) {
   h1.ui.header.chatbot-title {
@@ -270,7 +277,7 @@ h1.ui.header.chatbot-title {
 
   margin-top: 1rem;
   background-color: #daebdb;
-/* background: transparent; */
+  /* background: transparent; */
   border: 1px solid rgb(190, 214, 232);
   padding: 0.75rem;
   border-radius: 12px;
@@ -399,7 +406,7 @@ h1.ui.header.chatbot-title {
   flex-direction: column;
   height: 100%;
 
- background: #fcfcfa; /* same palette as input */
+  background: #fcfcfa; /* same palette as input */
   backdrop-filter: blur(6px);
 
   border-radius: 18px;
@@ -434,7 +441,6 @@ h1.ui.header.chatbot-title {
    ========================= */
 
 @keyframes typingBounce {
-
   0%,
   80%,
   100% {

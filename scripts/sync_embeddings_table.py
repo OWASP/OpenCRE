@@ -212,10 +212,13 @@ def _replace_postgres_embeddings(pg_url: str, rows: Sequence[Tuple[Any, ...]]) -
                 """
                 INSERT INTO public.embeddings (
                     embedding_vec, doc_type, cre_id, node_id,
-                    embeddings_content, embeddings_url
-                ) VALUES (%s::vector, %s, %s, %s, %s, %s)
+                    embeddings_content, embeddings_url, source_channel
+                ) VALUES (
+                    %s::vector, %s, %s, %s, %s, %s,
+                    CASE WHEN %s = 'CRE' THEN 'cre_graph' ELSE 'corpus' END
+                )
                 """,
-                list(rows),
+                [(*row, row[1]) for row in rows],
                 page_size=500,
             )
         conn.commit()

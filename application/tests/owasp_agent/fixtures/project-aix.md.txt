@@ -1,0 +1,11 @@
+---
+layout: col-sidebar
+title: OWASP AI Exchange
+tags: AIsecpri AI security privacy
+level: 2
+type: documentation
+pitch: Guidance on designing, creating, testing, and procuring secure and privacy-preserving AI systems
+---
+
+Find the material on the [OWASP AI Exchange website](https://owaspai.org).
+The Exchange is the go-to resource for broad AI security and privacy guidance.

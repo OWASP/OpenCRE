@@ -122,6 +122,63 @@ class TestChatCompletion(unittest.TestCase):
                         content_type="application/json",
                     )
 
+    def test_completion_passes_messages_history_to_generate_text(self) -> None:
+        os.environ["NO_LOGIN"] = "1"
+        os.environ["OWASP_AGENT_ENABLED"] = "0"
+        with patch("application.prompt_client.prompt_client.PromptHandler") as mock_ph:
+            mock_ph.return_value.generate_text.return_value = {
+                "response": "Answer: ok",
+                "table": [],
+                "accurate": True,
+                "model_name": "test-llm",
+            }
+            with self.app.test_client() as client:
+                response = client.post(
+                    "/rest/v1/completion",
+                    json={
+                        "prompt": "and in Morocco?",
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": "OWASP membership cost in Switzerland?",
+                            },
+                            {"role": "assistant", "content": "Answer: standard dues"},
+                            {"role": "user", "content": "and in Morocco?"},
+                        ],
+                    },
+                    content_type="application/json",
+                )
+        self.assertEqual(200, response.status_code)
+        kwargs = mock_ph.return_value.generate_text.call_args
+        # positional prompt + history kw
+        self.assertEqual(kwargs.args[0], "and in Morocco?")
+        history = kwargs.kwargs.get("history")
+        self.assertIsNotNone(history)
+        assert history is not None
+        self.assertEqual(history[0]["role"], "user")
+        self.assertIn("Switzerland", history[0]["content"])
+        self.assertEqual(history[-1]["role"], "assistant")
+        os.environ.pop("OWASP_AGENT_ENABLED", None)
+
+
+class TestChatHistoryHelpers(unittest.TestCase):
+    def test_split_prompt_strips_trailing_user_duplicate(self) -> None:
+        from application.utils.chat_history import split_prompt_and_history
+
+        prompt, history = split_prompt_and_history(
+            {
+                "prompt": "follow up",
+                "messages": [
+                    {"role": "user", "content": "first"},
+                    {"role": "assistant", "content": "Answer: hi"},
+                    {"role": "user", "content": "follow up"},
+                ],
+            }
+        )
+        self.assertEqual(prompt, "follow up")
+        self.assertEqual(len(history), 2)
+        self.assertEqual(history[0]["content"], "first")
+
 
 if __name__ == "__main__":
     unittest.main()
