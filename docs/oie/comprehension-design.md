@@ -46,7 +46,11 @@ in one request**, so we do not need a chunk tree to get a holistic view.
 5. **Query time.** Retrieve digests + claims + graph-tool results, one synthesis call that must
    cite claim ids; uncited sentences are stripped. Replaces `is_structure_ask` keyword gate.
 
-## Storage (decision needed in Phase 1)
+## Storage (shipped: embedded rows, no new table)
+The implementation took neither option below: digests and raw chunks are embedding rows under
+`owasp-agent://evidence/comprehension-*` (`application/utils/comprehension/store.py`). There is no
+`knowledge_claim` table, `source_hash` or confidence column. The options are kept for context.
+
 Option A: keep `document_metadata["facts"]` on nodes (cheap, but one standard = hundreds of
 nodes). Option B (recommended): new `knowledge_claim` table keyed by `(subject_family,
 source_hash)` plus embedded `digest` documents reusing the evidence-document channel in
