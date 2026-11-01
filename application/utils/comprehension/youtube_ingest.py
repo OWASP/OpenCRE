@@ -98,7 +98,7 @@ def refresh_channel(
         chunks,
         embed,
         workers=workers,
-        url_for=lambda p, s=spec: ext.page_url(s, p),
+        url_for=lambda p: ext.page_url(spec, p),
     )
     out["removed"] = store.delete_stale_raw(database, slug, chunks, force=force_delete)
     return out
