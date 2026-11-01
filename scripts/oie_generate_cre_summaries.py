@@ -9,8 +9,8 @@ embeddings, or public Node fields. REST/UI redact librarian ``oie`` keys.
 
 Usage (local clone only — refuses the ``cre`` database and Heroku URLs):
 
-  source /Users/sg/Projects/OpenCRE/venv/bin/activate
-  set -a; source /Users/sg/Projects/OpenCRE/.env; set +a
+  source venv/bin/activate
+  set -a; source .env; set +a
   PYTHONPATH=. python scripts/oie_generate_cre_summaries.py \\
     --cache-file postgresql://cre:password@127.0.0.1:5432/cre_prodclone
 """

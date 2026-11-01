@@ -69,7 +69,7 @@ CRE_OIE_RQ=1 PYTHONPATH=. python scripts/run_oie_pipeline.py \
 
 - Queue name: `oie` (`CRE_OIE_QUEUE_NAME`)
 - Job units: `oie:a:{repo_id}` → `oie:b:{artifact_id}` → `oie:c:{artifact_id}`
-- Default fleet size: **10** (`CRE_OIE_WORKER_COUNT` / `make start-oie-workers`); set `CRE_OIE_WORKER_COUNT=0` to skip OIE slots in import-all
+- Fleet size: `make start-oie-workers` starts 10 by default; `scripts/import-all.sh` reserves OIE slots only when `CRE_OIE_WORKER_COUNT` is set above 0 (default 0)
 - Admin: **OIE queue** tab polls `/admin/oie/rq/status` (import-dashboard style)
 - Do not `--wipe-queues` while another OIE RQ batch shares the DB
 

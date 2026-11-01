@@ -77,7 +77,9 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
 
     # Credentialed browser calls are same-origin in prod/staging; keep CORS
     # narrow so cross-site pages cannot drive cookie auth. Admin mutations also
-    # require CSRF (see web_main.admin_imports_enabled_required).
+    # require CSRF (see web_main.admin_imports_enabled_required). Without an
+    # explicit allowlist, flask-cors would reflect any Origin together with
+    # credentials, so fall back to plain (credential-less) CORS as on main.
     cors_origins = [
         o.strip()
         for o in (os.environ.get("CORS_ALLOWED_ORIGINS") or "").split(",")
@@ -86,7 +88,7 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
     if cors_origins:
         CORS(app, origins=cors_origins, supports_credentials=True)
     else:
-        CORS(app, supports_credentials=True)
+        CORS(app)
     app.config["CORS_HEADERS"] = "Content-Type, X-CSRF-Token"
 
     compress.init_app(app)
