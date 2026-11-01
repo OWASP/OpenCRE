@@ -1,15 +1,21 @@
-# OpenCRE MCP server (issue #1003 v1)
+# OpenCRE MCP server (issue #1003)
 
-Local **stdio** MCP adapter that exposes a fixed allowlist of **public JSON REST reads**.
+Local **stdio** MCP adapter that exposes a fixed allowlist of **public JSON REST
+reads**, optional authenticated MyOpenCRE tools, a fact-only `ask` router, and
+(when enabled) OWASP metadata tools.
 
-## Scope (first PR)
+## Scope
 
 - Public `/rest/v1` GET tools that already work without login
-- OpenAPI (`docs/api/openapi.yaml`) is the source of truth for each tool's **input** parameter schema
-- No authentication, cookies, PAT, OAuth, or session forwarding
+- OpenAPI (`docs/api/openapi.yaml`) is the source of truth for each REST-backed
+  tool's **input** parameter schema
+- Optional Google device-flow login for MyOpenCRE read/write tools
+- Local `ask` tool: structured facts only (Cursor synthesizes narrative)
+- Optional `owasp_meta_*` tools when `OWASP_AGENT_ENABLED` is set
 - No MCP bypass secret
 
-**Deferred to a later PR:** MyOpenCRE (`/rest/v1/user/resources`), chat (`/rest/v1/completion`), admin/import tools, and any credentialed flows.
+**Not in MCP:** chat (`POST /rest/v1/completion`), admin/import tools.
+Production remote HTTP is out of scope; staging Streamable HTTP is documented below.
 
 ## Installation
 
@@ -37,6 +43,9 @@ Or point the MCP server at a hosted instance such as `https://opencre.org`.
 |----------|---------|---------|
 | `OPENCRE_BASE_URL` | OpenCRE origin used for REST calls (server-side only) | `http://127.0.0.1:5000` |
 | `OPENCRE_MCP_AUTH_TOOLS` | Expose the v2 authenticated tools (`1`/`true`/`yes`) | off |
+| `OPENCRE_MCP_REMOTE` | Enable Streamable HTTP (`serve-http`); staging only | off |
+| `OPENCRE_MCP_ALLOWED_HOSTS` | Host allowlist for DNS-rebinding protection | `staging.opencre.org` (+ localhost) |
+| `OPENCRE_MCP_HTTP_HOST` / `OPENCRE_MCP_HTTP_PORT` | Bind for `serve-http` | `127.0.0.1` / `5002` |
 | `GOOGLE_MCP_CLIENT_ID` | Google client of type *TVs and Limited Input devices* | — |
 | `GOOGLE_MCP_CLIENT_SECRET` | Secret for that client | — |
 | `OPENCRE_MCP_TOKEN_FILE` | Override the credential path (skips the OS keyring) | `~/.config/opencre-mcp/tokens.json` |
@@ -54,7 +63,8 @@ python -m application.mcp
 
 ## Cursor setup (stdio)
 
-Add an MCP server entry that runs the module with your venv interpreter. Example (adjust the absolute repo path):
+Stdio remains the primary local workflow. Add an MCP server entry that runs the
+module with your venv interpreter. Example (adjust the absolute repo path):
 
 ```json
 {
@@ -70,6 +80,43 @@ Add an MCP server entry that runs the module with your venv interpreter. Example
   }
 }
 ```
+
+## Remote MCP (staging Streamable HTTP)
+
+Staging exposes Streamable HTTP at `https://staging.opencre.org/mcp` when
+Compose service `mcp` is up with `OPENCRE_MCP_REMOTE=1`. Production /
+`opencre.org` remote MCP is **not** enabled.
+
+- Public REST MCP tools work without auth.
+- Remote `ask` requires an **Admin API JWT** (minted after Google Admin login)
+  whose email is on `LOGIN_ALLOWED_EMAILS`. Same identity door as Admin REST.
+- Stdio `ask` stays ungated (local trust boundary).
+
+```bash
+# Local/dev only after setting the flag (Compose sets this for the mcp service):
+export OPENCRE_MCP_REMOTE=1
+export OPENCRE_BASE_URL=http://127.0.0.1:5001
+python -m application.mcp serve-http   # refuses unless OPENCRE_MCP_REMOTE=1
+```
+
+Cursor config (mint a token in Admin → API keys on staging; prefer env interpolation):
+
+```json
+{
+  "mcpServers": {
+    "opencre-staging": {
+      "url": "https://staging.opencre.org/mcp",
+      "headers": {
+        "Authorization": "Bearer ${env:OPENCRE_STAGING_ADMIN_API_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+Tunnel path routing: `/mcp*` → `127.0.0.1:5002`, everything else → `:5001`
+(see `docs/oie/staging-homeserver.md`). Run **one** uvicorn worker for sessionful
+clients; if scaling later, use sticky sessions.
 
 ## Tool ↔ REST mapping
 
@@ -97,6 +144,62 @@ Authenticated tools (v2, only when `OPENCRE_MCP_AUTH_TOOLS` is set):
 `set_my_resources` takes its JSON request body as a single `body` argument,
 derived from the OpenAPI `requestBody`, and is annotated as a write so MCP
 clients prompt before calling it.
+
+## Fact-only `ask` (local tool)
+
+`ask` is **not** a chatbot. It returns structured facts and citations so the
+MCP host (e.g. Cursor) can make multiple tool calls and write the answer
+itself. OpenCRE never calls `PromptHandler.generate_text` on this path.
+
+| Arg | Type | Default | Meaning |
+|-----|------|---------|---------|
+| `prompt` | string | (required) | Natural-language question |
+| `corpus` | enum | `auto` | `auto` \| `security` \| `owasp_meta` |
+| `place` | string | — | Optional place hint for geo-sensitive meta; ignored on the security path |
+
+**Routing**
+
+- `auto` — run the OWASP agent router when enabled; a meta match wins.
+  Otherwise (or when the router returns no meta / CRE-normative intent)
+  build a CRE security fact pack.
+- `security` — skip meta; CRE retrieval only.
+- `owasp_meta` — meta only. CRE-looking prompts return `ok=false` with a hint
+  to use `corpus=security` or CRE tools.
+
+**Security fact pack**
+
+1. `text_search` on the prompt
+2. Enrich up to five CRE hits via `get_cre_by_id` for linked standards
+3. If device-flow login is active, auth tools are on, and `myopencre:read` is
+   granted: intersect linked standard names with the user's MyOpenCRE
+   selection (`standards_filter=myopencre`). OpenCRE core stays if linked.
+4. If not logged in (or selection empty): return all linked mapped standards
+   (`standards_filter=all_mapped`)
+
+**Return shape (JSON)**
+
+- `ok`, `channel` (`security` \| `owasp_meta` \| `none`)
+- `intent` when routing classified the prompt
+- `items` / `message` / `citations` (CRE ids, titles, standard names/sections/urls,
+  meetup fields as applicable)
+- `standards_filter`: `all_mapped` \| `myopencre` \| `null` (meta channel)
+
+`ask` is always registered. The security / auto→CRE path works without
+`OWASP_AGENT_ENABLED`; the meta branch still requires the agent flag.
+
+### Multi-call Cursor pattern
+
+Typical host workflow (several tool rounds, then host-side synthesis):
+
+1. `ask` with `corpus=auto` and the user question — get channel + seed facts
+2. For CRE topics: `get_cre_by_id` on interesting `cre_id`s for full links
+3. For meetups/chapters: `owasp_meta_events_near` (or rely on `ask` meta items)
+4. Optionally `text_search` for alternate phrasings
+5. Cursor writes the threat-model / prose answer from those facts only
+
+When `OWASP_AGENT_ENABLED` is set, dedicated tools are also listed:
+`owasp_meta_ask`, `owasp_meta_events_near`, `owasp_meta_count_projects`,
+`owasp_meta_board`.
 
 ## Authenticated tools (v2)
 
@@ -171,9 +274,10 @@ Not exposed yet (tracked for follow-up, not implied as MCP-complete):
 - Deeplink redirect routes
 - `GET /rest/v1/openapi.yaml` as a tool
 - `/api/capabilities`
-- Chat (`POST /rest/v1/completion`) and admin/import surfaces
-- Remote (HTTP) transport — stdio only, so credentials come from the
-  environment as the MCP specification directs for stdio servers
+- Chat (`POST /rest/v1/completion`) and admin/import surfaces — use MCP `ask`
+  for fact packs; hosts synthesize narrative locally
+- Production remote HTTP MCP — staging Streamable HTTP exists
+  (`OPENCRE_MCP_REMOTE`); stdio remains primary for local work
 
 ## Security boundary
 

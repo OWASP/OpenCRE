@@ -186,20 +186,47 @@ def _fetch_postgres(
 
 
 def _upsert_cre(conn: Any, rows: Sequence[Tuple[Any, ...]]) -> int:
+    """Upsert CRE rows.
+
+    Destinations that already ran ``--upstream_sync`` often have the same
+    ``(name, external_id)`` under a *different* primary key than the hub
+    sqlite. Prefer matching on ``(name, external_id)`` and keep the existing
+    ``id`` so embedding FKs can be remapped afterward.
+    """
     if not rows:
         return 0
     sql = """
         INSERT INTO cre (id, external_id, description, name, tags)
         VALUES %s
-        ON CONFLICT (id) DO UPDATE SET
-          external_id = EXCLUDED.external_id,
+        ON CONFLICT (name, external_id) DO UPDATE SET
           description = EXCLUDED.description,
-          name = EXCLUDED.name,
           tags = EXCLUDED.tags
     """
     with conn.cursor() as cur:
         extras.execute_values(cur, sql, rows, page_size=500)
     return len(rows)
+
+
+def _remap_emb_cre_ids(
+    conn: Any,
+    cre_rows: Sequence[Tuple[Any, ...]],
+    emb_rows: Sequence[Tuple[Any, ...]],
+) -> List[Tuple[Any, ...]]:
+    """Rewrite embedding ``cre_id`` from source PK → destination PK via external_id."""
+    src_id_to_ext = {str(r[0]): str(r[1] or "") for r in cre_rows}
+    with conn.cursor() as cur:
+        cur.execute("SELECT id, COALESCE(external_id,'') FROM cre")
+        ext_to_dest = {str(ext): str(cid) for cid, ext in cur.fetchall() if ext}
+    out: List[Tuple[Any, ...]] = []
+    for row in emb_rows:
+        # (vec, doc_type, cre_id, node_id, content, url, model_id, dim)
+        src_cre = str(row[2] or "")
+        ext = src_id_to_ext.get(src_cre, "")
+        dest = ext_to_dest.get(ext)
+        if not dest:
+            continue
+        out.append((row[0], row[1], dest, row[3], row[4], row[5], row[6], row[7]))
+    return out
 
 
 def _replace_cre_embeddings(conn: Any, rows: Sequence[Tuple[Any, ...]]) -> int:
@@ -284,7 +311,15 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
 
     with psycopg2.connect(dest) as conn:
         n_cre = _upsert_cre(conn, cre_rows)
-        n_emb = _replace_cre_embeddings(conn, emb_rows)
+        remapped = _remap_emb_cre_ids(conn, cre_rows, emb_rows)
+        if not remapped:
+            print(
+                "error: no CRE embeddings remapped to destination cre ids "
+                "(external_id mismatch?)",
+                file=sys.stderr,
+            )
+            return 1
+        n_emb = _replace_cre_embeddings(conn, remapped)
         conn.commit()
         with conn.cursor() as cur:
             cur.execute("SELECT count(*) FROM cre")

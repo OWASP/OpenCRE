@@ -332,13 +332,19 @@ def default_litellm_fn(model: Optional[str] = None) -> LlmFn:
 
 @dataclass
 class EditionRemapCache:
-    """Process-local + optional disk cache for remaps."""
+    """Memory + Postgres + optional disk cache for remaps."""
 
     memory: Dict[str, Dict[str, List[str]]]
     disk_dir: Optional[Path] = None
+    database: Optional[object] = None
 
     def _key(self, family: str, new_year: int, old_year: int, fingerprint: str) -> str:
         return f"{family}:{old_year}->{new_year}:{fingerprint}"
+
+    @staticmethod
+    def _storage_key(key: str) -> str:
+        """Disk/DB-safe form of the logical remap key."""
+        return key.replace(":", "_").replace(">", "-")
 
     @staticmethod
     def fingerprint(
@@ -356,8 +362,25 @@ class EditionRemapCache:
     def get(self, key: str) -> Optional[Dict[str, List[str]]]:
         if key in self.memory:
             return self.memory[key]
+        sk = self._storage_key(key)
+        getter = (
+            getattr(self.database, "get_oie_llm_cache", None) if self.database else None
+        )
+        if callable(getter):
+            try:
+                from application.utils.librarian.llm_response_cache import (
+                    KIND_EDITION_REMAP,
+                )
+
+                data = getter(KIND_EDITION_REMAP, sk)
+            except Exception:  # noqa: BLE001
+                logger.debug("edition remap DB cache read failed", exc_info=True)
+                data = None
+            if isinstance(data, dict):
+                self.memory[key] = data
+                return data
         if self.disk_dir is not None:
-            path = self.disk_dir / f"{key.replace(':', '_').replace('>', '-')}.json"
+            path = self.disk_dir / f"{sk}.json"
             if path.is_file():
                 data = json.loads(path.read_text())
                 self.memory[key] = data
@@ -366,9 +389,22 @@ class EditionRemapCache:
 
     def put(self, key: str, remap: Dict[str, List[str]]) -> None:
         self.memory[key] = remap
+        sk = self._storage_key(key)
+        putter = (
+            getattr(self.database, "put_oie_llm_cache", None) if self.database else None
+        )
+        if callable(putter):
+            try:
+                from application.utils.librarian.llm_response_cache import (
+                    KIND_EDITION_REMAP,
+                )
+
+                putter(KIND_EDITION_REMAP, sk, remap)
+            except Exception:  # noqa: BLE001
+                logger.debug("edition remap DB cache write failed", exc_info=True)
         if self.disk_dir is not None:
             self.disk_dir.mkdir(parents=True, exist_ok=True)
-            path = self.disk_dir / f"{key.replace(':', '_').replace('>', '-')}.json"
+            path = self.disk_dir / f"{sk}.json"
             path.write_text(json.dumps(remap, indent=2, sort_keys=True))
 
 
@@ -434,6 +470,27 @@ class EditionTransferService:
         )
         self._cache.put(key, remap)
         return remap
+
+    def precompute_all_remaps(self) -> int:
+        """Warm cache for every (family, year) that has a predecessor edition.
+
+        Returns the number of remap pairs computed (cache hits still count as
+        warmed). Live Module C should run with ``llm_fn=None`` after this.
+        """
+        pairs: List[Tuple[str, int, int]] = []
+        seen_families: Set[str] = {e.family for e in self._editions}
+        for family in sorted(seen_families):
+            years = sorted({e.year for e in self._editions if e.family == family})
+            for year in years:
+                if self.edition(family, year) is None:
+                    continue
+                pred = self.predecessor(family, year)
+                if pred is None:
+                    continue
+                pairs.append((family, year, pred.year))
+        for family, year, old_year in pairs:
+            self.remap_for(family, year, old_year)
+        return len(pairs)
 
     def cre_ids_for_new_section(
         self,
@@ -507,6 +564,7 @@ def build_edition_transfer_from_db(
     *,
     llm_fn: Optional[LlmFn] = None,
     cache_dir: Optional[Path] = None,
+    database: Optional[object] = None,
 ) -> EditionTransferService:
     """Load Node+Links catalogs grouped by standard family/year."""
     from application.database.db import CRE, Links, Node
@@ -585,16 +643,13 @@ def build_edition_transfer_from_db(
             )
         )
 
-    cache = EditionRemapCache(
-        memory={},
-        disk_dir=cache_dir
-        or Path(
-            os.environ.get(
-                "CRE_LIBRARIAN_EDITION_REMAP_CACHE",
-                "tmp/oie_edition_remap_cache",
-            )
-        ),
+    from application.utils.librarian.llm_response_cache import (
+        KIND_EDITION_REMAP,
+        optional_disk_dir,
     )
+
+    disk = cache_dir if cache_dir is not None else optional_disk_dir(KIND_EDITION_REMAP)
+    cache = EditionRemapCache(memory={}, disk_dir=disk, database=database)
     return EditionTransferService(
         editions=editions,
         section_cre_ids=section_cres,

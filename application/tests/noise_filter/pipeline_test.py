@@ -84,7 +84,13 @@ class PipelineTests(unittest.TestCase):
 
     def _add(self, payload, status="pending", run_id="run1"):
         sqla.session.add(
-            HarvestInput(pipeline_run_id=run_id, status=status, payload=payload)
+            HarvestInput(
+                pipeline_run_id=run_id,
+                status=status,
+                artifact_id=str(payload.get("artifact_id") or ""),
+                source_repo=(payload.get("source") or {}).get("repo"),
+                payload=payload,
+            )
         )
         sqla.session.commit()
 

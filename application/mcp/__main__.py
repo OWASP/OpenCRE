@@ -1,4 +1,4 @@
-"""Entry point: python -m application.mcp [login|logout|status]"""
+"""Entry point: python -m application.mcp [login|logout|status|serve-http]"""
 
 from __future__ import annotations
 

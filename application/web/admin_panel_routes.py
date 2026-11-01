@@ -7,7 +7,7 @@ from cre_logging import get_logger
 
 logger = get_logger(__name__)
 
-from flask import jsonify, request
+from flask import g, jsonify, request, session
 
 from application.utils.admin_panel import service
 
@@ -64,7 +64,10 @@ def register_admin_panel_routes(
     @imports_enabled
     def admin_config_get() -> Any:
         try:
-            return jsonify(service.config_payload())
+            payload = service.config_payload()
+            # Set by admin_imports_enabled_required on safe methods.
+            payload["csrf_token"] = session.get("csrf_token") or ""
+            return jsonify(payload)
         except Exception as exc:
             logger.exception("config get failed")
             return _err(500, f"config failed: {exc}")
@@ -81,6 +84,16 @@ def register_admin_panel_routes(
         if result["rejected"] and not result["applied"]:
             return _err(400, "rejected keys: %s" % ",".join(result["rejected"]))
         return jsonify(result)
+
+    @bp.route("/admin/config/diff", methods=["GET"])
+    @login_required
+    @imports_enabled
+    def admin_config_diff() -> Any:
+        try:
+            return jsonify(service.config_diff_payload())
+        except Exception as exc:
+            logger.exception("config diff failed")
+            return _err(500, f"config diff failed: {exc}")
 
     @bp.route("/admin/targets", methods=["GET"])
     @login_required
@@ -200,6 +213,53 @@ def register_admin_panel_routes(
             logger.exception("add repo failed")
             return _err(500, f"add repo failed: {exc}")
 
+    @bp.route("/admin/upstream-sync-and-ingest", methods=["POST"])
+    @login_required
+    @imports_enabled
+    def admin_upstream_sync_and_ingest() -> Any:
+        """Pull CRE graph from upstream, then start OIE ingest (packaged/yaml)."""
+        body = request.get_json(silent=True) or {}
+        yaml_text = body.get("yaml")
+        if yaml_text is not None and not isinstance(yaml_text, str):
+            return _err(400, "yaml must be a string")
+        name = str(body.get("name") or "").strip() or None
+        dry_run = bool(body["dry_run"]) if "dry_run" in body else False
+        sync_repos = bool(body["sync_repos"]) if "sync_repos" in body else True
+        skip_b = bool(body["skip_b"]) if "skip_b" in body else None
+        skip_c = bool(body["skip_c"]) if "skip_c" in body else None
+        skip_c1 = bool(body["skip_c1"]) if "skip_c1" in body else None
+        wait = bool(body["wait"]) if "wait" in body else None
+        max_repos: Optional[int]
+        if "max_repos" in body and body["max_repos"] is not None:
+            try:
+                max_repos = int(body["max_repos"])
+            except (TypeError, ValueError):
+                return _err(400, "max_repos must be an integer")
+            if max_repos < 0:
+                return _err(400, "max_repos must be >= 0 (0 = unlimited)")
+        else:
+            max_repos = service.DEFAULT_OIE_MAX_REPOS
+        packaged = bool(body.get("packaged", True)) if yaml_text is None else False
+        try:
+            result = service.start_upstream_sync_and_ingest(
+                name=name,
+                packaged=packaged,
+                yaml_text=yaml_text if isinstance(yaml_text, str) else None,
+                dry_run=dry_run,
+                sync_repos=sync_repos,
+                max_repos=max_repos,
+                skip_b=skip_b,
+                skip_c=skip_c,
+                skip_c1=skip_c1,
+                wait=wait,
+            )
+        except ValueError as exc:
+            return _err(400, _exc_message(exc))
+        except Exception as exc:
+            logger.exception("upstream-sync-and-ingest failed")
+            return _err(500, f"upstream-sync-and-ingest failed: {exc}")
+        return jsonify(result)
+
     @bp.route("/admin/ingest/start", methods=["POST"])
     @login_required
     @imports_enabled
@@ -215,6 +275,7 @@ def register_admin_panel_routes(
         sync_repos = bool(body["sync_repos"]) if "sync_repos" in body else True
         skip_b = bool(body["skip_b"]) if "skip_b" in body else None
         skip_c = bool(body["skip_c"]) if "skip_c" in body else None
+        skip_c1 = bool(body["skip_c1"]) if "skip_c1" in body else None
         wait = bool(body["wait"]) if "wait" in body else None
         max_repos: Optional[int]
         if "max_repos" in body and body["max_repos"] is not None:
@@ -222,8 +283,9 @@ def register_admin_panel_routes(
                 max_repos = int(body["max_repos"])
             except (TypeError, ValueError):
                 return _err(400, "max_repos must be an integer")
-            if max_repos < 1:
-                return _err(400, "max_repos must be >= 1")
+            # 0 = no cap (full packaged/org harvest); negative rejected.
+            if max_repos < 0:
+                return _err(400, "max_repos must be >= 0 (0 = unlimited)")
         else:
             max_repos = service.DEFAULT_OIE_MAX_REPOS
         try:
@@ -238,6 +300,7 @@ def register_admin_panel_routes(
                 max_repos=max_repos,
                 skip_b=skip_b,
                 skip_c=skip_c,
+                skip_c1=skip_c1,
                 wait=wait,
             )
         except KeyError as exc:
@@ -269,6 +332,122 @@ def register_admin_panel_routes(
             logger.exception("pipeline snapshot failed")
             return _err(500, f"pipeline failed: {exc}")
 
+    @bp.route("/admin/ingest/status", methods=["GET"])
+    @login_required
+    @imports_enabled
+    def admin_ingest_status() -> Any:
+        """Active/recent ingestions: config, progress, ETA, stuck."""
+        try:
+            return jsonify(service.ingestions_status())
+        except Exception as exc:
+            logger.exception("ingest status failed")
+            return _err(500, f"ingest status failed: {exc}")
+
+    @bp.route("/admin/schedule", methods=["GET"])
+    @login_required
+    @imports_enabled
+    def admin_schedule_get() -> Any:
+        from application import sqla
+        from application.utils.oie_scheduler import schedule_settings
+
+        try:
+            return jsonify({"jobs": schedule_settings.list_schedule(sqla.session)})
+        except Exception as exc:
+            logger.exception("schedule get failed")
+            return _err(500, f"schedule failed: {exc}")
+
+    @bp.route("/admin/schedule/<job>", methods=["PUT"])
+    @login_required
+    @imports_enabled
+    def admin_schedule_put(job: str) -> Any:
+        from application import sqla
+        from application.utils.oie_scheduler import schedule_settings
+
+        body = request.get_json(silent=True) or {}
+        try:
+            update = schedule_settings.validate_update(
+                job, body.get("interval_minutes"), body.get("enabled")
+            )
+        except ValueError as exc:
+            return _err(400, str(exc))
+        try:
+            actor = session.get("email") or getattr(g, "api_key_email", None)
+            schedule_settings.apply_update(job, update, actor=actor)
+            return jsonify({"jobs": schedule_settings.list_schedule(sqla.session)})
+        except Exception as exc:
+            logger.exception("schedule update failed")
+            return _err(500, f"schedule update failed: {exc}")
+
+    @bp.route("/admin/oie/rq/status", methods=["GET"])
+    @login_required
+    @imports_enabled
+    def admin_oie_rq_status() -> Any:
+        """RQ depths + recent oie:* jobs (import-dashboard style)."""
+        try:
+            from application.utils.rq_dashboard_snapshot import (
+                oie_rq_status,
+                oie_run_queue_counts,
+            )
+
+            limit = max(1, min(int(request.args.get("limit") or 40), 200))
+            body = oie_rq_status(limit=limit)
+            run_id = (request.args.get("run_id") or "").strip()
+            if run_id:
+                from application.database import db as cre_db
+
+                body["run"] = {
+                    "run_id": run_id,
+                    "counts": oie_run_queue_counts(
+                        cre_db.Node_collection().session, run_id
+                    ),
+                }
+            return jsonify(body)
+        except Exception as exc:
+            logger.exception("oie rq status failed")
+            return _err(500, f"oie rq status failed: {exc}")
+
+    @bp.route("/admin/oie/rq/requeue-failed", methods=["POST"])
+    @login_required
+    @imports_enabled
+    def admin_oie_rq_requeue_failed() -> Any:
+        """Requeue failed ``oie:*`` RQ jobs (all, or ``job_ids`` in body)."""
+        body = request.get_json(silent=True) or {}
+        raw_ids = body.get("job_ids")
+        job_ids = None
+        if raw_ids is not None:
+            if not isinstance(raw_ids, list):
+                return _err(400, "job_ids must be a list of strings")
+            job_ids = [str(x) for x in raw_ids]
+        try:
+            limit = int(body.get("limit") or 500)
+        except (TypeError, ValueError):
+            return _err(400, "limit must be an integer")
+        limit = max(1, min(limit, 2000))
+        try:
+            from application.utils.rq_dashboard_snapshot import requeue_failed_oie_jobs
+
+            return jsonify(requeue_failed_oie_jobs(job_ids=job_ids, limit=limit))
+        except Exception as exc:
+            logger.exception("oie rq requeue-failed failed")
+            return _err(500, f"oie rq requeue-failed failed: {exc}")
+
+    @bp.route("/admin/oie/rq/cancel", methods=["POST"])
+    @login_required
+    @imports_enabled
+    def admin_oie_rq_cancel() -> Any:
+        """Cancel queued/started ``oie:*`` jobs by id."""
+        body = request.get_json(silent=True) or {}
+        raw_ids = body.get("job_ids")
+        if not isinstance(raw_ids, list) or not raw_ids:
+            return _err(400, "job_ids list required")
+        try:
+            from application.utils.rq_dashboard_snapshot import cancel_oie_jobs
+
+            return jsonify(cancel_oie_jobs([str(x) for x in raw_ids]))
+        except Exception as exc:
+            logger.exception("oie rq cancel failed")
+            return _err(500, f"oie rq cancel failed: {exc}")
+
     @bp.route("/admin/imports/runs/<run_id>/mapping", methods=["POST"])
     @login_required
     @imports_enabled
@@ -291,7 +470,11 @@ def register_admin_panel_routes(
     @imports_enabled
     def admin_run_links(run_id: str) -> Any:
         try:
-            return jsonify(service.review_run_links(run_id))
+            page = int(request.args.get("page") or 1)
+            page_size = int(request.args.get("page_size") or 50)
+            return jsonify(
+                service.review_run_links(run_id, page=page, page_size=page_size)
+            )
         except KeyError as exc:
             return _err(404, _exc_message(exc))
         except ValueError as exc:

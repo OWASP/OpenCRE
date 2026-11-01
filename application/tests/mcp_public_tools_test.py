@@ -396,7 +396,8 @@ class McpPublicToolsTest(unittest.TestCase):
             listed_raw = await list_handler.handler(None, None)
             assert isinstance(listed_raw, types.ListToolsResult)
             tool_names = [tool.name for tool in listed_raw.tools]
-            self.assertEqual(tool_names, APPROVED_TOOLS)
+            # Local fact router is always registered alongside REST public tools.
+            self.assertEqual(tool_names, APPROVED_TOOLS + ["ask"])
             for tool in listed_raw.tools:
                 self.assertNotIn("format", (tool.input_schema.get("properties") or {}))
 

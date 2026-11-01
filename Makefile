@@ -70,8 +70,24 @@ docker-postgres:
 
 start-containers: docker-neo4j docker-redis
 
+# RQ work-horses fork after Flask/torch load. On macOS, unset device → MPS and
+# CrashReporter popups from Homebrew Python.app. Force CPU unless overridden.
+CRE_LIBRARIAN_DEVICE?=cpu
 start-worker:
-	. ./venv/bin/activate && FLASK_APP=`pwd`/cre.py python cre.py --start_worker
+	. ./venv/bin/activate && \
+	OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES \
+	CRE_LIBRARIAN_DEVICE="$(CRE_LIBRARIAN_DEVICE)" \
+	FLASK_APP=`pwd`/cre.py python cre.py --start_worker
+
+# Local OIE RQ fleet (queue ``oie``). Default 10; override with OIE_WORKER_COUNT=N.
+# Double-fork via scripts/start_oie_workers.py so workers survive make exit (SIGHUP).
+OIE_WORKER_COUNT?=10
+start-oie-workers:
+	. ./venv/bin/activate && \
+	OIE_WORKER_COUNT="$(OIE_WORKER_COUNT)" \
+	CRE_LIBRARIAN_DEVICE="$(CRE_LIBRARIAN_DEVICE)" \
+	OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES \
+	python scripts/start_oie_workers.py
 
 upstream-sync:
 	. ./venv/bin/activate &&\

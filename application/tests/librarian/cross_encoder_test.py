@@ -12,6 +12,7 @@ logger = get_logger(__name__)
 import unittest
 
 from application.utils.librarian.cross_encoder import (
+    CosineOrderReranker,
     CrossEncoderReranker,
     MissingCandidateTextError,
     RerankerError,
@@ -162,6 +163,18 @@ class HybridRankTest(unittest.TestCase):
         self.assertEqual(ids[:2], ["r1", "r2"])
         self.assertIn("v1", ids)
         self.assertIn("v2", ids)
+
+
+class CosineOrderRerankerTest(unittest.TestCase):
+    def test_preserves_cosine_order_without_ce(self) -> None:
+        # CE would prefer b>c>a; cosine passthrough keeps a>b>c.
+        audit = CosineOrderReranker(top_n=2).rerank("q", make_audit())
+        self.assertEqual([c.cre_id for c in audit.reranked], ["111-111", "222-222"])
+        self.assertAlmostEqual(audit.reranked[0].score_rerank, 0.90)
+        self.assertEqual(
+            [c.cre_id for c in audit.candidates],
+            ["111-111", "222-222", "333-333"],
+        )
 
 
 class FailureModeTest(unittest.TestCase):

@@ -52,6 +52,27 @@ and `tmp/oie_owasp_eval/full_pipeline/summary.json`.
 Production Module A list (`application/utils/harvester/repos.yaml`) includes
 ASVS 4+5, AISVS, and CheatSheetSeries for live `make oie-pipeline` runs.
 
+## RQ fan-out (optional)
+
+Default `scripts/run_oie_pipeline.py` stays serial (LangGraph). For parallel
+repos/documents on the **existing import RQ workers**:
+
+```bash
+# workers (default 10 on queue ``oie``)
+make start-oie-workers
+# or: CRE_OIE_WORKER_COUNT=10 bash scripts/import-all.sh  # partitions ga/oie/import
+# fewer/more: OIE_WORKER_COUNT=4 make start-oie-workers
+
+CRE_OIE_RQ=1 PYTHONPATH=. python scripts/run_oie_pipeline.py \
+  --run_id my-run --cache_file "$DEV_DATABASE_URL" --repos_yaml path/to/repos.yaml --rq
+```
+
+- Queue name: `oie` (`CRE_OIE_QUEUE_NAME`)
+- Job units: `oie:a:{repo_id}` → `oie:b:{artifact_id}` → `oie:c:{artifact_id}`
+- Fleet size: `make start-oie-workers` starts 10 by default; `scripts/import-all.sh` reserves OIE slots only when `CRE_OIE_WORKER_COUNT` is set above 0 (default 0)
+- Admin: **OIE queue** tab polls `/admin/oie/rq/status` (import-dashboard style)
+- Do not `--wipe-queues` while another OIE RQ batch shares the DB
+
 ## Optional requirement extract
 
 ASVS/AISVS gold is requirement-grain (`V1.1.2`), not chapter. Heading/docling
@@ -59,10 +80,11 @@ chunks alone under-harvest exact match. Optional extractor:
 
 | `chunking.requirement_extract` | Behavior |
 |--------------------------------|----------|
-| `off` (default) | Normal chunk + A.2 merge |
-| `auto` | Extract only when `requirements_needed(text)` (tables / dense catalogs) |
+| `auto` (default if omitted) | Extract only when `requirements_needed(text)` (tables / dense catalogs) |
 | `on` | Always attempt extract; fall back to normal chunking if none found |
+| `off` | Normal chunk + A.2 merge only |
 
 When extract yields segments, each chunk is prefixed with `Section-ID: V…`
-(B2-style) and A.2 merge is skipped. Cheat sheets stay `off` / narrative.
-YAML: ASVS + AISVS use `auto` in `repos.yaml` and `full_pipeline_repos.yaml`.
+(B2-style) and A.2 merge is skipped. Narrative cheat sheets usually no-op
+under `auto`. All repos in `repos.yaml` set `requirement_extract: auto`
+explicitly; code defaults to `auto` when the field is missing.

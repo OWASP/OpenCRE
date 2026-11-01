@@ -51,11 +51,21 @@ _IMPORT_QUEUES = ("high", "default", "low")
 
 def _ga_queue_name() -> str:
     """Must match ``CRE_GA_QUEUE_NAME`` used when enqueueing GA jobs (see cre_main / web_main)."""
-    return (os.environ.get("CRE_GA_QUEUE_NAME") or "ga").strip() or "ga"
+    from application.utils.rq_dashboard_snapshot import ga_queue_name
+
+    return ga_queue_name()
+
+
+def _oie_queue_name() -> str:
+    from application.utils.rq_dashboard_snapshot import oie_queue_name
+
+    return oie_queue_name()
 
 
 def _monitored_queue_names() -> tuple[str, ...]:
-    return _IMPORT_QUEUES + (_ga_queue_name(),)
+    from application.utils.rq_dashboard_snapshot import monitored_queue_names
+
+    return monitored_queue_names()
 
 
 def _fetch_rq_job(conn: Any, queue: Queue, job_id: str) -> Any:

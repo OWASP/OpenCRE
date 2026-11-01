@@ -46,6 +46,10 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       template: 'index.html',
+      // Manual inject so we can set data-cfasync="false" (disable CF Rocket Loader).
+      inject: false,
+      // Append ?<compilation hash> so Cloudflare/browser cannot keep a stale SPA.
+      hash: true,
     }),
   ],
   resolve: {

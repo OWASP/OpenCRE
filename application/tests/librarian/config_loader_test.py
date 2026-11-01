@@ -16,7 +16,8 @@ class TestConfigLoaderDefaults(unittest.TestCase):
     def test_defaults_when_env_unset(self):
         with mock.patch.dict(os.environ, {}, clear=True):
             cfg = load_config()
-        self.assertEqual(cfg.retriever_backend, "in_memory")
+        # Promoted d1-winner stack (docs/oie/feature-flags.md).
+        self.assertEqual(cfg.retriever_backend, "pgvector")
         self.assertEqual(cfg.crossencoder_model, "cross-encoder/ms-marco-MiniLM-L-6-v2")
         self.assertEqual(cfg.top_k_retrieval, 20)
         self.assertEqual(cfg.top_k_rerank, 5)
@@ -32,6 +33,8 @@ class TestConfigLoaderDefaults(unittest.TestCase):
         self.assertEqual(cfg.standard_top_k, 10)
         self.assertEqual(cfg.standard_max_cres_per_hit, 4)
         self.assertFalse(cfg.cre_text_enrich)
+        self.assertTrue(cfg.cosine_retrieval)
+        self.assertTrue(cfg.cross_encoder)
         self.assertTrue(cfg.cre_summary)
         self.assertTrue(cfg.dual_index)
         self.assertTrue(cfg.prior_cage)
@@ -51,7 +54,25 @@ class TestConfigLoaderDefaults(unittest.TestCase):
         self.assertFalse(cfg.leaf_drilldown_hub_first)
         self.assertEqual(cfg.umbrella_promote_cap, 8)
         self.assertEqual(cfg.shortlist_judge_max_picks, 3)
+        self.assertAlmostEqual(cfg.margin_gamma or 0.0, 0.85)
+        self.assertFalse(cfg.hub_leaf_cage)
+        self.assertEqual(cfg.hub_leaf_cage_top_hubs, 3)
+
+    def test_margin_gamma_off_explicit(self):
+        with mock.patch.dict(
+            os.environ, {"CRE_LIBRARIAN_MARGIN_GAMMA": "off"}, clear=True
+        ):
+            cfg = load_config()
         self.assertIsNone(cfg.margin_gamma)
+
+    def test_in_memory_override_still_works(self):
+        with mock.patch.dict(
+            os.environ,
+            {"CRE_LIBRARIAN_RETRIEVER_BACKEND": "in_memory"},
+            clear=True,
+        ):
+            cfg = load_config()
+        self.assertEqual(cfg.retriever_backend, "in_memory")
 
     def test_config_is_frozen(self):
         with mock.patch.dict(os.environ, {}, clear=True):
@@ -110,6 +131,16 @@ class TestConfigLoaderOverrides(unittest.TestCase):
         self.assertAlmostEqual(cfg.hybrid_beta, 3.0)
         self.assertAlmostEqual(cfg.hybrid_gamma, 0.15)
 
+    def test_cosine_and_cross_encoder_kill_switches(self):
+        with mock.patch.dict(
+            os.environ,
+            {"CRE_LIBRARIAN_COSINE": "0", "CRE_LIBRARIAN_CROSS_ENCODER": "0"},
+            clear=True,
+        ):
+            cfg = load_config()
+        self.assertFalse(cfg.cosine_retrieval)
+        self.assertFalse(cfg.cross_encoder)
+
     def test_bad_int_env_raises(self):
         with mock.patch.dict(
             os.environ, {"CRE_LIBRARIAN_TOP_K_RETRIEVAL": "not-an-int"}, clear=True
@@ -146,6 +177,8 @@ class TestConfigLoaderOverrides(unittest.TestCase):
                 "CRE_LIBRARIAN_UMBRELLA_PROMOTE_CAP": "8",
                 "CRE_LIBRARIAN_SHORTLIST_JUDGE_MAX_PICKS": "3",
                 "CRE_LIBRARIAN_MARGIN_GAMMA": "0.85",
+                "CRE_LIBRARIAN_HUB_LEAF_CAGE": "1",
+                "CRE_LIBRARIAN_HUB_LEAF_CAGE_TOP_HUBS": "2",
             },
             clear=True,
         ):
@@ -159,6 +192,8 @@ class TestConfigLoaderOverrides(unittest.TestCase):
         self.assertEqual(cfg.umbrella_promote_cap, 8)
         self.assertEqual(cfg.shortlist_judge_max_picks, 3)
         self.assertAlmostEqual(cfg.margin_gamma or 0.0, 0.85)
+        self.assertTrue(cfg.hub_leaf_cage)
+        self.assertEqual(cfg.hub_leaf_cage_top_hubs, 2)
 
     def test_leaf_drilldown_resources_star_means_all(self):
         with mock.patch.dict(

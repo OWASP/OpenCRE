@@ -259,10 +259,27 @@ class NeighborSectionHit:
 class NeighborRemapCache:
     memory: Dict[str, Dict[str, List[str]]] = field(default_factory=dict)
     disk_dir: Optional[Path] = None
+    database: Optional[object] = None
 
     def get(self, key: str) -> Optional[Dict[str, List[str]]]:
         if key in self.memory:
             return self.memory[key]
+        getter = (
+            getattr(self.database, "get_oie_llm_cache", None) if self.database else None
+        )
+        if callable(getter):
+            try:
+                from application.utils.librarian.llm_response_cache import (
+                    KIND_NEIGHBOR_REMAP,
+                )
+
+                data = getter(KIND_NEIGHBOR_REMAP, key)
+            except Exception:  # noqa: BLE001
+                logger.debug("neighbor remap DB cache read failed", exc_info=True)
+                data = None
+            if isinstance(data, dict):
+                self.memory[key] = data
+                return data
         if self.disk_dir is not None:
             path = self.disk_dir / f"{key}.json"
             if path.is_file():
@@ -273,6 +290,18 @@ class NeighborRemapCache:
 
     def put(self, key: str, remap: Dict[str, List[str]]) -> None:
         self.memory[key] = remap
+        putter = (
+            getattr(self.database, "put_oie_llm_cache", None) if self.database else None
+        )
+        if callable(putter):
+            try:
+                from application.utils.librarian.llm_response_cache import (
+                    KIND_NEIGHBOR_REMAP,
+                )
+
+                putter(KIND_NEIGHBOR_REMAP, key, remap)
+            except Exception:  # noqa: BLE001
+                logger.debug("neighbor remap DB cache write failed", exc_info=True)
         if self.disk_dir is not None:
             self.disk_dir.mkdir(parents=True, exist_ok=True)
             (self.disk_dir / f"{key}.json").write_text(
@@ -342,6 +371,23 @@ class NeighborTransferIndex:
         if len(kept) < 8:
             kept = [h for _, h in ranked[:_LLM_CANDIDATE_SECTIONS]]
         return kept[:_LLM_CANDIDATE_SECTIONS]
+
+    def precompute_topic_remaps(self) -> int:
+        """Warm topic-remap cache for every known neighbor section as query.
+
+        One LLM (or heuristic) remap per catalog section → shortlisted peers.
+        Returns how many section queries were warmed. Live factory keeps
+        ``llm_fn=None`` and reads the Postgres cache.
+        """
+        n = 0
+        for family, hits in sorted(self.sections.items()):
+            if family in self.disabled_families:
+                continue
+            for hit in hits:
+                text = f"Section-ID: {hit.key}\nSection: {hit.title}"
+                self.preferred_by_topic_remap(family, text)
+                n += 1
+        return n
 
     def preferred_by_topic_remap(self, family: str, text: str) -> List[str]:
         """LLM (cached) then heuristic remap → neighbor CRE UUIDs."""
@@ -505,6 +551,7 @@ def build_neighbor_transfer_index(
     *,
     llm_fn: Optional[LlmFn] = None,
     cache_dir: Optional[Path] = None,
+    database: Optional[object] = None,
 ) -> NeighborTransferIndex:
     """Load neighbor bags + section→CRE maps (incl. ``oie.phrases`` aliases)."""
     from application.database.db import CRE, Links, Node
@@ -568,17 +615,19 @@ def build_neighbor_transfer_index(
         if hits:
             sections[family] = tuple(hits)
 
-    disk = cache_dir or Path(
-        os.environ.get(
-            "CRE_LIBRARIAN_NEIGHBOR_REMAP_CACHE",
-            "tmp/oie_neighbor_remap_cache",
-        )
+    from application.utils.librarian.llm_response_cache import (
+        KIND_NEIGHBOR_REMAP,
+        optional_disk_dir,
+    )
+
+    disk = (
+        cache_dir if cache_dir is not None else optional_disk_dir(KIND_NEIGHBOR_REMAP)
     )
     return NeighborTransferIndex(
         bags={k: frozenset(v) for k, v in bags.items() if v},
         sections=sections,
         llm_fn=llm_fn,
-        cache=NeighborRemapCache(disk_dir=disk),
+        cache=NeighborRemapCache(disk_dir=disk, database=database),
     )
 
 

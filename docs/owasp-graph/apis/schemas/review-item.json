@@ -32,8 +32,11 @@
         "NO_CANDIDATES",
         "ADVERSARIAL_FLAG",
         "UPDATE_AMBIGUOUS",
-        "SAFETY_UNEVALUATED",
-        "CRE_GAP"
+        "CRE_GAP",
+        "PAIRWISE_DISAGREE",
+        "SOURCE_UNSUPPORTED",
+        "COVERAGE_THIN",
+        "SAFETY_UNEVALUATED"
       ]
     },
     "knowledge": { "$ref": "link-proposal.json#/$defs/knowledge_snapshot" },
