@@ -1,12 +1,11 @@
-import os
 import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
-from unittest import mock
 
 import sqlalchemy.exc
 
+from application.tests.env_override import set_environ_for_test
 from application.utils.admin_panel import service
 
 
@@ -28,12 +27,11 @@ class CreHubSyncGuardTest(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.hub = Path(self.tmp.name) / "hub.sqlite"
         _make_embeddings_db(self.hub, ["CRE"])
-        env = mock.patch.dict(
-            os.environ, {"CRE_HUB_SQLITE": str(self.hub)}, clear=False
+        set_environ_for_test(
+            self,
+            {"CRE_HUB_SQLITE": str(self.hub)},
+            unset=["ADMIN_REPLACE_CRE_HUB_EMBEDDINGS"],
         )
-        env.start()
-        self.addCleanup(env.stop)
-        os.environ.pop("ADMIN_REPLACE_CRE_HUB_EMBEDDINGS", None)
 
     def test_keeps_existing_cre_embeddings_by_default(self) -> None:
         dest = Path(self.tmp.name) / "dest.sqlite"
