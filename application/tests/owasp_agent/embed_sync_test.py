@@ -6,12 +6,12 @@ import os
 import tempfile
 import unittest
 from typing import Any, List
-from unittest.mock import patch
 
 import sqlalchemy as sa
 
 from application import create_app, sqla  # type: ignore
 from application.database import db
+from application.tests.env_override import environ_override
 from application.utils.owasp_agent.embed_sync import embed_meta_if_enabled
 from application.utils.owasp_agent.index_store import IndexStore
 from application.utils.owasp_agent.lane_similarity import CHANNEL_AGENT, CHANNEL_CRE
@@ -87,8 +87,7 @@ class TestEmbedMetaIfEnabled(unittest.TestCase):
             calls.append(text)
             return _embed(text)
 
-        with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("OWASP_AGENT_EMBED_META", None)
+        with environ_override(unset=["OWASP_AGENT_EMBED_META"]):
             ran = embed_meta_if_enabled(
                 self.store, self.report, database=self.database, embed_fn=spy
             )
@@ -100,7 +99,7 @@ class TestEmbedMetaIfEnabled(unittest.TestCase):
         self.assertEqual(self.report.errors, [])
 
     def test_flag_value_zero_is_off(self) -> None:
-        with patch.dict(os.environ, {"OWASP_AGENT_EMBED_META": "0"}):
+        with environ_override({"OWASP_AGENT_EMBED_META": "0"}):
             ran = embed_meta_if_enabled(
                 self.store, self.report, database=self.database, embed_fn=_embed
             )
@@ -110,7 +109,7 @@ class TestEmbedMetaIfEnabled(unittest.TestCase):
     def test_flag_on_writes_agent_rows_and_logs_ok(self) -> None:
         for flag in ("1", "true", "yes"):
             with self.subTest(flag=flag):
-                with patch.dict(os.environ, {"OWASP_AGENT_EMBED_META": flag}):
+                with environ_override({"OWASP_AGENT_EMBED_META": flag}):
                     ran = embed_meta_if_enabled(
                         self.store,
                         self.report,
@@ -134,7 +133,7 @@ class TestEmbedMetaIfEnabled(unittest.TestCase):
         self.assertEqual(self.report.errors, [])
 
     def test_embed_failure_is_recorded_not_raised(self) -> None:
-        with patch.dict(os.environ, {"OWASP_AGENT_EMBED_META": "1"}):
+        with environ_override({"OWASP_AGENT_EMBED_META": "1"}):
             ran = embed_meta_if_enabled(
                 self.store, self.report, database=self.database, embed_fn=_boom
             )
@@ -199,8 +198,9 @@ class TestEmbedDimensionGuard(unittest.TestCase):
 
     def test_refuses_vector_whose_length_differs_from_existing_rows(self) -> None:
         self._add_cre_graph_row(dim=4)
-        with patch.dict(os.environ, {"OWASP_AGENT_EMBED_META": "1"}):
-            os.environ.pop("CRE_EMBED_EXPECTED_DIM", None)
+        with environ_override(
+            {"OWASP_AGENT_EMBED_META": "1"}, unset=["CRE_EMBED_EXPECTED_DIM"]
+        ):
             ran = embed_meta_if_enabled(
                 self.store, self.report, database=self.database, embed_fn=_embed
             )
@@ -212,8 +212,9 @@ class TestEmbedDimensionGuard(unittest.TestCase):
 
     def test_accepts_vector_matching_existing_rows(self) -> None:
         self._add_cre_graph_row(dim=3)
-        with patch.dict(os.environ, {"OWASP_AGENT_EMBED_META": "1"}):
-            os.environ.pop("CRE_EMBED_EXPECTED_DIM", None)
+        with environ_override(
+            {"OWASP_AGENT_EMBED_META": "1"}, unset=["CRE_EMBED_EXPECTED_DIM"]
+        ):
             ran = embed_meta_if_enabled(
                 self.store, self.report, database=self.database, embed_fn=_embed
             )
@@ -223,9 +224,8 @@ class TestEmbedDimensionGuard(unittest.TestCase):
         self.assertEqual(self.report.errors, [])
 
     def test_expected_dim_env_wins_on_an_empty_table(self) -> None:
-        with patch.dict(
-            os.environ,
-            {"OWASP_AGENT_EMBED_META": "1", "CRE_EMBED_EXPECTED_DIM": "5"},
+        with environ_override(
+            {"OWASP_AGENT_EMBED_META": "1", "CRE_EMBED_EXPECTED_DIM": "5"}
         ):
             ran = embed_meta_if_enabled(
                 self.store, self.report, database=self.database, embed_fn=_embed
