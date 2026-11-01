@@ -6,6 +6,7 @@ in OpenCRE's own cache. The 5 slices are populated as follows:
 
   positive       : all 277 ASVS requirements (1:1 mapping)
                  + multi-link rows from OWASP Top 10 and CWE (2-4 CREs)
+                 + ASVS 5.0 provisional rows from owasp_asvs_5_0_provisional.json
   hard_negative  : ASVS requirements whose text contains a negation phrase
                    ("do not", "does not", "shall not", "should not"), with
                    their real DB CRE mapping (cross-encoder must beat cosine
@@ -30,8 +31,16 @@ from typing import Dict, List, Optional
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_DB = REPO_ROOT / "standards_cache.sqlite"
 DEFAULT_OUT = REPO_ROOT / "application/tests/librarian/fixtures/golden_dataset.json"
+ASVS5_PROVISIONAL_FIXTURE = (
+    REPO_ROOT
+    / "application/tests/fixtures/owasp_mappings/owasp_asvs_5_0_provisional.json"
+)
 
 SCHEMA_VERSION = "0.1.0"
+ASVS5_PROVISIONAL_GT = (
+    "PROVISIONAL: ASVS 5.0 gold remapped from opencre.org ASVS 4 Links via "
+    "OWASP mapping_v4.0.3_to_v5.0.0.yml (not mentor-verified ASVS 5 Links)"
+)
 
 
 # ---- Curated rows that need a real CRE id resolved at build time ----------
@@ -422,15 +431,95 @@ def build_ambiguous() -> List[Dict]:
     return out
 
 
+def build_positive_asvs5_provisional() -> List[Dict]:
+    """Append ASVS 5.0 provisional positives from the mapping fixture.
+
+    Rows are clearly marked provisional in provenance. Absent fixture → no rows
+    (builder still works for ASVS 4 / other slices). Keep AISVS and existing
+    arms unchanged — this only adds ``gold:asvs5:…`` positives.
+    """
+    if not ASVS5_PROVISIONAL_FIXTURE.is_file():
+        return []
+    entries = json.loads(ASVS5_PROVISIONAL_FIXTURE.read_text(encoding="utf-8"))
+    if not isinstance(entries, list):
+        raise ValueError(
+            f"{ASVS5_PROVISIONAL_FIXTURE} must be a JSON list, got {type(entries)}"
+        )
+    out: List[Dict] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        section_id = str(entry.get("section_id") or "").strip()
+        text = str(entry.get("section") or "").strip()
+        cre_ids = [
+            cid for cid in (entry.get("cre_ids") or []) if isinstance(cid, str) and cid
+        ]
+        if not section_id or not text or not cre_ids:
+            continue
+        prov = (
+            entry.get("gold_provenance")
+            if isinstance(entry.get("gold_provenance"), dict)
+            else {}
+        )
+        out.append(
+            {
+                "id": f"gold:asvs5:{section_id}:positive",
+                "schema_version": SCHEMA_VERSION,
+                "slice": "positive",
+                "input": {"text": text, "source_standard": "ASVS"},
+                "expected": {"decision": "linked", "cre_ids": cre_ids},
+                "provenance": {
+                    "standard_version": "5.0-provisional",
+                    "section_path": section_id,
+                    "ground_truth_source": ASVS5_PROVISIONAL_GT,
+                },
+                "notes": (
+                    "provisional gold; source_v4="
+                    + ",".join(prov.get("source_v4_section_ids") or [])
+                ),
+            }
+        )
+    return out
+
+
 def build(conn: sqlite3.Connection) -> List[Dict]:
     rows: List[Dict] = []
     rows.extend(build_explicit(conn))
     rows.extend(build_positive_asvs(conn))
+    rows.extend(build_positive_asvs5_provisional())
     rows.extend(build_positive_multilink(conn))
     rows.extend(build_hard_negative(conn))
     rows.extend(build_update(conn))
     rows.extend(build_ambiguous())
     return rows
+
+
+def merge_asvs5_provisional_into(out_path: Path) -> int:
+    """Insert/replace ``gold:asvs5:*`` positives without a full DB rebuild."""
+    if not out_path.is_file():
+        print(f"golden dataset not found: {out_path}", file=sys.stderr)
+        return 1
+    existing = json.loads(out_path.read_text(encoding="utf-8"))
+    if not isinstance(existing, list):
+        print(f"{out_path} must be a JSON list", file=sys.stderr)
+        return 1
+    kept = [
+        row
+        for row in existing
+        if not (
+            isinstance(row, dict) and str(row.get("id") or "").startswith("gold:asvs5:")
+        )
+    ]
+    added = build_positive_asvs5_provisional()
+    merged = kept + added
+    out_path.write_text(
+        json.dumps(merged, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    print(
+        f"merged {len(added)} ASVS5 provisional positives into {out_path} "
+        f"(total {len(merged)} rows; removed prior gold:asvs5:* before insert)"
+    )
+    return 0
 
 
 def main(argv: List[str]) -> int:
@@ -442,7 +531,19 @@ def main(argv: List[str]) -> int:
         action="store_true",
         help="re-derive and verify --out matches; exit non-zero on drift",
     )
+    parser.add_argument(
+        "--merge-asvs5-provisional",
+        action="store_true",
+        help=(
+            "without rebuilding from DB: replace gold:asvs5:* rows in --out "
+            "using application/tests/fixtures/owasp_mappings/"
+            "owasp_asvs_5_0_provisional.json"
+        ),
+    )
     args = parser.parse_args(argv)
+
+    if args.merge_asvs5_provisional:
+        return merge_asvs5_provisional_into(Path(args.out))
 
     if not Path(args.db).exists():
         print(f"db not found: {args.db}", file=sys.stderr)
