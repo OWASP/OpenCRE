@@ -34,6 +34,28 @@ class ChangeDetector:
 
         return result.stdout.strip()
 
+    def commit_exists(self, commit_sha: str) -> bool:
+        """Whether the commit is present in the local clone (clones are shallow)."""
+        if not commit_sha or commit_sha.startswith("-"):
+            return False
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(self.repository_client.get_local_path()),
+                "rev-parse",
+                "--verify",
+                "--quiet",
+                "--end-of-options",
+                f"{commit_sha}^{{commit}}",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+        )
+        return result.returncode == 0
+
     def get_modified_files_since(
         self, base_commit: str, target_commit: str
     ) -> list[str]:
