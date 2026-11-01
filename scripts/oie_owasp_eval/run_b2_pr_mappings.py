@@ -568,6 +568,11 @@ def run_pipeline(
         summary.status = "ok"
         return summary
 
+    from application.utils.db_url import assert_local_clone_url
+
+    # The three queue tables are emptied below, so only a throwaway local clone
+    # may be the target (never a remote host, Heroku, or the working `cre` DB).
+    assert_local_clone_url(cache)
     db_connect(cache)
     for model in (HarvestInput, KnowledgeQueueItem, DecisionQueueItem):
         deleted = sqla.session.query(model).delete(synchronize_session=False)
@@ -750,7 +755,7 @@ def main() -> int:
     os.environ.setdefault("CRE_LIBRARIAN_RETRIEVER_BACKEND", "pgvector")
     _load_dotenv()
     cache = os.environ.get(
-        "DEV_DATABASE_URL", "postgresql://cre:password@127.0.0.1:5432/cre"
+        "DEV_DATABASE_URL", "postgresql://cre:password@127.0.0.1:5432/cre_prodclone"
     )
 
     only_fixtures = {
