@@ -1,7 +1,8 @@
 # Replatform options (off Heroku)
 
-Status: draft for discussion. Production keeps working as today; every feature in the comprehension stack is
-behind a flag that is off by default (`OWASP_CX_*`, `OWASP_COMPREHENSION_*`, `OWASP_WARMUP`, `ANSWER_LOG_*`).
+Status: draft for discussion. Most comprehension-stack features are behind flags that are off by default
+(`OWASP_CX_*`, `OWASP_WARMUP`, `ANSWER_LOG_*`); `OWASP_COMPREHENSION_ENABLED` and `OWASP_COMPREHENSION_ABSTAIN`
+default to on, so a database that holds comprehension rows changes chat answers unless they are set to 0.
 
 What the stack needs from a host:
 

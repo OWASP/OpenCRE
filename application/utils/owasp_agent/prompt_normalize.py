@@ -142,8 +142,13 @@ def normalize_prompt(prompt: str) -> str:
 
 _INJECTION_TAIL = re.compile(
     r"(?:^|[\s.?!;,:])(?:(?:and\s+)?(?:after|then)\s+that[,\s]+)?"
-    r"(?:ignore|disregard|forget|override)\s+(?:all\s+|any\s+|the\s+|your\s+)*"
-    r"(?:previous|prior|earlier|above|preceding)\b.*$",
+    r"(?:ignore|disregard|forget|override)\s+"
+    r"(?:all\s+|any\s+|the\s+|your\s+|everything\s+|these\s+|those\s+)*"
+    # An instruction-like object ("previous instructions") or a bare "the above";
+    # "override earlier rules" / "disregard previous session state" are questions.
+    r"(?:(?:previous|prior|earlier|above|preceding)\s+"
+    r"(?:instructions?|prompts?|questions?|messages?|directions?|guidelines?|commands?)\b"
+    r"|(?:above|previous|prior)(?=\s*(?:[.,;!?]|$|and\b|then\b))).*$",
     re.IGNORECASE | re.DOTALL,
 )
 _MIN_KEEP_CHARS = 12

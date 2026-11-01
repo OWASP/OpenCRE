@@ -125,6 +125,9 @@ def all_combos() -> List[Tuple[str, Dict[str, str]]]:
 
 
 def reset_queues(run_id: str, db_url: str) -> None:
+    from application.utils.db_url import assert_local_clone_url
+
+    assert_local_clone_url(db_url)
     conn = parse_db_url(db_url)
     sql = (
         f"DELETE FROM decision_queue WHERE pipeline_run_id = '{run_id}'; "

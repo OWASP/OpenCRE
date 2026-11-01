@@ -236,9 +236,7 @@ print_next_steps() {
   source env:   set -a && source ${OIE_ENV_FILE} && set +a
   hub check:    psql "\${DEV_DATABASE_URL}" -c "SELECT count(*) FROM embeddings WHERE doc_type='CRE'"
   oie meta:     make oie-tag-base CACHE_FILE="\${DEV_DATABASE_URL}"   # already run in setup; re-run safe (fill-if-missing)
-  run A→B→C:    PYTHONPATH=. python scripts/oie_owasp_eval/run_official_orchestrator_local.py \\
-                  --cache-file "\${DEV_DATABASE_URL}" --a-mode tarball --max-chunks 20
-  or:           make oie-pipeline CACHE_FILE="\${DEV_DATABASE_URL}" OIE_ARGS='--no-sync-repos'
+  run A→B→C:    make oie-pipeline CACHE_FILE="\${DEV_DATABASE_URL}" OIE_ARGS='--no-sync-repos'
 
 EOF
 }
