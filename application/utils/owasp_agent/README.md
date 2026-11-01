@@ -1,8 +1,10 @@
 # OWASP metadata agent (experimental)
 
 Feature-flagged chat/MCP extension that answers **OWASP community / logistics**
-questions from a **separate SQLite index** (Nest + GitHub), without writing into
-the CRE / standards graph.
+questions from an index in the main OpenCRE database (Nest + GitHub tables
+`meta_entity`, `owasp_concept`, `sync_log`; `OWASP_AGENT_DB` can point it at a
+SQLite file for tests and laptops), without writing into the CRE / standards
+graph.
 
 Stacked PRs: [#1125](https://github.com/OWASP/OpenCRE/pull/1125) (agent +
 isolation), [#1127](https://github.com/OWASP/OpenCRE/pull/1127) (probe-gap
@@ -26,10 +28,10 @@ lists, fail-closed talk claims.
 
 | Concern | OIE pipeline (A–D) | This agent |
 | --- | --- | --- |
-| Data | Chunks → knowledge queue → CRE links | Nest/GitHub → `OWASP_AGENT_DB` SQLite |
+| Data | Chunks → knowledge queue → CRE links | Nest/GitHub → agent index tables (main DB, or `OWASP_AGENT_DB`) |
 | Questions | Normative AppSec / CRE mapping | Community logistics / meta |
 | Chat path | CRE RAG via `PromptHandler` + LLM | Rule router; LLM only on CRE fallthrough |
-| Graph pollution | Writes reviewable CRE proposals | **Never** writes Credoctypes / embeddings |
+| Graph pollution | Writes reviewable CRE proposals | **Never** writes Credoctypes; shared `embeddings` rows only via the opt-in `embed_meta_if_enabled` (channel `owasp_agent_meta`) |
 
 When the router classifies a prompt as `cre_normative`, it returns `None` and
 `/rest/v1/completion` falls through to normal CRE RAG (that path **does** need
@@ -45,7 +47,7 @@ User / MCP
     ├─ Chat POST /rest/v1/completion   (login required)
     │       └─ if OWASP_AGENT_ENABLED:
     │             OwaspAgentRouter.handle(prompt)
-    │               ├─ meta intent  → IndexStore (SQLite) → answer
+    │               ├─ meta intent  → IndexStore → answer
     │               └─ cre_normative → None → PromptHandler (LLM + CRE RAG)
     │
     └─ MCP stdio  owasp_meta_* tools   (same flag + same index)
@@ -74,8 +76,8 @@ make install-python   # or: pip install -r requirements.txt -r requirements-dev.
 | --- | --- | --- |
 | `OWASP_AGENT_ENABLED=1` | Agent + MCP meta tools | Off by default |
 | `OWASP_AGENT_SIM_ROUTER` | Multi-lane embedding gate (cre_graph / corpus / owasp_agent_meta) before structural intents | `1` default |
-| `OWASP_AGENT_EMBED_META=1` | During sync, embed meta (+ evidence notes) into shared `embeddings` | Off |
-| `OWASP_AGENT_DB` | Index path | Default: `./tmp/owasp_agent.sqlite` |
+| `OWASP_AGENT_EMBED_META=1` | Embed meta (+ evidence notes) into shared `embeddings` (`source_channel=owasp_agent_meta`) | Off. Applied by callers via `embed_sync.embed_meta_if_enabled(store, report)` after `sync_all` (`scripts/owasp_agent_sync.py`; any other caller of `sync_all` must call it too); `sync_all` itself never writes shared embeddings. Refuses vectors whose length differs from `CRE_EMBED_EXPECTED_DIM` or the dimension of existing rows |
+| `OWASP_AGENT_DB` | Index location override (SQLAlchemy URL or SQLite path) | Default: the main app DB (`DATABASE_URL` / `DEV_DATABASE_URL`) |
 | `NEST_API_KEY` | Nest sync (chapters/events/projects) | From [nest.owasp.org](https://nest.owasp.org) while logged in |
 | `NEST_API_BASE` | Nest sync | Default `https://nest.owasp.org/api/v0` |
 | `GITHUB_TOKEN` | GitHub sync / board-history crawl | Optional but raises rate limits; board YAML needs GitHub |
@@ -187,8 +189,9 @@ script stdout or the `summary` key in the results JSON.
 
 ## Isolation rules (do not break)
 
-- Meta only in agent index / `meta_*` — never CRE graph nodes. May write
-  `embeddings` with `source_channel=owasp_agent_meta` only (lane routing).
+- Meta only in agent index / `meta_*` — never CRE graph nodes. `sync_all` never
+  writes `embeddings`; the opt-in `embed_meta_if_enabled` (and the script below)
+  may write `embeddings` with `source_channel=owasp_agent_meta` only (lane routing).
   Embed: `PYTHONPATH=. python scripts/owasp_agent_embed_meta.py`
 - Never expose meta entities via CRE REST (`tags`, `text_search`, standards, graph UI).
 - Chat responses keep CRE `table` citations empty for meta answers.
@@ -198,6 +201,6 @@ script stdout or the `summary` key in the results JSON.
 
 | Target | Purpose |
 | --- | --- |
-| `make owasp-agent-sync` | Nest/GitHub → SQLite index |
+| `make owasp-agent-sync` | Nest/GitHub → agent index (then `embed_meta_if_enabled`) |
 | `make owasp-agent-merge-concepts` | Merge near-duplicate auto concepts |
 | `make owasp-agent-synth-eval` | Score synth v2 JSONL against the index |
