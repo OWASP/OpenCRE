@@ -5,9 +5,10 @@ from __future__ import annotations
 import os
 import tempfile
 import unittest
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 from unittest.mock import MagicMock, patch
 
+from application.defs import cre_defs
 from application.mcp import auth as mcp_auth
 from application.mcp.ask import (
     ASK_TOOL,
@@ -16,11 +17,47 @@ from application.mcp.ask import (
     CORPUS_SECURITY,
     ask,
 )
-from application.mcp.rest_client import RestResponseError, RestResult
+from application.mcp.rest_client import RestResult
 from application.mcp.server import dispatch_tool, server_instructions
+from application.prompt_client.prompt_client import NearestStandardHit
 from application.utils.gap_analysis import OPENCRE_STANDARD_NAME
 from application.utils.owasp_agent.index_store import IndexStore
 from application.utils.owasp_agent.models import Chapter
+
+
+def _fake_hit(
+    *,
+    cre_ids: Sequence[str] = (),
+    node_id: str = "node-1",
+    similarity: float = 0.91,
+    embeddings_content: str = "password storage guidance",
+    embeddings_url: str = "https://example/asvs#passwords",
+    name: str = "ASVS",
+    section: str = "2.4.1",
+) -> NearestStandardHit:
+    """Build a NearestStandardHit with linked CRE stubs for security-path tests."""
+    links = [
+        cre_defs.Link(
+            ltype=cre_defs.LinkTypes.LinkedTo,
+            document=cre_defs.CRE(id=cre_id, name=f"CRE {cre_id}"),
+        )
+        for cre_id in cre_ids
+    ]
+    node = cre_defs.Standard(
+        name=name,
+        section=section,
+        sectionID=section,
+        description="matched standard",
+        hyperlink="https://example/asvs",
+        links=links,
+    )
+    return NearestStandardHit(
+        node_id=node_id,
+        similarity=similarity,
+        node=node,
+        embeddings_content=embeddings_content,
+        embeddings_url=embeddings_url,
+    )
 
 
 class _FakeRestClient:
@@ -29,26 +66,20 @@ class _FakeRestClient:
     def __init__(
         self,
         *,
-        search: Optional[List[Dict[str, Any]]] = None,
         cres: Optional[Dict[str, Dict[str, Any]]] = None,
         resources: Optional[Dict[str, Any]] = None,
         resources_error: Optional[Exception] = None,
-        search_error: Optional[Exception] = None,
     ) -> None:
-        self.search = search or []
         self.cres = cres or {}
         self.resources = resources
         self.resources_error = resources_error
-        self.search_error = search_error
         self.calls: List[tuple] = []
 
     def call_tool(self, tool_name: str, arguments=None) -> RestResult:
         args = dict(arguments or {})
         self.calls.append((tool_name, args))
         if tool_name == "text_search":
-            if self.search_error is not None:
-                raise self.search_error
-            return RestResult(200, self.search, "")
+            raise AssertionError("ask security path must not call text_search")
         if tool_name == "get_cre_by_id":
             cre_id = args.get("creid")
             payload = self.cres.get(cre_id) or {"data": {"id": cre_id, "links": []}}
@@ -129,15 +160,10 @@ class McpAskToolTest(unittest.TestCase):
         router_cls.return_value.handle.assert_called_once()
 
     @patch("application.prompt_client.prompt_client.PromptHandler.generate_text")
+    @patch("application.mcp.ask._retrieve_nearest_standard")
     def test_auto_security_never_calls_generate_text(
-        self, generate_text: MagicMock
+        self, retrieve: MagicMock, generate_text: MagicMock
     ) -> None:
-        cre_doc = {
-            "id": "111-111",
-            "name": "Password Storage",
-            "doctype": "CRE",
-            "description": "Store passwords safely",
-        }
         enriched = {
             "data": {
                 "id": "111-111",
@@ -166,10 +192,8 @@ class McpAskToolTest(unittest.TestCase):
                 ],
             }
         }
-        client = _FakeRestClient(
-            search=[cre_doc],
-            cres={"111-111": enriched},
-        )
+        retrieve.return_value = _fake_hit(cre_ids=("111-111",))
+        client = _FakeRestClient(cres={"111-111": enriched})
         with patch.dict(os.environ, {"OWASP_AGENT_ENABLED": "0"}, clear=False):
             with patch(
                 "application.mcp.ask.classify_intent", return_value="cre_normative"
@@ -181,23 +205,22 @@ class McpAskToolTest(unittest.TestCase):
                 )
 
         generate_text.assert_not_called()
+        retrieve.assert_called_once()
         self.assertTrue(out["ok"])
         self.assertEqual(out["channel"], CORPUS_SECURITY)
         self.assertEqual(out["standards_filter"], "all_mapped")
+        self.assertIsNotNone(out["matched_standard"])
+        self.assertIn("password storage", out["matched_standard"]["embeddings_content"])
         self.assertEqual(len(out["items"]), 1)
         names = {s["name"] for s in out["items"][0]["standards"]}
         self.assertEqual(names, {"ASVS", "CWE"})
         self.assertIn("https://opencre.org/cre/111-111", out["citations"])
+        self.assertNotIn("text_search", [c[0] for c in client.calls])
 
-    def test_corpus_security_skips_router(self) -> None:
+    @patch("application.mcp.ask._retrieve_nearest_standard")
+    def test_corpus_security_skips_router(self, retrieve: MagicMock) -> None:
+        retrieve.return_value = _fake_hit(cre_ids=("222-222",))
         client = _FakeRestClient(
-            search=[
-                {
-                    "id": "222-222",
-                    "name": "AuthN",
-                    "doctype": "CRE",
-                }
-            ],
             cres={
                 "222-222": {
                     "data": {
@@ -218,19 +241,64 @@ class McpAskToolTest(unittest.TestCase):
             router_cls.assert_not_called()
         self.assertEqual(out["channel"], CORPUS_SECURITY)
         self.assertTrue(out["ok"])
+        self.assertEqual(out["matched_standard"]["name"], "ASVS")
+
+    @patch("application.mcp.ask._retrieve_nearest_standard")
+    def test_security_message_not_polluted_by_linked_standard_facts(
+        self, retrieve: MagicMock
+    ) -> None:
+        """Unrelated CRE asks must not prepend ASVS structure into message."""
+        from application.utils.owasp_agent.node_facts import facts_for_name
+
+        asvs_facts = facts_for_name("ASVS")
+        enriched = {
+            "data": {
+                "id": "111-111",
+                "name": "Password Storage",
+                "doctype": "CRE",
+                "links": [
+                    {
+                        "document": {
+                            "name": "ASVS",
+                            "doctype": "Standard",
+                            "section": "2.4.1",
+                            "hyperlink": "https://example/asvs",
+                            "metadata": {"facts": asvs_facts},
+                        },
+                        "ltype": "Linked To",
+                    }
+                ],
+            }
+        }
+        retrieve.return_value = _fake_hit(cre_ids=("111-111",))
+        client = _FakeRestClient(cres={"111-111": enriched})
+        with patch.dict(os.environ, {"OWASP_AGENT_ENABLED": "0"}, clear=False):
+            out = ask(
+                "How should I store passwords?",
+                corpus=CORPUS_SECURITY,
+                rest_client=client,  # type: ignore[arg-type]
+            )
+        self.assertTrue(out["ok"])
+        self.assertNotIn("facts", out["items"][0])
+        self.assertNotIn("Leaders:", out["message"])
+        self.assertNotIn("indexed OWASP project", out["message"])
 
     def test_corpus_owasp_meta_rejects_cre_looking(self) -> None:
+        # Router may answer from a seeded local DB; force defer so corpus=owasp_meta
+        # still refuses CRE-looking prompts when meta has no match.
         with patch.dict(os.environ, {"OWASP_AGENT_ENABLED": "1"}, clear=False):
             with patch(
                 "application.mcp.ask.classify_intent", return_value="cre_normative"
             ):
-                out = ask("How should I store passwords?", corpus=CORPUS_OWASP_META)
+                with patch("application.mcp.ask.OwaspAgentRouter") as router_cls:
+                    router_cls.return_value.handle.return_value = None
+                    out = ask("How should I store passwords?", corpus=CORPUS_OWASP_META)
         self.assertFalse(out["ok"])
         self.assertEqual(out["channel"], CORPUS_OWASP_META)
         self.assertIn("corpus=security", out["message"])
 
-    def test_myopencre_filter_when_logged_in(self) -> None:
-        cre_doc = {"id": "333-333", "name": "Session", "doctype": "CRE"}
+    @patch("application.mcp.ask._retrieve_nearest_standard")
+    def test_myopencre_filter_when_logged_in(self, retrieve: MagicMock) -> None:
         enriched = {
             "data": {
                 "id": "333-333",
@@ -264,8 +332,8 @@ class McpAskToolTest(unittest.TestCase):
                 ],
             }
         }
+        retrieve.return_value = _fake_hit(cre_ids=("333-333",))
         client = _FakeRestClient(
-            search=[cre_doc],
             cres={"333-333": enriched},
             resources={"selected": ["ASVS"]},
         )
@@ -282,8 +350,8 @@ class McpAskToolTest(unittest.TestCase):
         self.assertEqual(names, {"ASVS", OPENCRE_STANDARD_NAME})
         self.assertNotIn("CWE", names)
 
-    def test_myopencre_not_applied_when_logged_out(self) -> None:
-        cre_doc = {"id": "444-444", "name": "Crypto", "doctype": "CRE"}
+    @patch("application.mcp.ask._retrieve_nearest_standard")
+    def test_myopencre_not_applied_when_logged_out(self, retrieve: MagicMock) -> None:
         enriched = {
             "data": {
                 "id": "444-444",
@@ -307,8 +375,8 @@ class McpAskToolTest(unittest.TestCase):
                 ],
             }
         }
+        retrieve.return_value = _fake_hit(cre_ids=("444-444",))
         client = _FakeRestClient(
-            search=[cre_doc],
             cres={"444-444": enriched},
             resources={"selected": ["ASVS"]},
         )
@@ -329,10 +397,10 @@ class McpAskToolTest(unittest.TestCase):
         # Must not have attempted get_my_resources without a token.
         self.assertNotIn("get_my_resources", [c[0] for c in client.calls])
 
-    def test_empty_search_is_ok_false(self) -> None:
-        client = _FakeRestClient(
-            search_error=RestResponseError(404, "No object matches")
-        )
+    @patch("application.mcp.ask._retrieve_nearest_standard")
+    def test_no_embedding_match_is_ok_false(self, retrieve: MagicMock) -> None:
+        retrieve.return_value = None
+        client = _FakeRestClient()
         out = ask(
             "zzzz-no-match",
             corpus=CORPUS_SECURITY,
@@ -340,10 +408,13 @@ class McpAskToolTest(unittest.TestCase):
         )
         self.assertFalse(out["ok"])
         self.assertEqual(out["items"], [])
+        self.assertIsNone(out["matched_standard"])
+        self.assertEqual(client.calls, [])
 
-    def test_dispatch_tool_ask(self) -> None:
+    @patch("application.mcp.ask._retrieve_nearest_standard")
+    def test_dispatch_tool_ask(self, retrieve: MagicMock) -> None:
+        retrieve.return_value = _fake_hit(cre_ids=("555-555",))
         client = _FakeRestClient(
-            search=[{"id": "555-555", "name": "X", "doctype": "CRE"}],
             cres={
                 "555-555": {
                     "data": {
@@ -361,6 +432,7 @@ class McpAskToolTest(unittest.TestCase):
             rest_client=client,  # type: ignore[arg-type]
         )
         self.assertEqual(out["channel"], CORPUS_SECURITY)
+        self.assertTrue(out["ok"])
 
     def test_invalid_corpus_raises(self) -> None:
         with self.assertRaises(ValueError):
