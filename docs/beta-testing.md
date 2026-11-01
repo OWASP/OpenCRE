@@ -7,6 +7,10 @@ Thanks for helping us test OpenCRE's **MCP server** and **chatbot**. About 30 mi
 - **Access is limited to OWASP accounts.** Sign in with your **OWASP email address** via OAuth. Other accounts will be rejected.
 - You will test two surfaces: the **chatbot** (web UI) and the **MCP server** (from your own AI client, e.g. Claude Desktop, Claude Code, Cursor).
 
+> **For the team, not testers:** `OPENCRE_MCP_OAUTH` must stay off beyond named testers until
+> dynamic client registration is restricted and a consent step exists. Both are known open
+> items; see "Google sign-in (OAuth) for remote MCP" in [docs/api/mcp.md](api/mcp.md).
+
 ## 1. Chatbot
 
 1. Open **https://staging.opencre.org** and sign in with your OWASP email.

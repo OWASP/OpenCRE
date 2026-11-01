@@ -131,6 +131,18 @@ API keys keep working as Bearer tokens.
 | `OPENCRE_MCP_GOOGLE_CLIENT_ID` / `_SECRET` | Google OAuth client | `GOOGLE_CLIENT_ID` / `_SECRET` |
 | `OPENCRE_MCP_ACCESS_TOKEN_MINUTES` / `OPENCRE_MCP_REFRESH_DAYS` | Token lifetimes | `60` / `30` |
 
+**Keep `OPENCRE_MCP_OAUTH` off beyond named testers.** Two known open items must be fixed
+before anyone else is let in:
+
+1. Dynamic client registration (`/register`) is open: anyone can register a client and there
+   is no cap on how many.
+2. There is no consent step: `/authorize` goes straight to Google, so a client an attacker
+   registered can have a signed-in victim complete sign-in and receive tokens for the
+   victim's account. A consent page (or a redirect-URI allowlist / authenticated
+   registration) is needed first.
+
+Until both are closed, enable OAuth only on an environment whose users are people we named.
+
 Google Cloud: add `<public url>/oauth/google/callback` to the client's authorized redirect
 URIs. Run `flask db upgrade` (new tables `mcp_oauth_clients`, `mcp_oauth_refresh_tokens`).
 Run one MCP worker: the pending sign-in and authorization code live in process memory.
