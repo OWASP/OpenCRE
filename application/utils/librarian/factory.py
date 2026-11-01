@@ -54,7 +54,7 @@ class LibrarianComponents:
     shortlist_llm_fn: Optional[Callable[[str, str], str]] = None
     #: C.4 safety guard (None → pipeline keeps NullSafetyGuard).
     safety_guard: Optional[Any] = None
-#: Contains parent→children index for leaf drill-down (None = skip).
+    #: Contains parent→children index for leaf drill-down (None = skip).
     parent_index: Optional[Any] = None
     #: When True, promote better Contains children over hub umbrellas after C.2.
     leaf_drilldown: bool = True
@@ -70,7 +70,7 @@ class LibrarianComponents:
     leaf_drilldown_hub_first: bool = False
     umbrella_promote_cap: int = 8
     shortlist_judge_max_picks: int = 3
-    margin_gamma: Optional[float] = None>>>>>>> 7208db90 (feat(librarian): promote d1-winner combo defaults (judge+cap8+top_k=3))
+    margin_gamma: Optional[float] = None
 
 
 def build_scaler(config: Optional[LibrarianConfig] = None) -> Scaler:
@@ -344,7 +344,7 @@ def build_components(
         cre_prior=cre_prior,
         shortlist_llm_fn=shortlist_llm,
         safety_guard=safety_guard,
-parent_index=parent_index,
+        parent_index=parent_index,
         leaf_drilldown=config.leaf_drilldown,
         leaf_drilldown_resources=config.leaf_drilldown_resources,
         leaf_drilldown_force_resources=config.leaf_drilldown_force_resources,
@@ -354,7 +354,7 @@ parent_index=parent_index,
         leaf_drilldown_hub_first=config.leaf_drilldown_hub_first,
         umbrella_promote_cap=config.umbrella_promote_cap,
         shortlist_judge_max_picks=config.shortlist_judge_max_picks,
-        margin_gamma=config.margin_gamma,>>>>>>> 7208db90 (feat(librarian): promote d1-winner combo defaults (judge+cap8+top_k=3))
+        margin_gamma=config.margin_gamma,
     )
 
 

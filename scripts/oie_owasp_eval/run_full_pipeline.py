@@ -69,9 +69,6 @@ GITHUB_TARGETS: Dict[str, Tuple[str, str, List[str], Optional[str]]] = {
     ),
 }
 
-# AIX has no GitHub Module A source in this repo; B2 LLM gold is the CRE proxy.
-AIX_GOLD = "owasp_llm_top10_2025"
-
 # Logical name → B2 fixture stem(s) run via run_b2_pr_mappings --only-fixtures
 B2_ARMS: Dict[str, List[str]] = {
     "aix": ["owasp_llm_top10_2025"],
@@ -200,48 +197,11 @@ def _apply_promoted_flags() -> None:
     # FORCE_RESOURCES=api dropped API exact 60→50 on cold-start; leave unset/off.
     os.environ.setdefault("CRE_LIBRARIAN_UMBRELLA_PROMOTE_CAP", "8")
     os.environ.setdefault("NO_LOAD_GRAPH_DB", "1")
-    # Shared CRE summary cache (GitHub). B2 may fork via ensure_b2_summary_cache.
+    # Shared CRE summary cache (GitHub).
     os.environ.setdefault(
         "CRE_LIBRARIAN_CRE_SUMMARY_CACHE",
         str(ROOT / "tmp" / "oie_cre_summaries"),
     )
-
-
-def ensure_b2_summary_cache(
-    *,
-    github_cache: Optional[Path] = None,
-    b2_cache: Optional[Path] = None,
-    force: bool = False,
-) -> Path:
-    """E3: copy-on-write GitHub summary cache → B2-only cache directory.
-
-    Returns the B2 cache path and sets ``CRE_LIBRARIAN_CRE_SUMMARY_CACHE`` to it.
-    """
-    import shutil
-
-    src = Path(github_cache or (ROOT / "tmp" / "oie_cre_summaries"))
-    dst = Path(b2_cache or (ROOT / "tmp" / "oie_cre_summaries_b2"))
-    if force and dst.exists():
-        shutil.rmtree(dst)
-    if not dst.exists():
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        if src.is_dir():
-            shutil.copytree(src, dst)
-        else:
-            dst.mkdir(parents=True, exist_ok=True)
-    os.environ["CRE_LIBRARIAN_CRE_SUMMARY_CACHE"] = str(dst)
-    return dst
-
-
-def restore_github_summary_cache(
-    *,
-    github_cache: Optional[Path] = None,
-) -> Path:
-    """Point env back at the shared GitHub summary cache."""
-    path = Path(github_cache or (ROOT / "tmp" / "oie_cre_summaries"))
-    path.mkdir(parents=True, exist_ok=True)
-    os.environ["CRE_LIBRARIAN_CRE_SUMMARY_CACHE"] = str(path)
-    return path
 
 
 def _make_tarball_harvester(
@@ -711,18 +671,6 @@ def _run_b2_arm(
     return report
 
 
-def _run_aix_b2_arm(*, run_id: str, cache: str, keep_all: bool) -> Dict[str, Any]:
-    """Score AIX via existing LLM Top10 B2 gold (hub CRE proxy)."""
-    return _run_b2_arm(
-        run_id=run_id,
-        cache=cache,
-        keep_all=keep_all,
-        fixtures=B2_ARMS["aix"],
-        arm_name="aix-b2",
-        out_name="full_pipeline_aix_llm.b2_report.json",
-    )
-
-
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -736,7 +684,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument(
         "--cache_file",
         default=os.environ.get("DEV_DATABASE_URL")
-        or "postgresql://cre:password@127.0.0.1:5432/cre",
+        or "postgresql://cre:password@127.0.0.1:5432/cre_prodclone",
     )
     parser.add_argument("--run-id", default="")
     parser.add_argument(
@@ -761,6 +709,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help="Report directory (default tmp/oie_owasp_eval/full_pipeline)",
     )
     args = parser.parse_args(list(argv) if argv is not None else None)
+
+    # This run empties harvest_input, knowledge_queue and decision_queue (and
+    # deletes arm rows by pattern), so only a throwaway local clone may be the
+    # target: never a remote host, Heroku, or the working `cre` database.
+    from application.utils.db_url import assert_local_clone_url
+
+    assert_local_clone_url(args.cache_file)
 
     _load_dotenv()
     _apply_promoted_flags()
