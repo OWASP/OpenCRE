@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import unittest
 from datetime import datetime, timezone
-from unittest.mock import patch
 
 from application import create_app, sqla
 from application.database import db
@@ -137,19 +136,27 @@ class StageTest(unittest.TestCase):
         class Result:
             pages = [Page(PAGE, "SLSA levels"), Page(OTHER, "SLSA requirements")]
 
-        with patch.object(
-            oie_bridge.web_source, "crawl_chunks", return_value=(CHUNKS, Result())
-        ):
-            dry = oie_bridge.stage_external(
-                _spec(), run_id="r2", apply=False, session=sqla.session
-            )
-            self.assertEqual((dry["pages"], dry["chunks"], dry["staged"]), (2, 3, 3))
-            self.assertEqual(self._rows(), [])
-            done = oie_bridge.stage_external(
-                _spec(), run_id="r2", apply=True, session=sqla.session
-            )
-            self.assertEqual(done["staged"], 3)
-            self.assertEqual(len(self._rows()), 3)
+        def fake_crawl(spec, max_pages=None, write_cache=True):
+            return CHUNKS, Result()
+
+        dry = oie_bridge.stage_external(
+            _spec(),
+            run_id="r2",
+            apply=False,
+            session=sqla.session,
+            crawl_fn=fake_crawl,
+        )
+        self.assertEqual((dry["pages"], dry["chunks"], dry["staged"]), (2, 3, 3))
+        self.assertEqual(self._rows(), [])
+        done = oie_bridge.stage_external(
+            _spec(),
+            run_id="r2",
+            apply=True,
+            session=sqla.session,
+            crawl_fn=fake_crawl,
+        )
+        self.assertEqual(done["staged"], 3)
+        self.assertEqual(len(self._rows()), 3)
 
     # ---- the real stages, with a stub classifier ------------------------
     def _stage(self, run="run-e2e"):
@@ -192,22 +199,31 @@ class StageTest(unittest.TestCase):
             pages=[Page(PAGE, "SLSA levels"), Page(OTHER, "SLSA requirements")]
         )
         database = db.Node_collection()
-        with patch.object(
-            external_ingest.web_source, "crawl_chunks", return_value=(CHUNKS, result)
-        ):
-            plain = external_ingest.ingest_spec(_spec(), apply=False, database=database)
-            self.assertNotIn("oie_staged", plain)
-            dry = external_ingest.ingest_spec(
-                _spec(), apply=False, database=database, oie_run_id="r9"
-            )
-            self.assertEqual(dry["oie_staged"], 3)
-            self.assertEqual(self._rows(), [])  # dry run writes nothing
-            with patch(
-                "application.utils.comprehension.store.write_raw", return_value=3
-            ):
-                done = external_ingest.ingest_spec(
-                    _spec(), apply=True, database=database, oie_run_id="r9"
-                )
+
+        def fake_crawl(spec, max_pages=None, write_cache=True):
+            return CHUNKS, result
+
+        plain = external_ingest.ingest_spec(
+            _spec(), apply=False, database=database, crawl_fn=fake_crawl
+        )
+        self.assertNotIn("oie_staged", plain)
+        dry = external_ingest.ingest_spec(
+            _spec(),
+            apply=False,
+            database=database,
+            oie_run_id="r9",
+            crawl_fn=fake_crawl,
+        )
+        self.assertEqual(dry["oie_staged"], 3)
+        self.assertEqual(self._rows(), [])  # dry run writes nothing
+        done = external_ingest.ingest_spec(
+            _spec(),
+            apply=True,
+            database=database,
+            oie_run_id="r9",
+            crawl_fn=fake_crawl,
+            write_raw_fn=lambda *args, **kwargs: 3,
+        )
         self.assertEqual(done["oie_staged"], 3)
         self.assertEqual(len(self._rows()), 3)
 

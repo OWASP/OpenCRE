@@ -137,11 +137,11 @@ def stage_external(
     apply: bool,
     max_pages: int = 0,
     session: Any = None,
+    crawl_fn: Any = None,
 ) -> Dict[str, int]:
     """Crawl one approved site and stage it for the OIE pipeline (dry run by default)."""
-    chunks, result = web_source.crawl_chunks(
-        spec, max_pages=max_pages or None, write_cache=apply
-    )
+    crawl = crawl_fn or web_source.crawl_chunks
+    chunks, result = crawl(spec, max_pages=max_pages or None, write_cache=apply)
     titles = {page.url: page.title for page in result.pages}
     payloads = chunks_to_payloads(spec, chunks, titles, run_id=run_id)
     if session is None:

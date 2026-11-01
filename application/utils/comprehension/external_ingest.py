@@ -40,13 +40,14 @@ def ingest_spec(
     enrich_fn: Any = None,
     discover: bool = False,
     oie_run_id: str = "",
+    crawl_fn: Any = None,
+    write_raw_fn: Any = None,
 ) -> dict:
     """Crawl one site and (when ``apply``) write its chunks. Returns counts for the caller/scheduler."""
     from application.utils.comprehension import store
 
-    chunks, result = web_source.crawl_chunks(
-        spec, max_pages=max_pages or None, write_cache=apply
-    )
+    crawl = crawl_fn or web_source.crawl_chunks
+    chunks, result = crawl(spec, max_pages=max_pages or None, write_cache=apply)
     print(summarize(spec, chunks, result), flush=True)
     oie_staged = None
     if oie_run_id:
@@ -77,7 +78,8 @@ def ingest_spec(
         enriched = None
         if enrich and enrich_fn is not None:
             enriched = store.enrich_chunks(slug, chunks, enrich_fn, workers=16)
-        written = store.write_raw(
+        write_raw = write_raw_fn or store.write_raw
+        written = write_raw(
             database,
             slug,
             chunks,

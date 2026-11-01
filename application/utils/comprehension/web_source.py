@@ -768,6 +768,9 @@ class Crawler:
             if len(markdown) < MIN_PAGE_CHARS and js_enabled():
                 rendered = self._render(url, skip)
                 if rendered is None:
+                    # The static page still stands. A browser failure must not
+                    # hide "too-short", and it must not be cached as final.
+                    skip.append((url, "too-short"))
                     return links
                 html = rendered
                 reason = exclusion_reason(headers, html)
