@@ -56,18 +56,6 @@ def _env_optional_margin_gamma(name: str) -> Optional[float]:
     return float(stripped)
 
 
-def _env_bool(name: str, default: bool = False) -> bool:
-    raw = os.getenv(name)
-    if raw is None:
-        return default
-    return raw.strip().lower() in ("1", "true", "yes", "on")
-
-
-def _env_csv(name: str) -> tuple[str, ...]:
-    raw = os.getenv(name, "")
-    return tuple(part.strip() for part in raw.split(",") if part.strip())
-
-
 @dataclass(frozen=True)
 class LibrarianConfig:
     crossencoder_model: str
