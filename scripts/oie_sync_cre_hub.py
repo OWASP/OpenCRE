@@ -239,7 +239,7 @@ def _replace_cre_embeddings(conn: Any, rows: Sequence[Tuple[Any, ...]]) -> int:
             INSERT INTO embeddings (
               embedding_vec, doc_type, cre_id, node_id,
               embeddings_content, embeddings_url,
-              embedding_model_id, embedding_dim
+              embedding_model_id, embedding_dim, source_channel
             ) VALUES %s
         """
         # Cast vector literal in template
@@ -247,7 +247,7 @@ def _replace_cre_embeddings(conn: Any, rows: Sequence[Tuple[Any, ...]]) -> int:
             cur,
             sql,
             rows,
-            template="(%s::vector, %s, %s, %s, %s, %s, %s, %s)",
+            template="(%s::vector, %s, %s, %s, %s, %s, %s, %s, 'cre_graph')",
             page_size=200,
         )
     return len(rows)
