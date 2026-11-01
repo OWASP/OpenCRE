@@ -482,6 +482,7 @@ def _run_agent_sync_job(
     auto_concepts: bool,
 ) -> Dict[str, Any]:
     from application.utils.owasp_agent.concepts import auto_concepts_from_index
+    from application.utils.owasp_agent.embed_sync import embed_meta_if_enabled
     from application.utils.owasp_agent.index_store import IndexStore
     from application.utils.owasp_agent.sync import sync_all
 
@@ -491,6 +492,7 @@ def _run_agent_sync_job(
         skip_nest=skip_nest,
         skip_github=skip_github,
     )
+    embed_meta_if_enabled(store, report)
     concept_actions: List[Dict[str, str]] = []
     if auto_concepts and (report.nest_ok or report.github_ok):
         concept_actions = [

@@ -471,6 +471,32 @@ class TestAdminPanel(unittest.TestCase):
             self.assertIn("queued", stages)
             self.assertIn("agent_sync", stages)
 
+    def test_agent_sync_job_applies_the_meta_embedding_push(self) -> None:
+        from application.utils.owasp_agent import embed_sync
+
+        calls = []
+
+        def embed(store, report):
+            calls.append(report)
+            report.errors.append("meta_embeddings: embedding backend down")
+            return False
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch.dict(
+                os.environ, {"OWASP_AGENT_DB": os.path.join(tmp, "agent.sqlite")}
+            ), patch.object(embed_sync, "embed_meta_if_enabled", embed):
+                out = service._run_agent_sync_job(
+                    "run-embed-meta",
+                    skip_nest=True,
+                    skip_github=True,
+                    auto_concepts=False,
+                )
+
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(
+            out["sync"]["errors"], ["meta_embeddings: embedding backend down"]
+        )
+
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_agent_sync_requires_postgres(self) -> None:
         with patch.dict(
