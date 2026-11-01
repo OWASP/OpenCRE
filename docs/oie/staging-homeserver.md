@@ -5,7 +5,7 @@
 
 Internet entry: **Cloudflare Tunnel only** → Compose `web:5001` (Flask) and `mcp:5002` (Streamable HTTP MCP) on an internal Docker network (or host loopback published only to the tunnel container).
 
-Login: Google + `LOGIN_ALLOWED_EMAILS` (Spyros / Rob / Rock only).
+Login: Google + `LOGIN_ALLOWED_EMAILS` (a short allowlist of named testers).
 
 ---
 
@@ -51,7 +51,7 @@ Network: private bridge `opencre_staging_net`. **No** publishing Postgres/Redis 
 NO_LOGIN=0
 CRE_ENABLE_LOGIN=1
 LOGIN_ALLOWED_DOMAINS=*
-LOGIN_ALLOWED_EMAILS=spyros.gasteratos@owasp.org,rob.van.der.veer@owasp.org,rock.lambros@owasp.org
+LOGIN_ALLOWED_EMAILS=tester1@example.org,tester2@example.org,tester3@example.org
 # Google OAuth redirect: https://staging.opencre.org/rest/v1/auth/callback
 GOOGLE_CLIENT_ID=…
 GOOGLE_CLIENT_SECRET=…

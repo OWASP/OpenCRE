@@ -1781,6 +1781,18 @@ class CREFlow:
         return built
 
 
+def _callback_flow(state: Any) -> CREFlow:
+    return CREFlow.instance(state=state)
+
+
+def _verify_google_id_token(raw_id_token: str, audience: Optional[str]) -> Any:
+    return id_token.verify_oauth2_token(
+        id_token=raw_id_token,
+        request=google.auth.transport.requests.Request(),
+        audience=audience,
+    )
+
+
 @app.route("/rest/v1/auth/login")
 def auth_login():
     if os.environ.get("NO_LOGIN") == "1":
@@ -1828,7 +1840,7 @@ def auth_callback():
         # Back/refresh on the callback after a successful login: the Google code
         # is single use, so exchanging it again would fail with a 500.
         return redirect("/chatbot")
-    flow_instance = CREFlow.instance(state=session.get("state"))
+    flow_instance = _callback_flow(session.get("state"))
     try:
         flow_instance.flow.fetch_token(
             authorization_response=request.url.replace("http://", "https://"),
@@ -1844,11 +1856,8 @@ def auth_callback():
     if not session.get("state") or session.get("state") != request.args.get("state"):
         return redirect(url_for("web.auth_login"))  # State does not match!
     credentials = flow_instance.flow.credentials
-    token_request = google.auth.transport.requests.Request()
-    id_info = id_token.verify_oauth2_token(
-        id_token=credentials._id_token,
-        request=token_request,
-        audience=os.environ.get("GOOGLE_CLIENT_ID"),
+    id_info = _verify_google_id_token(
+        credentials._id_token, os.environ.get("GOOGLE_CLIENT_ID")
     )
     if id_info.get("email_verified") is not True:
         abort(401, description="Your Google account has no verified email.")
