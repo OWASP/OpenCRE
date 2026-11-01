@@ -31,7 +31,7 @@ import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Sequence
 
 from sqlalchemy import func
 
@@ -99,6 +99,8 @@ class JobContext:
     config: SchedulerConfig = field(default_factory=SchedulerConfig)
     overrides: Dict[str, StageFn] = field(default_factory=dict)
     ga_fn: Optional[Callable[[str], None]] = None
+    #: Embedding function for the opt-in agent meta push (default: the app's).
+    meta_embed_fn: Optional[Callable[[str], Sequence[float]]] = None
     #: Results one stage hands to a later one (e.g. the filer's graph change).
     state: Dict[str, Any] = field(default_factory=dict)
 
@@ -160,7 +162,7 @@ def stage_agent_sync(ctx: JobContext) -> StageResult:
         github_chapter_repos=full_names,
         github_project_repos=[],
     )
-    embed_meta_if_enabled(store, report)
+    embed_meta_if_enabled(store, report, embed_fn=ctx.meta_embed_fn)
 
     failed = {name for name in full_names if any(name in e for e in report.errors)}
     for repo in chapters.selected:
