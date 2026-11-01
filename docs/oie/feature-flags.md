@@ -40,6 +40,17 @@ YAML (historical grid cell): `scripts/oie_owasp_eval/experiments/stack_winners.y
 | `CRE_LIBRARIAN_FOCUS_QUERY` | off | Neutral / slight drag on grid mean |
 | `CRE_LIBRARIAN_CRE_TEXT_ENRICH` | off | Tied at top; mean slightly lower when on |
 
+## Scheduler flags (`OIE_*`)
+
+Read by `SchedulerConfig.from_env` in `application/utils/oie_scheduler/jobs.py`.
+Both are **off by default**; they spend GitHub/LLM quota or write to the shared
+`embeddings` table, so an operator opts in explicitly.
+
+| Variable | Default | Effect |
+|----------|---------|--------|
+| `OIE_HARVEST_EVENTS` | `0` | `1` / `true` / `yes` / `on`: the harvest stage also crawls `www-event-*` repositories (`kind: event` in the repos file). Off: event repos are skipped. |
+| `OIE_EMBED_FILED_NODES` | `0` | `1` / `true` / `yes` / `on`: after Module C auto-files links, the `embed_nodes` stage embeds the newly filed nodes that have no embedding (LLM provider call, writes `embeddings`). Off: the stage reports `skipped` and filed nodes stay un-embedded until enabled; the next run picks them up. |
+
 ## Headline scores (cold-start post-60, hub LLM gold)
 
 Cold-start run `20261002T103821Z` (`tmp/oie_owasp_eval/full_pipeline_cold_start_post60/`)
