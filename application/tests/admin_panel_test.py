@@ -6,11 +6,12 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Optional
+from typing import Any, Callable, Dict, List, Optional, Sequence
 from unittest.mock import patch
 
 from application import create_app, sqla
 from application.database import db
+from application.tests.env_override import environ_override
 from application.utils.admin_panel import config_catalog, service
 from application.utils import import_diff
 
@@ -535,28 +536,76 @@ class TestAdminPanel(unittest.TestCase):
             self.assertEqual(r.status_code, 400)
             self.assertIn("Postgres", r.get_json()["description"])
 
-    def test_agent_sync_job_applies_the_meta_embedding_push(self) -> None:
-        from application.utils.owasp_agent import embed_sync
-
-        calls = []
-
-        def embed(store, report):
-            calls.append(report)
-            report.errors.append("meta_embeddings: embedding backend down")
-            return False
+    def _agent_sync_job(
+        self, embed_fn: Callable[[str], Sequence[float]], embed_flag: Optional[str]
+    ) -> Dict[str, Any]:
+        from application.utils.owasp_agent.index_store import IndexStore
+        from application.utils.owasp_agent.models import Project
 
         with tempfile.TemporaryDirectory() as tmp:
-            with patch.dict(
-                os.environ, {"OWASP_AGENT_DB": os.path.join(tmp, "agent.sqlite")}
-            ), patch.object(embed_sync, "embed_meta_if_enabled", embed):
-                out = service._run_agent_sync_job(
+            agent_db = os.path.join(tmp, "agent.sqlite")
+            seed = IndexStore(agent_db)
+            seed.upsert_project(
+                Project(
+                    key="zap",
+                    name="ZAP",
+                    tags=["appsec"],
+                    source="nest",
+                    url="https://nest.example/zap",
+                )
+            )
+            seed.engine.dispose()
+            env = {"OWASP_AGENT_DB": agent_db}
+            unset = ["CRE_EMBED_EXPECTED_DIM"]
+            if embed_flag is None:
+                unset.append("OWASP_AGENT_EMBED_META")
+            else:
+                env["OWASP_AGENT_EMBED_META"] = embed_flag
+            with environ_override(env, unset=unset):
+                return service._run_agent_sync_job(
                     "run-embed-meta",
                     skip_nest=True,
                     skip_github=True,
                     auto_concepts=False,
+                    embed_fn=embed_fn,
                 )
 
-        self.assertEqual(len(calls), 1)
+    def _agent_meta_urls(self) -> List[str]:
+        return sorted(
+            row.embeddings_url
+            for row in sqla.session.query(db.Embeddings).filter_by(
+                source_channel="owasp_agent_meta"
+            )
+        )
+
+    def test_agent_sync_job_leaves_embeddings_alone_when_the_flag_is_off(
+        self,
+    ) -> None:
+        calls: List[str] = []
+
+        def embed(text: str) -> List[float]:
+            calls.append(text)
+            return [1.0, 0.5, 0.25]
+
+        out = self._agent_sync_job(embed, embed_flag=None)
+
+        self.assertEqual(calls, [])
+        self.assertEqual(self._agent_meta_urls(), [])
+        self.assertEqual(out["sync"]["errors"], [])
+
+    def test_agent_sync_job_embeds_the_index_when_the_flag_is_on(self) -> None:
+        out = self._agent_sync_job(lambda text: [1.0, 0.5, 0.25], embed_flag="1")
+
+        self.assertIn("owasp-agent://meta/project/zap/nest", self._agent_meta_urls())
+        self.assertEqual(out["sync"]["errors"], [])
+
+    def test_agent_sync_job_reports_a_failing_meta_embedding_push(self) -> None:
+        def embed(text: str) -> List[float]:
+            raise RuntimeError("embedding backend down")
+
+        out = self._agent_sync_job(embed, embed_flag="1")
+
+        self.assertEqual(self._agent_meta_urls(), [])
         self.assertEqual(
             out["sync"]["errors"], ["meta_embeddings: embedding backend down"]
         )

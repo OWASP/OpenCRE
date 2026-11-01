@@ -23,9 +23,9 @@ import importlib.util
 import io
 import os
 import unittest
-from unittest import mock
 from typing import Iterator, List, Optional
 
+from application.tests.env_override import set_environ_for_test
 from application.utils.librarian.schemas import CreCandidate, RetrievalAudit
 
 # The harness is a standalone script, not an importable package module.
@@ -301,9 +301,7 @@ class BoundaryGateTest(unittest.TestCase):
     def setUp(self) -> None:
         # The harness loads the shipped librarian config, which sets promoted defaults
         # (e.g. CRE_EMBED_EXPECTED_DIM) process-wide; keep them out of later tests.
-        patcher = mock.patch.dict(os.environ)
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        set_environ_for_test(self)
 
     def test_synthetic_row_satisfies_the_live_queue_schema(self) -> None:
         from application.utils.librarian.section_validator import (
