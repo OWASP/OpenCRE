@@ -182,6 +182,161 @@ class TestIncrementalEmbeddings(unittest.TestCase):
         self.assertEqual(fake_db.add_embedding.call_count, 1)
         embedding_text = fake_db.add_embedding.call_args[0][3]
         self.assertIn("ISO 27001", embedding_text)
+        self.assertNotIn("links=", embedding_text)
+        self.assertNotIn("doctype=<Credoctypes", embedding_text)
+        self.assertIn("5.10", embedding_text)
+
+    def test_generate_embeddings_github_url_fetches_raw_not_html(self):
+        fake_db = _FakeDB()
+        node = cre_defs.Standard(
+            name="OWASP Cheat Sheets",
+            section="Secrets Management Cheat Sheet",
+            sectionID="",
+            subsection="",
+            hyperlink=(
+                "https://github.com/OWASP/CheatSheetSeries/tree/master/"
+                "cheatsheets/Secrets_Management_Cheat_Sheet.md"
+            ),
+            version="",
+        )
+        fake_db._nodes_by_id = {"node-cs": node}
+        md = (
+            "# Secrets Management Cheat Sheet\n\nKeep secrets out of git. "
+            "Verify that the secret is still active before trusting it."
+        ) * 3
+
+        emb = prompt_client.in_memory_embeddings.__new__(
+            prompt_client.in_memory_embeddings
+        )
+        emb.ai_client = Mock(spec=["get_max_batch_size", "get_text_embeddings"])
+        emb.ai_client.get_max_batch_size.return_value = 16
+        emb.ai_client.get_text_embeddings.return_value = [[0.1, 0.2]]
+        emb.get_content = Mock(return_value=md)
+        emb.clean_content = Mock(side_effect=lambda c: c)
+
+        emb.generate_embeddings(fake_db, ["node-cs"])
+        fetched = emb.get_content.call_args[0][0]
+        self.assertEqual(
+            fetched,
+            "https://raw.githubusercontent.com/OWASP/CheatSheetSeries/master/"
+            "cheatsheets/Secrets_Management_Cheat_Sheet.md",
+        )
+        stored = fake_db.add_embedding.call_args[0][3]
+        self.assertIn("Keep secrets out of git", stored)
+        self.assertNotIn("navigation menu", stored.lower())
+
+    def test_generate_embeddings_salvages_asvs_verify_that_from_github_chrome(self):
+        """Librarian embedding_quality: store the buried requirement, not GitHub nav."""
+        fake_db = _FakeDB()
+        node = cre_defs.Standard(
+            name="ASVS",
+            section="Password Security",
+            sectionID="V2.1.1",
+            subsection="",
+            hyperlink="https://github.com/OWASP/ASVS/blob/master/V2.md",
+            version="",
+        )
+        fake_db._nodes_by_id = {"node-asvs": node}
+
+        chrome = (
+            "skip to content navigation menu platform solutions resources "
+            "open source enterprise pricing sign in "
+        ) * 4
+        requirement = (
+            "Verify that passwords are at least 12 characters in length and "
+            "that the application rejects common passwords from a dictionary."
+        )
+
+        emb = prompt_client.in_memory_embeddings.__new__(
+            prompt_client.in_memory_embeddings
+        )
+        emb.ai_client = Mock(spec=["get_max_batch_size", "get_text_embeddings"])
+        emb.ai_client.get_max_batch_size.return_value = 16
+        emb.ai_client.get_text_embeddings.return_value = [[0.1, 0.2]]
+        emb.get_content = Mock(return_value=chrome + requirement)
+        emb.clean_content = Mock(side_effect=lambda c: c)
+
+        emb.generate_embeddings(fake_db, ["node-asvs"])
+        self.assertEqual(fake_db.add_embedding.call_count, 1)
+        stored = fake_db.add_embedding.call_args[0][3]
+        self.assertTrue(stored.lower().startswith("verify that"))
+        self.assertNotIn("skip to content", stored.lower())
+        self.assertIn("12 characters", stored)
+
+    def test_generate_embeddings_refuses_unusable_chrome_uses_node_fields(self):
+        """Frame-buster / nav-only blobs must not be paid-embedded."""
+        fake_db = _FakeDB()
+        node = cre_defs.Standard(
+            name="NIST 800-53 v5",
+            section="Account Management",
+            sectionID="AC-2",
+            subsection="",
+            hyperlink="https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final",
+            version="",
+        )
+        fake_db._nodes_by_id = {"node-nist": node}
+
+        emb = prompt_client.in_memory_embeddings.__new__(
+            prompt_client.in_memory_embeddings
+        )
+        emb.ai_client = Mock(spec=["get_max_batch_size", "get_text_embeddings"])
+        emb.ai_client.get_max_batch_size.return_value = 16
+        emb.ai_client.get_text_embeddings.return_value = [[0.1, 0.2]]
+        emb.get_content = Mock(
+            return_value="you are viewing this page in an unauthorized frame window"
+        )
+        emb.clean_content = Mock(side_effect=lambda c: c)
+
+        emb.generate_embeddings(fake_db, ["node-nist"])
+        self.assertEqual(fake_db.add_embedding.call_count, 1)
+        stored = fake_db.add_embedding.call_args[0][3]
+        self.assertNotIn("unauthorized frame window", stored.lower())
+        self.assertIn("NIST 800-53", stored)
+        self.assertIn("AC-2", stored)
+        self.assertNotIn("links=", stored)
+        self.assertNotIn("doctype=<Credoctypes", stored)
+        self.assertEqual(emb.ai_client.get_text_embeddings.call_count, 1)
+        provider_texts = emb.ai_client.get_text_embeddings.call_args[0][0]
+        for text in provider_texts:
+            self.assertNotIn("unauthorized frame window", text.lower())
+
+    def test_generate_embeddings_still_embeds_real_prose(self):
+        """Quality gate must not strip a real requirement page."""
+        fake_db = _FakeDB()
+        node = cre_defs.Standard(
+            name="ISO 27001",
+            section="Access control",
+            sectionID="5.16",
+            subsection="",
+            hyperlink="https://example.com/iso-access-control",
+            version="",
+        )
+        fake_db._nodes_by_id = {"node-prose": node}
+        prose = (
+            "The organization manages information system accounts, including "
+            "establishing, activating, modifying, disabling, and removing accounts. "
+        ) * 8
+
+        emb = prompt_client.in_memory_embeddings.__new__(
+            prompt_client.in_memory_embeddings
+        )
+        emb.ai_client = Mock(spec=["get_max_batch_size", "get_text_embeddings"])
+        emb.ai_client.get_max_batch_size.return_value = 16
+        emb.ai_client.get_text_embeddings.return_value = [[0.1, 0.2]]
+        emb.get_content = Mock(return_value=prose)
+        emb.clean_content = Mock(side_effect=lambda c: c)
+
+        emb.generate_embeddings(fake_db, ["node-prose"])
+        self.assertEqual(fake_db.add_embedding.call_count, 1)
+        stored = fake_db.add_embedding.call_args[0][3]
+        self.assertIn("manages information system accounts", stored)
+        self.assertEqual(emb.ai_client.get_text_embeddings.call_count, 1)
+        provider_texts = emb.ai_client.get_text_embeddings.call_args[0][0]
+        self.assertTrue(
+            any(
+                "manages information system accounts" in text for text in provider_texts
+            )
+        )
 
     def test_generate_embeddings_recalculates_when_node_content_changes(self):
         fake_db = _FakeDB()
@@ -204,7 +359,7 @@ class TestIncrementalEmbeddings(unittest.TestCase):
         fake_db._nodes_by_id = {"node-1": current_node}
         fake_db._emb_by_id["node-1"] = SimpleNamespace(
             embeddings_content=prompt_client.normalize_embeddings_content(
-                old_node.__repr__()
+                prompt_client._embedding_text_from_node_resource_fields(old_node)
             )
         )
 

@@ -68,6 +68,8 @@ class ReasonCode(str, Enum):
     no_candidates = "NO_CANDIDATES"
     adversarial_flag = "ADVERSARIAL_FLAG"
     update_ambiguous = "UPDATE_AMBIGUOUS"
+    # Prior cage empty: no existing CRE fits this problem class — propose a new one.
+    cre_gap = "CRE_GAP"
 
 
 # ---------- RFC sub-models ----------
