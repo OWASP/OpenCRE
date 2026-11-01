@@ -212,6 +212,7 @@ class ExpansionStagesTest(SchedulerTestBase):
 
     def _expansion(self, now=NOW, **cfg):
         cfg.setdefault("filing_enabled", True)
+        cfg.setdefault("embed_filed_nodes", True)
         overrides = {
             "noise_filter": _ok("noise_filter"),
             "librarian": _ok("librarian"),
@@ -303,6 +304,25 @@ class ExpansionStagesTest(SchedulerTestBase):
         self.assertEqual(len(self.embed_calls), 1)
         self.assertEqual(len(self.embed_calls[0]), 1)
 
+    def test_embedding_is_off_unless_opted_in(self) -> None:
+        out = run_job(
+            self.collection,
+            "cre_expansion",
+            cache_file="db-url",
+            now=NOW,
+            config=SchedulerConfig(filing_enabled=True),
+            overrides={
+                "noise_filter": _ok("noise_filter"),
+                "librarian": _ok("librarian"),
+            },
+            ga_fn=self.ga_calls.append,
+            embed_fn=self._embed,
+        )
+        by_name = {s.name: s for s in out.stages}
+        self.assertEqual(by_name["file_graph"].summary["links_added"], 1)
+        self.assertEqual(by_name["embed_nodes"].status, "skipped")
+        self.assertEqual(self.embed_calls, [])
+
     def test_embedding_can_be_switched_off(self) -> None:
         out = self._expansion(embed_filed_nodes=False)
         by_name = {s.name: s for s in out.stages}
@@ -320,7 +340,7 @@ class ExpansionStagesTest(SchedulerTestBase):
             "cre_expansion",
             cache_file="db-url",
             now=NOW,
-            config=SchedulerConfig(filing_enabled=True),
+            config=SchedulerConfig(filing_enabled=True, embed_filed_nodes=True),
             overrides={
                 "noise_filter": _ok("noise_filter"),
                 "librarian": _ok("librarian"),
@@ -480,8 +500,8 @@ repositories:
         self._event_repos()
         self.assertIn("owasp-e1", self._harvested(harvest_events=True))
 
-    def _agent_sync(self, agent_db):
-        from application.utils.owasp_agent import index_store
+    def _agent_sync(self, agent_db, embed=None):
+        from application.utils.owasp_agent import embed_sync, index_store
         from application.utils.owasp_agent import sync as agent_sync
 
         targets = []
@@ -500,6 +520,8 @@ repositories:
         report = agent_sync.SyncReport(nest_ok=True, github_ok=True)
         with patch.object(index_store, "IndexStore", RecordingStore), patch.object(
             agent_sync, "sync_all", lambda **_: report
+        ), patch.object(
+            embed_sync, "embed_meta_if_enabled", embed or (lambda store, rep: False)
         ):
             return jobs.stage_agent_sync(ctx), targets
 
@@ -516,6 +538,23 @@ repositories:
         result, targets = self._agent_sync(None)
         self.assertEqual(targets, [str(sqla.session.get_bind().url)])
         self.assertEqual(result.status, "ok")
+
+    def test_agent_sync_applies_the_meta_embedding_push_after_sync_all(self) -> None:
+        calls = []
+
+        def embed(store, report):
+            calls.append((store, report))
+            report.errors.append("meta_embeddings: embedding backend down")
+            return False
+
+        result, targets = self._agent_sync(None, embed=embed)
+
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(result.status, "degraded")
+        self.assertIn("meta_embeddings: embedding backend down", result.detail)
+        self.assertEqual(
+            result.summary["errors"], ["meta_embeddings: embedding backend down"]
+        )
 
     def test_harvest_errors_mark_the_stage_degraded(self) -> None:
         def fake(*, repo_cfg, **_):
@@ -540,11 +579,15 @@ class SchedulerConfigEnvTest(unittest.TestCase):
             with patch.dict("os.environ", {"OIE_HARVEST_EVENTS": on}):
                 self.assertTrue(SchedulerConfig.from_env().harvest_events)
 
-    def test_embedding_filed_nodes_defaults_on_and_has_a_kill_switch(self) -> None:
+    def test_embedding_filed_nodes_defaults_off_and_is_opt_in(self) -> None:
+        self.assertFalse(SchedulerConfig().embed_filed_nodes)
         with patch.dict("os.environ", {}, clear=False) as env:
             env.pop("OIE_EMBED_FILED_NODES", None)
-            self.assertTrue(SchedulerConfig.from_env().embed_filed_nodes)
-        for off in ("0", "false", "OFF", "no"):
+            self.assertFalse(SchedulerConfig.from_env().embed_filed_nodes)
+        for on in ("1", "true", "ON", "yes"):
+            with patch.dict("os.environ", {"OIE_EMBED_FILED_NODES": on}):
+                self.assertTrue(SchedulerConfig.from_env().embed_filed_nodes)
+        for off in ("0", "false", "OFF", "no", ""):
             with patch.dict("os.environ", {"OIE_EMBED_FILED_NODES": off}):
                 self.assertFalse(SchedulerConfig.from_env().embed_filed_nodes)
 
