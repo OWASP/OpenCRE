@@ -712,6 +712,28 @@ class DecisionQueueItem(BaseModel):  # type: ignore
     )
 
 
+class DecisionReview(BaseModel):  # type: ignore
+    """Append-only audit of human review actions on OIE decisions and filed links.
+
+    One row per action: ``approve`` / ``reject`` / ``repoint`` on a
+    ``decision_queue`` row, or ``repoint_filed`` on a link the filer already
+    wrote. ``payload`` keeps what the Librarian proposed and what the reviewer
+    chose, so any action can be explained and reverted later.
+    """
+
+    __tablename__ = "decision_review"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    # decision_queue.id, or node.id for ``repoint_filed``
+    target_id = sqla.Column(sqla.String, nullable=False, index=True)
+    action = sqla.Column(sqla.String, nullable=False)
+    reviewer = sqla.Column(sqla.String, nullable=True)
+    note = sqla.Column(sqla.Text, nullable=True)
+    payload = sqla.Column(sqla.JSON().with_variant(JSONB, "postgresql"), nullable=False)
+    created_at = sqla.Column(
+        sqla.DateTime, nullable=False, server_default=sqla.func.now()
+    )
+
+
 class OieRun(BaseModel):  # type: ignore
     """One scheduled OIE job run: the audit row behind ``/admin/oie``.
 
