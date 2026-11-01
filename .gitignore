@@ -49,8 +49,6 @@ v/
 .cursor/*
 !.cursor/rules/
 !.cursor/rules/**
-!.cursor/skills/
-!.cursor/skills/**
 .claude/
 
 ### Frontend 
@@ -69,7 +67,6 @@ standards_cache.sqlite
 ### Docs
 *.md
 !AGENTS.md
-!.cursor/skills/**/*.md
 !docs/faq.md
 !docs/api/mcp.md
 !docs/Mid_eval_blog_gsoc2026/module_B_mideval_blog.md

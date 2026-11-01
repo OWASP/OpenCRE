@@ -1494,10 +1494,14 @@ def _project_fallback_blurb(hit: Dict[str, Any]) -> str:
     key = _norm(str(hit.get("key") or "").replace("-", " "))
     pname = _norm(str(hit.get("name") or ""))
     for cand in (str(hit.get("key") or ""), key, pname):
+        if not cand:
+            continue
         blurb = _PROJECT_FALLBACK_BLURBS.get(cand)
         if blurb:
             return blurb
         compact = cand.replace(" ", "")
+        if len(compact) < 4:
+            continue
         for k, v in _PROJECT_FALLBACK_BLURBS.items():
             if k.replace(" ", "") in compact or compact in k.replace(" ", ""):
                 return v
