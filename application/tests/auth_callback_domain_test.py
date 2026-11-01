@@ -9,10 +9,26 @@ A subdomain of an allowed domain (``sub.owasp.org``) is allowed, the same rule
 import os
 import unittest
 from typing import Any, Dict, Optional
-from unittest.mock import patch
 
 from application import create_app, sqla  # type: ignore
 from application.database import db
+from application.tests.env_override import environ_override
+from application.web import web_main
+
+
+class _FakeGoogleFlow:
+    """Stands in for the Google OAuth flow: the code exchange always succeeds."""
+
+    def __init__(self) -> None:
+        self.credentials = type("Credentials", (), {"_id_token": "tok"})()
+
+    def fetch_token(self, **kwargs: Any) -> None:
+        pass
+
+
+class _FakeCREFlow:
+    def __init__(self) -> None:
+        self.flow = _FakeGoogleFlow()
 
 
 class TestAuthCallbackDomain(unittest.TestCase):
@@ -24,6 +40,16 @@ class TestAuthCallbackDomain(unittest.TestCase):
         self.app_context = self.app.app_context()
         self.app_context.push()
         sqla.create_all()
+        self.id_info: Dict[str, Any] = {}
+        self.addCleanup(setattr, web_main, "_callback_flow", web_main._callback_flow)
+        self.addCleanup(
+            setattr,
+            web_main,
+            "_verify_google_id_token",
+            web_main._verify_google_id_token,
+        )
+        web_main._callback_flow = lambda state: _FakeCREFlow()
+        web_main._verify_google_id_token = lambda raw, audience: self.id_info
 
     def tearDown(self) -> None:
         sqla.session.remove()
@@ -45,27 +71,25 @@ class TestAuthCallbackDomain(unittest.TestCase):
         id_info: Dict[str, Any] = {"sub": "sub-1", "name": "N", "email": email}
         if verified is not None:
             id_info["email_verified"] = verified
+        self.id_info = id_info
         environ = {
             "CRE_ENABLE_LOGIN": "1",
             "INSECURE_REQUESTS": "1",
             "LOGIN_ALLOWED_DOMAINS": "owasp.org",
         }
         environ.update(env or {})
-        with patch("application.web.web_main.id_token") as id_token_mock, patch(
-            "application.web.web_main.CREFlow"
-        ) as flow:
-            id_token_mock.verify_oauth2_token.return_value = id_info
-            flow.instance.return_value.flow.credentials._id_token = "tok"
-            with patch.dict(os.environ, environ):
-                for key in ("ADMIN_EMAILS", "LOGIN_ALLOWED_EMAILS"):
-                    if key not in (env or {}):
-                        os.environ.pop(key, None)
-                with self.app.test_client() as client:
-                    with client.session_transaction() as sess:
-                        sess["state"] = "xyz"
-                    resp = client.get("/rest/v1/auth/callback?state=xyz")
-                    with client.session_transaction() as sess:
-                        signed_in = "user_id" in sess
+        unset = [
+            key
+            for key in ("ADMIN_EMAILS", "LOGIN_ALLOWED_EMAILS")
+            if key not in (env or {})
+        ]
+        with environ_override(environ, unset=unset):
+            with self.app.test_client() as client:
+                with client.session_transaction() as sess:
+                    sess["state"] = "xyz"
+                resp = client.get("/rest/v1/auth/callback?state=xyz")
+                with client.session_transaction() as sess:
+                    signed_in = "user_id" in sess
         return resp, signed_in
 
     def test_exact_allowed_domain_signs_in(self) -> None:

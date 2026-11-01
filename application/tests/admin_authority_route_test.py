@@ -1,14 +1,13 @@
-import os
 import unittest
-from unittest import mock
 
 from application import create_app, sqla
+from application.tests.env_override import set_environ_for_test
 
 
 class AdminAuthorityRouteTest(unittest.TestCase):
     def setUp(self) -> None:
-        env = mock.patch.dict(
-            os.environ,
+        set_environ_for_test(
+            self,
             {
                 "NO_LOGIN": "1",
                 "CRE_ALLOW_IMPORT": "1",
@@ -16,8 +15,6 @@ class AdminAuthorityRouteTest(unittest.TestCase):
                 "INSECURE_REQUESTS": "1",
             },
         )
-        env.start()
-        self.addCleanup(env.stop)
         self.app = create_app(mode="test")
         self.ctx = self.app.app_context()
         self.ctx.push()

@@ -1,8 +1,8 @@
-import os
 import unittest
 from typing import Any
 from unittest import mock
 
+from application.tests.env_override import environ_override
 from application.utils import roles
 
 
@@ -14,7 +14,7 @@ def env(**kw: str) -> Any:
         "FLASK_CONFIG": "",
     }
     base.update(kw)
-    return mock.patch.dict(os.environ, base)
+    return environ_override(base)
 
 
 class RolesTest(unittest.TestCase):
