@@ -211,6 +211,8 @@ def _owasp_meta_facts(
         "intent": intent,
         "message": resp.get("response"),
         "items": owasp_meta.get("data"),
+        # The source passages the answer used, so a calling agent can check it.
+        "evidence": (owasp_meta.get("data") or {}).get("evidence") or [],
         "owasp_agent": owasp_meta,
         "citations": list(owasp_meta.get("citations") or []),
         "standards_filter": None,

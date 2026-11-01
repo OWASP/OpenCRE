@@ -90,6 +90,15 @@ def _serve_http() -> int:
     ctx.push()
     try:
         asgi = create_http_app()
+        import threading
+
+        from application.utils.comprehension.shared import warm_up
+
+        def _warm() -> None:
+            with flask_app.app_context():
+                warm_up()
+
+        threading.Thread(target=_warm, name="opencre-warmup", daemon=True).start()
         _say(f"OpenCRE remote MCP (Streamable HTTP) on http://{host}:{port}/mcp")
         # One worker: sessionful Streamable HTTP clients (sticky if scaled later).
         uvicorn.run(asgi, host=host, port=port, workers=1, log_level="info")
