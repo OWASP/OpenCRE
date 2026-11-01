@@ -350,8 +350,8 @@ repositories:
         self.assertEqual(harvest.summary["deferred"], 1)
         self.assertEqual(harvest.summary["repository_ids"], ["owasp-p1", "owasp-p2"])
 
-    def _agent_sync(self, agent_db):
-        from application.utils.owasp_agent import index_store
+    def _agent_sync(self, agent_db, embed=None):
+        from application.utils.owasp_agent import embed_sync, index_store
         from application.utils.owasp_agent import sync as agent_sync
 
         targets = []
@@ -370,6 +370,8 @@ repositories:
         report = agent_sync.SyncReport(nest_ok=True, github_ok=True)
         with patch.object(index_store, "IndexStore", RecordingStore), patch.object(
             agent_sync, "sync_all", lambda **_: report
+        ), patch.object(
+            embed_sync, "embed_meta_if_enabled", embed or (lambda store, rep: False)
         ):
             return jobs.stage_agent_sync(ctx), targets
 
@@ -386,6 +388,23 @@ repositories:
         result, targets = self._agent_sync(None)
         self.assertEqual(targets, [str(sqla.session.get_bind().url)])
         self.assertEqual(result.status, "ok")
+
+    def test_agent_sync_applies_the_meta_embedding_push_after_sync_all(self) -> None:
+        calls = []
+
+        def embed(store, report):
+            calls.append((store, report))
+            report.errors.append("meta_embeddings: embedding backend down")
+            return False
+
+        result, targets = self._agent_sync(None, embed=embed)
+
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(result.status, "degraded")
+        self.assertIn("meta_embeddings: embedding backend down", result.detail)
+        self.assertEqual(
+            result.summary["errors"], ["meta_embeddings: embedding backend down"]
+        )
 
     def test_harvest_errors_mark_the_stage_degraded(self) -> None:
         def fake(*, repo_cfg, **_):

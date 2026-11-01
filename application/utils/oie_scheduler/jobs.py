@@ -132,6 +132,7 @@ def stage_agent_sync(ctx: JobContext) -> StageResult:
     from application.utils.harvester.checkpoint_store import CheckpointStore
     from application.utils.harvester.models import RepositoryCheckpoint
     from application.utils.harvester.selection import select_repositories
+    from application.utils.owasp_agent.embed_sync import embed_meta_if_enabled
     from application.utils.owasp_agent.index_store import IndexStore
     from application.utils.owasp_agent.sync import sync_all
 
@@ -159,6 +160,7 @@ def stage_agent_sync(ctx: JobContext) -> StageResult:
         github_chapter_repos=full_names,
         github_project_repos=[],
     )
+    embed_meta_if_enabled(store, report)
 
     failed = {name for name in full_names if any(name in e for e in report.errors)}
     for repo in chapters.selected:
