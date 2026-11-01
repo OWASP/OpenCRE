@@ -24,6 +24,7 @@ from application.utils.postgres_url import (
     sqlalchemy_postgres_url,
 )
 from application.utils.owasp_agent.models import (
+    clean_leaders,
     BoardCandidate,
     BoardMember,
     Chapter,
@@ -183,6 +184,7 @@ class IndexStore:
             conn.execute(stmt)
 
     def upsert_chapter(self, chapter: Chapter) -> None:
+        chapter.leaders = clean_leaders(chapter.leaders)
         self.upsert_entity(
             "chapter", chapter.key, chapter.name, chapter.source, chapter.to_dict()
         )
