@@ -174,17 +174,36 @@ class RawDocsTest(unittest.TestCase):
 
 
 class ExtrasTest(unittest.TestCase):
-    def test_flags_default_off_and_toggle(self):
+    def test_flags_default_off_except_topprojects_and_toggle(self):
         import os
+        from unittest import mock
 
         from application.utils.comprehension import flags
 
-        self.assertEqual(flags.active(), [])
-        os.environ["OWASP_CX_HYBRID"] = "1"
-        try:
-            self.assertEqual(flags.active(), ["HYBRID"])
-        finally:
-            del os.environ["OWASP_CX_HYBRID"]
+        with mock.patch.dict(os.environ, {}, clear=False):
+            for k in [k for k in os.environ if k.startswith("OWASP_CX_")]:
+                del os.environ[k]
+            # only TOPPROJECTS is on by default; everything else needs its env var
+            self.assertEqual(flags.active(), ["TOPPROJECTS"])
+            self.assertTrue(flags.on("TOPPROJECTS"))
+            self.assertFalse(flags.on("HYBRID"))
+            os.environ["OWASP_CX_HYBRID"] = "1"
+            self.assertEqual(flags.active(), ["HYBRID", "TOPPROJECTS"])
+
+    def test_topprojects_can_still_be_switched_off(self):
+        import os
+        from unittest import mock
+
+        from application.utils.comprehension import flags
+
+        for off in ("0", "false", "no", "off"):
+            with mock.patch.dict(os.environ, {"OWASP_CX_TOPPROJECTS": off}):
+                self.assertFalse(flags.on("TOPPROJECTS"), off)
+        for on in ("1", "true", "on"):
+            with mock.patch.dict(os.environ, {"OWASP_CX_TOPPROJECTS": on}):
+                self.assertTrue(flags.on("TOPPROJECTS"), on)
+        with mock.patch.dict(os.environ, {"OWASP_CX_TOPPROJECTS": ""}):
+            self.assertTrue(flags.on("TOPPROJECTS"))  # empty = not set = default
 
     def test_keywords_drop_stopwords(self):
         from application.utils.comprehension.extras import keywords
