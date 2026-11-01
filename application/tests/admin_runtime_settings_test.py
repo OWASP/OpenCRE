@@ -4,17 +4,15 @@ from __future__ import annotations
 
 import os
 import unittest
-from unittest import mock
 
 from application import create_app, sqla
+from application.tests.env_override import set_environ_for_test
 from application.utils.admin_panel import runtime_settings
 
 
 class TestAdminRuntimeSettings(unittest.TestCase):
     def setUp(self) -> None:
-        patcher = mock.patch.dict(os.environ, {"NO_LOAD_GRAPH_DB": "1"})
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        set_environ_for_test(self, {"NO_LOAD_GRAPH_DB": "1"})
         self.app = create_app(mode="test")
         self.ctx = self.app.app_context()
         self.ctx.push()
