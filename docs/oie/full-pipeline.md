@@ -88,3 +88,18 @@ When extract yields segments, each chunk is prefixed with `Section-ID: V…`
 (B2-style) and A.2 merge is skipped. Narrative cheat sheets usually no-op
 under `auto`. All repos in `repos.yaml` set `requirement_extract: auto`
 explicitly; code defaults to `auto` when the field is missing.
+
+## Websites use the same pipeline as repos
+
+A crawled website is just another Module A source. `application/utils/comprehension/oie_bridge.py` turns the crawler's chunks into `harvest_input` rows with `source.type = "url"` (page URL as locator), then everything is shared: Module B filters, Module C maps to CREs, `decision_queue` holds the verdicts, and the filer or a reviewer writes the graph.
+
+```bash
+# 1. crawl an approved site; also stage its pages for the OIE run (dry run unless --apply)
+python scripts/ingest_external.py --id slsa --apply --oie-run-id slsa-1
+# 2. B -> C (-> C.1 if filing is on) over the staged rows
+python scripts/run_oie_pipeline.py --skip-a --run_id slsa-1
+```
+
+- The raw chunks for the agent index are written as before; staging is an additional destination.
+- Module B decides what is security knowledge. Event, talk and sponsor pages come back `NOISE` and stop there; they remain searchable through the agent index. No classifier change is needed.
+- Repos file under `OWASP/<repo>`, websites under the site host (a reviewer can override the name). One filer, one tag set: every node gets `provenance:myopencre`, auto-filed ones `oie-auto-filed`, reviewed ones `oie-reviewed`. Links have no tag column; their provenance is the node's tag plus the link type (`Automatically linked to` vs reviewer-set `Linked To`).

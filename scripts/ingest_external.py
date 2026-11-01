@@ -53,6 +53,13 @@ def main() -> int:
         help="LLM context sentence and likely questions per chunk",
     )
     ap.add_argument(
+        "--oie-run-id",
+        default="",
+        help="also stage the crawled pages as harvest records for this OIE run id; then "
+        "`scripts/run_oie_pipeline.py --skip-a --run_id <id>` maps them to CREs "
+        "(dry run unless --apply)",
+    )
+    ap.add_argument(
         "--discover",
         action="store_true",
         help="dry run: print the suggestions the crawl's external links would add "
@@ -125,6 +132,7 @@ def main() -> int:
                     embed=embed,
                     enrich_fn=enrich_fn,
                     discover=a.discover,
+                    oie_run_id=a.oie_run_id,
                 )
             except Exception as exc:  # noqa: BLE001
                 print(f"{spec.id}: FAILED {str(exc)[:200]}", flush=True)

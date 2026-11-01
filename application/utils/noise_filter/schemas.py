@@ -53,8 +53,22 @@ class RssSource(BaseModel):
     post_published_at: Optional[str] = None
 
 
+class UrlSource(BaseModel):
+    """url source -- a page of a website that is not a feed (crawled, one record per chunk).
+
+    ``url`` is the page address; it is also the locator identity. Module C reads
+    it as ``SourceType.url``.
+    """
+
+    model_config = ConfigDict(extra="ignore", str_strip_whitespace=True)
+
+    type: Literal["url"]
+    url: str = Field(min_length=1)
+    committed_at: Optional[str] = None
+
+
 Source = Annotated[
-    Union[GithubSource, RssSource],
+    Union[GithubSource, RssSource, UrlSource],
     Field(discriminator="type"),
 ]
 
