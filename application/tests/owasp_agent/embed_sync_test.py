@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import tempfile
 import unittest
-from typing import List
+from typing import Any, List
 from unittest.mock import patch
 
 import sqlalchemy as sa
@@ -64,12 +64,12 @@ class TestEmbedMetaIfEnabled(unittest.TestCase):
         sqla.drop_all()
         self.app_context.pop()
 
-    def _agent_rows(self) -> list:
-        return (
+    def _agent_rows(self) -> List[Any]:
+        return list(
             sqla.session.query(db.Embeddings).filter_by(source_channel=CHANNEL_AGENT)
-        ).all()
+        )
 
-    def _sync_log(self) -> list:
+    def _sync_log(self) -> List[Any]:
         with self.store.engine.connect() as conn:
             return list(
                 conn.execute(
@@ -191,9 +191,11 @@ class TestEmbedDimensionGuard(unittest.TestCase):
         sqla.session.commit()
 
     def _agent_count(self) -> int:
-        return (
-            sqla.session.query(db.Embeddings).filter_by(source_channel=CHANNEL_AGENT)
-        ).count()
+        return int(
+            sqla.session.query(db.Embeddings)
+            .filter_by(source_channel=CHANNEL_AGENT)
+            .count()
+        )
 
     def test_refuses_vector_whose_length_differs_from_existing_rows(self) -> None:
         self._add_cre_graph_row(dim=4)

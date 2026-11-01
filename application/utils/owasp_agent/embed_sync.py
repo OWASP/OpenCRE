@@ -8,7 +8,7 @@ invoke :func:`embed_meta_if_enabled` after ``sync_all``.
 from __future__ import annotations
 
 import os
-from typing import Any, Callable, List, Optional, Sequence
+from typing import Any, Callable, Optional, Sequence
 
 from application.utils.owasp_agent.index_store import IndexStore
 from application.utils.owasp_agent.meta_embeddings import sync_meta_embeddings
@@ -49,8 +49,10 @@ def embed_meta_if_enabled(
 
             handler = prompt_client.PromptHandler(database, load_all_embeddings=False)
 
-            def embed_fn(text: str) -> List[float]:
-                return handler.get_text_embeddings(text)
+            def embed_fn(text: str) -> Any:
+                return handler.get_text_embeddings(  # type: ignore[no-untyped-call]
+                    text
+                )
 
         stats = sync_meta_embeddings(store, database, embed_fn)
         store.log_sync("meta_embeddings", "ok", str(stats))
