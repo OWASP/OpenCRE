@@ -33,7 +33,7 @@ In Claude Code, run `/mcp`, pick **opencre** and choose **Authenticate** if it s
 
 **Good to know**
 - Answers can take **5 to 30 seconds**.
-- Each account is limited to **5 questions per minute, 40 per hour and 150 per day**, shared between the chatbot and MCP. Each account also has a **daily usage budget** that resets at 00:00 UTC. If you hit either, the answer says so and when to retry. That's expected, not a bug, but do tell us if you hit it during normal use.
+- Each account is limited to **5 questions per minute, 40 per hour and 150 per day**, shared between the chatbot and MCP. Each account also has a **daily usage budget** (default $1.00 of model spend, more for admins) that resets at 00:00 UTC. If you hit either, the answer says so and when to retry. That's expected, not a bug, but do tell us if you hit it during normal use.
 - To rate an MCP answer, ask your assistant to call the `rate_answer` tool with the `answer_id` from the answer, and a thumbs up or down plus an optional short reason.
 
 ## What's covered today
@@ -87,7 +87,7 @@ These are questions we don't cover well yet. We'd love to see how they fail:
 Pick whichever is easiest:
 
 1. **👍 / 👎 in the chatbot** after each answer (or the `rate_answer` tool over MCP). This is the quickest way, and we read all of it.
-2. **Email your results** to **spyros@sgaster.me**. Free-form is fine: questions asked, what you got, what you expected, screenshots. For MCP issues, mention your client and version.
+2. **Email your results** to the address in your invitation. Free-form is fine: questions asked, what you got, what you expected, screenshots. For MCP issues, mention your client and version.
 
 For bugs (sign-in failures, errors, hangs), include the time (with timezone), the surface (chatbot or MCP), and the exact error text if there is one.
 

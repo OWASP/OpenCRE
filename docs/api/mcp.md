@@ -126,7 +126,7 @@ API keys keep working as Bearer tokens.
 | Variable | Meaning | Default |
 |----------|---------|---------|
 | `OPENCRE_MCP_OAUTH` | Turn Google sign-in on | off |
-| `OPENCRE_MCP_PUBLIC_URL` | Public origin (issuer) | `https://staging.opencre.org` |
+| `OPENCRE_MCP_PUBLIC_URL` | Public origin (issuer), e.g. `https://mcp.example.org`; the server refuses to start with OAuth on and this unset | required |
 | `OPENCRE_MCP_ALLOWED_DOMAINS` | Email domains that may sign in (`*` = any); roles still apply | `LOGIN_ALLOWED_DOMAINS` |
 | `OPENCRE_MCP_GOOGLE_CLIENT_ID` / `_SECRET` | Google OAuth client | `GOOGLE_CLIENT_ID` / `_SECRET` |
 | `OPENCRE_MCP_ACCESS_TOKEN_MINUTES` / `OPENCRE_MCP_REFRESH_DAYS` | Token lifetimes | `60` / `30` |

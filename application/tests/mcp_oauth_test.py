@@ -299,5 +299,29 @@ class AllowedDomainsTest(unittest.TestCase):
             self.assertTrue(oauth.domain_allowed("a@anywhere.io"))
 
 
+class PublicUrlTest(unittest.TestCase):
+    def _env(self, **env: str) -> Any:
+        return patch.dict(
+            os.environ,
+            {
+                "OPENCRE_MCP_PUBLIC_URL": "",
+                "OPENCRE_MCP_ALLOWED_DOMAINS": "owasp.org",
+                "GOOGLE_CLIENT_ID": "gid",
+                "GOOGLE_CLIENT_SECRET": "gsecret",
+                **env,
+            },
+        )
+
+    def test_startup_fails_without_an_explicit_public_url(self) -> None:
+        with self._env():
+            with self.assertRaises(RuntimeError) as ctx:
+                oauth.oauth_app_kwargs()
+        self.assertIn("OPENCRE_MCP_PUBLIC_URL", str(ctx.exception))
+
+    def test_public_url_is_used_as_given_without_a_trailing_slash(self) -> None:
+        with self._env(OPENCRE_MCP_PUBLIC_URL="https://mcp.example.org/"):
+            self.assertEqual(oauth.public_url(), "https://mcp.example.org")
+
+
 if __name__ == "__main__":
     unittest.main()

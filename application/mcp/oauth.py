@@ -11,7 +11,7 @@ redirect and the authorization code. Run a single MCP worker (the remote app alr
 
 Config:
   OPENCRE_MCP_OAUTH=1                        turn this on (otherwise remote MCP keeps Bearer API keys only)
-  OPENCRE_MCP_PUBLIC_URL                     public origin, default https://staging.opencre.org
+  OPENCRE_MCP_PUBLIC_URL                     public origin, e.g. https://mcp.example.org (required)
   OPENCRE_MCP_ALLOWED_DOMAINS                comma list of email domains that may sign in ("*" = any);
                                              defaults to LOGIN_ALLOWED_DOMAINS. Roles still decide access.
   OPENCRE_MCP_GOOGLE_CLIENT_ID / _SECRET     default to GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET
@@ -62,7 +62,6 @@ CALLBACK_PATH = "/oauth/google/callback"
 KEY_NAME_PREFIX = (
     "mcp-oauth:"  # api_keys.name of tokens issued here, followed by the client id
 )
-DEFAULT_PUBLIC_URL = "https://staging.opencre.org"
 PENDING_TTL_SECONDS = 600
 CODE_TTL_SECONDS = 300
 REQUEST_TIMEOUT_SECONDS = 15
@@ -78,7 +77,12 @@ def oauth_enabled() -> bool:
 
 
 def public_url() -> str:
-    return (os.environ.get("OPENCRE_MCP_PUBLIC_URL") or DEFAULT_PUBLIC_URL).rstrip("/")
+    url = (os.environ.get("OPENCRE_MCP_PUBLIC_URL") or "").strip().rstrip("/")
+    if not url:
+        raise RuntimeError(
+            "MCP OAuth needs OPENCRE_MCP_PUBLIC_URL (the public origin, e.g. https://mcp.example.org)"
+        )
+    return url
 
 
 def allowed_domains() -> List[str]:
@@ -430,12 +434,12 @@ def oauth_app_kwargs(provider: Optional[OpenCREOAuthProvider] = None) -> Dict[st
     from mcp.server.auth.provider import ProviderTokenVerifier
 
     _google_credentials()  # fail at startup, not at the first sign-in
+    base = public_url()
     if not allowed_domains():
         raise RuntimeError(
             "MCP OAuth needs OPENCRE_MCP_ALLOWED_DOMAINS (or LOGIN_ALLOWED_DOMAINS)"
         )
     provider = provider or OpenCREOAuthProvider()
-    base = public_url()
     return {
         "auth": AuthSettings(
             issuer_url=base,  # type: ignore[arg-type]
