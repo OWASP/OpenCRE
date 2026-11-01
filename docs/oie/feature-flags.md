@@ -34,9 +34,9 @@ YAML (historical grid cell): `scripts/oie_owasp_eval/experiments/stack_winners.y
 | `CRE_LIBRARIAN_HYBRID_GAMMA` | `0.70` | Cross-encoder weight (≠ margin γ) |
 | `CRE_LIBRARIAN_RETRIEVER_BACKEND` | `pgvector` | Live B2 / full-pipeline |
 | `CRE_LIBRARIAN_DEVICE` | `cpu` | Eval matrix |
-| `CRE_LIBRARIAN_USE_RRF` | off | See [experimental-feature-flags.md](experimental-feature-flags.md) |
+| `CRE_LIBRARIAN_USE_RRF` | removed | Not in this stack; see [experimental-feature-flags.md](experimental-feature-flags.md) |
 | `CRE_LIBRARIAN_HUB_LEAF_CAGE` | off | See experimental notes |
-| `CRE_LIBRARIAN_CONTEXT_ENRICH` | off | See experimental notes |
+| `CRE_LIBRARIAN_CONTEXT_ENRICH` | removed | Not in this stack; see experimental notes |
 | `CRE_LIBRARIAN_FOCUS_QUERY` | off | Neutral / slight drag on grid mean |
 | `CRE_LIBRARIAN_CRE_TEXT_ENRICH` | off | Tied at top; mean slightly lower when on |
 
@@ -77,8 +77,8 @@ export CRE_LIBRARIAN_LEAF_DRILLDOWN_HUB_FIRST=0
 export NO_LOAD_GRAPH_DB=1
 
 PYTHONPATH=. python scripts/oie_owasp_eval/run_full_pipeline.py \
-  --cache-file "$CACHE" \
-  --out tmp/oie_owasp_eval/full_pipeline_verify
+  --cache_file "$CACHE" \
+  --out-dir tmp/oie_owasp_eval/full_pipeline_verify
 ```
 
 ASVS 5 only (exclude other B2 families):
