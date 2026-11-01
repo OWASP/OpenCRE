@@ -74,7 +74,7 @@ def run_harvester(
 
     repos_path = Path(repos_yaml) if repos_yaml else DEFAULT_REPOS_YAML
     repos_file = load_repo_config(repos_path)
-    validate_repositories(repos_file.repositories)
+    validate_repositories(repos_file)
 
     checkpoint_store = CheckpointStore(session=session)
     builder = DocumentBuilder()
@@ -110,6 +110,28 @@ def run_harvester(
     return summary
 
 
+def resolve_base_commit(
+    detector: ChangeDetector, checkpoint_commit: Optional[str], repo_id: str
+) -> Optional[str]:
+    """Checkpoint commit to diff from, or None to harvest everything.
+
+    Clones are shallow, so a re-created clone (or an upstream force-push) no
+    longer contains the persisted checkpoint commit. Failing here would break
+    the repository on every run, since the checkpoint only advances on success.
+    """
+    if not checkpoint_commit:
+        return None
+    if detector.commit_exists(checkpoint_commit):
+        return checkpoint_commit
+    logger.warning(
+        "checkpoint commit %s for %s is not in the local clone; "
+        "harvesting all tracked files",
+        checkpoint_commit,
+        repo_id,
+    )
+    return None
+
+
 def _harvest_repository(
     *,
     session: Any,
@@ -131,9 +153,13 @@ def _harvest_repository(
 
     head = client.get_current_commit_sha()
     checkpoint = checkpoint_store.load(repo_cfg.id)
-    base = checkpoint.last_processed_commit if checkpoint else None
 
     detector = ChangeDetector(client)
+    base = resolve_base_commit(
+        detector,
+        checkpoint.last_processed_commit if checkpoint else None,
+        repo_cfg.id,
+    )
     if base:
         modified = detector.get_modified_files_since(base, head)
     else:

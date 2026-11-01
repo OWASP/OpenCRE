@@ -99,9 +99,8 @@ class ConfigLoaderTests(unittest.TestCase):
 
         config = load_repo_config(config_path)
 
-        self.assertEqual(len(config.repositories), 2)
-        self.assertEqual(config.repositories[0].id, "owasp-asvs")
-        self.assertEqual(config.repositories[1].id, "owasp-cheatsheets")
+        ids = [repo.id for repo in config.repositories]
+        self.assertEqual(ids, ["owasp-asvs", "owasp-aisvs", "owasp-cheatsheets"])
 
     def test_empty_owner(self):
         config_path = FIXTURES_DIR / "empty_owner.yaml"
