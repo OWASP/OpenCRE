@@ -54,7 +54,7 @@ class LibrarianComponents:
     shortlist_llm_fn: Optional[Callable[[str, str], str]] = None
     #: C.4 safety guard (None → pipeline keeps NullSafetyGuard).
     safety_guard: Optional[Any] = None
-#: Contains parent→children index for leaf drill-down (None = skip).
+    #: Contains parent→children index for leaf drill-down (None = skip).
     parent_index: Optional[Any] = None
     #: When True, promote better Contains children over hub umbrellas after C.2.
     leaf_drilldown: bool = True
@@ -71,6 +71,7 @@ class LibrarianComponents:
     umbrella_promote_cap: int = 8
     shortlist_judge_max_picks: int = 3
     margin_gamma: Optional[float] = None
+
 
 def build_scaler(config: Optional[LibrarianConfig] = None) -> Scaler:
     """The C.3 calibrator at the configured temperature.
@@ -343,7 +344,7 @@ def build_components(
         cre_prior=cre_prior,
         shortlist_llm_fn=shortlist_llm,
         safety_guard=safety_guard,
-parent_index=parent_index,
+        parent_index=parent_index,
         leaf_drilldown=config.leaf_drilldown,
         leaf_drilldown_resources=config.leaf_drilldown_resources,
         leaf_drilldown_force_resources=config.leaf_drilldown_force_resources,

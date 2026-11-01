@@ -1,6 +1,6 @@
 # Full pipeline (repo URL → A → B → C)
 
-End-to-end evaluation for the four agreed families:
+End-to-end evaluation for the evaluated families:
 
 | Family | Module A source | Gold |
 |--------|-----------------|------|
@@ -31,7 +31,7 @@ PYTHONPATH=. python scripts/oie_owasp_eval/run_full_pipeline.py \
 ```bash
 export CRE_LIBRARIAN_CRE_SUMMARY=1
 export CRE_LIBRARIAN_MARGIN_GAMMA=0.85
-export DEV_DATABASE_URL=postgresql://cre:password@127.0.0.1:5432/cre
+export DEV_DATABASE_URL=postgresql://cre:password@127.0.0.1:5432/cre_prodclone
 
 PYTHONPATH=. python scripts/oie_owasp_eval/run_full_pipeline.py \
   --repos asvs,aisvs,cheatsheets,aix \
@@ -40,11 +40,10 @@ PYTHONPATH=. python scripts/oie_owasp_eval/run_full_pipeline.py \
   --wipe-queues
 ```
 
-`--wipe-queues` deletes **every** row in `harvest_input`, `knowledge_queue` and
-`decision_queue` of the target database before the GitHub arms run
-(`knowledge_queue.content_hash` is globally unique, so stale rows would hide new
-output). The script refuses to run those arms without it; point `--cache_file` at
-a disposable database.
+The run **empties `harvest_input`, `knowledge_queue` and `decision_queue`** in the
+target database, so the script only accepts a local clone (for example
+`cre_prodclone`). It refuses remote hosts, Heroku URLs and the database named
+`cre`.
 
 Harvest uses GitHub **tarballs** (no `.git`). Promoted librarian flags default on.
 Reports land under `tmp/oie_owasp_eval/experiments/full_pipeline_*.b2_report.json`
