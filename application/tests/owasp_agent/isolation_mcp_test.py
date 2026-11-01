@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import os
 import tempfile
 import unittest
@@ -96,6 +97,46 @@ class TestOwaspAgentIsolation(unittest.TestCase):
             self.assertNotIn("Credoctypes", src)
             self.assertNotIn("cre_defs", src)
             self.assertNotIn("Node_collection", src)
+
+    def test_sync_and_concepts_never_import_shared_database(self) -> None:
+        # sync.py and concepts.py only talk to the owasp_agent IndexStore. On
+        # the sync path, embed_sync.py is the single module that bridges to the
+        # shared application.database (the opt-in meta-embedding push), so it is
+        # deliberately not checked here.
+        import application.utils.owasp_agent.sync as sync_mod
+        import application.utils.owasp_agent.concepts as concepts_mod
+
+        for mod in (sync_mod, concepts_mod):
+            with open(mod.__file__, encoding="utf-8") as fh:
+                tree = ast.parse(fh.read(), filename=mod.__file__)
+            offenders = []
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    offenders += [
+                        a.name
+                        for a in node.names
+                        if a.name == "application.database"
+                        or a.name.startswith("application.database.")
+                    ]
+                elif isinstance(node, ast.ImportFrom):
+                    base = node.module or ""
+                    if node.level:
+                        offenders.append("." * node.level + base)
+                    elif base == "application.database" or base.startswith(
+                        "application.database."
+                    ):
+                        offenders.append(base)
+                    elif base == "application":
+                        offenders += [
+                            "application." + a.name
+                            for a in node.names
+                            if a.name == "database"
+                        ]
+            self.assertEqual(
+                offenders,
+                [],
+                msg=f"{mod.__name__} must not import application.database: {offenders}",
+            )
 
 
 if __name__ == "__main__":
