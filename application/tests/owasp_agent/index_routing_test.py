@@ -20,11 +20,27 @@ from application.utils.owasp_agent.router import (
 )
 
 
+_env_patch = mock.patch.dict(
+    os.environ, {"OWASP_AGENT_ENABLED": "1", "OWASP_AGENT_SIM_ROUTER": "0"}
+)
+_tmp_paths: list = []
+
+
+def setUpModule() -> None:
+    _env_patch.start()
+
+
+def tearDownModule() -> None:
+    _env_patch.stop()
+    for path in _tmp_paths:
+        if os.path.exists(path):
+            os.remove(path)
+
+
 def _router() -> OwaspAgentRouter:
-    os.environ["OWASP_AGENT_ENABLED"] = "1"
-    os.environ["OWASP_AGENT_SIM_ROUTER"] = "0"
     fd, path = tempfile.mkstemp(suffix=".sqlite")
     os.close(fd)
+    _tmp_paths.append(path)
     store = IndexStore(path)
     store.upsert_chapter(
         Chapter(

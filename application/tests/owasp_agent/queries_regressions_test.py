@@ -1,6 +1,9 @@
 import unittest
 
-from application.utils.owasp_agent.queries import _project_fallback_blurb
+from application.utils.owasp_agent.queries import (
+    _metro_chapter_alias,
+    _project_fallback_blurb,
+)
 from scripts.seed_node_facts import _build_parser
 
 
@@ -19,6 +22,15 @@ class ProjectFallbackBlurbTest(unittest.TestCase):
 
     def test_short_fragments_do_not_substring_match(self) -> None:
         self.assertEqual(_project_fallback_blurb({"key": "ten", "name": "ten"}), "")
+
+
+class MetroAliasTest(unittest.TestCase):
+    def test_cambridge_is_not_aliased_to_boston(self) -> None:
+        self.assertIsNone(_metro_chapter_alias("Cambridge"))
+        self.assertIsNone(_metro_chapter_alias("Cambridge, UK"))
+
+    def test_other_metro_aliases_still_resolve(self) -> None:
+        self.assertEqual(_metro_chapter_alias("Brooklyn"), "new york")
 
 
 class SeedNodeFactsArgsTest(unittest.TestCase):

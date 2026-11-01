@@ -1563,8 +1563,6 @@ def _match_project(
         pname = _norm(str(enriched.get("name") or ""))
         desc = _norm(str(enriched.get("description") or ""))
         hay = f"{key} {pname} {desc}"
-        key_c = key.replace(" ", "").replace("-", "")
-        pname_c = pname.replace(" ", "").replace("-", "")
         alias_list = [_norm(str(a)) for a in (enriched.get("aliases") or []) if a]
         if target == key or target == pname:
             return enriched
@@ -1627,7 +1625,6 @@ def _metro_chapter_alias(place: str) -> Optional[str]:
         "tokyo": "japan",
         "brooklyn": "new york",
         "manhattan": "new york",
-        "cambridge": "boston",
     }
     for token in _place_city_tokens(place):
         if token in aliases:
