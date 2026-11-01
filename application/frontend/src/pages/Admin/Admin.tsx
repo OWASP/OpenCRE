@@ -1700,6 +1700,298 @@ function flagChips(cfg: any): string[] {
   return chips;
 }
 
+type PickedCre = { cre_id: string; name: string };
+
+function CrePicker({
+  origin,
+  label,
+  picked,
+  multi,
+  onChange,
+}: {
+  origin: string;
+  label: string;
+  picked: PickedCre[];
+  multi: boolean;
+  onChange: (next: PickedCre[]) => void;
+}) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<PickedCre[]>([]);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) {
+      setResults([]);
+      return undefined;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      fetch(`${origin}/admin/oie/cres/search?q=${encodeURIComponent(q)}`, { credentials: 'include' })
+        .then(async (res) => {
+          const body = await readJson(res);
+          if (!cancelled && res.ok) setResults(body.items || []);
+        })
+        .catch(() => undefined);
+    }, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [origin, query]);
+
+  const choose = (cre: PickedCre) => {
+    if (!picked.some((p) => p.cre_id === cre.cre_id)) {
+      onChange(multi ? [...picked, cre] : [cre]);
+    }
+    setQuery('');
+    setResults([]);
+  };
+
+  return (
+    <span className="cre-picker">
+      {picked.map((c) => (
+        <span key={c.cre_id} className="admin-pill">
+          {c.cre_id} {c.name}{' '}
+          <a
+            href="#remove"
+            aria-label={`remove ${c.cre_id}`}
+            onClick={(e) => {
+              e.preventDefault();
+              onChange(picked.filter((p) => p.cre_id !== c.cre_id));
+            }}
+          >
+            x
+          </a>
+        </span>
+      ))}
+      <input
+        aria-label={label}
+        placeholder="Search CREs by name or id"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+      {results.length > 0 && (
+        <ul className="cre-picker-results">
+          {results.map((r) => (
+            <li key={r.cre_id}>
+              <a
+                href="#choose"
+                onClick={(e) => {
+                  e.preventDefault();
+                  choose(r);
+                }}
+              >
+                {r.cre_id} {r.name}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </span>
+  );
+}
+
+function OieReviewPanel({ origin }: { origin: string }) {
+  const [view, setView] = useState<'review' | 'filed'>('review');
+  const [status, setStatus] = useState('');
+  const [decisions, setDecisions] = useState<any[]>([]);
+  const [filed, setFiled] = useState<any[]>([]);
+  const [total, setTotal] = useState(0);
+  const [picked, setPicked] = useState<Record<string, PickedCre[]>>({});
+  const [standardNames, setStandardNames] = useState<Record<string, string>>({});
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    const url =
+      view === 'review'
+        ? `${origin}/admin/oie/decisions?page_size=25${status ? `&status=${status}` : ''}`
+        : `${origin}/admin/oie/filed?page_size=25`;
+    fetch(url, { credentials: 'include' })
+      .then(async (res) => {
+        const body = await readJson(res);
+        if (!res.ok) throw new Error(apiError(body, res));
+        setTotal(body.total || 0);
+        if (view === 'review') setDecisions(body.items || []);
+        else setFiled(body.items || []);
+      })
+      .catch((err) => setError(String(err)));
+  }, [origin, view, status]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const post = async (path: string, payload: any, done: string) => {
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch(`${origin}${path}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(payload),
+      });
+      const body = await readJson(res);
+      if (!res.ok) {
+        setError(apiError(body, res));
+        return;
+      }
+      setNotice(done);
+      load();
+    } catch (err) {
+      setError(String(err));
+    }
+  };
+
+  // Only send an explicit name when the reviewer changed the suggestion.
+  const nameFor = (d: any): Record<string, string> => {
+    const typed = (standardNames[d.id] ?? '').trim();
+    return typed && typed !== (d.source?.standard_name || '') ? { standard_name: typed } : {};
+  };
+
+  return (
+    <div className="oie-review">
+      <p>
+        <Button size="mini" basic active={view === 'review'} onClick={() => setView('review')}>
+          Needs review
+        </Button>
+        <Button size="mini" basic active={view === 'filed'} onClick={() => setView('filed')}>
+          Filed links
+        </Button>
+        {view === 'review' && (
+          <select aria-label="status filter" value={status} onChange={(e) => setStatus(e.target.value)}>
+            <option value="">all statuses</option>
+            <option value="review_required">review_required</option>
+            <option value="linked">linked</option>
+          </select>
+        )}{' '}
+        <span>{total} items</span>
+      </p>
+      {error && <Message negative>{error}</Message>}
+      {notice && <Message info>{notice}</Message>}
+      {view === 'review' &&
+        decisions.map((d) => (
+          <div key={d.id} className="admin-card" data-testid="oie-decision">
+            <strong>{d.source?.title || d.source?.path || d.chunk_id}</strong>{' '}
+            <span className="admin-pill muted">{d.status}</span>
+            {d.reason_code && <span className="admin-pill muted">{d.reason_code}</span>}
+            <div>
+              {d.source?.repo || d.source?.standard_name}{' '}
+              {d.source?.hyperlink && (
+                <a href={d.source.hyperlink} target="_blank" rel="noreferrer">
+                  source
+                </a>
+              )}
+            </div>
+            <div style={{ whiteSpace: 'pre-wrap', maxHeight: '8rem', overflow: 'auto' }}>{d.text}</div>
+            <ul>
+              {d.candidates.map((c: any) => (
+                <li key={c.cre_id}>
+                  {c.cre_id} {c.cre_name} ({Number(c.confidence).toFixed(2)})
+                </li>
+              ))}
+              {d.candidates.length === 0 && <li>No proposed CREs</li>}
+            </ul>
+            <div>
+              <label>
+                Standard{' '}
+                <input
+                  aria-label={`standard name ${d.id}`}
+                  value={standardNames[d.id] ?? d.source?.standard_name ?? ''}
+                  onChange={(e) => setStandardNames({ ...standardNames, [d.id]: e.target.value })}
+                />
+              </label>
+            </div>
+            <CrePicker
+              origin={origin}
+              label={`repoint ${d.id}`}
+              multi
+              picked={picked[d.id] || []}
+              onChange={(next) => setPicked({ ...picked, [d.id]: next })}
+            />
+            <Button
+              size="mini"
+              primary
+              disabled={d.candidates.length === 0}
+              onClick={() =>
+                post(`/admin/oie/decisions/${d.id}`, { action: 'approve', ...nameFor(d) }, 'Approved')
+              }
+            >
+              Approve proposed
+            </Button>
+            <Button
+              size="mini"
+              disabled={(picked[d.id] || []).length === 0}
+              onClick={() =>
+                post(
+                  `/admin/oie/decisions/${d.id}`,
+                  { action: 'repoint', cre_ids: (picked[d.id] || []).map((c) => c.cre_id), ...nameFor(d) },
+                  'Repointed'
+                )
+              }
+            >
+              Repoint
+            </Button>
+            <Button
+              size="mini"
+              negative
+              onClick={() => post(`/admin/oie/decisions/${d.id}`, { action: 'reject' }, 'Rejected')}
+            >
+              Reject
+            </Button>
+          </div>
+        ))}
+      {view === 'review' && decisions.length === 0 && <p>Nothing waiting for review.</p>}
+      {view === 'filed' &&
+        filed.map((n) => (
+          <div key={n.node_id} className="admin-card" data-testid="oie-filed">
+            <strong>
+              {n.name} {n.section}
+            </strong>{' '}
+            {n.hyperlink && (
+              <a href={n.hyperlink} target="_blank" rel="noreferrer">
+                source
+              </a>
+            )}
+            <ul>
+              {n.links.map((l: any) => {
+                const key = `${n.node_id}:${l.cre_id}`;
+                const target = (picked[key] || [])[0];
+                return (
+                  <li key={key}>
+                    {l.cre_id} {l.cre_name} <span className="admin-pill muted">{l.type}</span>{' '}
+                    <CrePicker
+                      origin={origin}
+                      label={`repoint ${n.node_id} ${l.cre_id}`}
+                      multi={false}
+                      picked={picked[key] || []}
+                      onChange={(next) => setPicked({ ...picked, [key]: next })}
+                    />
+                    <Button
+                      size="mini"
+                      disabled={!target}
+                      onClick={() =>
+                        post(
+                          `/admin/oie/filed/${n.node_id}/repoint`,
+                          { from_cre_id: l.cre_id, to_cre_id: target.cre_id },
+                          'Link repointed'
+                        )
+                      }
+                    >
+                      Repoint
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      {view === 'filed' && filed.length === 0 && <p>No auto-filed or reviewed nodes yet.</p>}
+    </div>
+  );
+}
+
 function PipelineTab({ origin }: { origin: string }) {
   const [data, setData] = useState<any>(null);
   const [ingest, setIngest] = useState<any>(null);
@@ -1937,7 +2229,7 @@ function PipelineTab({ origin }: { origin: string }) {
       </table>
       <h3>OIE decisions</h3>
       <p>Unconsumed: {data.oie?.unconsumed ?? 0}</p>
-      <pre className="admin-pre">{JSON.stringify(data.oie?.recent || [], null, 2)}</pre>
+      <OieReviewPanel origin={origin} />
       <h3>LLM reasoning</h3>
       {(data.oie?.knowledge || []).length === 0 ? (
         <p>No knowledge-queue artifacts.</p>
