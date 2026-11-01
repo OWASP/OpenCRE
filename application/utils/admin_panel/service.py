@@ -22,7 +22,7 @@ from flask import current_app, has_app_context
 
 import yaml
 from pydantic import ValidationError
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, inspect, text
 
 from application import sqla  # type: ignore[attr-defined]
 from application.database import db
@@ -984,15 +984,26 @@ def _count_cre_embeddings(cache_file: str) -> int:
     )
     engine = create_engine(url)
     try:
+        inspector = inspect(engine)
+        # Only a missing table means "empty destination"; any other failure must
+        # propagate so the destructive hub sync never runs on a guess.
+        if not inspector.has_table("embeddings"):
+            return 0
+        has_vec = any(
+            col["name"] == "embedding_vec"
+            for col in inspector.get_columns("embeddings")
+        )
+        vec_filter = " AND embedding_vec IS NOT NULL" if has_vec else ""
         with engine.connect() as conn:
             return int(
                 conn.execute(
-                    text("SELECT COUNT(*) FROM embeddings WHERE doc_type = 'CRE'")
+                    text(
+                        "SELECT COUNT(*) FROM embeddings WHERE doc_type = 'CRE'"
+                        + vec_filter
+                    )
                 ).scalar()
                 or 0
             )
-    except Exception:  # noqa: BLE001 — no embeddings table yet means empty
-        return 0
     finally:
         engine.dispose()
 
