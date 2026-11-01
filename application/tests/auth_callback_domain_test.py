@@ -38,7 +38,7 @@ class TestAuthCallbackDomain(unittest.TestCase):
         self,
         email: str,
         *,
-        verified: Optional[bool] = True,
+        verified: Any = True,
         env: Optional[Dict[str, str]] = None,
     ) -> Any:
         """Run the callback for ``email``; returns (response, signed_in)."""
@@ -113,6 +113,56 @@ class TestAuthCallbackDomain(unittest.TestCase):
         resp, signed_in = self._callback("member@owasp.org", verified=None)
         self.assertEqual(resp.status_code, 401)
         self.assertFalse(signed_in)
+
+    def test_leading_dot_domain_config_allows_matching_domains_only(self) -> None:
+        env = {"LOGIN_ALLOWED_DOMAINS": ".edu"}
+        resp, signed_in = self._callback("m@mit.edu", env=env)
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(signed_in)
+        resp, signed_in = self._callback("m@evil-edu.com", env=env)
+        self.assertEqual(resp.status_code, 401)
+        self.assertFalse(signed_in)
+
+    def test_leading_at_domain_config_signs_in_the_domain(self) -> None:
+        env = {"LOGIN_ALLOWED_DOMAINS": "@owasp.org"}
+        resp, signed_in = self._callback("member@owasp.org", env=env)
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(signed_in)
+
+    def test_legacy_mode_applies_the_strict_domain_rule_before_the_email_list(
+        self,
+    ) -> None:
+        env = {"LOGIN_ALLOWED_EMAILS": "attacker@evilowasp.org,member@owasp.org"}
+        resp, signed_in = self._callback("attacker@evilowasp.org", env=env)
+        self.assertEqual(resp.status_code, 401)
+        self.assertFalse(signed_in)
+        resp, signed_in = self._callback("member@owasp.org", env=env)
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(signed_in)
+        resp, signed_in = self._callback("other@owasp.org", env=env)
+        self.assertEqual(resp.status_code, 403)
+        self.assertFalse(signed_in)
+
+    def test_roles_mode_still_signs_in_a_user_on_an_allowed_domain(self) -> None:
+        env = {"ADMIN_EMAILS": "boss@owasp.org"}
+        resp, signed_in = self._callback("member@owasp.org", env=env)
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(signed_in)
+
+    def test_unset_domain_list_is_a_server_error(self) -> None:
+        resp, signed_in = self._callback(
+            "member@owasp.org", env={"LOGIN_ALLOWED_DOMAINS": ""}
+        )
+        self.assertEqual(resp.status_code, 500)
+        self.assertFalse(signed_in)
+
+    def test_email_verified_must_be_the_boolean_true(self) -> None:
+        for claim in ("false", "true", "False", 1, "yes", ""):
+            with self.subTest(claim=claim):
+                resp, signed_in = self._callback("member@owasp.org", verified=claim)
+                self.assertEqual(resp.status_code, 401)
+                self.assertFalse(signed_in)
+        self.assertEqual(sqla.session.query(db.User).count(), 0)
 
     def test_wildcard_domains_still_need_a_verified_email(self) -> None:
         env = {"LOGIN_ALLOWED_DOMAINS": "*"}

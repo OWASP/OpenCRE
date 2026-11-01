@@ -42,6 +42,41 @@ class RolesTest(unittest.TestCase):
         with env(ADMIN_EMAILS="a@x.org", LOGIN_ALLOWED_DOMAINS="*"):
             self.assertEqual(roles.role_for("u@anything.io"), roles.USER)
 
+    def test_domain_allowed_ignores_a_leading_dot_or_at(self):
+        with env(LOGIN_ALLOWED_DOMAINS=".edu"):
+            self.assertTrue(roles.domain_allowed("m@mit.edu"))
+            self.assertTrue(roles.domain_allowed("m@cs.mit.edu"))
+            self.assertFalse(roles.domain_allowed("m@fakeedu"))
+            self.assertFalse(roles.domain_allowed("m@mit.edu.evil.com"))
+        with env(LOGIN_ALLOWED_DOMAINS=".owasp.org"):
+            self.assertTrue(roles.domain_allowed("u@owasp.org"))
+            self.assertTrue(roles.domain_allowed("u@chapters.owasp.org"))
+            self.assertFalse(roles.domain_allowed("u@evilowasp.org"))
+            self.assertFalse(roles.domain_allowed("u@owasp.org.evil.com"))
+        with env(LOGIN_ALLOWED_DOMAINS="@owasp.org"):
+            self.assertTrue(roles.domain_allowed("u@owasp.org"))
+            self.assertFalse(roles.domain_allowed("u@evilowasp.org"))
+        with env(LOGIN_ALLOWED_DOMAINS=" Example.com , .EDU "):
+            self.assertTrue(roles.domain_allowed("U@Example.COM"))
+            self.assertTrue(roles.domain_allowed("m@mit.edu"))
+            self.assertFalse(roles.domain_allowed("u@gmail.com"))
+
+    def test_domain_allowed_roles_use_the_same_rule(self):
+        with env(ADMIN_EMAILS="a@x.org", LOGIN_ALLOWED_DOMAINS=".edu"):
+            self.assertEqual(roles.role_for("m@mit.edu"), roles.USER)
+            self.assertIsNone(roles.role_for("m@evil-edu.com"))
+
+    def test_domain_allowed_refuses_degenerate_input(self):
+        with env(LOGIN_ALLOWED_DOMAINS="owasp.org"):
+            self.assertFalse(roles.domain_allowed("owasp.org"))  # no "@"
+            self.assertFalse(roles.domain_allowed("u@"))
+            self.assertFalse(roles.domain_allowed(""))
+        for junk in (".", "@", "@.", " , "):
+            with env(LOGIN_ALLOWED_DOMAINS=junk):
+                self.assertFalse(roles.domain_allowed("u@owasp.org"), msg=junk)
+                self.assertFalse(roles.domain_allowed("u@"), msg=junk)
+                self.assertFalse(roles.domain_allowed("nodomain"), msg=junk)
+
     def test_no_domain_configured_fails_closed(self):
         with env(ADMIN_EMAILS="a@x.org"):
             self.assertIsNone(roles.role_for("u@owasp.org"))
