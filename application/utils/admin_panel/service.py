@@ -16,7 +16,7 @@ import tempfile
 import threading
 import time
 import uuid
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 from flask import current_app, has_app_context
 
@@ -481,6 +481,7 @@ def _run_agent_sync_job(
     skip_nest: bool,
     skip_github: bool,
     auto_concepts: bool,
+    embed_fn: Optional[Callable[[str], Sequence[float]]] = None,
 ) -> Dict[str, Any]:
     from application.utils.owasp_agent.concepts import auto_concepts_from_index
     from application.utils.owasp_agent.embed_sync import embed_meta_if_enabled
@@ -493,7 +494,7 @@ def _run_agent_sync_job(
         skip_nest=skip_nest,
         skip_github=skip_github,
     )
-    embed_meta_if_enabled(store, report)
+    embed_meta_if_enabled(store, report, embed_fn=embed_fn)
     concept_actions: List[Dict[str, str]] = []
     if auto_concepts and (report.nest_ok or report.github_ok):
         concept_actions = [
