@@ -13,6 +13,7 @@ from starlette.types import ASGIApp
 
 from mcp.server.transport_security import TransportSecuritySettings
 
+from application.mcp.oauth import oauth_app_kwargs, oauth_enabled
 from application.mcp.remote_auth import authorization_header
 from application.mcp.rest_client import RestClient
 from application.mcp.server import build_server
@@ -83,6 +84,10 @@ def create_http_app(
             "Refusing to create remote MCP HTTP app without OPENCRE_MCP_REMOTE=1"
         )
     server = build_server(rest_client=rest_client)
+    auth_kwargs: dict = {}
+    if oauth_enabled():
+        # Google sign-in: every /mcp request needs a valid token, public tools included.
+        auth_kwargs = oauth_app_kwargs()
     security = transport_security_settings(allowed_hosts=allowed_hosts)
     # Pass an explicit non-localhost host so SDK does not override our allowlist
     # with localhost-only defaults.
@@ -93,6 +98,7 @@ def create_http_app(
         json_response=True,
         # One uvicorn worker / sessionful clients: stateful sessions for v1.
         stateless_http=False,
+        **auth_kwargs,
     )
     app.add_middleware(AuthorizationContextMiddleware)
     return app

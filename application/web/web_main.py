@@ -1566,6 +1566,14 @@ def admin_import_run_apply(run_id: str) -> Any:
         abort(400, description=str(ae))
 
 
+@app.teardown_request
+def _clear_spend_account(_exc: Optional[BaseException] = None) -> None:
+    """The chat handler charges LLM cost to the asker; never carry that into another request."""
+    from application.utils import spend
+
+    spend.clear()
+
+
 @app.route("/rest/v1/completion", methods=["POST"])
 @user_required
 def chat_cre() -> Any:
@@ -1586,6 +1594,16 @@ def chat_cre() -> Any:
             resp.status_code = 429
             resp.headers["Retry-After"] = str(limited.retry_after)
             return resp
+        from application.utils import spend
+
+        try:
+            spend.check_budget(_who, account_roles.role_for(_who))
+        except spend.BudgetExceeded as over:
+            resp = jsonify({"error": over.message()})
+            resp.status_code = 429
+            resp.headers["Retry-After"] = str(over.retry_after)
+            return resp
+        spend.set_account(_who)
 
     from application.utils.chat_history import split_prompt_and_history
 

@@ -123,6 +123,13 @@ def extract_embeddings(response: Any) -> List[List[float]]:
     return vectors
 
 
+def _charge(response: Any, model: str) -> None:
+    """Report this call's cost to the per-account daily budget (never raises)."""
+    from application.utils import spend
+
+    spend.record(response, model)
+
+
 def completion(
     *,
     model: str,
@@ -139,12 +146,14 @@ def completion(
     def _call() -> Any:
         return llm.completion(model=model, messages=list(messages), **kwargs)
 
-    return with_rate_limit_retry(
+    out = with_rate_limit_retry(
         _call,
         context=context,
         max_retries=max_retries,
         retry_sleep_seconds=retry_sleep_seconds,
     )
+    _charge(out, model)
+    return out
 
 
 def embedding(
@@ -162,12 +171,14 @@ def embedding(
     def _call() -> Any:
         return llm.embedding(model=model, input=input, **kwargs)
 
-    return with_rate_limit_retry(
+    out = with_rate_limit_retry(
         _call,
         context=context,
         max_retries=max_retries,
         retry_sleep_seconds=retry_sleep_seconds,
     )
+    _charge(out, model)
+    return out
 
 
 def completion_text(
@@ -326,10 +337,12 @@ def resilient_completion(
     )
 
     def _on(m: str) -> Any:
-        return quick_retry(
+        out = quick_retry(
             lambda: llm.completion(model=m, messages=list(messages), **kwargs),
             context=f"{context} [{m}]",
         )
+        _charge(out, m)
+        return out
 
     if not _breaker_open(model):
         try:
