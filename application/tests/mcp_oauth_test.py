@@ -16,6 +16,7 @@ from starlette.testclient import TestClient
 from application import create_app, sqla
 from application.mcp import oauth
 from application.mcp.http_app import create_http_app
+from application.tests.env_override import environ_override
 
 REDIRECT = "http://localhost:9999/cb"
 INIT = {
@@ -301,8 +302,7 @@ class AllowedDomainsTest(unittest.TestCase):
 
 class PublicUrlTest(unittest.TestCase):
     def _env(self, **env: str) -> Any:
-        return patch.dict(
-            os.environ,
+        return environ_override(
             {
                 "OPENCRE_MCP_PUBLIC_URL": "",
                 "OPENCRE_MCP_ALLOWED_DOMAINS": "owasp.org",
