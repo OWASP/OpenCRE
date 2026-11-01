@@ -5,6 +5,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import sqlalchemy.exc
+
 from application.utils.admin_panel import service
 
 
@@ -51,6 +53,52 @@ class CreHubSyncGuardTest(unittest.TestCase):
         self.assertEqual(service._count_cre_embeddings(f"sqlite:///{empty}"), 0)
         missing = Path(self.tmp.name) / "missing.sqlite"
         self.assertEqual(service._count_cre_embeddings(f"sqlite:///{missing}"), 0)
+
+    def test_count_raises_when_database_cannot_be_opened(self) -> None:
+        unopenable = Path(self.tmp.name) / "no_such_dir" / "dest.sqlite"
+        with self.assertRaises(sqlalchemy.exc.OperationalError):
+            service._count_cre_embeddings(f"sqlite:///{unopenable}")
+
+    def test_sync_refuses_to_run_when_destination_cannot_be_opened(self) -> None:
+        unopenable = Path(self.tmp.name) / "no_such_dir" / "dest.sqlite"
+        # The guard error propagates before the destructive subprocess is built.
+        with self.assertRaises(sqlalchemy.exc.OperationalError):
+            service.sync_cre_hub_embeddings(f"sqlite:///{unopenable}")
+
+    def test_count_is_zero_when_embeddings_table_missing(self) -> None:
+        other = Path(self.tmp.name) / "other.sqlite"
+        conn = sqlite3.connect(other)
+        conn.execute("CREATE TABLE unrelated (id INTEGER PRIMARY KEY)")
+        conn.commit()
+        conn.close()
+        self.assertEqual(service._count_cre_embeddings(f"sqlite:///{other}"), 0)
+
+    def test_count_without_embedding_vec_column_counts_cre_rows(self) -> None:
+        dest = Path(self.tmp.name) / "novec.sqlite"
+        _make_embeddings_db(dest, ["CRE", "CRE", "Standard"])
+        self.assertEqual(service._count_cre_embeddings(f"sqlite:///{dest}"), 2)
+
+    def test_count_with_embedding_vec_column_counts_only_non_null_vectors(
+        self,
+    ) -> None:
+        dest = Path(self.tmp.name) / "vec.sqlite"
+        conn = sqlite3.connect(dest)
+        conn.execute(
+            "CREATE TABLE embeddings "
+            "(id INTEGER PRIMARY KEY, doc_type TEXT, embedding_vec BLOB)"
+        )
+        conn.executemany(
+            "INSERT INTO embeddings (doc_type, embedding_vec) VALUES (?, ?)",
+            [
+                ("CRE", b"\x01"),
+                ("CRE", None),
+                ("Standard", b"\x02"),
+                ("CRE", b"\x03"),
+            ],
+        )
+        conn.commit()
+        conn.close()
+        self.assertEqual(service._count_cre_embeddings(f"sqlite:///{dest}"), 2)
 
 
 if __name__ == "__main__":
