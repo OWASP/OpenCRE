@@ -638,7 +638,7 @@ class SchedulerConfigEnvTest(unittest.TestCase):
             env.pop("OIE_EMBED_FILED_NODES", None)
             self.assertFalse(SchedulerConfig.from_env().embed_filed_nodes)
         for on in ("1", "true", "ON", "yes"):
-            with patch.dict("os.environ", {"OIE_EMBED_FILED_NODES": on}):
+            with environ_override({"OIE_EMBED_FILED_NODES": on}):
                 self.assertTrue(SchedulerConfig.from_env().embed_filed_nodes)
         for off in ("0", "false", "OFF", "no", ""):
             with patch.dict("os.environ", {"OIE_EMBED_FILED_NODES": off}):
