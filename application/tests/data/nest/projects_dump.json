@@ -1,0 +1,6 @@
+{"projects": [
+  {"key": "top-ten", "leaders": [{"name": "Jane  Doe"}, {"name": "Åsa Berg"}, {"name": ""}]},
+  {"key": "zap", "leaders": [{"name": "jane doe"}, {"name": "Carlos Ruiz"}]},
+  {"key": "empty", "leaders": []},
+  {"key": "none"}
+]}

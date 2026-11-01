@@ -85,7 +85,12 @@ def job_health(session: Any, job: str, now: datetime) -> Dict[str, Any]:
 
 def evaluate_health(session: Any, now: Optional[datetime] = None) -> Dict[str, Any]:
     current = now or run_log.utcnow()
-    jobs = {name: job_health(session, name, current) for name in JOBS}
+    jobs = {
+        name: job_health(session, name, current)
+        for name in JOBS
+        if name not in schedule_settings.DEFAULT_OFF
+        or schedule_settings.job_enabled(name)
+    }
     healthy = all(j["state"] in ("ok", "running") for j in jobs.values())
     return {
         "healthy": healthy,

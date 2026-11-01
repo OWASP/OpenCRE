@@ -10,7 +10,11 @@ COPY application/frontend /code/application/frontend
 RUN yarn build
 
 FROM opencre-staging-web:latest
-RUN pip install --no-cache-dir -U "litellm>=1.83.7,<1.107"
+RUN pip install --no-cache-dir -U "litellm>=1.83.7,<1.107" "trafilatura>=2"
+# The embedding job (prompt_client) drives Playwright Firefox. The base image has the pip package
+# but no browsers, so the job could not start on staging. Placed before the code COPY so the layer
+# is cached across code-only deploys; later builds start FROM :latest, so this is a no-op once installed.
+RUN playwright install --with-deps firefox
 COPY application /code/application
 COPY --from=frontend /code/application/frontend/www /code/application/frontend/www
 COPY cre.py /code/cre.py

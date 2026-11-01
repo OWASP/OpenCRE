@@ -1,6 +1,6 @@
-"""Feature flags for answer-quality techniques (all off by default).
+"""Feature flags for answer-quality techniques (off by default, except those in DEFAULT_ON).
 
-Each flag is an env var ``OWASP_CX_<NAME>`` set to 1/true/on. Flags can be
+Each flag is an env var ``OWASP_CX_<NAME>`` set to 1/true/on (0/false/no/off turns a default-on flag off). Flags can be
 combined freely; ``scripts``/eval toggles them for ablation.
 """
 
@@ -36,8 +36,14 @@ NAMES = (
 )
 
 
+# Proven in the 246-question clean set (82.1% with it, 79.3% without), so it needs no env var.
+DEFAULT_ON = frozenset({"TOPPROJECTS"})
+
+
 def on(name: str) -> bool:
     v = (os.environ.get(f"OWASP_CX_{name}", "") or "").strip().lower()
+    if not v:
+        return name in DEFAULT_ON
     return v in ("1", "true", "yes", "on")
 
 

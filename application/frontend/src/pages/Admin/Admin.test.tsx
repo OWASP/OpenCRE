@@ -154,6 +154,86 @@ describe('Admin', () => {
     expect(JSON.parse(put!.init.body)).toEqual({ weights: { 'www-project-ai-exchange': 1.2 } });
   });
 
+  it('lists suggested external sources and accepts with edits or rejects', async () => {
+    loggedIn();
+    const calls: { url: string; init?: any }[] = [];
+    (global as any).fetch = jest.fn((url: string, init?: any) => {
+      calls.push({ url: String(url), init });
+      if (String(url).includes('/admin/external/') && init?.method === 'POST') {
+        return jsonRes({ id: 'foo-conf-org', status: 'approved' });
+      }
+      if (String(url).endsWith('/admin/external')) {
+        return jsonRes({
+          external: [
+            {
+              id: 'foo-conf-org',
+              kind: 'external_site',
+              name: 'Foo Conf',
+              status: 'suggested',
+              score: 6.5,
+              spec: {
+                start_urls: ['https://foo-conf.org/'],
+                found_in: [{ repo: 'OWASP/foo', file: 'README.md', link_text: 'website' }],
+              },
+            },
+            {
+              id: 'yt-bar',
+              kind: 'youtube_channel',
+              name: 'bar',
+              status: 'suggested',
+              score: 2,
+              spec: { channel_id: '@bar' },
+            },
+            {
+              id: 'appsec-eu',
+              kind: 'external_site',
+              name: 'AppSec EU',
+              status: 'suggested',
+              score: 5,
+              spec: {
+                start_urls: ['https://2026.appsec.eu/'],
+                found_in: [{ source: 'crawl', page: 'https://owasp.org/events', link_text: 'AppSec EU' }],
+              },
+            },
+            { id: 'done', kind: 'external_site', name: 'Done', status: 'approved', spec: {} },
+          ],
+        });
+      }
+      if (String(url).endsWith('/admin/targets')) return jsonRes({ targets: [] });
+      return jsonRes({});
+    });
+    const { getByText, queryByTestId, findByTestId, getByLabelText, findByText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    fireEvent.click(getByText('Workbench'));
+    const card = await findByTestId('suggestion-foo-conf-org');
+    expect(card.textContent).toContain('OWASP/foo');
+    expect(card.textContent).toContain('GitHub');
+    const crawled = await findByTestId('suggestion-appsec-eu');
+    expect(crawled.textContent).toContain('crawl');
+    expect(crawled.textContent).toContain('found on https://owasp.org/events');
+    expect(card.textContent).toContain('score 6.5');
+    expect(queryByTestId('suggestion-done')).toBeNull();
+    fireEvent.click(card.querySelector('button')!);
+    fireEvent.change(getByLabelText('max pages'), { target: { value: '40' } });
+    fireEvent.change(getByLabelText('start url'), { target: { value: 'https://foo-conf.org/schedule' } });
+    fireEvent.click(getByText('Confirm accept'));
+    expect(await findByText(/Foo Conf: accepted/)).toBeTruthy();
+    const post = calls.find((c) => c.init?.method === 'POST' && c.url.endsWith('/foo-conf-org/accept'));
+    expect(JSON.parse(post!.init.body)).toMatchObject({
+      start_urls: ['https://foo-conf.org/schedule'],
+      max_pages: 40,
+      refresh_days: 30,
+      weight: 1,
+    });
+    const yt = await findByTestId('suggestion-yt-bar');
+    fireEvent.click(yt.querySelectorAll('button')[1]);
+    expect(await findByText(/bar: rejected/)).toBeTruthy();
+    expect(calls.some((c) => c.url.endsWith('/yt-bar/reject'))).toBe(true);
+  });
+
   it('loads import runs and links to MyOpenCRE', async () => {
     loggedIn();
     (global as any).fetch = jest.fn((url: string) => {
@@ -278,6 +358,83 @@ describe('Admin', () => {
         expect.objectContaining({ method: 'POST' })
       )
     );
+  });
+
+  it('reviews an OIE decision: search picks CREs, website rows carry a standard name', async () => {
+    loggedIn();
+    const posts: Array<{ url: string; body: any }> = [];
+    (global as any).fetch = jest.fn((url: string, init?: any) => {
+      const u = String(url);
+      if (init && init.method === 'POST') {
+        posts.push({ url: u, body: JSON.parse(init.body) });
+        return jsonRes({ ok: true });
+      }
+      if (u.includes('/admin/oie/cres/search')) {
+        return jsonRes({
+          items: [
+            { cre_id: '222-222', name: 'Sessions', description: '' },
+            { cre_id: '333-333', name: 'Session binding', description: '' },
+          ],
+        });
+      }
+      if (u.includes('/admin/oie/decisions')) {
+        return jsonRes({
+          total: 1,
+          items: [
+            {
+              id: 'd1',
+              chunk_id: 'c1',
+              status: 'review_required',
+              reason_code: 'BELOW_THRESHOLD',
+              text: 'Build L2 requires signed provenance.',
+              source: {
+                repo: null,
+                standard_name: 'slsa.dev',
+                title: 'Build L2',
+                hyperlink: 'https://slsa.dev/spec#build-l2',
+              },
+              candidates: [{ cre_id: '111-111', cre_name: 'Authentication', confidence: 0.7 }],
+            },
+          ],
+        });
+      }
+      if (u.includes('/admin/pipeline')) {
+        return jsonRes({
+          import_runs: [],
+          events: [],
+          latest_strip: [],
+          oie: { unconsumed: 1, recent: [], knowledge: [] },
+        });
+      }
+      return jsonRes({});
+    });
+    const { getByText, findByText, getByLabelText } = render(
+      <MemoryRouter>
+        <Admin />
+      </MemoryRouter>
+    );
+    fireEvent.click(getByText('Pipeline'));
+    expect(await findByText(/111-111 Authentication/)).toBeTruthy();
+
+    // approve with the suggested standard name: no override is sent
+    fireEvent.click(getByText('Approve proposed'));
+    await waitFor(() => expect(posts.length).toBe(1));
+    expect(posts[0].url).toContain('/admin/oie/decisions/d1');
+    expect(posts[0].body).toEqual({ action: 'approve' });
+
+    // rename the standard, search, pick two CREs, repoint
+    fireEvent.change(getByLabelText('standard name d1'), { target: { value: 'SLSA' } });
+    fireEvent.change(getByLabelText('repoint d1'), { target: { value: 'sess' } });
+    fireEvent.click(await findByText('222-222 Sessions'));
+    fireEvent.change(getByLabelText('repoint d1'), { target: { value: 'sess' } });
+    fireEvent.click(await findByText('333-333 Session binding'));
+    fireEvent.click(getByText('Repoint'));
+    await waitFor(() => expect(posts.length).toBe(2));
+    expect(posts[1].body).toEqual({
+      action: 'repoint',
+      cre_ids: ['222-222', '333-333'],
+      standard_name: 'SLSA',
+    });
   });
 
   it('shows empty pipeline state', async () => {

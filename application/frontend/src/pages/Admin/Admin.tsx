@@ -894,6 +894,200 @@ function GraphManagementTab({ origin }: { origin: string }) {
   );
 }
 
+function ExternalSuggestions({ origin }: { origin: string }) {
+  const [items, setItems] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    url: '',
+    prefixes: '',
+    maxPages: '200',
+    refreshDays: '30',
+    weight: '1',
+  });
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    fetch(`${origin}/admin/external`, { credentials: 'include' })
+      .then(async (res) => {
+        const body = await readJson(res);
+        if (!res.ok) throw new Error(apiError(body, res));
+        setItems((body.external || []).filter((e: any) => e.status === 'suggested'));
+      })
+      .catch((err) => setError(String(err)));
+  }, [origin]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const startEdit = (e: any) => {
+    const spec = e.spec || {};
+    setEditing(e.id);
+    setForm({
+      url:
+        e.kind === 'youtube_channel'
+          ? spec.channel_id || spec.playlist_id || ''
+          : (spec.start_urls || [])[0] || '',
+      prefixes: (spec.allow_prefixes || []).join(', '),
+      maxPages: String(spec.max_pages ?? 200),
+      refreshDays: String(spec.refresh_days ?? 30),
+      weight: String(spec.weight ?? 1),
+    });
+  };
+
+  const send = async (e: any, action: 'accept' | 'reject', overrides: Record<string, unknown> = {}) => {
+    setBusy(e.id);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch(`${origin}/admin/external/${encodeURIComponent(e.id)}/${action}`, {
+        method: 'POST',
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(overrides),
+      });
+      const body = await readJson(res);
+      if (!res.ok) throw new Error(apiError(body, res));
+      setNotice(`${e.name}: ${action === 'accept' ? 'accepted' : 'rejected'}`);
+      setEditing(null);
+      load();
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const accept = (e: any) => {
+    const overrides: Record<string, unknown> = {
+      allow_prefixes: form.prefixes
+        .split(',')
+        .map((p) => p.trim())
+        .filter(Boolean),
+      max_pages: Number(form.maxPages),
+      refresh_days: Number(form.refreshDays),
+      weight: Number(form.weight),
+    };
+    if (e.kind === 'youtube_channel')
+      overrides[(form.url || '').startsWith('PL') ? 'playlist_id' : 'channel_id'] = form.url;
+    else overrides.start_urls = [form.url.trim()];
+    return send(e, 'accept', overrides);
+  };
+
+  return (
+    <div className="admin-card">
+      <h3>Suggested external sources</h3>
+      <p className="admin-card__sub">
+        Websites and YouTube channels linked from harvested repos. Nothing is crawled until you accept.
+      </p>
+      {error && <Message negative>{error}</Message>}
+      {notice && <Message>{notice}</Message>}
+      {!items.length && <p className="admin-help">No suggestions.</p>}
+      {items.map((e) => {
+        const spec = e.spec || {};
+        const found = spec.found_in || [];
+        return (
+          <article className="admin-review-item" key={e.id} data-testid={`suggestion-${e.id}`}>
+            <div
+              style={{
+                padding: '0.65rem 0.75rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: '1rem',
+              }}
+            >
+              <div>
+                <code>{e.id}</code> <span className="admin-pill muted">{e.kind}</span>{' '}
+                <span className="admin-pill muted">score {e.score ?? 0}</span>
+                <div className="admin-help">{e.name}</div>
+                {found.slice(0, 3).map((f: any, i: number) => (
+                  <div className="admin-help" key={i}>
+                    <span className="admin-pill muted">
+                      {f.source === 'crawl' ? 'crawl' : f.source === 'seed' ? 'seed' : 'GitHub'}
+                    </span>{' '}
+                    {f.source === 'crawl'
+                      ? `found on ${f.page}`
+                      : f.source === 'seed'
+                      ? `curated list ${f.page}`
+                      : `${f.repo} · ${f.file}`}
+                    {f.link_text ? ` · "${f.link_text}"` : ''}
+                  </div>
+                ))}
+                {found.length > 3 && <div className="admin-help">+{found.length - 3} more</div>}
+              </div>
+              <div>
+                <Button size="mini" primary disabled={busy === e.id} onClick={() => startEdit(e)}>
+                  Accept
+                </Button>{' '}
+                <Button size="mini" disabled={busy === e.id} onClick={() => send(e, 'reject')}>
+                  Reject
+                </Button>
+              </div>
+            </div>
+            {editing === e.id && (
+              <div className="admin-review-item__body">
+                <label>
+                  {e.kind === 'youtube_channel' ? 'Channel or playlist id' : 'Start URL'}{' '}
+                  <input
+                    aria-label="start url"
+                    value={form.url}
+                    onChange={(ev) => setForm({ ...form, url: ev.target.value })}
+                  />
+                </label>{' '}
+                {e.kind !== 'youtube_channel' && (
+                  <label>
+                    Allowed prefixes{' '}
+                    <input
+                      aria-label="allowed prefixes"
+                      placeholder="comma separated, default same host"
+                      value={form.prefixes}
+                      onChange={(ev) => setForm({ ...form, prefixes: ev.target.value })}
+                    />
+                  </label>
+                )}{' '}
+                <label>
+                  Max pages{' '}
+                  <input
+                    aria-label="max pages"
+                    type="number"
+                    value={form.maxPages}
+                    onChange={(ev) => setForm({ ...form, maxPages: ev.target.value })}
+                  />
+                </label>{' '}
+                <label>
+                  Refresh days{' '}
+                  <input
+                    aria-label="refresh days"
+                    type="number"
+                    value={form.refreshDays}
+                    onChange={(ev) => setForm({ ...form, refreshDays: ev.target.value })}
+                  />
+                </label>{' '}
+                <label>
+                  Weight{' '}
+                  <input
+                    aria-label="weight"
+                    type="number"
+                    step={0.05}
+                    min={0}
+                    max={3}
+                    value={form.weight}
+                    onChange={(ev) => setForm({ ...form, weight: ev.target.value })}
+                  />
+                </label>{' '}
+                <Button size="mini" primary disabled={busy === e.id} onClick={() => accept(e)}>
+                  Confirm accept
+                </Button>
+              </div>
+            )}
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
 function WorkbenchTab({ origin }: { origin: string }) {
   const [targets, setTargets] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -1049,6 +1243,7 @@ function WorkbenchTab({ origin }: { origin: string }) {
           </Button>
         </p>
       </div>
+      <ExternalSuggestions origin={origin} />
     </div>
   );
 }
@@ -1505,6 +1700,298 @@ function flagChips(cfg: any): string[] {
   return chips;
 }
 
+type PickedCre = { cre_id: string; name: string };
+
+function CrePicker({
+  origin,
+  label,
+  picked,
+  multi,
+  onChange,
+}: {
+  origin: string;
+  label: string;
+  picked: PickedCre[];
+  multi: boolean;
+  onChange: (next: PickedCre[]) => void;
+}) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<PickedCre[]>([]);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) {
+      setResults([]);
+      return undefined;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      fetch(`${origin}/admin/oie/cres/search?q=${encodeURIComponent(q)}`, { credentials: 'include' })
+        .then(async (res) => {
+          const body = await readJson(res);
+          if (!cancelled && res.ok) setResults(body.items || []);
+        })
+        .catch(() => undefined);
+    }, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [origin, query]);
+
+  const choose = (cre: PickedCre) => {
+    if (!picked.some((p) => p.cre_id === cre.cre_id)) {
+      onChange(multi ? [...picked, cre] : [cre]);
+    }
+    setQuery('');
+    setResults([]);
+  };
+
+  return (
+    <span className="cre-picker">
+      {picked.map((c) => (
+        <span key={c.cre_id} className="admin-pill">
+          {c.cre_id} {c.name}{' '}
+          <a
+            href="#remove"
+            aria-label={`remove ${c.cre_id}`}
+            onClick={(e) => {
+              e.preventDefault();
+              onChange(picked.filter((p) => p.cre_id !== c.cre_id));
+            }}
+          >
+            x
+          </a>
+        </span>
+      ))}
+      <input
+        aria-label={label}
+        placeholder="Search CREs by name or id"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+      {results.length > 0 && (
+        <ul className="cre-picker-results">
+          {results.map((r) => (
+            <li key={r.cre_id}>
+              <a
+                href="#choose"
+                onClick={(e) => {
+                  e.preventDefault();
+                  choose(r);
+                }}
+              >
+                {r.cre_id} {r.name}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </span>
+  );
+}
+
+function OieReviewPanel({ origin }: { origin: string }) {
+  const [view, setView] = useState<'review' | 'filed'>('review');
+  const [status, setStatus] = useState('');
+  const [decisions, setDecisions] = useState<any[]>([]);
+  const [filed, setFiled] = useState<any[]>([]);
+  const [total, setTotal] = useState(0);
+  const [picked, setPicked] = useState<Record<string, PickedCre[]>>({});
+  const [standardNames, setStandardNames] = useState<Record<string, string>>({});
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    const url =
+      view === 'review'
+        ? `${origin}/admin/oie/decisions?page_size=25${status ? `&status=${status}` : ''}`
+        : `${origin}/admin/oie/filed?page_size=25`;
+    fetch(url, { credentials: 'include' })
+      .then(async (res) => {
+        const body = await readJson(res);
+        if (!res.ok) throw new Error(apiError(body, res));
+        setTotal(body.total || 0);
+        if (view === 'review') setDecisions(body.items || []);
+        else setFiled(body.items || []);
+      })
+      .catch((err) => setError(String(err)));
+  }, [origin, view, status]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const post = async (path: string, payload: any, done: string) => {
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch(`${origin}${path}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: mutHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(payload),
+      });
+      const body = await readJson(res);
+      if (!res.ok) {
+        setError(apiError(body, res));
+        return;
+      }
+      setNotice(done);
+      load();
+    } catch (err) {
+      setError(String(err));
+    }
+  };
+
+  // Only send an explicit name when the reviewer changed the suggestion.
+  const nameFor = (d: any): Record<string, string> => {
+    const typed = (standardNames[d.id] ?? '').trim();
+    return typed && typed !== (d.source?.standard_name || '') ? { standard_name: typed } : {};
+  };
+
+  return (
+    <div className="oie-review">
+      <p>
+        <Button size="mini" basic active={view === 'review'} onClick={() => setView('review')}>
+          Needs review
+        </Button>
+        <Button size="mini" basic active={view === 'filed'} onClick={() => setView('filed')}>
+          Filed links
+        </Button>
+        {view === 'review' && (
+          <select aria-label="status filter" value={status} onChange={(e) => setStatus(e.target.value)}>
+            <option value="">all statuses</option>
+            <option value="review_required">review_required</option>
+            <option value="linked">linked</option>
+          </select>
+        )}{' '}
+        <span>{total} items</span>
+      </p>
+      {error && <Message negative>{error}</Message>}
+      {notice && <Message info>{notice}</Message>}
+      {view === 'review' &&
+        decisions.map((d) => (
+          <div key={d.id} className="admin-card" data-testid="oie-decision">
+            <strong>{d.source?.title || d.source?.path || d.chunk_id}</strong>{' '}
+            <span className="admin-pill muted">{d.status}</span>
+            {d.reason_code && <span className="admin-pill muted">{d.reason_code}</span>}
+            <div>
+              {d.source?.repo || d.source?.standard_name}{' '}
+              {d.source?.hyperlink && (
+                <a href={d.source.hyperlink} target="_blank" rel="noreferrer">
+                  source
+                </a>
+              )}
+            </div>
+            <div style={{ whiteSpace: 'pre-wrap', maxHeight: '8rem', overflow: 'auto' }}>{d.text}</div>
+            <ul>
+              {d.candidates.map((c: any) => (
+                <li key={c.cre_id}>
+                  {c.cre_id} {c.cre_name} ({Number(c.confidence).toFixed(2)})
+                </li>
+              ))}
+              {d.candidates.length === 0 && <li>No proposed CREs</li>}
+            </ul>
+            <div>
+              <label>
+                Standard{' '}
+                <input
+                  aria-label={`standard name ${d.id}`}
+                  value={standardNames[d.id] ?? d.source?.standard_name ?? ''}
+                  onChange={(e) => setStandardNames({ ...standardNames, [d.id]: e.target.value })}
+                />
+              </label>
+            </div>
+            <CrePicker
+              origin={origin}
+              label={`repoint ${d.id}`}
+              multi
+              picked={picked[d.id] || []}
+              onChange={(next) => setPicked({ ...picked, [d.id]: next })}
+            />
+            <Button
+              size="mini"
+              primary
+              disabled={d.candidates.length === 0}
+              onClick={() =>
+                post(`/admin/oie/decisions/${d.id}`, { action: 'approve', ...nameFor(d) }, 'Approved')
+              }
+            >
+              Approve proposed
+            </Button>
+            <Button
+              size="mini"
+              disabled={(picked[d.id] || []).length === 0}
+              onClick={() =>
+                post(
+                  `/admin/oie/decisions/${d.id}`,
+                  { action: 'repoint', cre_ids: (picked[d.id] || []).map((c) => c.cre_id), ...nameFor(d) },
+                  'Repointed'
+                )
+              }
+            >
+              Repoint
+            </Button>
+            <Button
+              size="mini"
+              negative
+              onClick={() => post(`/admin/oie/decisions/${d.id}`, { action: 'reject' }, 'Rejected')}
+            >
+              Reject
+            </Button>
+          </div>
+        ))}
+      {view === 'review' && decisions.length === 0 && <p>Nothing waiting for review.</p>}
+      {view === 'filed' &&
+        filed.map((n) => (
+          <div key={n.node_id} className="admin-card" data-testid="oie-filed">
+            <strong>
+              {n.name} {n.section}
+            </strong>{' '}
+            {n.hyperlink && (
+              <a href={n.hyperlink} target="_blank" rel="noreferrer">
+                source
+              </a>
+            )}
+            <ul>
+              {n.links.map((l: any) => {
+                const key = `${n.node_id}:${l.cre_id}`;
+                const target = (picked[key] || [])[0];
+                return (
+                  <li key={key}>
+                    {l.cre_id} {l.cre_name} <span className="admin-pill muted">{l.type}</span>{' '}
+                    <CrePicker
+                      origin={origin}
+                      label={`repoint ${n.node_id} ${l.cre_id}`}
+                      multi={false}
+                      picked={picked[key] || []}
+                      onChange={(next) => setPicked({ ...picked, [key]: next })}
+                    />
+                    <Button
+                      size="mini"
+                      disabled={!target}
+                      onClick={() =>
+                        post(
+                          `/admin/oie/filed/${n.node_id}/repoint`,
+                          { from_cre_id: l.cre_id, to_cre_id: target.cre_id },
+                          'Link repointed'
+                        )
+                      }
+                    >
+                      Repoint
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      {view === 'filed' && filed.length === 0 && <p>No auto-filed or reviewed nodes yet.</p>}
+    </div>
+  );
+}
+
 function PipelineTab({ origin }: { origin: string }) {
   const [data, setData] = useState<any>(null);
   const [ingest, setIngest] = useState<any>(null);
@@ -1742,7 +2229,7 @@ function PipelineTab({ origin }: { origin: string }) {
       </table>
       <h3>OIE decisions</h3>
       <p>Unconsumed: {data.oie?.unconsumed ?? 0}</p>
-      <pre className="admin-pre">{JSON.stringify(data.oie?.recent || [], null, 2)}</pre>
+      <OieReviewPanel origin={origin} />
       <h3>LLM reasoning</h3>
       {(data.oie?.knowledge || []).length === 0 ? (
         <p>No knowledge-queue artifacts.</p>

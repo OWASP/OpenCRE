@@ -169,3 +169,80 @@ class TestCleanAnswerText(unittest.TestCase):
         self.assertEqual(
             clean_answer_text("SAMM has 3 levels [1][2]."), "SAMM has 3 levels [1][2]."
         )
+
+
+class TestCompoundClausesKeepTheirSubject(unittest.TestCase):
+    def test_later_clauses_get_earlier_clauses_as_background(self):
+        seen = []
+
+        class Probe(r.OwaspAgentRouter):
+            def __init__(self):  # no store needed for this probe
+                pass
+
+            def handle(self, prompt, history=None, _clause=False):
+                seen.append((prompt, history))
+                return {"response": f"Answer: {prompt}", "accurate": True}
+
+        out = Probe()._handle_compound(
+            ["Who runs the PwnzzAI training", "how long is it"], None
+        )
+        self.assertEqual(seen[0], ("Who runs the PwnzzAI training", None))
+        self.assertEqual(
+            seen[1],
+            (
+                "how long is it",
+                [{"role": "user", "content": "Who runs the PwnzzAI training"}],
+            ),
+        )
+        self.assertIn("how long is it", out["response"])
+
+
+class TestTalkAsksAboutAnIndexedEventGoToEvidence(unittest.TestCase):
+    def test_talk_question_naming_an_event_is_not_answered_with_dates_only(self):
+        class Q:
+            def find_events(self, text):
+                return [{"name": "OWASP AppSec Days Portugal 2026"}]
+
+        class Probe(r.OwaspAgentRouter):
+            def __init__(self):
+                self.queries = Q()
+
+        probe = Probe()
+        talk = "Did Diogo Sousa give a talk at OWASP AppSec Days Portugal 2026?"
+        self.assertEqual(
+            probe._index_event_intent("talk_lookup", talk), "cre_normative"
+        )
+        when = "When is OWASP AppSec Days Portugal 2026?"
+        self.assertEqual(
+            probe._index_event_intent("cre_normative", when), "event_lookup"
+        )
+
+
+class TestCatalogueFallback(unittest.TestCase):
+    def test_closest_talks_with_links_and_honest_wording(self):
+        from types import SimpleNamespace as H
+
+        def hit(vid, title, url_kind="ext-yt-owasp"):
+            return H(
+                url=f"owasp-agent://evidence/comprehension-{url_kind}-raw-{vid}",
+                content=f"Title: {title}\nPublished: 2026-10-27\nVideo: https://www.youtube.com/watch?v={vid}\n",
+            )
+
+        hits = [
+            hit("abcdefghijk", "Talk A"),
+            H(url="owasp-agent://evidence/comprehension-aisvs-raw-1", content="x"),
+            hit("lmnopqrstuv", "Talk B"),
+            hit("abcdefghijk", "Talk A again"),
+        ]
+        text, cites = r._catalogue_fallback(hits)
+        self.assertEqual(
+            cites,
+            [
+                "https://www.youtube.com/watch?v=abcdefghijk",
+                "https://www.youtube.com/watch?v=lmnopqrstuv",
+            ],
+        )
+        self.assertIn("could not find a talk that matches exactly", text)
+        self.assertIn("not what was said", text)
+        self.assertNotIn("key=", text)
+        self.assertIsNone(r._catalogue_fallback([hits[1]]))

@@ -67,6 +67,39 @@ _DOUBLE_MARK = re.compile(r"\[\[(\d+)\]\]")
 _BARE_URL = re.compile(r"https?://[^\s)\]>]+")
 
 
+_WATCH_URL = re.compile(r"^https://(www\.)?youtube\.com/watch\?v=[\w-]{6,}(&t=\d+s?)?$")
+
+
+def _keep_watch_link(m: "re.Match[str]") -> str:
+    """A YouTube watch link is the answer to "where can I watch it": keep it, drop other URLs."""
+    url = m.group(0).rstrip(".,;:")
+    return m.group(0) if _WATCH_URL.match(url) else ""
+
+
+_VIDEO_LINE = re.compile(
+    r"^Video: (https://www\.youtube\.com/watch\?v=[\w-]{6,})\s*$", re.M
+)
+_TITLE_LINE = re.compile(r"^Title: (.+)$", re.M)
+
+
+def watch_lines(answer: str, texts: Sequence[str], limit: int = 3) -> str:
+    """ "Watch: <title> <link>" lines for the YouTube catalogue entries an answer used.
+
+    The model is told to give the video link but often only cites it, so the links of the used
+    talks are added deterministically (never repeating a link already in the answer).
+    """
+    lines: List[str] = []
+    for text in texts:
+        m = _VIDEO_LINE.search(text or "")
+        if not m or m.group(1) in answer or any(m.group(1) in x for x in lines):
+            continue
+        t = _TITLE_LINE.search(text)
+        lines.append(f"Watch: {t.group(1).strip() if t else 'video'} - {m.group(1)}")
+        if len(lines) >= limit:
+            break
+    return "\n".join(lines)
+
+
 def max_resources() -> int:
     """Most resource links one answer shows (stricter = fewer, better ones)."""
     try:
@@ -87,8 +120,22 @@ def clean_answer_text(text: str) -> str:
         lambda m: f"[{m.group(1)}]" if m.group(1).isdigit() else m.group(1), out
     )
     out = _DOUBLE_MARK.sub(lambda m: f"[{m.group(1)}]", out)
-    out = _BARE_URL.sub("", out)
+    out = _BARE_URL.sub(_keep_watch_link, out)
     return re.sub(r"[ \t]+([.,;:])", r"\1", out)
+
+
+AS_OF_RULE = (
+    "\nSome sources start with a line like 'Source: <url> | fetched <date>'. They are web pages that "
+    "can change. When the question is about something current or upcoming (events, dates, who is "
+    "involved), say 'as of <fetched date>' in the answer."
+)
+
+NO_TRANSCRIPT_RULE = (
+    "\nSome sources are video catalogue entries containing 'Transcript: not indexed'. When the question "
+    "asks what was said or covered in such a talk, answer with its title, speaker, event, date and the "
+    "video link, and say plainly that the transcript is not indexed so you cannot say what was said. "
+    "Whenever a source gives a video link for a talk you mention, include that link in the answer."
+)
 
 
 def renumber_citations(
@@ -208,6 +255,10 @@ def synthesize(
 
     if get_history():
         system += HISTORY_RULE
+    if any("| fetched " in t for t, _ in hits):
+        system += AS_OF_RULE
+    if any("Transcript: not indexed" in t for t, _ in hits):
+        system += NO_TRANSCRIPT_RULE
     if flags.on("EDITION"):
         system += EDITION_RULE
     if flags.on("COMPLETE"):
@@ -235,6 +286,9 @@ def synthesize(
     from application.utils.comprehension import paths
 
     cites = paths.order_and_cap(cites, max_resources())
+    extra = watch_lines(out, [hits[i - 1][0] for i in used])
+    if extra:
+        out = out.rstrip() + "\n\n" + extra
     out, number = renumber_citations(out, hits, used, cites)
     _record_evidence(hits, used, number)
     return out, cites

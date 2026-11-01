@@ -1,0 +1,163 @@
+[
+ {
+  "url": "https://www.youtube.com/watch?v=6VxHeV4pjFA",
+  "title": "OWASP Leaders: How to manage your project, chapter, working group, or meeting",
+  "published": "2026-09-09",
+  "duration": "12 min",
+  "description": "This video goes into how to manage your project, chapter, working group, and how to create meetings. Please note that passwords have a very short life span, because we will be replacing with Google SSO for owasp.org folks, and passkeys for everyone else. There will be NO passwords within the next 7 days.\n\nChapters\n0:00 Intro and how to find your password reset\n1:42 Sign in to the new website and looking around\n2:17 Managing Projects \n4:02 Managing Commitees or Working Groups\n5:02 Managing Chapters\n6:35 Creating a meeting for your chapter, group, or project\n7:55 Migration from our current website to the new website\n9:42 We want your feedback and we want to make the website even better\n\nManaged by the OWASP® Foundation\nhttps://owasp.org/"
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=6Ydi0_i70nA",
+  "title": "OWASP AppSec Europe 2014 - Security Management & Training Track",
+  "published": "2014-06-25",
+  "duration": "9h 34min",
+  "description": "http://appseceurope2014.sched.org/venue/LAB026\n\nWednesday, June 25\n\nBackup-Stream: http://itsecteam.ms/live\n\nLive from AppSecEU 2014 in Cambridge\nhttps://2014.appsec.eu/\n \n09:15\nKeynote - Fighting Next-Generation Adversaries with Shared Threat Intelligence\n10:00\nOWASP Board Presentation\n11:00\nBiting into the Forbidden Fruit. Lessons from Trusting JavaScript Crypto.\n11:50\nOWASP Security Shepherd - Mobile/Web Security Awareness and Education\n13:50\nOWASP Hackademic: Towards an Educational Ecosystem for Application Security\n14:40\nRelax everybody, HTML5 is much securer than you think\n15:55\nOWASP - CISO Survey Report 2013 -- Tactical Insights for Managers\n16:45\nPCI DSS and Secure Applications\n17:35\nKeynote - CopperDroid: On the Reconstruction of Android Malware Behaviors\n\n-\n\nManaged by the official OWASP Media Project https://www.owasp.org/index.php/OWASP_Media_Project"
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=BT5LuBgwQA4",
+  "title": "How to build a security mindset - Anna Lezhikova",
+  "published": "2022-01-06",
+  "duration": "47 min",
+  "description": "Speaker\nAnna Lezhikova\nCogo, Lead DevSecOps Engineer\n\nDescription\nOur security knowledge increases, our tools improve, but breaches still happen.\n\nStudies show that 95% of security breaches are caused by human errors. One strategy to eliminate them might be to automate everything―to use smart technologies. But full automation remains an unrealized desideratum.\n\nAnother strategy is to build a security mindset. And here we have a challenge: how do we encourage people to do something that requires effort, that demands a change in behavior?\n\nRecently, I participated in several activities through which I learned about the Maori way of educating people and managing change through storytelling and mutual teaching. It inspired in me the idea that this approach could be effective for educating people about security.\n\nI lead cyber security work at a small company that is rapidly scaling and must s"
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=V1c2cy2G3Wo",
+  "title": "Wait, Wait! Don't pwn Me! - AppSecUSA 2015",
+  "published": "2015-10-20",
+  "duration": "37 min",
+  "description": "Recorded at AppSecUSA 2015 in San Francisco\nhttps://2015.appsecusa.org/\n\nTest your wits and current AppSec news knowledge against our panel of distinguished guests. In the past, panelists have included Joshua Corman (Sonatype), Chris Eng (Veracode), Space Rogue (The Universe), Matt Tesauro (RackSpace), Ed Burns (Oracle), Justin Woo (PayPal), Jacob West (NetSuite) and Matthew McCullough (GitHub). \"Wait Wait... Don't Pwn Me!\" is patterned after the NPR news quiz show where we challenge the panel and the audience with \"Bluff the Listener\", \"This Week's Security News\", \"The Security Limerick Challenge\" and \"Lightning Fill In the Blank\". \n\nThink you know your stuff? Get selected as an audience participant and prove it! Join us for a rollicking hour as we test the panel and the audience on recent security stories in the news. Who knows? Maybe you can pwn the panel.\n\nJosh Corman @joshcorman\nCTO"
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=0E8WgykFfQ4",
+  "title": "AppSecEU 16 - Julia Knecht - SAASY SPLC",
+  "published": "2016-07-16",
+  "duration": "43 min",
+  "description": "From AppSecEU 2016 in Rome\nhttps://2016.appsec.eu/ -\n\nManaged by the official OWASP Media Project https://www.owasp.org/index.php/OWASP_Media_Project"
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=aYSlx7FHxOQ",
+  "title": "OWASP Open Application Security Curriculum Project - Adrian Winckles",
+  "published": "2022-11-06",
+  "duration": "59 min",
+  "description": "-\n\nManaged by the OWASP® Foundation\nhttps://owasp.org/"
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=wCRkmeLYhYQ",
+  "title": "AppSecCali 2019 -  An Attacker's View of Serverless and GraphQL Apps - Abhay Bhargav",
+  "published": "2019-03-26",
+  "duration": "54 min",
+  "description": "Serverless Technology (Functions as a Service) is fast becoming the next \"big thing\" in the world of distributed applications. Organizations are investing a great deal of resources in this technology as a force-multiplier, cost-saver and ops-simplification cure-all. Especially with widespread support from cloud vendors, this technology is going to only become more influential. However, like everything else, Serverless apps are subject to a a wide variety of attack possibilities, ranging from attacks against access control tech like Function Event Injection, JWTs, to NoSQL Injection, to exploits against the apps themselves (deserialization, etc) escalating privileges to other cloud component.\n\nOn the other hand GraphQL (API Query Language) is the natural companion to serverless apps, where traditional REST APIs are replaced with GraphQL to provide greater flexibility, greater query parame"
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=LOHS5rgSXYA",
+  "title": "Tushar Dalvi & Tony Trummer - QARK: Android App Exploit and SCA Tool - AppSecUSA 2015",
+  "published": "2015-10-01",
+  "duration": "49 min",
+  "description": "Recorded at AppSecUSA 2015 in San Francisco\nhttps://2015.appsecusa.org/\n\nEver wonder why there isn't a metasploit-style framework for Android apps? We did! \n\nWhether you're a developer trying to protect your insecure app from winding up on user devices, an Android n00b or a pentester trying to pwn all the things, QARK is just what you've been looking for! \n\nThis tool combines Static Code Analysis with source-sink mapping, teaching by detailing misconfigurations, citing research detailing the issues and automatic exploitation into one, simple to use application! \n\nOur tool will review any Android app, either from source or APK, highlight version specific issues, detail your app's attack surface, inspect all your app components for misconfigurations and allow you to create on-demand proof-of-concept attack applications.\n\nTushar Dalvi\nSenior Information Security Engineer, Vulnerability Rese"
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=MLmQ4uSi4EU",
+  "title": "Measuring End-to-End Security Engineering - AppSecUSA 2017",
+  "published": "2017-10-19",
+  "duration": "33 min",
+  "description": "Measuring End-to-End Security Engineering\n\nThis talk will introduce a new approach to SDL. At Twilio we call it End to End Security Engineering. It’s End-to-End because it covers the full product lifecycle, from Security Design to Monitoring and gives the ability to measure the state of security at each point.\n\n \n\nThe approach defines a ‘perfect secure system’ and produces metrics which tell us where we are relative to that perfect system.\n\n \n\nThe final state of the product’s security and risk depends on ‘collective understanding’ of threats and attacks as well as investments in building controls, tests and detections. Then we measure and adjust them to improve their effectiveness.\n\n \n\nA perfect secure system is one for which:\n\n- All products and features are threat modeled\n\n- All possible attacks are identified\n\n- All attacks are being monitored for\n\n- All attacks are protected with con"
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=1CDSOSl4DQU",
+  "title": "AppSec EU15 - Aaron Weaver - Building An AppSec Pipeline: Keeping Your Program, And Your Life, Sane",
+  "published": "2015-06-09",
+  "duration": "46 min",
+  "description": "From AppSecEU 2015 in Amsterdam \nhttps://2015.appsec.eu/\n\nAaron Weaver \nBuilding An AppSec Pipeline: Keeping Your Program, And Your Life, Sane \n\nYou can download all Videos at\nhttps://www.its.fh-muenster.de/owasp-appseceu/2015/ \n\n-\n\nManaged by the official OWASP Media Project https://www.owasp.org/index.php/OWASP_Media_Project"
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=MbLrfHa4Lvo",
+  "title": "Benchmarking AppSec Across Industries - Chris Eng - AppSec California 2016",
+  "published": "2016-03-22",
+  "duration": "45 min",
+  "description": "Every industry faces the challenge of securing software, so why do some industries “get it” while others struggle to manage the problem at scale? \n\nIn this session, we will share data drawn from over 200,000 application assessments performed via Veracode’s cloud platform over an 18-month period. This is the largest data set of its kind, and it provides unique insight into the state of software security. Attendees can use this information to benchmark their AppSec program against peers, answering key questions such as:\n  Do I have more serious vulnerabilities than my peers?\n  What percentage of vulnerabilities do my peers remediate? \n  How many of our applications should pass the OWASP Top 10 when initially assessed?\n  What are the most common vulnerabilities in our vertical?\n  How do coding vulnerabilities manifest across different programming languages?\n\nChris Eng\nVeracode\nChris Eng has"
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=6vod3yDQwDM",
+  "title": "The Map Of Artificial Treasures: What To Automate In Security - And Why? - Michael Helwig",
+  "published": "2026-08-10",
+  "duration": "46 min",
+  "description": "-\n\nManaged by the OWASP® Foundation\nhttps://owasp.org/"
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=LJIoyx405bw",
+  "title": "AppSec EU15 - Simon Bennetts - OWASP ZAP: More Advanced Features",
+  "published": "2015-06-09",
+  "duration": "46 min",
+  "description": "From AppSecEU 2015 in Amsterdam \nhttps://2015.appsec.eu/\n\nSimon Bennetts \nOWASP ZAP: More Advanced Features \n\nYou can download all Videos at\nhttps://www.its.fh-muenster.de/owasp-appseceu/2015/ ⇩\n\n-\n\nManaged by the official OWASP Media Project https://www.owasp.org/index.php/OWASP_Media_Project"
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=_e1OPbqmTOw",
+  "title": "202202 February 2022 Global Board Meeting",
+  "published": "2025-02-03",
+  "duration": "56 min",
+  "description": "Minutes here: https://owasp.org/www-board/meetings-historical/2022/202202.html\n\nManaged by the OWASP® Foundation\nhttps://owasp.org/"
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=nJf5mUvvU-M",
+  "title": "LLMs in AppSec: Why They Still Need a Chaperone",
+  "published": "2025-12-15",
+  "duration": "35 min",
+  "description": "Large Language Models (LLMs) are making their way into application security (AppSec), promising to speed up vulnerability detection, code reviews, and even pentesting. Sounds great, right? The problem is, LLMs are confident, creative, and still unreliable when left unsupervised.\n\nSecurity teams are eager to use AI for threat modeling, secure code generation, and policy enforcement, but these models still hallucinate vulnerabilities, suggest insecure fixes, and miss subtle security risks that a human would catch. Instead of solving security, AI is just shifting the problem in new (and sometimes unpredictable) ways.\n\nThis talk dives into real-world failures where AI-assisted security tools missed threats or created new ones, why human oversight is still crucial, and how future AI models might finally reduce the babysitting burden.\n\nVineeta Sangaraju\nSenior Research Engineer\n\nVineeta is a s"
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=rssg--FP1AE",
+  "title": "OWASP BeNeLux Day Don't trust the DOM: Bypassing XSS mitigations via script gadgets by S. Lekies",
+  "published": "2017-11-27",
+  "duration": "42 min",
+  "description": "Abstract\nCross-Site Scripting is a constant problem of the Web platform. Over the years many techniques have been introduced to prevent or mitigate XSS. Most of these techniques, thereby, focus on script tags and event handlers. HTML sanitizers, for example, aim at removing potentially dangerous tags and attributes. Another example is the Content Security Policy, which forbids inline event handlers and aims at white listing of legitimate scripts.\nIn this talk, we present a novel Web hacking technique that enables an attacker to circumvent most XSS mitigations. In order to do so, the attacker abuses so-called script gadgets. A script gadget Is a legitimate piece of JavaScript in a page that reads elements from the DOM via selectors and processes them in a way that results in script execution. To abuse a script gadget, the attacker injects a benign looking element into the page that matche"
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=LNyPmsAPIUQ",
+  "title": "OWASP Flagship Projects: OWASP Top 10  \"Intro of Top 10\" - Andrew van der Stock",
+  "published": "2022-01-06",
+  "duration": "28 min",
+  "description": "OWASP Top 10 Flagship Project \"Intro of Top 10\" - Andrew van der Stock\n\nManaged by the OWASP® Foundation\nhttps://owasp.org/"
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=AEPg6kR7Gi4",
+  "title": "Jimmy Mesta - Containerizing your Security Operations Center - AppSecUSA 2016",
+  "published": "2016-11-21",
+  "duration": "46 min",
+  "description": "Recorded at AppSecUSA 2016 in Washington, DC\nhttps://2016.appsecusa.org/\n\nContainerizing your Security Operations Center\n\nAs security professionals, we have no shortage of tools available to us in our offensive and defensive pursuits. How we choose to deploy, maintain, and share these tools across teams can prove to be burdensome and overly complex. Security teams are becoming swept up in the DevOps movement and we are being encouraged to bring visibility into our workflows and toolsets. This means moving things from our local boxes to a more available and collaborative environment. This talk will share lessons learned from building a pluggable, cloud­based \"Security Operations Center\" running entirely on containers to help security teams rapidly build out scanning pipelines, centralize alerts, investigate malware, and easily collaborate with teams across the organization. I’ll dive into"
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=Cih5cDJQxzc",
+  "title": "Keynote: Request Forgery on the Web - SSRF, CSRF and Clickjacking - Jim Manico",
+  "published": "2022-01-06",
+  "duration": "46 min",
+  "description": "Speaker: \nJim Manico\nManicode Security, Founder, CEO and Application Security Educator\n\nDescription\nThis technical talk on various forms of request forgery is for the software developer who needs to build secure web applications. Cross-Site Request Forgery, or CSRF, will allow an attacker to trick a user into submitting a transaction they never intended to. This attack type requires very specialized defense. We will discuss various historical CSRF attacks and investigate a wide range of defensive strategies such as nonce tokens, SameSite cookies, and the double-cookie submit pattern. SSFF is a direct attacker category meant to trick your servers into making additional requests than never intended to. Clickjacking is a way to trick users into taking action and entering data into one site while another is collecting those events. We will be helping developers stop forgery on the web in thi"
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=vxiMBv9VOfM",
+  "title": "OWASP Global Board of Directors - October 2025",
+  "published": "2025-11-17",
+  "duration": "1h 54min",
+  "description": "A slightly delayed October Board meeting to match up with Global AppSec USA\n\nMinutes here: TBA\n\nManaged by the OWASP® Foundation\nhttps://owasp.org/"
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=m1lCr6707Cs",
+  "title": "Million Browser Botnet - Jeremiah Grossman   Matt Johanssen",
+  "published": "2014-02-03",
+  "duration": "47 min",
+  "description": "Online advertising networks can be a web hacker¹s best friend. For mere\npennies per thousand impressions (that means browsers) there are service\nproviders who allow you to broadly distribute arbitrary javascript -- even\nmalicious javascript! You are SUPPOSED to use this ³feature² to show ads,\nto track users, and get clicks, but that doesn¹t mean you have to abide.\nAbsolutely nothing prevents spending $10, $100, or more to create a\nmassive javascript-driven browser botnet instantly. The real-world power\nis spooky cool. We know, because we tested itŠ in-the-wild. Besides\nattacking ourselves we've also tested against a well known target with\nlots of DDoS protectionŠ Akamai.\n\nWith a few lines of HTML5 and javascript code we¹ll demonstrate just how\nyou can easily commandeer browsers to perform DDoS attacks, participate in\nemail spam campaigns, crack hashes and even help brute-force passwords."
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=GjK0bB4K2zA",
+  "title": "Popular Approaches to Preventing Code Injection Attacks are Dangerously Wrong - AppSecUSA 2017",
+  "published": "2017-10-23",
+  "duration": "46 min",
+  "description": "Popular Approaches to Preventing Code Injection Attacks are Dangerously Wrong\n\nAccording to the 2016 Verizon Data Breach Investigation Report, web application attacks are the top source of data breaches today. During the past decade, address space layout randomization (ASLR) has become a feature present in all major OS and a significant guard against buffer overflows and similar attacks by randomizing the location where system executables are loaded into memory.\n \n\nWhile ASLR has been effective at the OS level, the principles have not been applied as a means of securing managed virtual machines and runtime environments. Traditional heuristic methods of protection are increasingly ineffective, requiring new approaches to application security. This talk will explore the past, present and future of Java-based application vulnerabilities before sharing a newly developed technology created as"
+ },
+ {
+  "url": "https://www.youtube.com/watch?v=bawJKUBkQMk",
+  "title": "APPSEC CA 2017 Arvind Mani",
+  "published": "2017-05-21",
+  "duration": "47 min",
+  "description": "Life of a Password \nArvind Mani\n LinkedIn\nEngineering Director, Security, Anti-Abuse & Privacy\nhttps://linkedin.com/in/arvindmani\nArvind is the head of Trust Engineering at LinkedIn where he leads a team of 60+ engineers who solve security, privacy, and anti-abuse problems. He has over 16 years of experience in security and has spent the past decade securing several Alexa Top 50 websites. He graduated from the University of Maryland with a Masters thesis on authenticated key agreement in dynamic groups. On weekends Arvind enjoys coaching his son’s FIRST Lego League Robotics team. \n\n-\n\nManaged by the official OWASP Media Project https://www.owasp.org/index.php/OWASP_Media_Project"
+ }
+]

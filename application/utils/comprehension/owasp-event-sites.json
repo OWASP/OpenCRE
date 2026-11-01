@@ -1,0 +1,563 @@
+{
+  "generated": "2026-10-29",
+  "note": "Home page and robots.txt fetched once per site; nothing else crawled. See docs/oie/owasp-event-sites.md.",
+  "sites": [
+    {
+      "id": "2026-owaspbenelux-eu",
+      "name": "OWASP BeNeLux Days 2026",
+      "url": "https://2026.owaspbenelux.eu/",
+      "start_url": "https://2026.owaspbenelux.eu/",
+      "kind": "regional",
+      "year": 2026,
+      "dates": "2026-11-26/27",
+      "status": "registered",
+      "suggest": false,
+      "needs_review": false,
+      "review_reasons": [],
+      "relevance": "Regional conference (BeNeLux chapters); already registered and approved in the registry.",
+      "program_url": "https://2026.owaspbenelux.eu/program/",
+      "youtube": {
+        "channel_id": "",
+        "playlist_id": "",
+        "note": ""
+      },
+      "robots": {
+        "status": 404,
+        "generic_agents_allowed": true,
+        "content_usage": "none",
+        "notes": "no robots.txt (404): nothing disallowed"
+      },
+      "max_pages": 40
+    },
+    {
+      "id": "2025-owaspbenelux-eu",
+      "name": "OWASP BeNeLux Days 2025",
+      "url": "https://2025.owaspbenelux.eu/",
+      "start_url": "https://2025.owaspbenelux.eu/",
+      "kind": "regional",
+      "year": 2025,
+      "dates": "",
+      "status": "candidate",
+      "suggest": true,
+      "needs_review": true,
+      "review_reasons": [
+        "previous edition, kept for talk archive value"
+      ],
+      "relevance": "Previous BeNeLux edition (sibling subdomain of the registered 2026 site); program pages list talks and speakers.",
+      "program_url": "https://2025.owaspbenelux.eu/program/",
+      "youtube": {
+        "channel_id": "",
+        "playlist_id": "",
+        "note": ""
+      },
+      "robots": {
+        "status": 404,
+        "generic_agents_allowed": true,
+        "content_usage": "none",
+        "notes": "no robots.txt (404): nothing disallowed"
+      },
+      "max_pages": 40
+    },
+    {
+      "id": "lascon-org",
+      "name": "LASCON 2026 (Lonestar Application Security Conference)",
+      "url": "https://lascon.org/",
+      "start_url": "https://lascon.org/schedule/",
+      "kind": "regional",
+      "year": 2026,
+      "dates": "2026-10-27/30",
+      "status": "candidate",
+      "suggest": true,
+      "needs_review": false,
+      "review_reasons": [],
+      "relevance": "Austin TX AppSec conference run by OWASP Austin; schedule and speaker pages.",
+      "program_url": "https://lascon.org/schedule/",
+      "youtube": {
+        "channel_id": "",
+        "playlist_id": "",
+        "note": ""
+      },
+      "robots": {
+        "status": 200,
+        "generic_agents_allowed": true,
+        "content_usage": "none",
+        "notes": "User-agent * only disallows /wp-admin/; Crawl-delay: 10 (the crawler default 1s delay should be raised for this host)"
+      },
+      "max_pages": 40
+    },
+    {
+      "id": "appsecdays-pt",
+      "name": "OWASP AppSec Days Portugal 2026",
+      "url": "https://appsecdays.pt/",
+      "start_url": "https://appsecdays.pt/program/",
+      "kind": "regional",
+      "year": 2026,
+      "dates": "2026-09-23/24",
+      "status": "candidate",
+      "suggest": true,
+      "needs_review": true,
+      "review_reasons": [
+        "YouTube playlist id looks truncated; verify before use"
+      ],
+      "relevance": "Porto, 23-24 Sep 2026; program page with sessions.",
+      "program_url": "https://appsecdays.pt/program/",
+      "youtube": {
+        "channel_id": "",
+        "playlist_id": "",
+        "note": "home page links youtube.com/playlist?list=PLJJ0_MbdeYHw but the id looks truncated"
+      },
+      "robots": {
+        "status": 404,
+        "generic_agents_allowed": true,
+        "content_usage": "none",
+        "notes": "no robots.txt (404): nothing disallowed"
+      },
+      "max_pages": 40
+    },
+    {
+      "id": "owaspappsecdays-fr",
+      "name": "OWASP AppSec Days France 2026",
+      "url": "https://www.owaspappsecdays.fr/2026/index.html",
+      "start_url": "https://www.owaspappsecdays.fr/2026/index.html",
+      "kind": "regional",
+      "year": 2026,
+      "dates": "2026-09-24",
+      "status": "candidate",
+      "suggest": true,
+      "needs_review": true,
+      "review_reasons": [
+        "program/talks page URL not identified from home page only"
+      ],
+      "relevance": "Paris, 24 Sep 2026; event site per owasp.org events page.",
+      "program_url": "",
+      "youtube": {
+        "channel_id": "",
+        "playlist_id": "",
+        "note": ""
+      },
+      "robots": {
+        "status": 200,
+        "generic_agents_allowed": true,
+        "content_usage": "none",
+        "notes": "User-Agent * with empty Disallow (everything allowed)"
+      },
+      "max_pages": 40
+    },
+    {
+      "id": "god-owasp-de",
+      "name": "German OWASP Day 2026",
+      "url": "https://god.owasp.de/2026/en/",
+      "start_url": "https://god.owasp.de/2026/en/",
+      "kind": "regional",
+      "year": 2026,
+      "dates": "2026-09-23/24",
+      "status": "candidate",
+      "suggest": true,
+      "needs_review": true,
+      "review_reasons": [
+        "YouTube channel owner not verified",
+        "program link is a query-string detail page; start at home"
+      ],
+      "relevance": "Karlsruhe, 23-24 Sep 2026; program and talk detail pages.",
+      "program_url": "https://god.owasp.de/2026/program-detail.html",
+      "youtube": {
+        "channel_id": "UCO7VtjaFHkfsDNZEFg9OssQ",
+        "playlist_id": "",
+        "note": "channel linked from the event page; owner not verified"
+      },
+      "robots": {
+        "status": 200,
+        "generic_agents_allowed": true,
+        "content_usage": "none",
+        "notes": "User-Agent * with empty Disallow (everything allowed)"
+      },
+      "max_pages": 40
+    },
+    {
+      "id": "appsecil-org",
+      "name": "OWASP AppSec Israel 2026",
+      "url": "https://appsecil.org/",
+      "start_url": "https://appsecil.org/agenda",
+      "kind": "regional",
+      "year": 2026,
+      "dates": "2026-10-06",
+      "status": "candidate",
+      "suggest": true,
+      "needs_review": true,
+      "review_reasons": [
+        "robots.txt carries an EU Art. 4 rights-reservation preamble; confirm AI-use stance"
+      ],
+      "relevance": "Tel Aviv, 6 Oct 2026 (rescheduled); agenda page, previous events 2007-2025 linked.",
+      "program_url": "https://appsecil.org/agenda",
+      "youtube": {
+        "channel_id": "",
+        "playlist_id": "",
+        "note": ""
+      },
+      "robots": {
+        "status": 200,
+        "generic_agents_allowed": true,
+        "content_usage": "none (boilerplate content-signals preamble in comments only, no Content-Signal lines)",
+        "notes": "only a Cloudflare content-signals preamble in comments; no directives, nothing disallowed"
+      },
+      "max_pages": 40
+    },
+    {
+      "id": "appsec-org-nz",
+      "name": "OWASP New Zealand Day 2026 (AppSec NZ)",
+      "url": "https://appsec.org.nz/",
+      "start_url": "https://appsec.org.nz/conference/",
+      "kind": "regional",
+      "year": 2026,
+      "dates": "",
+      "status": "candidate",
+      "suggest": true,
+      "needs_review": true,
+      "review_reasons": [
+        "edition year/dates not read from the home page"
+      ],
+      "relevance": "New Zealand AppSec conference; conference page.",
+      "program_url": "https://appsec.org.nz/conference/",
+      "youtube": {
+        "channel_id": "",
+        "playlist_id": "",
+        "note": ""
+      },
+      "robots": {
+        "status": 200,
+        "generic_agents_allowed": true,
+        "content_usage": "none",
+        "notes": "only a Sitemap line; nothing disallowed"
+      },
+      "max_pages": 40
+    },
+    {
+      "id": "india-appsecdays-org",
+      "name": "Global AppSec Days India 2026",
+      "url": "https://india.appsecdays.org/",
+      "start_url": "https://india.appsecdays.org/schedule/",
+      "kind": "regional",
+      "year": 2026,
+      "dates": "2026-11-21/22",
+      "status": "candidate",
+      "suggest": true,
+      "needs_review": true,
+      "review_reasons": [
+        "robots.txt carries an EU Art. 4 rights-reservation preamble; confirm AI-use stance"
+      ],
+      "relevance": "Virtual, 21-22 Nov 2026; schedule page.",
+      "program_url": "https://india.appsecdays.org/schedule/",
+      "youtube": {
+        "channel_id": "",
+        "playlist_id": "",
+        "note": "links the OWASP Global channel (youtube.com/user/OWASPGLOBAL)"
+      },
+      "robots": {
+        "status": 200,
+        "generic_agents_allowed": true,
+        "content_usage": "none (boilerplate content-signals preamble in comments only, no Content-Signal lines)",
+        "notes": "only a Cloudflare content-signals preamble in comments; no directives, nothing disallowed"
+      },
+      "max_pages": 40
+    },
+    {
+      "id": "bangalore-appsecdays-org",
+      "name": "OWASP AppSec Days Bangalore 2025",
+      "url": "https://bangalore.appsecdays.org/",
+      "start_url": "https://bangalore.appsecdays.org/",
+      "kind": "regional",
+      "year": 2025,
+      "dates": "",
+      "status": "candidate",
+      "suggest": true,
+      "needs_review": true,
+      "review_reasons": [
+        "previous edition",
+        "robots.txt carries an EU Art. 4 rights-reservation preamble"
+      ],
+      "relevance": "Previous Indian AppSec Days edition; archive of talks.",
+      "program_url": "",
+      "youtube": {
+        "channel_id": "",
+        "playlist_id": "",
+        "note": ""
+      },
+      "robots": {
+        "status": 200,
+        "generic_agents_allowed": true,
+        "content_usage": "none (boilerplate content-signals preamble in comments only, no Content-Signal lines)",
+        "notes": "only a Cloudflare content-signals preamble in comments; no directives, nothing disallowed"
+      },
+      "max_pages": 40
+    },
+    {
+      "id": "singapore-appsecdays-org",
+      "name": "OWASP AppSec Days Singapore 2025",
+      "url": "https://singapore.appsecdays.org/",
+      "start_url": "https://singapore.appsecdays.org/schedule.html",
+      "kind": "regional",
+      "year": 2025,
+      "dates": "",
+      "status": "candidate",
+      "suggest": true,
+      "needs_review": true,
+      "review_reasons": [
+        "previous edition",
+        "robots.txt carries an EU Art. 4 rights-reservation preamble"
+      ],
+      "relevance": "Previous Singapore AppSec Days; schedule and speakers pages.",
+      "program_url": "https://singapore.appsecdays.org/schedule.html",
+      "youtube": {
+        "channel_id": "",
+        "playlist_id": "",
+        "note": ""
+      },
+      "robots": {
+        "status": 200,
+        "generic_agents_allowed": true,
+        "content_usage": "none (boilerplate content-signals preamble in comments only, no Content-Signal lines)",
+        "notes": "only a Cloudflare content-signals preamble in comments; no directives, nothing disallowed"
+      },
+      "max_pages": 40
+    },
+    {
+      "id": "owaspday-pl",
+      "name": "OWASP Day Poland",
+      "url": "https://www.owaspday.pl/",
+      "start_url": "https://www.owaspday.pl/",
+      "kind": "regional",
+      "year": 2025,
+      "dates": "",
+      "status": "candidate",
+      "suggest": true,
+      "needs_review": true,
+      "review_reasons": [
+        "current edition year and program page not identified",
+        "site is a JS-rendered app; the HTML crawler may see little"
+      ],
+      "relevance": "Poland's annual AppSec conference (editions since 2017).",
+      "program_url": "",
+      "youtube": {
+        "channel_id": "",
+        "playlist_id": "",
+        "note": ""
+      },
+      "robots": {
+        "status": 200,
+        "generic_agents_allowed": true,
+        "content_usage": "none",
+        "notes": "only SemrushBot and MJ12bot are disallowed; generic agents allowed"
+      },
+      "max_pages": 40
+    },
+    {
+      "id": "basconf-org",
+      "name": "BASC 2027 (Boston Application Security Conference)",
+      "url": "https://basconf.org/",
+      "start_url": "https://basconf.org/",
+      "kind": "regional",
+      "year": 2027,
+      "dates": "2027-04-03",
+      "status": "candidate",
+      "suggest": true,
+      "needs_review": true,
+      "review_reasons": [
+        "program page not identified",
+        "robots.txt carries an EU Art. 4 rights-reservation preamble"
+      ],
+      "relevance": "OWASP Boston one-day AppSec conference, 3 Apr 2027.",
+      "program_url": "",
+      "youtube": {
+        "channel_id": "",
+        "playlist_id": "",
+        "note": ""
+      },
+      "robots": {
+        "status": 200,
+        "generic_agents_allowed": true,
+        "content_usage": "none (boilerplate content-signals preamble in comments only, no Content-Signal lines)",
+        "notes": "only a Cloudflare content-signals preamble in comments; no directives, nothing disallowed"
+      },
+      "max_pages": 30
+    },
+    {
+      "id": "owaspglobalappseceu2026-sched-com",
+      "name": "OWASP Global AppSec EU (Sched)",
+      "url": "https://owaspglobalappseceu2026.sched.com/",
+      "start_url": "https://owaspglobalappseceu2026.sched.com/",
+      "kind": "global",
+      "year": 2026,
+      "dates": "2026-06-22/26",
+      "status": "candidate",
+      "suggest": true,
+      "needs_review": true,
+      "review_reasons": [
+        "site title says 2027 while the host says 2026; check which edition it serves",
+        "third-party host (Sched)"
+      ],
+      "relevance": "Vienna 22-26 Jun 2026 schedule on Sched; site title now reads 2027.",
+      "program_url": "https://owaspglobalappseceu2026.sched.com/",
+      "youtube": {
+        "channel_id": "",
+        "playlist_id": "",
+        "note": ""
+      },
+      "robots": {
+        "status": 200,
+        "generic_agents_allowed": true,
+        "content_usage": "none",
+        "notes": "generic agents: disallows /api, /print, /venue/*, /overview/*, /grid/*, /map, /search and any URL with a query string (/*?*); some bots disallowed entirely"
+      },
+      "max_pages": 60
+    },
+    {
+      "id": "owaspglobalappsecusa2026-sched-com",
+      "name": "OWASP Global AppSec USA 2026 (Sched)",
+      "url": "https://owaspglobalappsecusa2026.sched.com/",
+      "start_url": "https://owaspglobalappsecusa2026.sched.com/",
+      "kind": "global",
+      "year": 2026,
+      "dates": "2026-11-02/06",
+      "status": "candidate",
+      "suggest": true,
+      "needs_review": true,
+      "review_reasons": [
+        "third-party host (Sched)"
+      ],
+      "relevance": "San Francisco, 2-6 Nov 2026; schedule on Sched.",
+      "program_url": "https://owaspglobalappsecusa2026.sched.com/",
+      "youtube": {
+        "channel_id": "",
+        "playlist_id": "",
+        "note": ""
+      },
+      "robots": {
+        "status": 200,
+        "generic_agents_allowed": true,
+        "content_usage": "none",
+        "notes": "same Sched rules as the EU site (no query-string URLs, no /api, /print, /venue, /map, /search)"
+      },
+      "max_pages": 60
+    },
+    {
+      "id": "owasp-glueup-usa-2026",
+      "name": "OWASP Global AppSec USA 2026 (Glue Up registration)",
+      "url": "https://owasp.glueup.com/event/owasp-global-appsec-usa-2026-167174/",
+      "start_url": "https://owasp.glueup.com/event/owasp-global-appsec-usa-2026-167174/",
+      "kind": "global",
+      "year": 2026,
+      "dates": "",
+      "status": "candidate",
+      "suggest": false,
+      "needs_review": true,
+      "review_reasons": [
+        "ticketing host shared with other OWASP events, not the event's own site",
+        "same event is covered by the Sched site"
+      ],
+      "relevance": "Registration platform page for Global AppSec USA; keynotes/agenda sub-pages.",
+      "program_url": "",
+      "youtube": {
+        "channel_id": "",
+        "playlist_id": "",
+        "note": ""
+      },
+      "robots": {
+        "status": 200,
+        "generic_agents_allowed": true,
+        "content_usage": "none",
+        "notes": "generic agents disallowed from /_emails/, /assets/, /framework/, /legal/, /protected/, /resources/ and similar; event pages allowed"
+      },
+      "max_pages": 40
+    },
+    {
+      "id": "owasp-org-chapters-italy",
+      "name": "OWASP Italy chapter / Italy Day (Cagliari, 17-18 Jun 2026)",
+      "url": "https://owasp.org/chapters/italy",
+      "start_url": "https://owasp.org/chapters/italy",
+      "kind": "chapter",
+      "year": 2026,
+      "dates": "",
+      "status": "candidate",
+      "suggest": false,
+      "needs_review": true,
+      "review_reasons": [
+        "lives on owasp.org, a host covered by the main OWASP crawl rather than a separate suggestion",
+        "no dedicated Italy Day website found"
+      ],
+      "relevance": "Italy chapter page; Italy Day program is only on Sessionize (CFS) and not an own site.",
+      "program_url": "",
+      "youtube": {
+        "channel_id": "",
+        "playlist_id": "",
+        "note": ""
+      },
+      "robots": {
+        "status": 200,
+        "generic_agents_allowed": true,
+        "content_usage": "none",
+        "notes": "owasp.org robots: Allow /, disallows admin/api/auth paths"
+      },
+      "max_pages": 40
+    },
+    {
+      "id": "owasp-lisboa-meetup",
+      "name": "OWASP Lisboa chapter",
+      "url": "https://www.meetup.com/owasp-lisboa-chapter/",
+      "start_url": "https://www.meetup.com/owasp-lisboa-chapter/",
+      "kind": "chapter",
+      "year": 2025,
+      "dates": "",
+      "status": "candidate",
+      "suggest": false,
+      "needs_review": true,
+      "review_reasons": [
+        "no own site; Meetup pages not suitable for crawling",
+        "owasp.org/chapters/lisbon returned 404"
+      ],
+      "relevance": "Chapter events are on Meetup only (last found 12 Nov 2025); Global AppSec Lisbon 2024 was hosted by the chapter.",
+      "program_url": "",
+      "youtube": {
+        "channel_id": "",
+        "playlist_id": "",
+        "note": ""
+      },
+      "robots": {
+        "status": 0,
+        "generic_agents_allowed": false,
+        "content_usage": "none",
+        "notes": "robots.txt not fetched: Meetup is a third-party platform with its own terms; do not crawl"
+      },
+      "max_pages": 40
+    },
+    {
+      "id": "owasp-switzerland-ch",
+      "name": "OWASP Switzerland chapter",
+      "url": "https://owasp-switzerland.ch/",
+      "start_url": "https://owasp-switzerland.ch/",
+      "kind": "chapter",
+      "year": 2026,
+      "dates": "",
+      "status": "candidate",
+      "suggest": false,
+      "needs_review": true,
+      "review_reasons": [
+        "not confirmed as the chapter's official domain",
+        "not a conference site"
+      ],
+      "relevance": "Chapter community site (meetups and resources).",
+      "program_url": "",
+      "youtube": {
+        "channel_id": "",
+        "playlist_id": "",
+        "note": ""
+      },
+      "robots": {
+        "status": 200,
+        "generic_agents_allowed": true,
+        "content_usage": "none",
+        "notes": "robots.txt URL returns an HTML page, i.e. no robots rules"
+      },
+      "max_pages": 40
+    }
+  ]
+}

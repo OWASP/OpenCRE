@@ -37,7 +37,7 @@ class MonitorOieHealthTest(unittest.TestCase):
 
     def test_healthy_when_every_job_succeeded_recently(self) -> None:
         now = datetime.now(timezone.utc)
-        for job in ("owasp", "cre_expansion"):
+        for job in ("owasp", "cre_expansion", "external_discovery"):
             slot = run_log.slot_for(1, now)
             row = run_log.begin_run(
                 sqla.session, job, slot, trigger="scheduled", dry_run=False, now=now

@@ -6,7 +6,7 @@ import os
 import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Tuple, Any, Dict, List, Optional
 
 from application.utils.owasp_agent.index_store import IndexStore
 from application.utils.owasp_agent.models import QueryResult
@@ -214,6 +214,10 @@ class OwaspAgentRouter:
             return intent
         try:
             if self.queries.find_events(text):
+                if _TALK_ASK_RE.search(text):
+                    # Talks of an indexed event are in the evidence index (YouTube catalogue + event
+                    # pages): answer from there, not with the event's dates only.
+                    return "cre_normative"
                 return "event_lookup"
         except Exception:
             pass
@@ -225,8 +229,14 @@ class OwaspAgentRouter:
         """Answer every clause the agent can; say which ones it handed back."""
         answered: List[Dict[str, Any]] = []
         handed_back: List[str] = []
-        for clause in clauses:
-            resp = self.handle(clause, history=history, _clause=True)
+        for idx, clause in enumerate(clauses):
+            # Later clauses may lean on earlier ones ("who runs the training ... and how long is it"):
+            # the earlier clauses are background for the standalone rewrite, like chat history.
+            earlier = " ".join(clauses[:idx]).strip()
+            clause_history = list(history or []) + (
+                [{"role": "user", "content": earlier}] if earlier else []
+            )
+            resp = self.handle(clause, history=clause_history or None, _clause=True)
             if resp is None:
                 handed_back.append(clause)
             else:
@@ -412,6 +422,21 @@ class OwaspAgentRouter:
                     )
                 )
 
+            if comp is None and _TALK_ASK_RE.search(normalized):
+                fallback = _catalogue_fallback(comp_hits)
+                if fallback is not None:
+                    return format_chat_response(
+                        QueryResult(
+                            ok=True,
+                            kind="evidence",
+                            message=fallback[0],
+                            citations=fallback[1],
+                            data={
+                                "lane_scores": sim_decision.scores,
+                                "pick_reason": "catalogue_fallback",
+                            },
+                        )
+                    )
             if comp_hits:
                 # Synthesis said UNKNOWN: never surface a raw stored claim as the answer.
                 cands = [c for c in cands if not is_comprehension_hit(c)]
@@ -1052,6 +1077,52 @@ MAX_PROMPT_CHARS = 4096
 
 _CHAPTER_CUE_RE = re.compile(
     r"\b(leads?|leaders?|runs?|organi[sz]\w*|chapter|group|meetups?|president|chair|active|inactive|status)\b",
+    re.I,
+)
+_VIDEO_RE = re.compile(r"^Video: (https://www\.youtube\.com/watch\?v=\S+)\s*$", re.M)
+_TITLE_RE = re.compile(r"^Title: (.+)$", re.M)
+_PUBLISHED_RE = re.compile(r"^Published: (.+)$", re.M)
+
+
+def _catalogue_fallback(
+    hits: List[Any], limit: int = 3
+) -> Optional[Tuple[str, List[str]]]:
+    """When no grounded answer was possible, point at the closest YouTube catalogue talks.
+
+    Better than printing a metadata record: the user gets real talks and links, and is told that
+    nothing matched exactly and that transcripts are not indexed.
+    """
+    lines: List[str] = []
+    cites: List[str] = []
+    for h in hits:
+        content = str(getattr(h, "content", "") or "")
+        if "comprehension-ext-yt-" not in str(getattr(h, "url", "") or ""):
+            continue
+        link, title = _VIDEO_RE.search(content), _TITLE_RE.search(content)
+        if not link or not title or link.group(1) in cites:
+            continue
+        when = _PUBLISHED_RE.search(content)
+        lines.append(
+            f"- {title.group(1).strip()}"
+            + (f" (uploaded {when.group(1).strip()})" if when else "")
+            + f": {link.group(1)}"
+        )
+        cites.append(link.group(1))
+        if len(lines) >= limit:
+            break
+    if not lines:
+        return None
+    text = (
+        "I could not find a talk that matches exactly what you asked, so these are the closest "
+        "talks in the OWASP YouTube catalogue. I only have their titles and descriptions, not "
+        "what was said in them:\n" + "\n".join(lines)
+    )
+    return text, cites
+
+
+_TALK_ASK_RE = re.compile(
+    r"\b(talks?|sessions?|keynotes?|presentations?|presented|presenting|gave|given|give a talk|"
+    r"recordings?|videos?|watch|webinars?)\b",
     re.I,
 )
 _EVENT_CUE_RE = re.compile(

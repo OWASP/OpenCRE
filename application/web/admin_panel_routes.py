@@ -9,7 +9,7 @@ logger = get_logger(__name__)
 
 from flask import g, jsonify, request, session
 
-from application.utils.admin_panel import service
+from application.utils.admin_panel import external_targets, service
 
 
 def _err(status: int, description: str) -> Tuple[Any, int]:
@@ -137,6 +137,49 @@ def register_admin_panel_routes(
         except ValueError as exc:
             return _err(400, _exc_message(exc))
         return jsonify({"deleted": target_id})
+
+    @bp.route("/admin/external", methods=["GET"])
+    @login_required
+    @imports_enabled
+    def admin_external_list() -> Any:
+        try:
+            return jsonify({"external": external_targets.list_external()})
+        except Exception as exc:
+            logger.exception("list external sources failed")
+            return _err(500, f"failed to list external sources: {exc}")
+
+    @bp.route("/admin/external", methods=["POST"])
+    @login_required
+    @imports_enabled
+    def admin_external_add() -> Any:
+        body = request.get_json(silent=True) or {}
+        try:
+            return jsonify(external_targets.add_manual(body)), 201
+        except ValueError as exc:
+            return _err(400, _exc_message(exc))
+
+    @bp.route("/admin/external/<target_id>/accept", methods=["POST"])
+    @login_required
+    @imports_enabled
+    def admin_external_accept(target_id: str) -> Any:
+        body = request.get_json(silent=True) or {}
+        try:
+            return jsonify(external_targets.accept(target_id, body))
+        except KeyError:
+            return _err(404, "external source not found")
+        except ValueError as exc:
+            return _err(400, _exc_message(exc))
+
+    @bp.route("/admin/external/<target_id>/reject", methods=["POST"])
+    @login_required
+    @imports_enabled
+    def admin_external_reject(target_id: str) -> Any:
+        try:
+            return jsonify(external_targets.reject(target_id))
+        except KeyError:
+            return _err(404, "external source not found")
+        except ValueError as exc:
+            return _err(400, _exc_message(exc))
 
     @bp.route("/admin/repos.yaml", methods=["GET"])
     @login_required
@@ -413,6 +456,132 @@ def register_admin_panel_routes(
         except Exception as exc:
             logger.exception("schedule update failed")
             return _err(500, f"schedule update failed: {exc}")
+
+    def _reviewer() -> Optional[str]:
+        return session.get("email") or getattr(g, "api_key_email", None)
+
+    def _int_arg(name: str, default: int) -> int:
+        try:
+            return int(request.args.get(name, default))
+        except (TypeError, ValueError):
+            return default
+
+    @bp.route("/admin/oie/decisions", methods=["GET"])
+    @login_required
+    @imports_enabled
+    def admin_oie_decisions() -> Any:
+        from application.utils.admin_panel import oie_review
+
+        try:
+            return jsonify(
+                oie_review.list_decisions(
+                    status=request.args.get("status") or None,
+                    run_id=request.args.get("run_id") or None,
+                    include_consumed=request.args.get("include_consumed") == "1",
+                    page=_int_arg("page", 1),
+                    page_size=_int_arg("page_size", 50),
+                )
+            )
+        except Exception as exc:
+            logger.exception("oie decisions list failed")
+            return _err(500, f"oie decisions failed: {exc}")
+
+    @bp.route("/admin/oie/decisions/<decision_id>", methods=["POST"])
+    @login_required
+    @imports_enabled
+    def admin_oie_decision_review(decision_id: str) -> Any:
+        from application.utils.admin_panel import oie_review
+
+        body = request.get_json(silent=True) or {}
+        cre_ids = body.get("cre_ids")
+        if cre_ids is not None and not (
+            isinstance(cre_ids, list) and all(isinstance(c, str) for c in cre_ids)
+        ):
+            return _err(400, "cre_ids must be a list of strings")
+        standard_name = body.get("standard_name")
+        if standard_name is not None and not isinstance(standard_name, str):
+            return _err(400, "standard_name must be a string")
+        try:
+            return jsonify(
+                oie_review.review_decision(
+                    decision_id,
+                    str(body.get("action") or ""),
+                    reviewer=_reviewer(),
+                    cre_ids=cre_ids,
+                    note=body.get("note"),
+                    standard_name=standard_name,
+                )
+            )
+        except KeyError as exc:
+            return _err(404, _exc_message(exc))
+        except ValueError as exc:
+            return _err(400, str(exc))
+        except Exception as exc:
+            logger.exception("oie decision review failed")
+            return _err(500, f"oie decision review failed: {exc}")
+
+    @bp.route("/admin/oie/cres/search", methods=["GET"])
+    @login_required
+    @imports_enabled
+    def admin_oie_cre_search() -> Any:
+        from application.utils.admin_panel import oie_review
+
+        try:
+            return jsonify(
+                {
+                    "items": oie_review.search_cres(
+                        request.args.get("q", ""), limit=_int_arg("limit", 15)
+                    )
+                }
+            )
+        except Exception as exc:
+            logger.exception("oie cre search failed")
+            return _err(500, f"oie cre search failed: {exc}")
+
+    @bp.route("/admin/oie/filed", methods=["GET"])
+    @login_required
+    @imports_enabled
+    def admin_oie_filed() -> Any:
+        from application.utils.admin_panel import oie_review
+
+        try:
+            return jsonify(
+                oie_review.list_filed(
+                    page=_int_arg("page", 1), page_size=_int_arg("page_size", 50)
+                )
+            )
+        except Exception as exc:
+            logger.exception("oie filed list failed")
+            return _err(500, f"oie filed failed: {exc}")
+
+    @bp.route("/admin/oie/filed/<node_id>/repoint", methods=["POST"])
+    @login_required
+    @imports_enabled
+    def admin_oie_filed_repoint(node_id: str) -> Any:
+        from application.utils.admin_panel import oie_review
+
+        body = request.get_json(silent=True) or {}
+        from_cre = body.get("from_cre_id")
+        to_cre = body.get("to_cre_id")
+        if not (isinstance(from_cre, str) and isinstance(to_cre, str)):
+            return _err(400, "from_cre_id and to_cre_id are required")
+        try:
+            return jsonify(
+                oie_review.repoint_filed_link(
+                    node_id,
+                    from_cre,
+                    to_cre,
+                    reviewer=_reviewer(),
+                    note=body.get("note"),
+                )
+            )
+        except KeyError as exc:
+            return _err(404, _exc_message(exc))
+        except ValueError as exc:
+            return _err(400, str(exc))
+        except Exception as exc:
+            logger.exception("oie repoint failed")
+            return _err(500, f"oie repoint failed: {exc}")
 
     @bp.route("/admin/feedback", methods=["GET"])
     @login_required
