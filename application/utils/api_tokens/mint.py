@@ -90,8 +90,12 @@ def mint_api_token(
     )
 
 
-def revoke_api_token(jti: str) -> bool:
-    row = sqla.session.query(db.ApiKey).filter(db.ApiKey.jti == jti).first()
+def revoke_api_token(jti: str, *, user_id: Optional[str] = None) -> bool:
+    """Revoke a key; with ``user_id`` only that user's own key can be revoked."""
+    q = sqla.session.query(db.ApiKey).filter(db.ApiKey.jti == jti)
+    if user_id:
+        q = q.filter(db.ApiKey.user_id == user_id)
+    row = q.first()
     if row is None:
         return False
     if row.revoked_at is None:

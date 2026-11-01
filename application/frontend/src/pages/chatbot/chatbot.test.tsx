@@ -1,0 +1,188 @@
+import { fireEvent, render, waitFor } from '@testing-library/react';
+import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
+
+import { Chatbot, linkifyCitations } from './chatbot';
+
+// The syntax highlighter ships ESM only; the thumbs tests do not render code blocks.
+jest.mock('react-syntax-highlighter', () => ({ Prism: () => null }));
+jest.mock('react-syntax-highlighter/dist/esm/styles/prism', () => ({ oneLight: {} }));
+jest.mock('../../hooks/useEnvironment', () => ({
+  useEnvironment: () => ({ name: 'test', apiUrl: '/rest/v1' }),
+}));
+
+function res(body: unknown, status = 200) {
+  return Promise.resolve({
+    ok: status >= 200 && status < 300,
+    status,
+    statusText: 'OK',
+    text: () => Promise.resolve(typeof body === 'string' ? body : JSON.stringify(body)),
+    json: () => Promise.resolve(body),
+  });
+}
+
+function setup(answerId: string | undefined, feedbackStatus = 200) {
+  const calls: { url: string; init?: any }[] = [];
+  (global as any).fetch = jest.fn((url: string, init?: any) => {
+    calls.push({ url: String(url), init });
+    if (String(url).endsWith('/auth/user')) return res('someone');
+    if (String(url).endsWith('/completion')) {
+      return res({
+        response: 'SAMM has 3 maturity levels per practice.',
+        accurate: true,
+        answer_id: answerId,
+      });
+    }
+    if (String(url).endsWith('/answer_feedback')) return res({ rating: 'up' }, feedbackStatus);
+    return res({});
+  });
+  const utils = render(
+    <MemoryRouter>
+      <Chatbot />
+    </MemoryRouter>
+  );
+  const ask = async () => {
+    fireEvent.change(utils.getByPlaceholderText(/Type your infosec question/), {
+      target: { value: 'levels in SAMM?' },
+    });
+    fireEvent.click(utils.getByText('Ask'));
+    await utils.findByText(/3 maturity levels/);
+  };
+  return { ...utils, calls, ask };
+}
+
+describe('Chatbot thumbs up/down', () => {
+  afterEach(() => jest.clearAllMocks());
+
+  it('sends the rating for the answer and highlights the choice', async () => {
+    const { ask, findByLabelText, calls } = setup('ans-1');
+    await ask();
+    const up = await findByLabelText('Good answer');
+    fireEvent.click(up);
+    await waitFor(() => expect(up.getAttribute('aria-pressed')).toBe('true'));
+    const post = calls.find((c) => c.url.endsWith('/answer_feedback'));
+    expect(JSON.parse(post!.init.body)).toEqual({ answer_id: 'ans-1', rating: 'up' });
+  });
+
+  it('asks for a short comment after a thumbs down and sends it with the rating', async () => {
+    const { ask, findByLabelText, findByPlaceholderText, queryByPlaceholderText, calls } = setup('ans-3');
+    await ask();
+    fireEvent.click(await findByLabelText('Bad answer'));
+    const box = await findByPlaceholderText('What was wrong? (optional)');
+    fireEvent.change(box, { target: { value: 'wrong standard' } });
+    fireEvent.click(await findByLabelText('Send feedback'));
+    await waitFor(() => expect(queryByPlaceholderText('What was wrong? (optional)')).toBeNull());
+    const posts = calls.filter((c) => c.url.endsWith('/answer_feedback')).map((c) => JSON.parse(c.init.body));
+    expect(posts).toEqual([
+      { answer_id: 'ans-3', rating: 'down' },
+      { answer_id: 'ans-3', rating: 'down', comment: 'wrong standard' },
+    ]);
+  });
+
+  it('does not ask for a comment after a thumbs up', async () => {
+    const { ask, findByLabelText, queryByPlaceholderText } = setup('ans-4');
+    await ask();
+    fireEvent.click(await findByLabelText('Good answer'));
+    expect(queryByPlaceholderText('What was wrong? (optional)')).toBeNull();
+  });
+
+  it('undoes the highlight when the server rejects the rating', async () => {
+    const { ask, findByLabelText } = setup('ans-2', 500);
+    await ask();
+    const down = await findByLabelText('Bad answer');
+    fireEvent.click(down);
+    await waitFor(() => expect(down.getAttribute('aria-pressed')).toBe('false'));
+  });
+
+  it('shows no thumbs and keeps the privacy paragraph when the answer was not logged', async () => {
+    const { ask, queryByLabelText, queryByText } = setup(undefined);
+    await ask();
+    expect(queryByLabelText('Good answer')).toBeNull();
+    expect(queryByText(/Privacy & Security/)).not.toBeNull();
+  });
+
+  it('hides the "not stored" privacy paragraph once answers are stored', async () => {
+    const { ask, findByText, queryByText } = setup('ans-3');
+    expect(queryByText(/Privacy & Security/)).not.toBeNull();
+    await ask();
+    await findByText(/3 maturity levels/);
+    expect(queryByText(/Privacy & Security/)).toBeNull();
+  });
+});
+
+describe('linkifyCitations', () => {
+  const urls = ['https://github.com/OWASP/a.md', 'https://github.com/OWASP/b.md'];
+
+  it('turns [n] markers into links to the n-th source', () => {
+    expect(linkifyCitations('Imperfect [1][2].', urls)).toBe(
+      'Imperfect [[1]](https://github.com/OWASP/a.md)[[2]](https://github.com/OWASP/b.md).'
+    );
+  });
+
+  it('leaves markers without a matching source, and unsafe links, alone', () => {
+    expect(linkifyCitations('See [3] and [1].', ['https://x.org/a'])).toBe(
+      'See [3] and [[1]](https://x.org/a).'
+    );
+    expect(linkifyCitations('See [1].', ['javascript:alert(1)'])).toBe('See [1].');
+  });
+
+  it('returns the text unchanged when there are no sources', () => {
+    expect(linkifyCitations('Plain [1] text', undefined)).toBe('Plain [1] text');
+    expect(linkifyCitations('Plain [1] text', [])).toBe('Plain [1] text');
+  });
+});
+
+describe('Chatbot CRE reference', () => {
+  afterEach(() => jest.clearAllMocks());
+
+  it('links a CRE reference to its /cre/<id> page', async () => {
+    (global as any).fetch = jest.fn((url: string) => {
+      if (String(url).endsWith('/auth/user')) return res('someone');
+      if (String(url).endsWith('/completion')) {
+        return res({
+          response: 'Escape output.',
+          accurate: true,
+          table: [{ doctype: 'CRE', id: '366-835', name: 'Escape output against XSS' }],
+        });
+      }
+      return res({});
+    });
+    const utils = render(
+      <MemoryRouter>
+        <Chatbot />
+      </MemoryRouter>
+    );
+    fireEvent.change(utils.getByPlaceholderText(/Type your infosec question/), {
+      target: { value: 'how do I prevent xss' },
+    });
+    fireEvent.click(utils.getByText('Ask'));
+    const link = (await utils.findByText(/366-835/)).closest('a')!;
+    expect(link.getAttribute('href')).toBe('/cre/366-835');
+    expect(document.body.innerHTML).not.toContain('sectionid/undefined');
+  });
+});
+
+describe('Chatbot continue conversation', () => {
+  afterEach(() => jest.clearAllMocks());
+
+  it('sends only the new question unless "Continue conversation" is ticked', async () => {
+    const { ask, calls, container, getByText, getByPlaceholderText, findAllByText } = setup('ans-1');
+    await ask();
+    const send = async (text: string, expected: number) => {
+      fireEvent.change(getByPlaceholderText(/Type your infosec question/), { target: { value: text } });
+      fireEvent.click(getByText('Ask'));
+      await findAllByText(/3 maturity levels/).then((els) => expect(els.length).toBeGreaterThan(0));
+      await waitFor(() => expect(calls.filter((c) => c.url.endsWith('/completion'))).toHaveLength(expected));
+    };
+    await send('second question', 2);
+    const bodies = () =>
+      calls.filter((c) => c.url.endsWith('/completion')).map((c) => JSON.parse(c.init.body));
+    expect(bodies()[1].messages).toHaveLength(1);
+    fireEvent.click(container.querySelector('input[type=checkbox]')!);
+    await send('third question', 3);
+    expect(bodies()[2].messages).toHaveLength(3); // last question + its answer + the new question
+    await send('fourth question', 4);
+    expect(bodies()[3].messages.map((m: any) => m.content)).not.toContain('levels in SAMM?');
+    expect(bodies()[3].messages).toHaveLength(3);
+  });
+});

@@ -70,11 +70,9 @@ h1.ui.header.chatbot-title {
   margin-bottom: 1rem !important;
 }
 
-.chatbot-toolbar {
-  display: flex;
-  justify-content: center;
-  margin: 0 auto 0.5rem;
-  max-width: 960px;
+.chat-continue {
+  margin: 0.25rem 0 0.5rem;
+  text-align: left;
 }
 
 /* Tablet & below */
@@ -475,5 +473,50 @@ h1.ui.header.chatbot-title {
   to {
     opacity: 0.85;
     transform: translateX(-50%) translateY(0);
+  }
+}
+
+.rate-answer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+
+  .rate-comment {
+    display: flex;
+    flex: 1 1 14rem;
+    gap: 0.25rem;
+
+    input {
+      flex: 1;
+      border: 1px solid #c8cdd3;
+      border-radius: 4px;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.85rem;
+    }
+  }
+
+  .rate-thanks {
+    color: #6b7280;
+    font-size: 0.85rem;
+    margin-left: 0.25rem;
+  }
+
+  .rate-btn {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+
+    &:hover {
+      border-color: #c8cdd3;
+    }
+
+    &.is-selected {
+      background: #e8f0fe;
+      border-color: #7ba3f0;
+    }
   }
 }

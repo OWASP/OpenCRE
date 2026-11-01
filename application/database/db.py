@@ -321,6 +321,29 @@ class AdminRuntimeSettingAudit(BaseModel):  # type: ignore
     __table_args__ = (sqla.Index("ix_admin_runtime_setting_audit_key", "key"),)
 
 
+class AnswerLog(BaseModel):  # type: ignore
+    """Every answer the system gives, with an optional thumbs up/down from the asker."""
+
+    __tablename__ = "answer_log"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+    source = sqla.Column(sqla.String, nullable=False)  # "mcp" | "chat"
+    question = sqla.Column(sqla.Text, nullable=False)
+    answer = sqla.Column(sqla.Text, nullable=True)
+    citations = sqla.Column(sqla.Text, nullable=True)  # JSON list of urls
+    channel = sqla.Column(sqla.String, nullable=True)
+    flags = sqla.Column(sqla.String, nullable=True)  # active OWASP_CX_* flags
+    latency_ms = sqla.Column(sqla.Integer, nullable=True)
+    rating = sqla.Column(sqla.String, nullable=True)  # "up" | "down"
+    comment = sqla.Column(sqla.Text, nullable=True)
+    rated_at = sqla.Column(sqla.DateTime, nullable=True)
+
+    __table_args__ = (
+        sqla.Index("ix_answer_log_created_at", "created_at"),
+        sqla.Index("ix_answer_log_rating", "rating"),
+    )
+
+
 class User(BaseModel):  # type: ignore
     """Persisted account identity for OIDC login (issue #586, RFC #876 TODO 1).
 

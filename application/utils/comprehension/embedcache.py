@@ -23,8 +23,20 @@ def _store(text: str, vec: Any) -> Any:
     return vec
 
 
+def _quick(fn: Callable[[str], Any]) -> Callable[[str], Any]:
+    """Embedding calls a person waits on retry transient provider errors quickly."""
+
+    def _call(text: str) -> Any:
+        from application.prompt_client import litellm_router
+
+        return litellm_router.quick_retry(lambda: fn(text), context="query embedding")
+
+    return _call
+
+
 def cached(fn: Callable[[str], Any]) -> Callable[[str], Any]:
     """Wrap an embedding function with the shared cache (also joins in-flight prefetches)."""
+    fn = _quick(fn)
 
     def _embed(text: str) -> Any:
         with _LOCK:
@@ -47,7 +59,8 @@ def prefetch(text: str, fn: Callable[[str], Any]) -> None:
     with _LOCK:
         if text in _CACHE or text in _PENDING:
             return
-        fut = _POOL.submit(lambda: _store(text, fn(text)))
+        quick = _quick(fn)
+        fut = _POOL.submit(lambda: _store(text, quick(text)))
         _PENDING[text] = fut
 
     def _done(_f: Any, t: str = text) -> None:

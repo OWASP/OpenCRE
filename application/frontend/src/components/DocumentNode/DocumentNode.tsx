@@ -36,7 +36,8 @@ export interface DocumentNode {
 const linkTypesToNest = [TYPE_IS_PART_OF, TYPE_RELATED, TYPE_AUTOLINKED_TO];
 const linkTypesExcludedInNesting = [TYPE_CONTAINS];
 const linkTypesExcludedWhenNestingRelatedTo = [TYPE_RELATED, TYPE_IS_PART_OF, TYPE_CONTAINS];
-const linkDisplayOrder = [TYPE_LINKED_TO, TYPE_AUTOLINKED_TO, TYPE_CONTAINS, TYPE_IS_PART_OF, TYPE_RELATED];
+// "Related" is more useful than the hierarchy, so it comes before "child of".
+const linkDisplayOrder = [TYPE_LINKED_TO, TYPE_AUTOLINKED_TO, TYPE_CONTAINS, TYPE_RELATED, TYPE_IS_PART_OF];
 
 export const DocumentNode: FunctionComponent<DocumentNode> = ({
   node,

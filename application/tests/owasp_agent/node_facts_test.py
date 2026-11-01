@@ -270,7 +270,7 @@ class NodeFactsAskRouterTest(unittest.TestCase):
                         self.assertNotIn(bad, out_msg)
                 queries.project_lookup.assert_not_called()
 
-    @patch("application.mcp.ask.OwaspAgentRouter")
+    @patch("application.utils.owasp_agent.OwaspAgentRouter")
     def test_ask_auto_uses_fixture_prompts(self, router_cls: MagicMock) -> None:
         from application.mcp.ask import CORPUS_AUTO, ask
 

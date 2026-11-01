@@ -15,6 +15,8 @@ from application.mcp.ask import (
     CORPUS_AUTO,
     CORPUS_OWASP_META,
     CORPUS_SECURITY,
+    EmbeddingRetrievalError,
+    _retrieve_nearest_standard,
     ask,
 )
 from application.mcp.rest_client import RestResult
@@ -106,7 +108,7 @@ class McpAskToolTest(unittest.TestCase):
             instructions = server_instructions()
             self.assertIn("ask tool", instructions.lower())
 
-    @patch("application.mcp.ask.OwaspAgentRouter")
+    @patch("application.utils.owasp_agent.OwaspAgentRouter")
     def test_auto_meta_channel(self, router_cls: MagicMock) -> None:
         router_cls.return_value.handle.return_value = {
             "response": "Answer: 1 chapter",
@@ -130,7 +132,7 @@ class McpAskToolTest(unittest.TestCase):
         self.assertIn("https://nest.example/la", out["citations"])
         router_cls.return_value.handle.assert_called_once()
 
-    @patch("application.mcp.ask.OwaspAgentRouter")
+    @patch("application.utils.owasp_agent.OwaspAgentRouter")
     def test_meta_runs_before_cre_normative_defer(self, router_cls: MagicMock) -> None:
         """AIX/meta evidence must win even when intent is cre_normative."""
         router_cls.return_value.handle.return_value = {
@@ -232,7 +234,7 @@ class McpAskToolTest(unittest.TestCase):
                 }
             },
         )
-        with patch("application.mcp.ask.OwaspAgentRouter") as router_cls:
+        with patch("application.utils.owasp_agent.OwaspAgentRouter") as router_cls:
             out = ask(
                 "authentication",
                 corpus=CORPUS_SECURITY,
@@ -290,7 +292,9 @@ class McpAskToolTest(unittest.TestCase):
             with patch(
                 "application.mcp.ask.classify_intent", return_value="cre_normative"
             ):
-                with patch("application.mcp.ask.OwaspAgentRouter") as router_cls:
+                with patch(
+                    "application.utils.owasp_agent.OwaspAgentRouter"
+                ) as router_cls:
                     router_cls.return_value.handle.return_value = None
                     out = ask("How should I store passwords?", corpus=CORPUS_OWASP_META)
         self.assertFalse(out["ok"])
@@ -410,6 +414,63 @@ class McpAskToolTest(unittest.TestCase):
         self.assertEqual(out["items"], [])
         self.assertIsNone(out["matched_standard"])
         self.assertEqual(client.calls, [])
+
+    @patch("application.mcp.ask._standard_embeddings_exist", return_value=True)
+    @patch("application.mcp.ask._retrieve_nearest_standard")
+    def test_below_threshold_says_so(
+        self, retrieve: MagicMock, _exists: MagicMock
+    ) -> None:
+        retrieve.return_value = None
+        out = ask(
+            "zzzz-no-match",
+            corpus=CORPUS_SECURITY,
+            rest_client=_FakeRestClient(),  # type: ignore[arg-type]
+        )
+        self.assertEqual(out["reason"], "no_match_above_threshold")
+        self.assertNotIn("error", out)
+
+    @patch("application.mcp.ask._standard_embeddings_exist", return_value=False)
+    @patch("application.mcp.ask._retrieve_nearest_standard")
+    def test_missing_standard_embeddings_is_reported_distinctly(
+        self, retrieve: MagicMock, _exists: MagicMock
+    ) -> None:
+        retrieve.return_value = None
+        out = ask(
+            "how do I prevent SQL injection",
+            corpus=CORPUS_SECURITY,
+            rest_client=_FakeRestClient(),  # type: ignore[arg-type]
+        )
+        self.assertFalse(out["ok"])
+        self.assertEqual(out["reason"], "no_embeddings")
+        self.assertIn("embedding", out["message"].lower())
+        self.assertNotIn("similarity threshold", out["message"].lower())
+
+    @patch("application.mcp.ask._retrieve_nearest_standard")
+    def test_retrieval_error_is_an_error_not_a_miss(self, retrieve: MagicMock) -> None:
+        retrieve.side_effect = EmbeddingRetrievalError("RuntimeError", "provider down")
+        client = _FakeRestClient()
+        out = ask(
+            "how do I prevent SQL injection",
+            corpus=CORPUS_SECURITY,
+            rest_client=client,  # type: ignore[arg-type]
+        )
+        self.assertFalse(out["ok"])
+        self.assertEqual(out["reason"], "retrieval_error")
+        self.assertEqual(out["error"]["type"], "RuntimeError")
+        self.assertIn("provider down", out["error"]["detail"])
+        self.assertIn("error", out["message"].lower())
+        self.assertNotIn("similarity threshold", out["message"].lower())
+        self.assertEqual(client.calls, [])
+
+    @patch("application.mcp.ask._in_app_context")
+    def test_retrieve_nearest_standard_raises_instead_of_returning_none(
+        self, in_ctx: MagicMock
+    ) -> None:
+        in_ctx.side_effect = RuntimeError("embedding provider unreachable")
+        with self.assertRaises(EmbeddingRetrievalError) as cm:
+            _retrieve_nearest_standard("anything")
+        self.assertEqual(cm.exception.kind, "RuntimeError")
+        self.assertIn("unreachable", cm.exception.detail)
 
     @patch("application.mcp.ask._retrieve_nearest_standard")
     def test_dispatch_tool_ask(self, retrieve: MagicMock) -> None:

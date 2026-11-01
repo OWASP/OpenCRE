@@ -61,6 +61,26 @@ def main() -> int:
         help="with --raw: also index repo markdown files the harvester skipped (git clone)",
     )
     ap.add_argument(
+        "--repos-file", help="file with one repository per line (OWASP/x or x)"
+    )
+    ap.add_argument(
+        "--clone-only",
+        action="store_true",
+        help="with --raw: take the chunks from a shallow clone instead of the harvest (repos never harvested)",
+    )
+    ap.add_argument(
+        "--wiki", action="store_true", help="with --raw: also index the GitHub wiki"
+    )
+    ap.add_argument(
+        "--wiki-only", action="store_true", help="with --raw: only the GitHub wiki"
+    )
+    ap.add_argument(
+        "--max-chunks",
+        type=int,
+        default=0,
+        help="with --raw: cap chunks per repository (0 = no cap)",
+    )
+    ap.add_argument(
         "--supplement-only",
         action="store_true",
         help="with --supplement: write only the skipped files' chunks (repo already indexed)",
@@ -108,6 +128,12 @@ def main() -> int:
     with app.app_context():
         database = db_mod.Node_collection()
         repos = list(a.repo)
+        if a.repos_file:
+            with open(a.repos_file, encoding="utf-8") as fh:
+                for line in fh:
+                    name = line.strip()
+                    if name:
+                        repos.append(name if "/" in name else f"OWASP/{name}")
         if a.like:
             from sqlalchemy import func
 
@@ -153,7 +179,29 @@ def main() -> int:
         for repo in repos:
             try:
                 if a.raw:
-                    ch = sources.chunks_for_repo(database.session, repo)
+                    import tempfile
+
+                    clone_dir = (
+                        os.environ.get("CRE_COMPREHENSION_CLONE_DIR")
+                        or tempfile.mkdtemp()
+                    )
+                    if a.clone_only or a.wiki_only:
+                        ch = []
+                    else:
+                        ch = sources.chunks_for_repo(database.session, repo)
+                    if a.clone_only:
+                        ch = sources.supplement_chunks(repo, set(), clone_dir)
+                        print(f"{repo}: {len(ch)} chunks from the clone", flush=True)
+                    if a.wiki or a.wiki_only:
+                        wiki = sources.wiki_chunks(repo, clone_dir)
+                        print(f"{repo}: {len(wiki)} wiki chunks", flush=True)
+                        ch = ch + wiki
+                    if a.max_chunks and len(ch) > a.max_chunks:
+                        print(
+                            f"{repo}: CAPPED {len(ch)} -> {a.max_chunks} chunks",
+                            flush=True,
+                        )
+                        ch = ch[: a.max_chunks]
                     if a.supplement:
                         import tempfile
 
@@ -197,6 +245,15 @@ def main() -> int:
                         workers=a.workers,
                         dry_run=a.dry_run,
                         enriched=enriched,
+                        url_for=(
+                            (
+                                lambda p, r=repo: (
+                                    f"https://github.com/{r}/wiki"
+                                    if p.startswith("wiki/")
+                                    else f"https://github.com/{r}/blob/HEAD/{p}"
+                                )
+                            )
+                        ),
                     )
                     print(
                         f"{repo}: raw chunks {'planned' if a.dry_run else 'written'}: {n}",

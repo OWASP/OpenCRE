@@ -958,10 +958,18 @@ class TestEntityAndChatMemoryFixes(unittest.TestCase):
                 "content": "Answer: Standard individual dues apply in Switzerland.",
             },
         ]
-        resp = self.router.handle("and in Morocco?", history=history)
+        # The follow-up is rewritten into a standalone question using the history as background.
+        rewrite = (
+            lambda system, user: "What does OWASP membership cost in Morocco?"
+        )  # noqa: E731
+        with patch(
+            "application.prompt_client.litellm_router.system_user_fn",
+            return_value=rewrite,
+        ):
+            resp = self.router.handle("and in Morocco?", history=history)
         self.assertIsNotNone(resp)
         assert resp is not None
-        # Combined context should route as membership, not bare clarify miss.
+        # The standalone question should route as membership, not bare clarify miss.
         self.assertIn("owasp_agent", resp)
         kind = resp["owasp_agent"]["kind"]
         self.assertIn(kind, ("membership", "clarify"))

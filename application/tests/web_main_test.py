@@ -1235,6 +1235,7 @@ class TestMain(unittest.TestCase):
             "sub": "sub-xyz",
             "name": "Test User",
             "email": "test@example.com",
+            "email_verified": True,
         }
         flow_instance = cre_flow_mock.instance.return_value
         flow_instance.flow.credentials._id_token = "tok"
@@ -1274,6 +1275,7 @@ class TestMain(unittest.TestCase):
             "sub": "sub-xyz",
             "name": "Test User",
             "email": "test@example.com",
+            "email_verified": True,
         }
         flow_instance = cre_flow_mock.instance.return_value
         flow_instance.flow.credentials._id_token = "tok"
@@ -1343,6 +1345,7 @@ class TestMain(unittest.TestCase):
         id_token_mock.verify_oauth2_token.return_value = {
             "name": "Test User",
             "email": "test@example.com",
+            "email_verified": True,
         }
         flow_instance = cre_flow_mock.instance.return_value
         flow_instance.flow.credentials._id_token = "tok"

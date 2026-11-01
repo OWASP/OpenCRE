@@ -188,9 +188,31 @@ def system_user_fn(
     *,
     temperature: float = 0.0,
     extra_try_kwargs: Optional[dict[str, Any]] = None,
+    interactive: bool = False,
+    fallback_model: Optional[str] = None,
     **kwargs: Any,
 ) -> LlmFn:
-    """Build ``(system, user) -> text`` for Librarian / OIE call sites."""
+    """Build ``(system, user) -> text`` for Librarian / OIE call sites.
+
+    ``interactive=True`` is for calls a person is waiting on: quick retries, ``fallback_model`` and the
+    circuit breaker (see :func:`resilient_completion`) instead of the long bulk-job sleeps.
+    """
+
+    def _text(messages: list, **extra: Any) -> str:
+        if interactive:
+            return extract_content_text(
+                resilient_completion(
+                    model=model,
+                    messages=messages,
+                    fallback_model=fallback_model,
+                    temperature=temperature,
+                    **extra,
+                    **kwargs,
+                )
+            )
+        return completion_text(
+            model=model, messages=messages, temperature=temperature, **extra, **kwargs
+        )
 
     def _call(system: str, user: str) -> str:
         messages = [
@@ -199,24 +221,134 @@ def system_user_fn(
         ]
         if extra_try_kwargs:
             try:
-                return completion_text(
-                    model=model,
-                    messages=messages,
-                    temperature=temperature,
-                    **extra_try_kwargs,
-                    **kwargs,
-                )
-            except Exception:
+                return _text(messages, **extra_try_kwargs)
+            except Exception as err:  # noqa: BLE001
+                if interactive and is_transient_llm_error(err):
+                    raise  # an outage is not a bad-kwargs problem; do not repeat the whole retry ladder
                 logger.debug(
                     "LiteLLM extra kwargs failed for model=%s; retrying without them",
                     model,
                     exc_info=True,
                 )
-        return completion_text(
-            model=model,
-            messages=messages,
-            temperature=temperature,
-            **kwargs,
-        )
+        return _text(messages)
 
     return _call
+
+
+# --- Interactive calls (chat / MCP ask): quick retries, a fallback model and a circuit breaker -------------
+#
+# Bulk jobs (ingestion, Module B/C) keep ``with_rate_limit_retry``: long fixed sleeps are fine there. A person
+# waiting for an answer needs short, jittered back-off, a cheaper model to fall back on during a provider
+# outage, and fast failure once the primary model is clearly down.
+
+import random
+import threading
+
+_BREAKER_LOCK = threading.Lock()
+_BREAKER: dict = {}  # model -> {"fails": int, "open_until": float}
+
+
+def interactive_policy() -> tuple[int, float, float]:
+    """(retries, first delay seconds, max delay seconds) for interactive calls."""
+    return (
+        int(os.environ.get("LLM_INTERACTIVE_RETRIES", "3")),
+        float(os.environ.get("LLM_INTERACTIVE_BASE_DELAY", "1.0")),
+        float(os.environ.get("LLM_INTERACTIVE_MAX_DELAY", "8.0")),
+    )
+
+
+def _breaker_open(model: str) -> bool:
+    with _BREAKER_LOCK:
+        state = _BREAKER.get(model)
+        return bool(state and state["open_until"] > time.time())
+
+
+def _breaker_record(model: str, ok: bool) -> None:
+    threshold = int(os.environ.get("LLM_BREAKER_FAILURES", "3"))
+    cooldown = float(os.environ.get("LLM_BREAKER_COOLDOWN_SECONDS", "30"))
+    with _BREAKER_LOCK:
+        state = _BREAKER.setdefault(model, {"fails": 0, "open_until": 0.0})
+        if ok:
+            state["fails"], state["open_until"] = 0, 0.0
+            return
+        state["fails"] += 1
+        if state["fails"] >= threshold:
+            state["open_until"] = time.time() + cooldown
+            state["fails"] = 0
+            logger.warning("LLM circuit open for %s for %.0fs", model, cooldown)
+
+
+def reset_breaker() -> None:
+    with _BREAKER_LOCK:
+        _BREAKER.clear()
+
+
+def quick_retry(fn: Callable[[], Any], *, context: str) -> Any:
+    """Retry transient errors with exponential back-off and jitter (interactive profile)."""
+    retries, base, cap = interactive_policy()
+    for attempt in range(retries + 1):
+        try:
+            return fn()
+        except Exception as err:  # noqa: BLE001
+            if attempt >= retries or not is_transient_llm_error(err):
+                raise
+            delay = min(cap, base * (2**attempt)) * (0.75 + random.random() * 0.5)
+            logger.info(
+                "%s: transient %s, retrying in %.1fs (%s/%s)",
+                context,
+                type(err).__name__,
+                delay,
+                attempt + 1,
+                retries,
+            )
+            time.sleep(delay)
+    raise RuntimeError("unreachable: retry loop exited unexpectedly")
+
+
+def resilient_completion(
+    *,
+    model: str,
+    messages: Sequence[dict[str, Any]],
+    fallback_model: Optional[str] = None,
+    context: str = "LiteLLM completion",
+    client: Any = None,
+    **kwargs: Any,
+) -> Any:
+    """Completion for a waiting user: quick retries on ``model``, then ``fallback_model``.
+
+    A model that keeps failing trips a short circuit breaker so the next requests go straight to the
+    fallback instead of each waiting through the retries. Non-transient errors (bad key, refusal,
+    bad request) are raised immediately and never trigger a fallback.
+    """
+    llm = client if client is not None else get_litellm()
+    kwargs.setdefault(
+        "timeout", float(os.environ.get("LLM_INTERACTIVE_TIMEOUT_SECONDS", "90"))
+    )
+
+    def _on(m: str) -> Any:
+        return quick_retry(
+            lambda: llm.completion(model=m, messages=list(messages), **kwargs),
+            context=f"{context} [{m}]",
+        )
+
+    if not _breaker_open(model):
+        try:
+            out = _on(model)
+            _breaker_record(model, True)
+            return out
+        except Exception as err:  # noqa: BLE001
+            if not is_transient_llm_error(err):
+                raise
+            _breaker_record(model, False)
+            if not fallback_model or fallback_model == model:
+                raise
+            logger.warning(
+                "%s: %s failed (%s); falling back to %s",
+                context,
+                model,
+                type(err).__name__,
+                fallback_model,
+            )
+    elif not fallback_model or fallback_model == model:
+        raise RuntimeError(f"model {model} is temporarily unavailable (circuit open)")
+    return _on(fallback_model)  # type: ignore[arg-type]

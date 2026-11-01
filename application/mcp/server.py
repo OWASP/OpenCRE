@@ -14,7 +14,7 @@ import mcp.types as types
 from mcp.server.lowlevel import Server
 from mcp.server.stdio import stdio_server
 
-from application.mcp.ask import ASK_TOOL, ask as run_ask
+from application.mcp.ask import ASK_TOOL, RATE_TOOL, ask as run_ask, rate_answer
 from application.mcp.catalog import active_tools, auth_tools_enabled
 from application.mcp.openapi_loader import input_schemas_for
 from application.mcp.owasp_agent_tools import (
@@ -35,6 +35,7 @@ from application.utils.owasp_agent import is_owasp_agent_enabled
 SERVER_NAME = "opencre"
 SERVER_VERSION = "0.1.0"
 ASK_TOOL_NAME = ASK_TOOL["name"]
+RATE_TOOL_NAME = RATE_TOOL["name"]
 
 
 def server_instructions() -> str:
@@ -170,22 +171,34 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
         name = params.name
         arguments: Dict[str, Any] = dict(params.arguments or {})
         try:
-            if name == ASK_TOOL_NAME:
-                from application.mcp import remote_auth
+            from application.mcp import remote_auth
 
-                if remote_auth.remote_mode_enabled():
+            if remote_auth.remote_mode_enabled():
+                # Every tool needs a signed-in account with the role it requires.
+                try:
+                    caller = remote_auth.require_remote_auth(name, frozenset(schemas))
+                except remote_auth.RemoteAskAuthError as auth_exc:
+                    return types.CallToolResult(
+                        content=[types.TextContent(type="text", text=str(auth_exc))],
+                        is_error=True,
+                    )
+                if name == ASK_TOOL_NAME and caller is not None:
+                    from application.utils import rate_limit, roles
+
                     try:
-                        remote_auth.require_remote_ask_auth()
-                    except remote_auth.RemoteAskAuthError as auth_exc:
+                        rate_limit.check_and_count(
+                            caller.email, roles.role_for(caller.email), "ask"
+                        )
+                    except rate_limit.RateLimited as limited:
                         return types.CallToolResult(
                             content=[
                                 types.TextContent(
-                                    type="text",
-                                    text=str(auth_exc),
+                                    type="text", text=f"429 {limited.message()}"
                                 )
                             ],
                             is_error=True,
                         )
+            if name == ASK_TOOL_NAME:
                 data = await run_blocking_with_app(
                     lambda: run_ask(
                         str(arguments.get("prompt") or ""),
@@ -195,6 +208,7 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
                             if arguments.get("place") is not None
                             else None
                         ),
+                        history=arguments.get("history"),
                         rest_client=client,
                     )
                 )
@@ -204,6 +218,17 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
                     structured_content=(
                         data if isinstance(data, dict) else {"result": data}
                     ),
+                    is_error=False,
+                )
+            if name == RATE_TOOL_NAME:
+                data = rate_answer(
+                    str(arguments.get("answer_id") or ""),
+                    str(arguments.get("rating") or ""),
+                    str(arguments["comment"]) if arguments.get("comment") else None,
+                )
+                return types.CallToolResult(
+                    content=[types.TextContent(type="text", text=json.dumps(data))],
+                    structured_content=data,
                     is_error=False,
                 )
             if get_owasp_meta_tool(name) is not None:
@@ -306,6 +331,12 @@ def dispatch_tool(
             corpus=str(args.get("corpus") or "auto"),
             place=str(args["place"]) if args.get("place") is not None else None,
             rest_client=rest_client,
+        )
+    if tool_name == RATE_TOOL_NAME:
+        return rate_answer(
+            str(args.get("answer_id") or ""),
+            str(args.get("rating") or ""),
+            str(args["comment"]) if args.get("comment") else None,
         )
     if tool_name in list_owasp_meta_tool_names() or get_owasp_meta_tool(tool_name):
         return call_owasp_meta_tool(tool_name, args)

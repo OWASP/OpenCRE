@@ -2,15 +2,55 @@
 
 from __future__ import annotations
 
+import os
 import re
 from contextvars import ContextVar
-from typing import Callable, List, Sequence, Tuple
+from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 LlmFn = Callable[[str, str], str]
 
 # Evidence behind the answer being built on this thread/context (callers that want to
 # show their work, e.g. MCP ``ask``, read it right after answering).
 _EVIDENCE: "ContextVar[list]" = ContextVar("comprehension_evidence", default=[])
+
+
+# The chat's earlier turns for the question being answered. The answer call sends them as real
+# user/assistant messages (native multi-turn), so the model reads them as background, not as questions.
+_HISTORY: "ContextVar[list]" = ContextVar("comprehension_history", default=[])
+HISTORY_RULE = (
+    " Earlier messages in this conversation are background only: answer ONLY the final question, "
+    "do not answer the earlier questions again."
+)
+MAX_HISTORY_TURNS = 6
+MAX_HISTORY_CHARS = 600
+
+
+def set_history(history) -> None:
+    """Prepare the earlier chat turns (last few, trimmed, alternating roles) for the answer call."""
+    from application.utils.chat_history import normalize_chat_messages
+
+    turns = []
+    for m in normalize_chat_messages(history)[-MAX_HISTORY_TURNS:]:
+        content = m["content"][:MAX_HISTORY_CHARS]
+        if turns and turns[-1]["role"] == m["role"]:
+            turns[-1]["content"] += "\n" + content  # providers want alternating roles
+        else:
+            turns.append({"role": m["role"], "content": content})
+    while turns and turns[0]["role"] != "user":
+        turns.pop(0)
+    _HISTORY.set(turns)
+
+
+def get_history() -> list:
+    return list(_HISTORY.get())
+
+
+def with_history(messages: list) -> list:
+    """[system, ...earlier turns, final user message]: native multi-turn for the answer call."""
+    turns = get_history()
+    if not turns or len(messages) < 2:
+        return list(messages)
+    return [messages[0], *turns, *messages[1:]]
 
 
 def reset_evidence() -> None:
@@ -21,8 +61,69 @@ def take_evidence() -> list:
     return list(_EVIDENCE.get())
 
 
+_MD_LINK = re.compile(r"\[([^\[\]]+)\]\(\s*https?://[^)]*\)")
+_MARK_LINK = re.compile(r"\[\[(\d+)\]\]\(\s*https?://[^)]*\)")
+_DOUBLE_MARK = re.compile(r"\[\[(\d+)\]\]")
+_BARE_URL = re.compile(r"https?://[^\s)\]>]+")
+
+
+def max_resources() -> int:
+    """Most resource links one answer shows (stricter = fewer, better ones)."""
+    try:
+        return max(1, int(os.environ.get("OWASP_MAX_RESOURCES", "5")))
+    except ValueError:
+        return 5
+
+
+def clean_answer_text(text: str) -> str:
+    """Keep the model's answer free of links: only ``[n]`` markers may point at sources.
+
+    Sources contain markdown (``[text](url)``) and the model sometimes copies it, producing
+    ``[[7]](https://...)`` that the UI cannot link and a raw URL that should stay hidden.
+    The references list under the answer carries the real links.
+    """
+    out = _MARK_LINK.sub(lambda m: f"[{m.group(1)}]", text)
+    out = _MD_LINK.sub(
+        lambda m: f"[{m.group(1)}]" if m.group(1).isdigit() else m.group(1), out
+    )
+    out = _DOUBLE_MARK.sub(lambda m: f"[{m.group(1)}]", out)
+    out = _BARE_URL.sub("", out)
+    return re.sub(r"[ \t]+([.,;:])", r"\1", out)
+
+
+def renumber_citations(
+    answer: str,
+    hits: Sequence[Tuple[str, List[str]]],
+    used: Sequence[int],
+    cites: Sequence[str],
+) -> Tuple[str, Dict[int, int]]:
+    """Make the [n] markers match the returned citation list (so a UI can link [n] to cites[n-1]).
+
+    The model cites the numbered sources it was shown ([3], [17], ...), but callers receive only the URLs
+    of the sources it used. Each marker becomes the 1-based position of its source's first URL in ``cites``;
+    several chunks of one file share a number, repeated markers collapse ([2][2] -> [2]) and markers of
+    sources without a URL are dropped.
+    """
+    number: Dict[int, int] = {}
+    for i in used:
+        urls = hits[i - 1][1]
+        if urls and urls[0] in cites:
+            number[i] = list(cites).index(urls[0]) + 1
+
+    def swap(m: "re.Match[str]") -> str:
+        n = number.get(int(m.group(1)))
+        return f"[{n}]" if n else ""
+
+    out = re.sub(r"\[(\d+)\]", swap, answer)
+    out = re.sub(r"(\[\d+\])(?:\s*\1)+", r"\1", out)  # [2][2] -> [2]
+    out = re.sub(r"[ \t]+([.,;:!?])", r"\1", out)
+    return out, number
+
+
 def _record_evidence(
-    hits: Sequence[Tuple[str, List[str]]], used: Sequence[int]
+    hits: Sequence[Tuple[str, List[str]]],
+    used: Sequence[int],
+    number: Optional[Dict[int, int]] = None,
 ) -> None:
     from application.utils.comprehension.toolkit import body_of, path_of
 
@@ -33,7 +134,7 @@ def _record_evidence(
         snippet = body.split(": ", 1)[-1] if path_of(body) else body
         items.append(
             {
-                "n": i,
+                "n": number.get(i) if number is not None else i,
                 "path": path_of(body),
                 "snippet": snippet.strip()[:500],
                 "citations": list(cites)[:3],
@@ -85,6 +186,16 @@ PERSTD_RULE = (
 )
 
 
+NEG_RE = re.compile(
+    r"\bnot\b|n't\b|\bexcept\b|\bexcluding\b|\bnone of\b|\bnever\b|\bwithout\b", re.I
+)
+NEG_RULE = (
+    " The question asks what is NOT / EXCEPT / excluded. First list every candidate option the question "
+    "or the sources give, then test each one against the sources (stated: yes/no), and only then name the "
+    "option(s) the sources do not support. Do not answer from the first sentence you find."
+)
+
+
 def synthesize(
     question: str,
     hits: Sequence[Tuple[str, List[str]]],
@@ -95,6 +206,8 @@ def synthesize(
     """``hits`` = (text, citations). Returns (answer, citations used); ("", []) if unknown."""
     from application.utils.comprehension import flags
 
+    if get_history():
+        system += HISTORY_RULE
     if flags.on("EDITION"):
         system += EDITION_RULE
     if flags.on("COMPLETE"):
@@ -103,16 +216,25 @@ def synthesize(
         f"[{i + 1}] {t.split(chr(10) + chr(10) + 'Citations:')[0]}"
         for i, (t, _) in enumerate(hits)
     )
-    out = (llm(system, f"Question: {question}\n\nSources:\n{numbered}") or "").strip()
+    if flags.on("PREFIXCACHE"):
+        # Same project text first: providers cache the longest shared prefix across questions.
+        user = f"Sources:\n{numbered}\n\nQuestion: {question}"
+    else:
+        user = f"Question: {question}\n\nSources:\n{numbered}"
+    out = clean_answer_text((llm(system, user) or "").strip())
     if not out or out.upper().startswith("UNKNOWN"):
         return "", []
     used = sorted(
         {int(n) for n in re.findall(r"\[(\d+)\]", out) if 0 < int(n) <= len(hits)}
     )
-    _record_evidence(hits, used)
     cites: List[str] = []
     for i in used:
         for c in hits[i - 1][1]:
             if c not in cites:
                 cites.append(c)
+    from application.utils.comprehension import paths
+
+    cites = paths.order_and_cap(cites, max_resources())
+    out, number = renumber_citations(out, hits, used, cites)
+    _record_evidence(hits, used, number)
     return out, cites
