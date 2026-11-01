@@ -1,4 +1,4 @@
-"""Curated OWASP event/chapter sites (``docs/oie/owasp-event-sites.json``) as external-source suggestions.
+"""Curated OWASP event/chapter sites (``application/utils/comprehension/owasp-event-sites.json``) as external-source suggestions.
 
 Pure helpers: load and validate the list, build discovery-style candidates, plan and store them.
 Everything lands as ``suggested`` + disabled via ``external_targets.upsert_suggestions``; nothing is
@@ -17,7 +17,7 @@ from application.utils.comprehension import discovery, external, link_suggestion
 
 SOURCE_SEED = "seed"
 DOC = "docs/oie/owasp-event-sites.md"
-DEFAULT_PATH = Path(__file__).resolve().parents[3] / "docs/oie/owasp-event-sites.json"
+DEFAULT_PATH = Path(__file__).resolve().parent / "owasp-event-sites.json"
 KINDS = ("global", "regional", "chapter")
 STATUSES = ("registered", "candidate")
 MIN_PAGES, MAX_PAGES, DEFAULT_PAGES = 30, 60, 40

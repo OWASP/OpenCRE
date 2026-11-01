@@ -2,6 +2,8 @@ FROM node:lts as build
 LABEL org.opencontainers.image.source = "https://github.com/OWASP/OpenCRE"
 WORKDIR /code
 RUN apt-get update && apt-get install -y chromium
+# node:lts no longer ships yarn (Node 26 dropped corepack); the lockfile is yarn v1
+RUN npm install -g yarn
 COPY . /code
 RUN yarn install && yarn build
 
@@ -17,7 +19,7 @@ RUN pip install -r "${REQUIREMENTS_FILE}" gunicorn
 # Headless Firefox for Playwright: the embedding job (prompt_client) and the crawler's JS fallback need it.
 # Off by default (prod/Heroku keep the small image); staging compose sets INSTALL_BROWSERS=1.
 ARG INSTALL_BROWSERS=0
-RUN if [ "${INSTALL_BROWSERS}" = "1" ]; then playwright install --with-deps firefox; fi
+RUN if [ "${INSTALL_BROWSERS}" = "1" ]; then pip install playwright && playwright install --with-deps firefox; fi
 
 ENV INSECURE_REQUESTS=1
 ENV FLASK_CONFIG="production"

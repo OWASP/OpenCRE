@@ -5,7 +5,7 @@
     python scripts/seed_event_sources.py --apply    # write disabled, suggested targets
     python scripts/seed_event_sources.py --file other.json --limit 10
 
-Reads docs/oie/owasp-event-sites.json (see docs/oie/owasp-event-sites.md). Never fetches anything;
+Reads application/utils/comprehension/owasp-event-sites.json (see docs/oie/owasp-event-sites.md). Never fetches anything;
 hosts that are already registered, approved or rejected are skipped. Nothing is crawled until an
 admin accepts the suggestion in the Admin panel.
 """

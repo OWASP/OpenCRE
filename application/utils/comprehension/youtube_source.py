@@ -545,7 +545,7 @@ _SEED_SITES: Optional[List[Dict[str, Any]]] = None
 
 
 def _seed_sites() -> List[Dict[str, Any]]:
-    """Curated OWASP event sites (docs/oie/owasp-event-sites.json); empty when the file is absent."""
+    """Curated OWASP event sites (application/utils/comprehension/owasp-event-sites.json); empty when the file is absent."""
     global _SEED_SITES
     if _SEED_SITES is None:
         try:

@@ -216,3 +216,21 @@ class TestStore(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SeedShipsWithThePackageTest(unittest.TestCase):
+    def test_default_seed_lives_inside_the_application_package(self):
+        """Staging images copy only application/, scripts/ and a few files, never docs/."""
+        from application.utils.comprehension import event_seed
+
+        app_dir = Path(__file__).resolve().parents[1]
+        self.assertTrue(event_seed.DEFAULT_PATH.exists())
+        self.assertIn(app_dir, event_seed.DEFAULT_PATH.parents)
+
+    def test_talk_lookup_finds_a_real_seed_site_without_an_explicit_list(self):
+        from application.utils.comprehension import youtube_source as ys
+
+        self.assertEqual(
+            ys.event_program_url("AppSec Days Portugal", "2026-09-23"),
+            "https://appsecdays.pt/program/",
+        )
