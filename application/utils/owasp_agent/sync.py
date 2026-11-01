@@ -441,9 +441,7 @@ def sync_all(
                 sync_meta_embeddings,
             )
 
-            # Looked up by name: this module must never import the CRE node writers (guardrail test).
-            get_db_coll = getattr(db_mod, "Node" + "_collection")
-            database = get_db_coll()
+            database = db_mod.Node_collection()
             handler = prompt_client.PromptHandler(database, load_all_embeddings=False)
             stats = sync_meta_embeddings(
                 store, database, lambda t: handler.get_text_embeddings(t)
