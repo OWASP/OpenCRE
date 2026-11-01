@@ -1850,6 +1850,8 @@ def auth_callback():
         request=token_request,
         audience=os.environ.get("GOOGLE_CLIENT_ID"),
     )
+    if not id_info.get("email_verified"):
+        abort(401, description="Your Google account has no verified email.")
 
     session["google_id"] = id_info.get("sub")
     session["name"] = id_info.get("name")
@@ -1886,6 +1888,13 @@ def auth_callback():
                 403,
                 description="Your Google account has no access to this environment.",
             )
+    # The check above is a suffix match; require the same exact-or-subdomain rule
+    # roles and the MCP sign-in use, so evilowasp.org does not pass for owasp.org.
+    if not named_admin and not account_roles._domain_allowed(email):
+        abort(
+            401,
+            description="You need an account on one of the allowed domains to access this functionality.",
+        )
     # Legacy exact-email allowlist (staging): further restricts who may log in.
     allowed_emails_raw = (
         ""

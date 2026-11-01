@@ -95,16 +95,7 @@ class TestOwaspAgentIsolation(unittest.TestCase):
                 src = fh.read()
             self.assertNotIn("Credoctypes", src)
             self.assertNotIn("cre_defs", src)
-            if mod is sync_mod:
-                # Requirement changed: the opt-in meta-embedding push
-                # (OWASP_AGENT_EMBED_META) needs the DB handle. It is the only
-                # allowed use, and it must stay behind that flag.
-                self.assertEqual(src.count("Node_collection"), 1)
-                self.assertGreater(
-                    src.index("Node_collection"), src.index("OWASP_AGENT_EMBED_META")
-                )
-            else:
-                self.assertNotIn("Node_collection", src)
+            self.assertNotIn("Node_collection", src)
 
 
 if __name__ == "__main__":
