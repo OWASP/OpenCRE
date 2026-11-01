@@ -170,7 +170,7 @@ class StageTest(unittest.TestCase):
         run = self._stage()
 
         class Stub:
-            # chunks 1 and 3 are security knowledge, chunk 2 (say an events teaser) is not
+            # Payload order follows CHUNKS: the middle record is NOISE, the other two are kept.
             def classify_batch(self, records):
                 assert len(records) == 3, len(records)
                 return [

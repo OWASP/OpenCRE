@@ -187,8 +187,8 @@ def file_linked_decisions(
 ) -> FilerResult:
     """File every unconsumed ``linked`` decision whose confidence clears ``floor``.
 
-    ``skip_repos`` are source repos (``OWASP/ASVS``) whose standards already have
-    a dedicated importer; filing chunk-level nodes under them would duplicate it.
+    ``skip_repos`` matches a repo (``OWASP/ASVS``) or a website host (``slsa.dev``)
+    whose standard already has a dedicated importer.
 
     ``refuse_if_safety_unevaluated``: when > 0, do not file anything (Module C
     reported an unevaluated safety path for this run).

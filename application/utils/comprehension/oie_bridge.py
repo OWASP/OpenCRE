@@ -97,9 +97,11 @@ def stage_harvest(
     *,
     dry_run: bool = False,
 ) -> int:
-    """Insert pending ``harvest_input`` rows; a page already staged for this run is skipped.
+    """Insert pending ``harvest_input`` rows.
 
-    Returns the number of rows written (or that would be written on a dry run).
+    A page already stored for this run is skipped by ``artifact_id``. The first
+    call still inserts every chunk of that page, because the skip set is read
+    before those inserts. Returns rows written, or rows that a dry run would write.
     """
     if not run_id or not run_id.strip():
         raise ValueError("run_id must be non-empty")
