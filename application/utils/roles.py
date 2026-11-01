@@ -41,7 +41,11 @@ def admin_emails() -> Set[str]:
     return _csv("ADMIN_EMAILS") if roles_enabled() else _csv("LOGIN_ALLOWED_EMAILS")
 
 
-def _domain_allowed(email: str) -> bool:
+def domain_allowed(email: str) -> bool:
+    """Exact-or-subdomain match against ``LOGIN_ALLOWED_DOMAINS`` (``*`` allows any).
+
+    A leading ``@`` or ``.`` on a configured domain is ignored (``@owasp.org``, ``.edu``).
+    """
     domains = [
         d.strip().lower()
         for d in (os.environ.get("LOGIN_ALLOWED_DOMAINS") or "").split(",")
@@ -51,10 +55,11 @@ def _domain_allowed(email: str) -> bool:
         return False  # fail closed: a domain must be named explicitly
     if domains == ["*"]:
         return True
-    host = email.rsplit("@", 1)[-1] if "@" in email else ""
-    return any(
-        host == d.lstrip("@") or host.endswith("." + d.lstrip("@")) for d in domains
-    )
+    host = email.strip().lower().rsplit("@", 1)[-1] if "@" in email else ""
+    if not host:
+        return False
+    suffixes = [d.lstrip("@.") for d in domains]
+    return any(s and (host == s or host.endswith("." + s)) for s in suffixes)
 
 
 def role_for(email: Optional[str]) -> Optional[str]:
@@ -71,7 +76,7 @@ def role_for(email: Optional[str]) -> Optional[str]:
         return None
     if addr in admin_emails():
         return ADMIN
-    return USER if _domain_allowed(addr) else None
+    return USER if domain_allowed(addr) else None
 
 
 def has_role(email: Optional[str], needed: str) -> bool:

@@ -1850,7 +1850,7 @@ def auth_callback():
         request=token_request,
         audience=os.environ.get("GOOGLE_CLIENT_ID"),
     )
-    if not id_info.get("email_verified"):
+    if id_info.get("email_verified") is not True:
         abort(401, description="Your Google account has no verified email.")
 
     session["google_id"] = id_info.get("sub")
@@ -1865,18 +1865,14 @@ def auth_callback():
     )
     if not named_admin:
         allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
-        allowed_domains = allowed_domains.split(",") if allowed_domains else []
         if not allowed_domains:
             abort(
                 500,
                 "You have not set any domain in the allowed domains list, to ignore this set LOGIN_ALLOWED_DOMAINS to '*'",
             )
-        if (
-            allowed_domains
-            and allowed_domains != ["*"]
-            and not any([email.endswith(x.strip().lower()) for x in allowed_domains])
-        ):
-            allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
+        # Exact-or-subdomain rule shared with roles and the MCP sign-in, so
+        # evilowasp.org does not pass for owasp.org.
+        if not account_roles.domain_allowed(email):
             abort(
                 401,
                 description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
@@ -1888,13 +1884,6 @@ def auth_callback():
                 403,
                 description="Your Google account has no access to this environment.",
             )
-    # The check above is a suffix match; require the same exact-or-subdomain rule
-    # roles and the MCP sign-in use, so evilowasp.org does not pass for owasp.org.
-    if not named_admin and not account_roles._domain_allowed(email):
-        abort(
-            401,
-            description="You need an account on one of the allowed domains to access this functionality.",
-        )
     # Legacy exact-email allowlist (staging): further restricts who may log in.
     allowed_emails_raw = (
         ""
