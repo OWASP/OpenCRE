@@ -18,6 +18,8 @@ from application.utils.import_diff import (
     AddControl,
     ModifyControl,
     RemoveControl,
+    impacted_cre_external_ids_for_standards,
+    impacted_standard_names_from_ops,
 )
 
 
@@ -167,3 +169,25 @@ class TestImportDiff(unittest.TestCase):
         ]
         edited = detect_manual_edit_keys(baseline, current)
         self.assertEqual(edited, {("ASVS", "1.1", "1.1")})
+
+    def test_impact_skips_empty_standard_keys(self) -> None:
+        ops = [
+            ModifyControl(
+                key=("", "", ""),
+                before={},
+                after={"name": "ASVS", "description": "seed"},
+            ),
+            AddControl(key=("ASVS", "1.1", "1.1"), document={"name": "ASVS"}),
+        ]
+        self.assertEqual(impacted_standard_names_from_ops(ops), {"ASVS"})
+
+    def test_impact_cre_lookup_swallows_empty_name_errors(self) -> None:
+        class Boom:
+            def get_nodes(self, name: str = "") -> list:
+                if not name:
+                    raise ValueError("tried to retrieve node with no values")
+                raise AssertionError("blank names must not be queried")
+
+        self.assertEqual(
+            impacted_cre_external_ids_for_standards(Boom(), {"", "  "}), set()
+        )

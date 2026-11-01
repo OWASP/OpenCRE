@@ -70,6 +70,26 @@ class ChunkMergerTests(unittest.TestCase):
         out = merge_chunks(doc, chunks, cfg)
         self.assertEqual(len(out), 2)
 
+    def test_join_tolerates_out_of_order_offsets(self) -> None:
+        # Docling offsets are found by text search and can run backwards.
+        t1 = ("Verify 2.1.1 passwords are long. " * 4).strip()
+        t2 = ("Verify 2.1.1 passwords are long, really. " * 4).strip()
+        text = "x" * 400 + t1 + "\n\n" + t2
+        chunks = [
+            ChunkInfo(text=t1, start_char_idx=300, end_char_idx=440),
+            ChunkInfo(text=t2, start_char_idx=100, end_char_idx=200),
+        ]
+        headings = [HeadingNode(level=2, text="V2.1", start_line=1, end_line=99)]
+        cfg = ChunkingConfig(
+            strategy="docling",
+            max_tokens=1200,
+            overlap_tokens=10,
+            merge_profile="requirements",
+        )
+        out = merge_chunks(_doc(text, headings), chunks, cfg)
+        self.assertEqual(len(out), 1)
+        self.assertEqual((out[0].start_char_idx, out[0].end_char_idx), (100, 440))
+
     def test_none_profile_is_noop(self) -> None:
         text = "aaaa " * 50 + "\n\n" + "bbbb " * 50
         mid = text.index("bbbb")

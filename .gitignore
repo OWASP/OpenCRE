@@ -94,6 +94,8 @@ neo4j/
 .mypy_cache
 tmp/
 
+import_telemetry.json
+
 ### CREs dir
 cres/*
 ### Local project management tooling

@@ -56,10 +56,29 @@ class NullSafetyGuard:
     Deliberately not a lambda returning ``(False, False)`` — the named type and
     the ``evaluated=False`` verdict are what keep "we checked and it is clean"
     distinguishable from "nobody checked" everywhere downstream.
+
+    Pipeline fail-closed: unevaluated ⇒ ``Decision.review`` (never auto-link).
     """
 
     def evaluate(self, section: Section) -> SafetyVerdict:
         return SafetyVerdict(evaluated=False)
 
 
-__all__ = ["NullSafetyGuard", "SafetyGuard", "SafetyVerdict"]
+class PassThroughSafetyGuard:
+    """Hermetic/eval stub: marks the safety path evaluated and clean.
+
+    Use in unit tests that assert auto-link behaviour without an LLM guard.
+    Live factory never installs this — production uses ``LlmSafetyGuard`` or
+    ``NullSafetyGuard`` (fail closed).
+    """
+
+    def evaluate(self, section: Section) -> SafetyVerdict:
+        return SafetyVerdict(evaluated=True, adversarial=False, update_ambiguous=False)
+
+
+__all__ = [
+    "NullSafetyGuard",
+    "PassThroughSafetyGuard",
+    "SafetyGuard",
+    "SafetyVerdict",
+]

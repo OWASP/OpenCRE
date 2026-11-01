@@ -266,6 +266,51 @@ class StagedChangeSet(BaseModel):  # type: ignore
     created_at = sqla.Column(sqla.DateTime, nullable=False)
 
 
+class IngestionTarget(BaseModel):  # type: ignore
+    __tablename__ = "ingestion_target"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    # oie_repo | import_source | owasp_agent (built-in, not persisted)
+    kind = sqla.Column(sqla.String, nullable=False)
+    name = sqla.Column(sqla.String, nullable=False)
+    spec_json = sqla.Column(sqla.Text, nullable=False, default="{}")
+    enabled = sqla.Column(sqla.Boolean, nullable=False, default=True)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+
+
+class AdminPipelineEvent(BaseModel):  # type: ignore
+    __tablename__ = "admin_pipeline_event"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    run_id = sqla.Column(sqla.String, nullable=False)
+    stage = sqla.Column(sqla.String, nullable=False)
+    status = sqla.Column(sqla.String, nullable=False)
+    detail = sqla.Column(sqla.Text, nullable=True)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+
+    __table_args__ = (sqla.Index("ix_admin_pipeline_event_run", "run_id"),)
+
+
+class AdminRuntimeSetting(BaseModel):  # type: ignore
+    """Durable admin toggles (e.g. OIE_GRAPH_FILING_ENABLED) shared by all workers."""
+
+    __tablename__ = "admin_runtime_setting"
+    key = sqla.Column(sqla.String, primary_key=True)
+    value = sqla.Column(sqla.String, nullable=False)
+    updated_at = sqla.Column(sqla.DateTime, nullable=False)
+    updated_by = sqla.Column(sqla.String, nullable=True)
+
+
+class AdminRuntimeSettingAudit(BaseModel):  # type: ignore
+    __tablename__ = "admin_runtime_setting_audit"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    key = sqla.Column(sqla.String, nullable=False)
+    old_value = sqla.Column(sqla.String, nullable=True)
+    new_value = sqla.Column(sqla.String, nullable=False)
+    actor = sqla.Column(sqla.String, nullable=True)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+
+    __table_args__ = (sqla.Index("ix_admin_runtime_setting_audit_key", "key"),)
+
+
 class User(BaseModel):  # type: ignore
     """Persisted account identity for OIDC login (issue #586, RFC #876 TODO 1).
 
@@ -564,6 +609,32 @@ class DecisionQueueItem(BaseModel):  # type: ignore
     )
 
 
+class OieRun(BaseModel):  # type: ignore
+    """One scheduled OIE job run: the audit row behind ``/admin/oie``.
+
+    ``id`` is the run id (``<job>-<slot>``), derived from the schedule slot so a
+    replayed tick lands on the same row instead of starting a second run.
+    ``summary`` carries the per-stage counts of the run as JSON.
+    """
+
+    __tablename__ = "oie_run"
+    id = sqla.Column(sqla.String, primary_key=True)
+    job = sqla.Column(sqla.String, nullable=False)
+    slot = sqla.Column(sqla.String, nullable=False)
+    status = sqla.Column(sqla.String, nullable=False)  # running | ok | degraded | error
+    trigger = sqla.Column(sqla.String, nullable=False)  # scheduled | manual
+    dry_run = sqla.Column(sqla.Boolean, nullable=False, default=False)
+    attempts = sqla.Column(sqla.Integer, nullable=False, default=1)
+    started_at = sqla.Column(sqla.DateTime, nullable=False)
+    finished_at = sqla.Column(sqla.DateTime, nullable=True)
+    summary = sqla.Column(sqla.JSON().with_variant(JSONB, "postgresql"), nullable=True)
+    error = sqla.Column(sqla.Text, nullable=True)
+    __table_args__ = (
+        sqla.UniqueConstraint("job", "slot", name="uq_oie_run_job_slot"),
+        sqla.Index("ix_oie_run_job_started", "job", "started_at"),
+    )
+
+
 def create_import_run(source: str, version: Optional[str] = None) -> ImportRun:
     """Create and persist an import run record. Returns the new ImportRun."""
     from datetime import datetime, timezone
@@ -736,12 +807,31 @@ def get_staged_change_set(*, run_id: str) -> Optional[StagedChangeSet]:
     )
 
 
+def ensure_staged_change_set(
+    *,
+    run_id: str,
+    changeset_json: str = "[]",
+    staging_status: str = "pending_review",
+) -> StagedChangeSet:
+    """Return the staged set for ``run_id``, creating an empty one if missing."""
+    cs = get_staged_change_set(run_id=run_id)
+    if cs:
+        return cs
+    return persist_staged_change_set(
+        run_id=run_id,
+        changeset_json=changeset_json,
+        has_conflicts=False,
+        staging_status=staging_status,
+    )
+
+
 def update_staged_change_set(
     *,
     run_id: str,
     staging_status: Optional[str] = None,
     has_conflicts: Optional[bool] = None,
     apply_error: Optional[str] = None,
+    changeset_json: Optional[str] = None,
 ) -> Optional[StagedChangeSet]:
     cs = get_staged_change_set(run_id=run_id)
     if not cs:
@@ -752,6 +842,8 @@ def update_staged_change_set(
         cs.has_conflicts = has_conflicts
     if apply_error is not None:
         cs.apply_error = apply_error
+    if changeset_json is not None:
+        cs.changeset_json = changeset_json
     sqla.session.add(cs)
     sqla.session.commit()
     return cs

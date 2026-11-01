@@ -139,12 +139,15 @@ class _ExplodingSink:
 
 
 def _components(confidence: float = 0.95, retriever=None) -> LibrarianComponents:
+    from application.utils.librarian.safety_guard import PassThroughSafetyGuard
+
     return LibrarianComponents(
         retriever=retriever or _Retriever(),
         reranker=_Reranker(),
         scaler=_Scaler(confidence),
         known_cre_ids=frozenset({"616-305"}),
         cre_membership=frozenset({"616-305"}),
+        safety_guard=PassThroughSafetyGuard(),
     )
 
 
@@ -393,17 +396,23 @@ class RunLibrarianQueueTest(unittest.TestCase):
         )
 
     def test_unevaluated_safety_path_is_reported_not_hidden(self) -> None:
-        """No SafetyGuard exists yet, so every row is decided without it. That
-        has to show up in the summary rather than look like a clean result."""
+        """NullSafetyGuard leaves evaluated=False; summary must declare the gap."""
+        from application.utils.librarian.safety_guard import NullSafetyGuard
+
         sqla.session.add_all([_row("a"), _row("b")])
         sqla.session.commit()
 
         with self.assertLogs(
             "application.utils.librarian.queue_runner", level="WARNING"
         ) as logs:
-            summary = self._run()
+            summary = self._run(
+                components=dataclasses.replace(
+                    _components(), safety_guard=NullSafetyGuard()
+                )
+            )
 
         self.assertEqual(summary.safety_unevaluated, 2)
+        self.assertEqual(summary.linked, 0)
         self.assertIn("safety path", "\n".join(logs.output))
 
     def test_summary_serializes_for_the_orchestrator(self) -> None:
@@ -418,18 +427,17 @@ class RunLibrarianQueueTest(unittest.TestCase):
         self.assertEqual(payload["linked"], 1)
 
     def test_status_declares_a_degraded_run(self) -> None:
-        """The orchestrator branches on ``status``; a constant "ok" would hide
-        exactly the runs worth noticing.
+        """NullSafetyGuard runs must surface degraded status (fail closed)."""
+        from application.utils.librarian.safety_guard import NullSafetyGuard
 
-        Every row today is decided behind ``NullSafetyGuard``, so a real run is
-        genuinely degraded until a detector exists — and the field says which
-        rows and why, rather than leaving the reader to know that a non-zero
-        ``safety_unevaluated`` is bad news.
-        """
         sqla.session.add(_row("a"))
         sqla.session.commit()
 
-        summary = self._run()
+        summary = self._run(
+            components=dataclasses.replace(
+                _components(), safety_guard=NullSafetyGuard()
+            )
+        )
 
         self.assertTrue(summary.safety_unevaluated)
         self.assertIn("degraded", summary.status)

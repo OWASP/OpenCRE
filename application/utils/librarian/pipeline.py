@@ -697,6 +697,15 @@ class LibrarianPipeline:
                         )
                 if not verdict_evaluated:
                     safety_unevaluated += 1
+                    # Fail closed: unevaluated must never look like a clean link
+                    # (see safety_guard.py contract / graph filer refuse).
+                    result = DecisionResult(
+                        Decision.review,
+                        result.confidence,
+                        tuple(result.cre_ids[:2]),
+                        ReasonCode.safety_unevaluated,
+                        gap_proposal=result.gap_proposal,
+                    )
                 result = ground_decision(result, self._cre_registry)
                 envelope = emit(
                     section, audit, result, pipeline_run_id=self._run_id, at=at

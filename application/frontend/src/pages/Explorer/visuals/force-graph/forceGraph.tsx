@@ -19,6 +19,8 @@ interface GraphNode {
   size: number;
   name: string;
   doctype: string;
+  tags?: string[];
+  autoFiled?: boolean;
   originalNodes?: any[];
   x?: number;
   y?: number;
@@ -37,10 +39,27 @@ interface GraphPayload {
   links: GraphLink[];
 }
 
+/** Matches ``AUTO_FILED_TAG`` in ``application/utils/oie_scheduler/graph_filer.py``. */
+const AUTO_FILED_TAG = 'oie-auto-filed';
+/** Matches ``defs.LinkTypes.AutomaticallyLinkedTo``. */
+const AUTO_LINK_TYPE = 'automatically linked to';
+
 const relationColors: Record<string, string> = {
   contains: 'rgba(45, 212, 191, 0.55)',
   related: 'rgba(96, 165, 250, 0.55)',
   'linked to': 'rgba(196, 181, 253, 0.55)',
+  // Module C / graph-filer edges — distinct from curated "Linked to".
+  [AUTO_LINK_TYPE]: 'rgba(251, 113, 133, 0.7)',
+};
+
+const AUTO_FILED_NODE_COLOR = '#fb7185';
+
+const hasAutoFiledTag = (tags: unknown): boolean =>
+  Array.isArray(tags) && tags.some((t) => String(t).toLowerCase() === AUTO_FILED_TAG);
+
+const isAutoFiledGraphNode = (node: GraphNode): boolean => {
+  if (node.autoFiled || hasAutoFiledTag(node.tags)) return true;
+  return Boolean(node.originalNodes?.some((n) => hasAutoFiledTag(n?.tags)));
 };
 
 const getNodeId = (node: string | GraphNode): string =>
@@ -306,7 +325,7 @@ export const ExplorerForceGraph = () => {
   };
 
   const getRenderedNodeColor = (node: GraphNode) => {
-    const baseColor = getNodeBaseColor(node.doctype);
+    const baseColor = isAutoFiledGraphNode(node) ? AUTO_FILED_NODE_COLOR : getNodeBaseColor(node.doctype);
     if (!focusedNodeId) return baseColor;
     if (!focusedNodeIds.has(node.id)) return 'rgba(148, 163, 184, 0.16)';
     if (node.id === focusedNodeId) return '#ffffff';
@@ -508,6 +527,7 @@ export const ExplorerForceGraph = () => {
             name: baseName,
             doctype: 'standard',
             originalNodes: groupedNodes,
+            autoFiled: groupedNodes.some((n) => hasAutoFiledTag(n?.tags)),
           };
         } else {
           const storedDoc = dataStore[name];
@@ -516,6 +536,8 @@ export const ExplorerForceGraph = () => {
             size: 1,
             name: storedDoc ? storedDoc.displayName : name,
             doctype: storedDoc ? storedDoc.doctype : 'Unknown',
+            tags: storedDoc?.tags,
+            autoFiled: hasAutoFiledTag(storedDoc?.tags),
           };
         }
         gData.nodes.push(nodesMap[name]);
@@ -701,6 +723,12 @@ export const ExplorerForceGraph = () => {
             checked={!ignoreTypes.includes('linked to')}
             onChange={() => toggleLinks('linked to')}
           />
+          <Checkbox
+            className="graph-chip graph-chip--auto-linked"
+            label="Automatically linked to"
+            checked={!ignoreTypes.includes(AUTO_LINK_TYPE)}
+            onChange={() => toggleLinks(AUTO_LINK_TYPE)}
+          />
         </div>
 
         <div className="explorer-force-graph-controls__filters">
@@ -784,6 +812,14 @@ export const ExplorerForceGraph = () => {
           <div className="legend-row">
             <span className="legend-swatch legend-swatch--linked"></span>
             <span>Linked To</span>
+          </div>
+          <div className="legend-row">
+            <span className="legend-swatch legend-swatch--auto-linked"></span>
+            <span>Automatically linked to</span>
+          </div>
+          <div className="legend-row">
+            <span className="legend-swatch legend-swatch--auto-filed"></span>
+            <span>AI-filed node</span>
           </div>
         </aside>
       </section>

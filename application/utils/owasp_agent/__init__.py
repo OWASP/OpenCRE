@@ -3,7 +3,8 @@
 Isolation contract
 ------------------
 * Meta entities live in the agent index (``OWASP_AGENT_DB`` / app Postgres
-  ``meta_*`` tables) — never as CRE graph nodes.
+  ``meta_*`` tables) — never as CRE graph nodes. Scheduled runs default to the
+  app DB.
 * May write ``embeddings`` rows only with
   ``source_channel='owasp_agent_meta'`` (multi-lane chat routing). Never create
   Credoctypes / Node / CRE graph links from this package.

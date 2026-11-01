@@ -156,6 +156,8 @@ class FactoryOieGateTest(unittest.TestCase):
         "CRE_LIBRARIAN_CRE_SUMMARY": "0",
         "CRE_LIBRARIAN_DUAL_INDEX": "0",
         "CRE_LIBRARIAN_PRIOR_CAGE": "0",
+        # CI and SQLite have no pgvector; the shipped default needs it.
+        "CRE_LIBRARIAN_RETRIEVER_BACKEND": "in_memory",
     }
 
     def tearDown(self) -> None:

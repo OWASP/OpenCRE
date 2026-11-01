@@ -1,6 +1,6 @@
 .ONESHELL:
 
-.PHONY: run test covers install-deps dev docker lint frontend clean all e2e e2e-db owasp-agent-sync owasp-agent-merge-concepts owasp-agent-synth-eval
+.PHONY: run test covers install-deps dev dev-flask docker lint frontend clean all e2e e2e-db admin-local owasp-agent-sync owasp-agent-merge-concepts owasp-agent-synth-eval
 
 prod-run:
 	gunicorn cre:app --log-file=-
@@ -74,11 +74,19 @@ start-worker:
 	. ./venv/bin/activate && FLASK_APP=`pwd`/cre.py python cre.py --start_worker
 
 upstream-sync:
-	. ./venv/bin/activate && python cre.py --upstream_sync
+	. ./venv/bin/activate &&\
+	python cre.py --upstream_sync --cache_file "$(or $(DEV_DATABASE_URL),$(CRE_CACHE_FILE),$(CURDIR)/standards_cache.sqlite)"
 
 PORT?=5000
 
-dev-flask:
+# Local app against Docker Postgres: migrate, upstream-sync if cre/node empty, Flask.
+# Same entrypoint as admin showcase / OIE local (no SQLite). macOS AirPlay often
+# holds :5000 — use PORT=5001 make dev if bind fails.
+dev dev-flask admin-local:
+	bash ./scripts/run_admin_local.sh --port $(PORT) $(ADMIN_LOCAL_ARGS)
+
+# Bare Flask without Postgres bootstrap (legacy / CI helpers). Prefer `make dev`.
+dev-flask-sqlite:
 	. ./venv/bin/activate && INSECURE_REQUESTS=1 FLASK_APP=`pwd`/cre.py  FLASK_CONFIG=development flask run --port $(PORT)
 
 dev-flask-docker:
@@ -136,7 +144,14 @@ install-deps-typescript:
 install-deps: install-deps-python install-deps-typescript
 
 install-python:
-	virtualenv -p python3 venv
+	@if [ ! -d "./venv" ]; then \
+		if command -v virtualenv >/dev/null 2>&1; then \
+			virtualenv -p python3 venv; \
+		else \
+			echo "virtualenv not on PATH — using python3 -m venv"; \
+			python3 -m venv venv; \
+		fi; \
+	fi
 	. ./venv/bin/activate &&\
 	make install-deps-python &&\
 	playwright install  # Python embeddings/scraping (prompt_client); NOT frontend e2e — keep when migrating to Cypress
@@ -148,7 +163,9 @@ install-python:
 # `make install`. Rebuild with `make frontend` when you change the UI.
 install-typescript: install-deps-typescript
 
-install: install-typescript install-python migrate-upgrade
+# Deps + Docker Postgres schema + CRE upstream graph when empty (see run_admin_local.sh).
+install: install-typescript install-python
+	bash ./scripts/run_admin_local.sh --migrate-only $(ADMIN_LOCAL_ARGS)
 
 docker-dev:
 	docker build -f Dockerfile-dev -t opencre-dev:$(shell git rev-parse HEAD) .
@@ -272,6 +289,21 @@ monitor-chatbot-health-prod:
 	python scripts/monitor_chatbot_health.py \
 		--base-url "https://opencre.org" \
 		--output-json "$(CURDIR)/tmp/prod-chatbot-health.json"
+
+# Scheduled OIE jobs (Postgres only). Cron `make oie-tick` every 10 minutes: each
+# job runs once per slot (owasp every 10 min, cre_expansion daily) and is a no-op
+# otherwise. Overrides: OIE_JOB=owasp|cre_expansion|all, OIE_FORCE=1, OIE_DRY_RUN=1.
+oie-tick:
+	@[ -d "./.venv" ] && . ./.venv/bin/activate || ([ -d "./venv" ] && . ./venv/bin/activate); \
+	export CRE_CACHE_FILE="$${CRE_CACHE_FILE:-postgresql://cre:password@127.0.0.1:5432/cre}"; \
+	python cre.py --cache_file "$$CRE_CACHE_FILE" --run_scheduled "$${OIE_JOB:-all}" \
+		$${OIE_FORCE:+--scheduled_force} $${OIE_DRY_RUN:+--scheduled_dry_run}
+
+monitor-oie-health:
+	@[ -d "./.venv" ] && . ./.venv/bin/activate || ([ -d "./venv" ] && . ./venv/bin/activate); \
+	export CRE_CACHE_FILE="$${CRE_CACHE_FILE:-postgresql://cre:password@127.0.0.1:5432/cre}"; \
+	export PYTHONPATH="$(CURDIR)"; \
+	python scripts/monitor_oie_health.py --output-json "$(CURDIR)/tmp/oie-health.json"
 
 verify-ga-parity-local:
 	@[ -d "./.venv" ] && . ./.venv/bin/activate || ([ -d "./venv" ] && . ./venv/bin/activate); \

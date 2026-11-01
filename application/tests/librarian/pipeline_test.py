@@ -11,6 +11,7 @@ import unittest
 from datetime import datetime, timezone
 
 from application.utils.librarian.pipeline import LibrarianPipeline
+from application.utils.librarian.safety_guard import PassThroughSafetyGuard
 from application.utils.librarian.schemas import (
     CreCandidate,
     KnowledgeQueueItem,
@@ -91,6 +92,7 @@ def _pipeline(rows, reranked, conf):
         _Scaler(conf),
         threshold=0.8,
         pipeline_run_id=RUN,
+        safety_guard=PassThroughSafetyGuard(),
     )
 
 
@@ -124,6 +126,7 @@ class PipelineTest(unittest.TestCase):
             _Scaler(0.95),
             threshold=0.8,
             pipeline_run_id=RUN,
+            safety_guard=PassThroughSafetyGuard(),
         )
         env = pipeline.run(at=AT).envelopes[0]
         self.assertIsInstance(env, ReviewItem)
@@ -161,6 +164,7 @@ class PipelineTest(unittest.TestCase):
             known_cre_ids=frozenset({"616-305"}),
             cre_id_map={"616-305": "uuid-616"},
             cre_membership=frozenset({"uuid-616", "616-305"}),
+            safety_guard=PassThroughSafetyGuard(),
         )
         result = pipeline.run(at=AT)
         self.assertEqual(result.stats.linked, 1)
@@ -189,6 +193,7 @@ class PipelineTest(unittest.TestCase):
             pipeline_run_id=RUN,
             known_cre_ids=frozenset({"616-305", "177-260"}),
             cre_membership=frozenset({"616-305", "177-260"}),
+            safety_guard=PassThroughSafetyGuard(),
         )
         result = pipeline.run(at=AT)
         self.assertEqual(result.stats.review, 1)
@@ -217,6 +222,7 @@ class PipelineCreMembershipGroundingTest(unittest.TestCase):
             threshold=0.8,
             pipeline_run_id=RUN,
             cre_membership=frozenset({"616-305"}),
+            safety_guard=PassThroughSafetyGuard(),
         )
         result = pipeline.run(at=AT)
         self.assertEqual(result.stats.linked, 0)
@@ -235,6 +241,7 @@ class PipelineCreMembershipGroundingTest(unittest.TestCase):
             threshold=0.8,
             pipeline_run_id=RUN,
             cre_membership=frozenset({"616-305"}),
+            safety_guard=PassThroughSafetyGuard(),
         )
         result = pipeline.run(at=AT)
         self.assertEqual(result.stats.linked, 1)
@@ -255,6 +262,7 @@ class PipelineCreMembershipGroundingTest(unittest.TestCase):
             threshold=0.8,
             pipeline_run_id=RUN,
             cre_membership=frozenset({"616-305"}),
+            safety_guard=PassThroughSafetyGuard(),
         )
         result = pipeline.run(at=AT)
         env = result.envelopes[0]
@@ -286,6 +294,7 @@ class PipelineErrorContainmentTest(unittest.TestCase):
             parts["scaler"],
             threshold=0.8,
             pipeline_run_id=RUN,
+            safety_guard=PassThroughSafetyGuard(),
         ).run(at=AT)
 
     def test_retriever_failure_is_contained(self):
@@ -320,6 +329,7 @@ class PipelineErrorContainmentTest(unittest.TestCase):
             _Scaler(0.95),
             threshold=0.8,
             pipeline_run_id=RUN,
+            safety_guard=PassThroughSafetyGuard(),
         ).run(at=AT)
 
         self.assertEqual(result.stats.total, 3)
@@ -350,6 +360,7 @@ class RowOutcomeTest(unittest.TestCase):
             _Scaler(scaler_confidence),
             threshold=0.8,
             pipeline_run_id=RUN,
+            safety_guard=PassThroughSafetyGuard(),
         ).run(at=AT)
 
     def test_outcome_per_row_carries_the_queue_id(self):
@@ -372,6 +383,7 @@ class RowOutcomeTest(unittest.TestCase):
             _Scaler(0.95),
             threshold=0.8,
             pipeline_run_id=RUN,
+            safety_guard=PassThroughSafetyGuard(),
         ).run(at=AT)
         self.assertEqual([o.status.value for o in result.outcomes], ["errored"])
         self.assertEqual(result.finished_row_ids(), [])
@@ -433,6 +445,7 @@ class ShortlistJudgePipelineTest(unittest.TestCase):
             threshold=0.8,
             pipeline_run_id=RUN,
             shortlist_llm_fn=llm,
+            safety_guard=PassThroughSafetyGuard(),
         )
         result = pipeline.run(at=AT)
         env = result.envelopes[0]
@@ -455,6 +468,7 @@ class ShortlistJudgePipelineTest(unittest.TestCase):
             threshold=0.8,
             pipeline_run_id=RUN,
             shortlist_llm_fn=llm,
+            safety_guard=PassThroughSafetyGuard(),
         ).run(at=AT)
         self.assertEqual(result.stats.linked, 1)
         self.assertNotIn("shortlist-judge", result.envelopes[0].retrieval.retriever)
@@ -512,6 +526,7 @@ class LeafDrilldownGatePipelineTest(unittest.TestCase):
             leaf_drilldown_resources=("asvs", "aisvs"),
             leaf_drilldown_min_children=3,
             leaf_drilldown_min_sections=0,
+            safety_guard=PassThroughSafetyGuard(),
         ).run(at=AT)
         env = result.envelopes[0]
         ids = [c.cre_id for c in env.retrieval.reranked]
@@ -568,6 +583,7 @@ class LeafDrilldownGatePipelineTest(unittest.TestCase):
             leaf_drilldown_force_resources=("api",),
             leaf_drilldown_min_children=3,
             leaf_drilldown_min_sections=20,
+            safety_guard=PassThroughSafetyGuard(),
         ).run(at=AT)
         env = result.envelopes[0]
         ids = [c.cre_id for c in env.retrieval.reranked]
@@ -628,6 +644,7 @@ class LeafDrilldownGatePipelineTest(unittest.TestCase):
             leaf_drilldown_resources=(),
             leaf_drilldown_min_children=3,
             leaf_drilldown_min_sections=20,
+            safety_guard=PassThroughSafetyGuard(),
         ).run(at=AT)
         env = result.envelopes[0]
         ids = [c.cre_id for c in env.retrieval.reranked]

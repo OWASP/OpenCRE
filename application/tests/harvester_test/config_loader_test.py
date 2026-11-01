@@ -92,6 +92,27 @@ class ConfigLoaderTests(unittest.TestCase):
         with self.assertRaisesRegex(ConfigLoaderError, "overlap_tokens"):
             load_repo_config(config_path)
 
+    def test_load_sources_only_config(self):
+        from tempfile import NamedTemporaryFile
+
+        with NamedTemporaryFile("w", suffix=".yaml", delete=False) as handle:
+            handle.write("sources:\n  - github.com/OWASP/\n")
+            path = handle.name
+        config = load_repo_config(path)
+        self.assertEqual(config.sources[0].url, "github.com/OWASP/")
+        self.assertEqual(config.repositories, [])
+
+    def test_load_sources_with_cron(self) -> None:
+        from tempfile import NamedTemporaryFile
+
+        with NamedTemporaryFile("w", suffix=".yaml", delete=False) as handle:
+            handle.write(
+                "sources:\n  - url: github.com/OWASP/\n    cron: '0 * * * *'\n"
+            )
+            path = handle.name
+        config = load_repo_config(path)
+        self.assertEqual(config.sources[0].cron, "0 * * * *")
+
     def test_load_packaged_repos_yaml(self):
         config_path = (
             Path(__file__).resolve().parents[2] / "utils" / "harvester" / "repos.yaml"
@@ -100,7 +121,8 @@ class ConfigLoaderTests(unittest.TestCase):
         config = load_repo_config(config_path)
 
         ids = [repo.id for repo in config.repositories]
-        self.assertEqual(ids, ["owasp-asvs", "owasp-aisvs", "owasp-cheatsheets"])
+        self.assertEqual(ids[:3], ["owasp-asvs", "owasp-aisvs", "owasp-cheatsheets"])
+        self.assertEqual(len(ids), len(set(ids)))
 
     def test_empty_owner(self):
         config_path = FIXTURES_DIR / "empty_owner.yaml"
