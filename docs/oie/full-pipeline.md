@@ -36,7 +36,8 @@ export DEV_DATABASE_URL=postgresql://cre:password@127.0.0.1:5432/cre_prodclone
 PYTHONPATH=. python scripts/oie_owasp_eval/run_full_pipeline.py \
   --repos asvs,aisvs,cheatsheets,aix \
   --keep-all-knowledge \
-  --neighborhood
+  --neighborhood \
+  --wipe-queues
 ```
 
 The run **empties `harvest_input`, `knowledge_queue` and `decision_queue`** in the

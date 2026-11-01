@@ -1,4 +1,4 @@
-"""Low-level MCP stdio server for OpenCRE public REST tools."""
+"""Low-level MCP stdio server for OpenCRE public REST tools + optional OWASP meta."""
 
 from __future__ import annotations
 
@@ -15,12 +15,19 @@ from mcp.server.stdio import stdio_server
 
 from application.mcp.catalog import active_tools, auth_tools_enabled
 from application.mcp.openapi_loader import input_schemas_for
+from application.mcp.owasp_agent_tools import (
+    OWASP_META_TOOLS,
+    call_owasp_meta_tool,
+    get_owasp_meta_tool,
+    list_owasp_meta_tool_names,
+)
 from application.mcp.rest_client import (
     RestClient,
     RestClientError,
     RestRequestError,
     RestResponseError,
 )
+from application.utils.owasp_agent import is_owasp_agent_enabled
 
 
 SERVER_NAME = "opencre"
@@ -28,24 +35,33 @@ SERVER_VERSION = "0.1.0"
 
 
 def server_instructions() -> str:
-    """Describe the live tool surface (v1 public-only vs v2 with auth tools)."""
-    if not auth_tools_enabled():
-        return (
-            "OpenCRE MCP v1 exposes public JSON REST reads only. "
-            "Authenticated MyOpenCRE, chat, and admin tools are out of scope."
+    """Describe the live tool surface (v1/v2, optional OWASP meta tools)."""
+    if auth_tools_enabled():
+        served = active_tools()
+        has_write = any(not tool.read_only for tool in served)
+        if has_write:
+            base = (
+                "OpenCRE MCP v2 exposes public JSON REST reads plus authenticated "
+                "MyOpenCRE tools (including set_my_resources for writes). "
+                "Chat and admin tools remain out of scope."
+            )
+        else:
+            base = (
+                "OpenCRE MCP v2 exposes public JSON REST reads plus authenticated "
+                "MyOpenCRE read tools. Chat and admin tools remain out of scope."
+            )
+    else:
+        base = (
+            "OpenCRE MCP v1 exposes public JSON REST reads for CREs/standards. "
+            "Authenticated MyOpenCRE, chat, and admin tools remain out of scope."
         )
-    served = active_tools()
-    has_write = any(not tool.read_only for tool in served)
-    if has_write:
+    if is_owasp_agent_enabled():
         return (
-            "OpenCRE MCP v2 exposes public JSON REST reads plus authenticated "
-            "MyOpenCRE tools (including set_my_resources for writes). "
-            "Chat and admin tools remain out of scope."
+            base
+            + " When OWASP_AGENT_ENABLED is set, additional owasp_meta_* tools answer "
+            "community/metadata questions from a separate index — not the CRE graph."
         )
-    return (
-        "OpenCRE MCP v2 exposes public JSON REST reads plus authenticated "
-        "MyOpenCRE read tools. Chat and admin tools remain out of scope."
-    )
+    return base
 
 
 def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
@@ -73,6 +89,22 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
             )
             for tool in served
         ]
+        # Optional OWASP metadata channel (chat/MCP only — not CRE REST).
+        if is_owasp_agent_enabled():
+            for meta in OWASP_META_TOOLS:
+                tools.append(
+                    types.Tool(
+                        name=meta["name"],
+                        description=meta["summary"],
+                        input_schema=meta["input_schema"],
+                        annotations=types.ToolAnnotations(
+                            read_only_hint=True,
+                            destructive_hint=False,
+                            idempotent_hint=True,
+                            open_world_hint=True,
+                        ),
+                    )
+                )
         return types.ListToolsResult(tools=tools)
 
     async def on_call_tool(
@@ -82,6 +114,16 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
         name = params.name
         arguments: Dict[str, Any] = dict(params.arguments or {})
         try:
+            if get_owasp_meta_tool(name) is not None:
+                data = call_owasp_meta_tool(name, arguments)
+                payload = json.dumps(data, ensure_ascii=False, default=str)
+                return types.CallToolResult(
+                    content=[types.TextContent(type="text", text=payload)],
+                    structured_content=(
+                        data if isinstance(data, dict) else {"result": data}
+                    ),
+                    is_error=False,
+                )
             # schemas is built from the allowlist at startup; unknown names stop here.
             if name not in schemas:
                 raise RestRequestError(f"Unknown MCP tool: {name}")
@@ -111,6 +153,16 @@ def build_server(rest_client: Optional[RestClient] = None) -> Server[Any]:
             )
         except RestClientError as exc:
             logger.exception("REST client failure for tool %s", name)
+            return types.CallToolResult(
+                content=[types.TextContent(type="text", text=str(exc))],
+                is_error=True,
+            )
+        except KeyError as exc:
+            return types.CallToolResult(
+                content=[types.TextContent(type="text", text=str(exc))],
+                is_error=True,
+            )
+        except ValueError as exc:
             return types.CallToolResult(
                 content=[types.TextContent(type="text", text=str(exc))],
                 is_error=True,
@@ -149,6 +201,8 @@ def dispatch_tool(
     *,
     rest_client: Optional[RestClient] = None,
 ) -> Any:
-    """Synchronous helper used by tests: catalog → REST, return decoded JSON."""
+    """Synchronous helper used by tests: catalog → REST or local owasp_meta_*."""
+    if tool_name in list_owasp_meta_tool_names() or get_owasp_meta_tool(tool_name):
+        return call_owasp_meta_tool(tool_name, arguments or {})
     client = rest_client or RestClient()
     return client.call_tool(tool_name, arguments or {}).data
