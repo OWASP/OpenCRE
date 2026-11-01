@@ -175,10 +175,9 @@ def ask_completion_inprocess(
     os.environ["NO_LOGIN"] = "1"
     os.environ.setdefault("OWASP_AGENT_ENABLED", "1")
     # Prefer Postgres URL from the container env for SQLAlchemy (psycopg2 pin).
-    db_url = (
-        (os.environ.get("DATABASE_URL") or "").strip()
-        or (os.environ.get("DEV_DATABASE_URL") or "").strip()
-    )
+    db_url = (os.environ.get("DATABASE_URL") or "").strip() or (
+        os.environ.get("DEV_DATABASE_URL") or ""
+    ).strip()
     if db_url and not (os.environ.get("SQLALCHEMY_DATABASE_URI") or "").strip():
         try:
             from application.utils.postgres_url import (
