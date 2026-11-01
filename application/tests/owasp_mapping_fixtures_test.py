@@ -11,6 +11,7 @@ from application.utils import mapping_fixtures
 EXPECTED_FIXTURES = {
     "owasp_aisvs_1_0.json",
     "owasp_api_top10_2023.json",
+    "owasp_asvs_5_0_provisional.json",
     "owasp_cheatsheets_supplement.json",
     "owasp_kubernetes_top10_2022.json",
     "owasp_kubernetes_top10_2025.json",
