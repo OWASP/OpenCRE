@@ -10,6 +10,7 @@ from unittest.mock import patch
 from application import create_app, sqla
 from application.database import db
 from application.defs import cre_defs as defs
+from application.tests.env_override import environ_override
 from application.tests.oie_scheduler.graph_filer_test import _envelope
 from cre_logging import JSONFormatter
 from application.utils.harvester import pipeline as harvest_pipeline
@@ -500,8 +501,8 @@ repositories:
         self._event_repos()
         self.assertIn("owasp-e1", self._harvested(harvest_events=True))
 
-    def _agent_sync(self, agent_db, embed=None):
-        from application.utils.owasp_agent import embed_sync, index_store
+    def _agent_sync(self, agent_db):
+        from application.utils.owasp_agent import index_store
         from application.utils.owasp_agent import sync as agent_sync
 
         targets = []
@@ -520,8 +521,6 @@ repositories:
         report = agent_sync.SyncReport(nest_ok=True, github_ok=True)
         with patch.object(index_store, "IndexStore", RecordingStore), patch.object(
             agent_sync, "sync_all", lambda **_: report
-        ), patch.object(
-            embed_sync, "embed_meta_if_enabled", embed or (lambda store, rep: False)
         ):
             return jobs.stage_agent_sync(ctx), targets
 
@@ -539,17 +538,82 @@ repositories:
         self.assertEqual(targets, [str(sqla.session.get_bind().url)])
         self.assertEqual(result.status, "ok")
 
-    def test_agent_sync_applies_the_meta_embedding_push_after_sync_all(self) -> None:
+    def _agent_sync_with_embedding(self, embed_fn, embed_flag):
+        """Run the real stage on a real, seeded agent index (sync_all is offline)."""
+        from application.utils.owasp_agent import sync as agent_sync
+        from application.utils.owasp_agent.index_store import IndexStore
+        from application.utils.owasp_agent.models import Project
+
+        agent_db = str(Path(self.tmp.name) / "agent.sqlite")
+        seed = IndexStore(agent_db)
+        seed.upsert_project(
+            Project(
+                key="zap",
+                name="ZAP",
+                tags=["appsec"],
+                source="nest",
+                url="https://nest.example/zap",
+            )
+        )
+        seed.engine.dispose()
+        report = agent_sync.SyncReport(nest_ok=True, github_ok=True)
+        self.addCleanup(setattr, agent_sync, "sync_all", agent_sync.sync_all)
+        agent_sync.sync_all = lambda **_: report
+        ctx = jobs.JobContext(
+            collection=self.collection,
+            cache_file="unused",
+            run_id="owasp-test",
+            now=NOW,
+            config=SchedulerConfig(repos_yaml=str(self.repos), agent_db=agent_db),
+            meta_embed_fn=embed_fn,
+        )
+        env = {}
+        unset = ["CRE_EMBED_EXPECTED_DIM"]
+        if embed_flag is None:
+            unset.append("OWASP_AGENT_EMBED_META")
+        else:
+            env["OWASP_AGENT_EMBED_META"] = embed_flag
+        with environ_override(env, unset=unset):
+            return jobs.stage_agent_sync(ctx)
+
+    def _agent_meta_urls(self):
+        return sorted(
+            row.embeddings_url
+            for row in sqla.session.query(db.Embeddings).filter_by(
+                source_channel="owasp_agent_meta"
+            )
+        )
+
+    def test_agent_sync_skips_the_meta_embedding_push_when_the_flag_is_off(
+        self,
+    ) -> None:
         calls = []
 
-        def embed(store, report):
-            calls.append((store, report))
-            report.errors.append("meta_embeddings: embedding backend down")
-            return False
+        def embed(text):
+            calls.append(text)
+            return [1.0, 0.5, 0.25]
 
-        result, targets = self._agent_sync(None, embed=embed)
+        result = self._agent_sync_with_embedding(embed, None)
 
-        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls, [])
+        self.assertEqual(self._agent_meta_urls(), [])
+        self.assertEqual(result.status, "ok")
+        self.assertEqual(result.summary["errors"], [])
+
+    def test_agent_sync_applies_the_meta_embedding_push_after_sync_all(self) -> None:
+        result = self._agent_sync_with_embedding(lambda text: [1.0, 0.5, 0.25], "1")
+
+        self.assertIn("owasp-agent://meta/project/zap/nest", self._agent_meta_urls())
+        self.assertEqual(result.status, "ok")
+        self.assertEqual(result.summary["errors"], [])
+
+    def test_agent_sync_degrades_when_the_meta_embedding_push_fails(self) -> None:
+        def embed(text):
+            raise RuntimeError("embedding backend down")
+
+        result = self._agent_sync_with_embedding(embed, "1")
+
+        self.assertEqual(self._agent_meta_urls(), [])
         self.assertEqual(result.status, "degraded")
         self.assertIn("meta_embeddings: embedding backend down", result.detail)
         self.assertEqual(
@@ -585,7 +649,7 @@ class SchedulerConfigEnvTest(unittest.TestCase):
             env.pop("OIE_EMBED_FILED_NODES", None)
             self.assertFalse(SchedulerConfig.from_env().embed_filed_nodes)
         for on in ("1", "true", "ON", "yes"):
-            with patch.dict("os.environ", {"OIE_EMBED_FILED_NODES": on}):
+            with environ_override({"OIE_EMBED_FILED_NODES": on}):
                 self.assertTrue(SchedulerConfig.from_env().embed_filed_nodes)
         for off in ("0", "false", "OFF", "no", ""):
             with patch.dict("os.environ", {"OIE_EMBED_FILED_NODES": off}):

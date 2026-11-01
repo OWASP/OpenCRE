@@ -1,15 +1,13 @@
-import os
 import unittest
-from unittest import mock
 
 from application import create_app
+from application.tests.env_override import environ_override
 
 
 class CorsConfigTest(unittest.TestCase):
     def _headers(self, origin: str, env: dict):
-        with mock.patch.dict(os.environ, env, clear=False):
-            if "CORS_ALLOWED_ORIGINS" not in env:
-                os.environ.pop("CORS_ALLOWED_ORIGINS", None)
+        unset = [] if "CORS_ALLOWED_ORIGINS" in env else ["CORS_ALLOWED_ORIGINS"]
+        with environ_override(env, unset=unset):
             app = create_app(mode="test")
             with app.test_client() as client:
                 return client.get(

@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import tempfile
 import unittest
 
+from application.tests.env_override import environ_override
 from application.utils.owasp_agent.index_store import IndexStore
 from unittest import mock
 
@@ -20,18 +22,18 @@ from application.utils.owasp_agent.router import (
 )
 
 
-_env_patch = mock.patch.dict(
-    os.environ, {"OWASP_AGENT_ENABLED": "1", "OWASP_AGENT_SIM_ROUTER": "0"}
-)
+_env = contextlib.ExitStack()
 _tmp_paths: list = []
 
 
 def setUpModule() -> None:
-    _env_patch.start()
+    _env.enter_context(
+        environ_override({"OWASP_AGENT_ENABLED": "1", "OWASP_AGENT_SIM_ROUTER": "0"})
+    )
 
 
 def tearDownModule() -> None:
-    _env_patch.stop()
+    _env.close()
     for path in _tmp_paths:
         if os.path.exists(path):
             os.remove(path)
