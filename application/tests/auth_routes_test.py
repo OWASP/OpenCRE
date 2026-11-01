@@ -136,6 +136,7 @@ class TestAuthRoutes(unittest.TestCase):
             "sub": "sub-admin",
             "name": "Admin",
             "email": "Admin@gmail.com",
+            "email_verified": True,
         }
         flow.instance.return_value.flow.credentials._id_token = "tok"
         with patch.dict(
@@ -178,6 +179,7 @@ class TestAuthRoutes(unittest.TestCase):
             "sub": "sub-xyz",
             "name": "Test User",
             "email": "test@example.com",
+            "email_verified": True,
         }
         cre_flow_mock.instance.return_value.flow.credentials._id_token = "tok"
         with patch.dict(
@@ -201,7 +203,11 @@ class TestAuthRoutes(unittest.TestCase):
     def test_pkce_verifier_survives_login_to_callback(
         self, cre_flow_mock: Any, id_token_mock: Any
     ) -> None:
-        id_token_mock.verify_oauth2_token.return_value = {"sub": "s", "email": "a@b.c"}
+        id_token_mock.verify_oauth2_token.return_value = {
+            "sub": "s",
+            "email": "a@b.c",
+            "email_verified": True,
+        }
         """The callback's fresh flow must send the verifier the login created."""
         login_flow = cre_flow_mock.instance.return_value.flow
         login_flow.authorization_url.return_value = ("https://g/auth", "st")
@@ -234,6 +240,7 @@ class TestAuthRoutes(unittest.TestCase):
             "sub": "sub-nope",
             "name": "Nope",
             "email": "stranger@example.com",
+            "email_verified": True,
         }
         cre_flow_mock.instance.return_value.flow.credentials._id_token = "tok"
         with patch.dict(
@@ -263,6 +270,7 @@ class TestAuthRoutes(unittest.TestCase):
             "sub": "sub-ok",
             "name": "Spyros",
             "email": "spyros.gasteratos@owasp.org",
+            "email_verified": True,
         }
         cre_flow_mock.instance.return_value.flow.credentials._id_token = "tok"
         with patch.dict(
@@ -330,6 +338,7 @@ class TestAuthRoutes(unittest.TestCase):
             "sub": "sub-boom",
             "name": "T",
             "email": "t@example.com",
+            "email_verified": True,
         }
         cre_flow_mock.instance.return_value.flow.credentials._id_token = "tok"
         node_collection_mock.return_value.upsert_user.side_effect = SQLAlchemyError(
@@ -362,6 +371,7 @@ class TestAuthRoutes(unittest.TestCase):
             "sub": None,
             "name": "T",
             "email": "t@example.com",
+            "email_verified": True,
         }
         cre_flow_mock.instance.return_value.flow.credentials._id_token = "tok"
         with patch.dict(
@@ -414,6 +424,7 @@ class TestAuthRoutes(unittest.TestCase):
             "sub": "sub-abc",
             "name": "T",
             "email": "t@x.com",
+            "email_verified": True,
         }
         cre_flow_mock.instance.return_value.flow.credentials._id_token = "tok"
         with patch.dict(
