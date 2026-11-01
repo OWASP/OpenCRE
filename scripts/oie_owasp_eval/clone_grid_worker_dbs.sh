@@ -18,6 +18,16 @@ USER="${PGUSER:-cre}"
 export PGPASSWORD="${PGPASSWORD:-password}"
 PREFIX="${DB_PREFIX:-cre_grid_w}"
 
+# This script terminates sessions and (FORCE=1) drops databases: local only.
+case "$HOST" in
+  127.0.0.1|localhost) ;;
+  *) echo "refusing non-local PGHOST=$HOST (local Docker postgres only)" >&2; exit 1 ;;
+esac
+if [[ "$PREFIX" != cre_grid_w* ]]; then
+  echo "refusing DB_PREFIX=$PREFIX: worker databases must start with cre_grid_w" >&2
+  exit 1
+fi
+
 psql_admin() {
   psql -h "$HOST" -p "$PORT" -U "$USER" -d postgres -v ON_ERROR_STOP=1 "$@"
 }

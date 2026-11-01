@@ -193,22 +193,6 @@ def _segments_from_line_ids(body: str) -> List[RequirementSegment]:
     return segs
 
 
-def _paragraph_end(body: str, from_idx: int) -> int:
-    """End of current table block or next blank line after ``from_idx``."""
-    rest = body[from_idx:]
-    # Prefer end of contiguous table lines.
-    lines = rest.splitlines(keepends=True)
-    offset = from_idx
-    for line in lines:
-        if line.startswith("|") or not line.strip():
-            offset += len(line)
-            if not line.strip() and offset > from_idx + 1:
-                return offset
-            continue
-        break
-    return min(len(body), max(from_idx + 1, offset))
-
-
 __all__ = [
     "RequirementSegment",
     "extract_requirement_chunks",

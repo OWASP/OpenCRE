@@ -21,29 +21,15 @@ import argparse
 import os
 import sys
 from pathlib import Path
-from urllib.parse import urlparse
 
 _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 
-def _assert_local_clone_url(url: str) -> None:
-    parsed = urlparse(url)
-    db_name = (parsed.path or "").lstrip("/").split("/")[0]
-    host = (parsed.hostname or "").lower()
-    if "heroku" in url.lower() or "opencreorg" in url.lower():
-        raise SystemExit(
-            f"refusing production/Heroku URL (host {host!r}); "
-            "use cre_prodclone locally"
-        )
-    if db_name == "cre":
-        raise SystemExit(
-            "refusing database 'cre'; pass cre_prodclone "
-            "(postgresql://cre:password@127.0.0.1:5432/cre_prodclone)"
-        )
-    if host not in ("127.0.0.1", "localhost", ""):
-        raise SystemExit(f"refusing non-local host {host!r}; summaries are local-only")
+from application.utils.db_url import (  # noqa: E402
+    assert_local_clone_url as _assert_local_clone_url,
+)
 
 
 def main() -> int:

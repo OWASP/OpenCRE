@@ -222,6 +222,9 @@ def parse_db_url(url: Optional[str] = None) -> Dict[str, str]:
 
 def reset_queues() -> None:
     """Clear decisions + unconsume KQ for RUN_ID on *this worker's* database."""
+    from application.utils.db_url import assert_local_db_url
+
+    assert_local_db_url(os.environ.get("DEV_DATABASE_URL") or DEFAULT_DB_URL)
     conn = parse_db_url()
     sql = (
         f"DELETE FROM decision_queue WHERE pipeline_run_id = '{RUN_ID}'; "
