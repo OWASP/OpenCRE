@@ -227,6 +227,8 @@ def upsert_channel_embedding(
     embeddings: Sequence[float],
 ) -> Any:
     """Insert/update an embeddings row keyed by ``embeddings_url`` + channel."""
+    import sqlalchemy as sa
+
     from application.database import db as db_mod
     from application.database.pgvector_utils import (
         require_embedding_vec_store,
@@ -245,6 +247,26 @@ def upsert_channel_embedding(
             f"embedding dimension mismatch for {embeddings_url}: "
             f"expected {expected_raw}, got {dim}"
         )
+    if not expected_raw:
+        # No configured dimension: never mix lengths into the shared table.
+        # Rows written by other lanes are the reference; our own rows are not.
+        other_dims = {
+            d
+            for (d,) in session.query(db_mod.Embeddings.embedding_dim)
+            .filter(db_mod.Embeddings.embedding_dim.isnot(None))
+            .filter(
+                sa.or_(
+                    db_mod.Embeddings.source_channel.is_(None),
+                    db_mod.Embeddings.source_channel != source_channel,
+                )
+            )
+            .distinct()
+        }
+        if other_dims and dim not in other_dims:
+            raise ValueError(
+                f"embedding dimension mismatch for {embeddings_url}: "
+                f"existing embeddings use {sorted(other_dims)}, got {dim}"
+            )
     literal = to_pgvector_literal(list(embeddings))
     existing = (
         session.query(db_mod.Embeddings)
