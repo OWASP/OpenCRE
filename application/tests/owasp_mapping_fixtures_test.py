@@ -9,6 +9,7 @@ from application.utils import mapping_fixtures
 
 
 EXPECTED_FIXTURES = {
+    "nist_800_53_v5.json",
     "owasp_aisvs_1_0.json",
     "owasp_api_top10_2023.json",
     "owasp_asvs_5_0_provisional.json",

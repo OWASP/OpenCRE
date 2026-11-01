@@ -1,0 +1,11 @@
+Source: PM-10
+Section-ID: PM-10
+Section: PM-10 Authorization Process
+Standard: NIST 800-53 v5
+
+Authorization Process
+
+Manage the security and privacy state of organizational systems and the environments in which those systems operate through authorization processes;
+Designate individuals to fulfill specific roles and responsibilities within the organizational risk management process; and
+Integrate the authorization processes into an organization-wide risk management program.
+Authorization processes for organizational systems and environments of operation require the implementation of an organization-wide risk management process and associated security and privacy standards and guidelines. Specific roles for risk management processes include a risk executive (function) and designated authorizing officials for each organizational system and common control provider. The authorization processes for the organization are integrated with continuous monitoring processes to facilitate ongoing understanding and acceptance of security and privacy risks to organizational operations, organizational assets, individuals, other organizations, and the Nation.

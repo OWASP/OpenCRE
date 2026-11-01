@@ -1,0 +1,722 @@
+[
+  {
+    "section_id": "AC-1",
+    "section": "AC-1 POLICY AND PROCEDURES",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=AC-1",
+    "cre_ids": [
+      "247-250"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "AC-10",
+    "section": "AC-10 CONCURRENT SESSION CONTROL",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=AC-10",
+    "cre_ids": [
+      "177-260"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "AC-11",
+    "section": "AC-11 DEVICE LOCK",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=AC-11",
+    "cre_ids": [
+      "470-731"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "AT-1",
+    "section": "AT-1 Policy and Procedures",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=AT-1",
+    "cre_ids": [
+      "428-544"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "AT-2",
+    "section": "AT-2 Literacy Training and Awareness",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=AT-2",
+    "cre_ids": [
+      "428-544"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "AU-1",
+    "section": "AU-1 Policy and Procedures",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=AU-1",
+    "cre_ids": [
+      "842-876"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "AU-10",
+    "section": "AU-10 Non-repudiation",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=AU-10",
+    "cre_ids": [
+      "148-420"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "AU-11",
+    "section": "AU-11 Audit Record Retention",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=AU-11",
+    "cre_ids": [
+      "842-876"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "CA-1",
+    "section": "CA-1 Policy and Procedures",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=CA-1",
+    "cre_ids": [
+      "464-513"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "CA-2",
+    "section": "CA-2 Control Assessments",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=CA-2",
+    "cre_ids": [
+      "464-513"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "CM-1",
+    "section": "CM-1 Policy and Procedures",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=CM-1",
+    "cre_ids": [
+      "124-564"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "CM-10",
+    "section": "CM-10 Software Usage Restrictions",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=CM-10",
+    "cre_ids": [
+      "124-564"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "CM-11",
+    "section": "CM-11 User-installed Software",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=CM-11",
+    "cre_ids": [
+      "124-564"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "CP-1",
+    "section": "CP-1 Policy and Procedures",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=CP-1",
+    "cre_ids": [
+      "240-464"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "CP-10",
+    "section": "CP-10 System Recovery and Reconstitution",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=CP-10",
+    "cre_ids": [
+      "240-464"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "IA-1",
+    "section": "IA-1 Policy and Procedures",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=IA-1",
+    "cre_ids": [
+      "633-428"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "IA-10",
+    "section": "IA-10 Adaptive Authentication",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=IA-10",
+    "cre_ids": [
+      "633-428"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "IR-1",
+    "section": "IR-1 Policy and Procedures",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=IR-1",
+    "cre_ids": [
+      "463-577"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "IR-2",
+    "section": "IR-2 Incident Response Training",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=IR-2",
+    "cre_ids": [
+      "463-577"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "MA-1",
+    "section": "MA-1 Policy and Procedures",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=MA-1",
+    "cre_ids": [
+      "114-853"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "MA-2",
+    "section": "MA-2 Controlled Maintenance",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=MA-2",
+    "cre_ids": [
+      "114-853"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "MP-1",
+    "section": "MP-1 Policy and Procedures",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=MP-1",
+    "cre_ids": [
+      "522-616"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "MP-2",
+    "section": "MP-2 Media Access",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=MP-2",
+    "cre_ids": [
+      "522-616"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "PE-1",
+    "section": "PE-1 Policy and Procedures",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PE-1",
+    "cre_ids": [
+      "234-282"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "PE-10",
+    "section": "PE-10 Emergency Shutoff",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PE-10",
+    "cre_ids": [
+      "234-282"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "PE-11",
+    "section": "PE-11 Emergency Power",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PE-11",
+    "cre_ids": [
+      "234-282"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "PL-1",
+    "section": "PL-1 Policy and Procedures",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PL-1",
+    "cre_ids": [
+      "560-224"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "PL-10",
+    "section": "PL-10 Baseline Selection",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PL-10",
+    "cre_ids": [
+      "560-224"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "PM-1",
+    "section": "PM-1 Information Security Program Plan",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-1",
+    "cre_ids": [
+      "571-271"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "PM-10",
+    "section": "PM-10 Authorization Process",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-10",
+    "cre_ids": [
+      "247-250"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "PM-11",
+    "section": "PM-11 Mission and Business Process Definition",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PM-11",
+    "cre_ids": [
+      "307-242"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "PS-1",
+    "section": "PS-1 Policy and Procedures",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PS-1",
+    "cre_ids": [
+      "172-101"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "PS-2",
+    "section": "PS-2 Position Risk Designation",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PS-2",
+    "cre_ids": [
+      "172-101"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "PT-1",
+    "section": "PT-1 Policy and Procedures",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PT-1",
+    "cre_ids": [
+      "571-640"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "PT-2",
+    "section": "PT-2 Authority to Process Personally Identifiable Information",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=PT-2",
+    "cre_ids": [
+      "571-640"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "RA-1",
+    "section": "RA-1 Policy and Procedures",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=RA-1",
+    "cre_ids": [
+      "307-242"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "RA-10",
+    "section": "RA-10 Threat Hunting",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=RA-10",
+    "cre_ids": [
+      "888-770"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "SA-1",
+    "section": "SA-1 Policy and Procedures",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SA-1",
+    "cre_ids": [
+      "613-285"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "SA-10",
+    "section": "SA-10 Developer Configuration Management",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SA-10",
+    "cre_ids": [
+      "080-466"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "SA-11",
+    "section": "SA-11 Developer Testing and Evaluation",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SA-11",
+    "cre_ids": [
+      "433-442"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "SC-1",
+    "section": "SC-1 Policy and Procedures",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-1",
+    "cre_ids": [
+      "571-271"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "SC-10",
+    "section": "SC-10 NETWORK DISCONNECT",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-10",
+    "cre_ids": [
+      "470-731"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "SC-11",
+    "section": "SC-11 Trusted Path",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SC-11",
+    "cre_ids": [
+      "278-646"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "SI-1",
+    "section": "SI-1 Policy and Procedures",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SI-1",
+    "cre_ids": [
+      "571-271"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "SI-10",
+    "section": "SI-10 INFORMATION INPUT VALIDATION",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SI-10",
+    "cre_ids": [
+      "503-455"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "SI-11",
+    "section": "SI-11 Error Handling",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SI-11",
+    "cre_ids": [
+      "842-876"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "SR-1",
+    "section": "SR-1 Policy and Procedures",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SR-1",
+    "cre_ids": [
+      "613-285"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  },
+  {
+    "section_id": "SR-10",
+    "section": "SR-10 Inspection of Systems or Components",
+    "hyperlink": "https://csrc.nist.gov/Projects/cprt/catalog#/cprt/framework/version/SP_800_53_5_1_0/home?element=SR-10",
+    "cre_ids": [
+      "613-285"
+    ],
+    "gold_provenance": {
+      "kind": "hub_links",
+      "method": "opencre_org_standard_api",
+      "standard": "NIST 800-53 v5",
+      "sample": true,
+      "sample_size": 48
+    }
+  }
+]

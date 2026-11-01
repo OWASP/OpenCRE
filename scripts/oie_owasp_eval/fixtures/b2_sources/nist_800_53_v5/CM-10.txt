@@ -1,0 +1,11 @@
+Source: CM-10
+Section-ID: CM-10
+Section: CM-10 Software Usage Restrictions
+Standard: NIST 800-53 v5
+
+Software Usage Restrictions
+
+Use software and associated documentation in accordance with contract agreements and copyright laws;
+Track the use of software and associated documentation protected by quantity licenses to control copying and distribution; and
+Control and document the use of peer-to-peer file sharing technology to ensure that this capability is not used for the unauthorized distribution, display, performance, or reproduction of copyrighted work.
+Software license tracking can be accomplished by manual or automated methods, depending on organizational needs. Examples of contract agreements include software license agreements and non-disclosure agreements.

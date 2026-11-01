@@ -1,0 +1,9 @@
+Source: SC-10
+Section-ID: SC-10
+Section: SC-10 NETWORK DISCONNECT
+Standard: NIST 800-53 v5
+
+Network Disconnect
+
+Terminate the network connection associated with a communications session at the end of the session or after … of inactivity.
+Network disconnect applies to internal and external networks. Terminating network connections associated with specific communications sessions includes de-allocating TCP/IP address or port pairs at the operating system level and de-allocating the networking assignments at the application level if multiple application sessions are using a single operating system-level network connection. Periods of inactivity may be established by organizations and include time periods by type of network access or for specific network accesses.
