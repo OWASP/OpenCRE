@@ -1,6 +1,7 @@
 import importlib.util
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from application.utils import mapping_fixtures
@@ -56,6 +57,97 @@ class TestOieB2GoldLoader(unittest.TestCase):
         self.assertEqual(evidence["gold"], evidence["gold_original"])
         self.assertIsNone(evidence["gold_remap"])
         self.assertFalse(evidence["gold_is_expanded"])
+
+    def test_score_run_reports_gold_provenance_for_aligned_and_unaligned_rows(
+        self,
+    ) -> None:
+        mod = _load_run_b2()  # type: ignore[no-untyped-call]
+        expanded_harness = {
+            "label": "Expanded fixture",
+            "pr": 1,
+            "fixture_name": "expanded",
+        }
+        direct_harness = {
+            "label": "Direct fixture",
+            "pr": 2,
+            "fixture_name": "direct",
+        }
+        expanded_row = {
+            "section_id": "E1",
+            "cre_ids": ["001-001", "002-002"],
+            "cre_ids_original": ["001-001"],
+            "gold_remap": "related_expand_orphan",
+        }
+        direct_row = {"section_id": "D1", "cre_ids": ["003-003"]}
+        decision = SimpleNamespace(
+            chunk_id="chunk-expanded",
+            envelope={
+                "knowledge": {"locator": {"path": "b2/expanded/E1.txt"}},
+                "retrieval": {"reranked": [{"cre_id": "uuid-expanded"}]},
+            },
+        )
+        cre_query = MagicMock()
+        cre_query.all.return_value = [
+            SimpleNamespace(id="uuid-expanded", external_id="002-002")
+        ]
+        decision_query = MagicMock()
+        decision_query.filter_by.return_value.all.return_value = [decision]
+
+        with patch("application.cmd.cre_main.db_connect"), patch(
+            "application.sqla"
+        ) as sqla, patch.object(
+            mod, "HARNESSES", [expanded_harness, direct_harness]
+        ), patch.object(
+            mod, "load_gold", side_effect=[[expanded_row], [direct_row]]
+        ):
+            sqla.session.query.side_effect = [cre_query, decision_query]
+            report = mod.score_run("run-1", "sqlite://")
+
+        details = {row["section_id"]: row for row in report["details"]}
+        self.assertEqual(
+            {
+                "gold": ["001-001", "002-002"],
+                "gold_original": ["001-001"],
+                "gold_remap": "related_expand_orphan",
+                "gold_is_expanded": True,
+            },
+            {
+                key: details["E1"][key]
+                for key in (
+                    "gold",
+                    "gold_original",
+                    "gold_remap",
+                    "gold_is_expanded",
+                )
+            },
+        )
+        self.assertTrue(details["E1"]["aligned"])
+        self.assertTrue(details["E1"]["hit"])
+        self.assertEqual(["002-002"], details["E1"]["predicted"])
+        self.assertEqual(
+            {
+                "gold": ["003-003"],
+                "gold_original": ["003-003"],
+                "gold_remap": None,
+                "gold_is_expanded": False,
+            },
+            {
+                key: details["D1"][key]
+                for key in (
+                    "gold",
+                    "gold_original",
+                    "gold_remap",
+                    "gold_is_expanded",
+                )
+            },
+        )
+        self.assertFalse(details["D1"]["aligned"])
+        self.assertFalse(details["D1"]["hit"])
+        self.assertEqual([], details["D1"]["predicted"])
+        self.assertEqual(
+            {"expanded_rows": 1, "by_remap": {"related_expand_orphan": 1}},
+            report["gold_remap_summary"],
+        )
 
 
 class TestOieB2HarvesterLanggraphKwargs(unittest.TestCase):
