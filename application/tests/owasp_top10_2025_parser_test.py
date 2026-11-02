@@ -69,8 +69,19 @@ class TestOwaspTop10_2025Parser(unittest.TestCase):
         self.assertEqual("A01", entries[0].sectionID)
         self.assertEqual("Broken Access Control", entries[0].section)
         self.assertEqual(
-            "https://top10.owasp.org/2025/A01_2025-Broken_Access_Control/",
-            entries[0].hyperlink,
+            [
+                "https://top10.owasp.org/2025/A01_2025-Broken_Access_Control/",
+                "https://top10.owasp.org/2025/A02_2025-Security_Misconfiguration/",
+                "https://top10.owasp.org/2025/A03_2025-Software_Supply_Chain_Failures/",
+                "https://top10.owasp.org/2025/A04_2025-Cryptographic_Failures/",
+                "https://top10.owasp.org/2025/A05_2025-Injection/",
+                "https://top10.owasp.org/2025/A06_2025-Insecure_Design/",
+                "https://top10.owasp.org/2025/A07_2025-Authentication_Failures/",
+                "https://top10.owasp.org/2025/A08_2025-Software_or_Data_Integrity_Failures/",
+                "https://top10.owasp.org/2025/A09_2025-Security_Logging_and_Alerting_Failures/",
+                "https://top10.owasp.org/2025/A10_2025-Mishandling_of_Exceptional_Conditions/",
+            ],
+            [entry.hyperlink for entry in entries],
         )
         self.assertEqual(
             ["117-371", "177-260", "724-770"],
@@ -82,3 +93,4 @@ class TestOwaspTop10_2025Parser(unittest.TestCase):
         )
         self.assertEqual("A10", entries[-1].sectionID)
         self.assertEqual(["513-183"], [link.document.id for link in entries[-1].links])
+        
