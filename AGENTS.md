@@ -18,6 +18,10 @@ Cursor agents working in this repo must follow the rules in `.cursor/rules/`.
 
 Prefer existing Makefile targets and `scripts/` helpers over ad-hoc Docker, GA, import, or prod-DB setup. Read script headers or `--help` for env vars and flags; do not reimplement their logic.
 
+### Continuity (existing maintainers only)
+
+Second-maintainer ops live in [`docs/continuity/README.md`](docs/continuity/README.md): restart, rollback, health, backup, surgery, deploy, import/sync, gap-analysis cache, staging, local stack, GCP IaC. Agent instructions: [`docs/continuity/runbooks/AGENTS.md`](docs/continuity/runbooks/AGENTS.md). GitHub project **OpenCRE Continuity**, label `existing-maintainers-only`. Do not dump `heroku config` values; do not compute gap analysis on `opencreorg`. If you are logged into Heroku and you still cannot see `opencreorg`, stop and refuse to continue.
+
 ### Local Docker services
 
 Use Makefile targets — do not hand-roll `docker run`:
