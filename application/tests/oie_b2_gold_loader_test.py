@@ -78,6 +78,12 @@ class TestOieB2GoldLoader(unittest.TestCase):
             "cre_ids_original": ["001-001"],
             "gold_remap": "related_expand_orphan",
         }
+        expanded_unaligned_row = {
+            "section_id": "E2",
+            "cre_ids": ["004-004", "005-005"],
+            "cre_ids_original": ["004-004"],
+            "gold_remap": "related_expand_orphan",
+        }
         direct_row = {"section_id": "D1", "cre_ids": ["003-003"]}
         decision = SimpleNamespace(
             chunk_id="chunk-expanded",
@@ -98,7 +104,9 @@ class TestOieB2GoldLoader(unittest.TestCase):
         ) as sqla, patch.object(
             mod, "HARNESSES", [expanded_harness, direct_harness]
         ), patch.object(
-            mod, "load_gold", side_effect=[[expanded_row], [direct_row]]
+            mod,
+            "load_gold",
+            side_effect=[[expanded_row, expanded_unaligned_row], [direct_row]],
         ):
             sqla.session.query.side_effect = [cre_query, decision_query]
             report = mod.score_run("run-1", "sqlite://")
@@ -126,6 +134,26 @@ class TestOieB2GoldLoader(unittest.TestCase):
         self.assertEqual(["002-002"], details["E1"]["predicted"])
         self.assertEqual(
             {
+                "gold": ["004-004", "005-005"],
+                "gold_original": ["004-004"],
+                "gold_remap": "related_expand_orphan",
+                "gold_is_expanded": True,
+            },
+            {
+                key: details["E2"][key]
+                for key in (
+                    "gold",
+                    "gold_original",
+                    "gold_remap",
+                    "gold_is_expanded",
+                )
+            },
+        )
+        self.assertFalse(details["E2"]["aligned"])
+        self.assertFalse(details["E2"]["hit"])
+        self.assertEqual([], details["E2"]["predicted"])
+        self.assertEqual(
+            {
                 "gold": ["003-003"],
                 "gold_original": ["003-003"],
                 "gold_remap": None,
@@ -145,7 +173,7 @@ class TestOieB2GoldLoader(unittest.TestCase):
         self.assertFalse(details["D1"]["hit"])
         self.assertEqual([], details["D1"]["predicted"])
         self.assertEqual(
-            {"expanded_rows": 1, "by_remap": {"related_expand_orphan": 1}},
+            {"expanded_rows": 2, "by_remap": {"related_expand_orphan": 2}},
             report["gold_remap_summary"],
         )
 
