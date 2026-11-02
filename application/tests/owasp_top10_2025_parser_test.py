@@ -93,4 +93,3 @@ class TestOwaspTop10_2025Parser(unittest.TestCase):
         )
         self.assertEqual("A10", entries[-1].sectionID)
         self.assertEqual(["513-183"], [link.document.id for link in entries[-1].links])
-        
