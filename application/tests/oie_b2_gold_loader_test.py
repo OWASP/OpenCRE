@@ -34,6 +34,29 @@ class TestOieB2GoldLoader(unittest.TestCase):
             )
         self.assertGreaterEqual(shared, 6)
 
+    def test_gold_evidence_preserves_related_expansion_provenance(self) -> None:
+        mod = _load_run_b2()
+        entries = mapping_fixtures.load_owasp_mapping_fixture("owasp_top10_2025")
+        a04 = next(entry for entry in entries if entry["section_id"] == "A04")
+
+        evidence = mod.gold_evidence(a04)
+
+        self.assertEqual(["170-772", "227-045"], evidence["gold_original"])
+        self.assertIn("333-858", evidence["gold"])
+        self.assertEqual("related_expand_orphan", evidence["gold_remap"])
+        self.assertTrue(evidence["gold_is_expanded"])
+
+    def test_gold_evidence_keeps_unremapped_rows_auditable(self) -> None:
+        mod = _load_run_b2()
+        entries = mapping_fixtures.load_owasp_mapping_fixture("owasp_top10_2025")
+        a01 = next(entry for entry in entries if entry["section_id"] == "A01")
+
+        evidence = mod.gold_evidence(a01)
+
+        self.assertEqual(evidence["gold"], evidence["gold_original"])
+        self.assertIsNone(evidence["gold_remap"])
+        self.assertFalse(evidence["gold_is_expanded"])
+
 
 class TestOieB2HarvesterLanggraphKwargs(unittest.TestCase):
     def test_inner_harvester_accepts_repos_yaml(self) -> None:
