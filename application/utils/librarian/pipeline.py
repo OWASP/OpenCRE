@@ -234,6 +234,7 @@ class LibrarianPipeline:
         leaf_drilldown_hub_first: bool = False,
         shortlist_judge_max_picks: int = 3,
         margin_gamma: Optional[float] = None,
+        resource_family_counts: Optional[Mapping[str, int]] = None,
         cre_names: Optional[Mapping[str, str]] = None,
     ) -> None:
         self._source = source
@@ -271,6 +272,12 @@ class LibrarianPipeline:
         )
         self._cre_names: Mapping[str, str] = cre_names or {}
         self._resource_family_counts: Mapping[str, int] = {}
+        #: Family census for the WHOLE run when the caller works in batches; it
+        #: replaces the per-batch census, which would shrink as batches shrink and
+        #: change which resources pass the leaf-drilldown ``min_sections`` gate.
+        self._fixed_family_counts: Optional[Mapping[str, int]] = (
+            dict(resource_family_counts) if resource_family_counts is not None else None
+        )
         # Emit-time grounding: prefer an injected registry; otherwise build from
         # membership (+ cre_id_map for canonicalisation). None membership keeps
         # hermetic stubs passthrough until they opt in.
@@ -488,7 +495,9 @@ class LibrarianPipeline:
         # Materialize once so we can census resource families for the grain gate
         # without consuming a one-shot DB cursor twice.
         batch_items = list(self._source.items())
-        if self._leaf_drilldown:
+        if self._leaf_drilldown and self._fixed_family_counts is not None:
+            self._resource_family_counts = self._fixed_family_counts
+        elif self._leaf_drilldown:
             from application.utils.librarian.leaf_drilldown import (
                 count_resource_families,
             )

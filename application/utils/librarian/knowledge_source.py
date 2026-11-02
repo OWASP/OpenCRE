@@ -27,7 +27,7 @@ from cre_logging import get_logger
 logger = get_logger(__name__)
 
 from abc import ABC, abstractmethod
-from typing import Iterator, List, Optional
+from typing import Iterable, Iterator, List, Optional
 
 from pydantic import ValidationError
 
@@ -116,12 +116,19 @@ class DbKnowledgeSource(KnowledgeSource):
         artifact_id: Optional[str] = None,
         limit: Optional[int] = None,
         lock_rows: bool = False,
+        exclude_row_ids: Optional[Iterable[str]] = None,
     ) -> None:
         self._session = session
         self._run_id = pipeline_run_id
         self._artifact_id = artifact_id
         self._limit = limit
         self._lock_rows = lock_rows
+        #: Rows to leave out of this read. A batched run uses it so a row that
+        #: errored in an earlier batch (and so stays unconsumed, to be retried by
+        #: the NEXT run) is not drawn again by this one.
+        self._exclude = frozenset(exclude_row_ids or ())
+        #: Ids of every row this source yielded (valid or not), in read order.
+        self.read_row_ids: List[str] = []
         #: Ids of rows B wrote that C could not model, filled during iteration.
         #: They never reach the pipeline, so the pipeline cannot report them as
         #: finished — without this the runner would leave them unconsumed and
@@ -131,7 +138,8 @@ class DbKnowledgeSource(KnowledgeSource):
         #: stays in the table as the record of what happened.
         self.rejected_row_ids: List[str] = []
 
-    def _query(self) -> object:
+    def _scope(self) -> object:
+        """Every unconsumed, readable row of this source's run/artifact (no limit, no lock)."""
         # Imported lazily: the schemas/pipeline layers stay DB-free by design,
         # and this keeps `import knowledge_source` cheap for hermetic tests.
         from application.database.db import KnowledgeQueueItem as KnowledgeQueueRow
@@ -144,7 +152,26 @@ class DbKnowledgeSource(KnowledgeSource):
             query = query.filter(KnowledgeQueueRow.pipeline_run_id == self._run_id)
         if self._artifact_id:
             query = query.filter(KnowledgeQueueRow.artifact_id == self._artifact_id)
-        query = query.order_by(KnowledgeQueueRow.created_at, KnowledgeQueueRow.id)
+        return query
+
+    def pending_artifact_ids(self) -> List[str]:
+        """``artifact_id`` of every row still to be read (before limit/exclusions).
+
+        Lets a batched run census resource families over the WHOLE run, so a small
+        batch does not change a decision that depends on how big a family is.
+        """
+        from application.database.db import KnowledgeQueueItem as KnowledgeQueueRow
+
+        query = self._scope().with_entities(KnowledgeQueueRow.artifact_id)  # type: ignore[attr-defined]
+        return [str(a or "") for (a,) in query.all()]
+
+    def _query(self) -> object:
+        from application.database.db import KnowledgeQueueItem as KnowledgeQueueRow
+
+        query = self._scope()
+        if self._exclude:
+            query = query.filter(KnowledgeQueueRow.id.notin_(list(self._exclude)))  # type: ignore[attr-defined]
+        query = query.order_by(KnowledgeQueueRow.created_at, KnowledgeQueueRow.id)  # type: ignore[attr-defined]
         if self._limit is not None:
             query = query.limit(self._limit)
         if self._lock_rows:
@@ -195,6 +222,9 @@ class DbKnowledgeSource(KnowledgeSource):
 
     def items(self) -> Iterator[KnowledgeQueueItem]:
         for row in self._query():  # type: ignore[attr-defined]
+            seen_id = getattr(row, "id", None)
+            if seen_id is not None:
+                self.read_row_ids.append(seen_id)
             try:
                 yield KnowledgeQueueItem.model_validate(row)
             except ValidationError as exc:

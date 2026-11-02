@@ -194,55 +194,73 @@ def run_librarian_queue(
     if artifact_id is not None and not str(artifact_id).strip():
         raise ValueError("artifact_id must be non-empty when provided")
 
-    source = DbKnowledgeSource(
-        session,
-        pipeline_run_id=pipeline_run_id,
-        artifact_id=artifact_id,
-        limit=limit,
-        lock_rows=lock_rows,
-    )
-    pipeline = LibrarianPipeline(
-        source,
-        components.retriever,
-        components.reranker,
-        components.scaler,
-        threshold=config.link_threshold,
-        pipeline_run_id=pipeline_run_id,
-        known_cre_ids=components.known_cre_ids,
-        cre_id_map=getattr(components, "cre_id_map", {}) or {},
-        cre_membership=getattr(components, "cre_membership", None),
-        shortlist_llm_fn=getattr(components, "shortlist_llm_fn", None),
-        shortlist_cache=getattr(components, "shortlist_cache", None),
-        use_focus_query=config.focus_query,
-        pref_inject=config.pref_inject,
-        prefer_audit=config.prefer_audit_ids,
-        safety_guard=getattr(components, "safety_guard", None),
-        parent_index=getattr(components, "parent_index", None),
-        leaf_drilldown=bool(getattr(components, "leaf_drilldown", False)),
-        leaf_drilldown_resources=tuple(
-            getattr(components, "leaf_drilldown_resources", ()) or ()
-        ),
-        leaf_drilldown_force_resources=tuple(
-            getattr(components, "leaf_drilldown_force_resources", ()) or ()
-        ),
-        leaf_drilldown_min_children=int(
-            getattr(components, "leaf_drilldown_min_children", 3) or 3
-        ),
-        leaf_drilldown_min_sections=int(
-            getattr(components, "leaf_drilldown_min_sections", 20)
-        ),
-        leaf_drilldown_keep_hub=bool(
-            getattr(components, "leaf_drilldown_keep_hub", False)
-        ),
-        leaf_drilldown_hub_first=bool(
-            getattr(components, "leaf_drilldown_hub_first", False)
-        ),
-        shortlist_judge_max_picks=int(
-            getattr(components, "shortlist_judge_max_picks", 3) or 3
-        ),
-        margin_gamma=getattr(components, "margin_gamma", None),
-        cre_names=getattr(components, "cre_names", None) or {},
-    )
+    # Batches. A real run works through the queue in bounded batches
+    # (``config.commit_every``, default 25 via ``load_config``): each batch writes
+    # its decisions and stamps ``consumed_at`` in ONE transaction and commits, so
+    # a crash keeps every committed batch and a re-run resumes with only the
+    # remainder (consumed rows are no longer read). 0 keeps the old behaviour: one
+    # write and one commit at the end. A dry run is always a single pass, since it
+    # consumes nothing and would otherwise re-read the same rows forever.
+    chunk = 0 if dry_run else max(0, int(getattr(config, "commit_every", 0) or 0))
+
+    def _make_source(
+        batch_limit: Optional[int], exclude: "frozenset[str]"
+    ) -> DbKnowledgeSource:
+        return DbKnowledgeSource(
+            session,
+            pipeline_run_id=pipeline_run_id,
+            artifact_id=artifact_id,
+            limit=batch_limit,
+            lock_rows=lock_rows,
+            exclude_row_ids=exclude,
+        )
+
+    def _make_pipeline(
+        source: DbKnowledgeSource, family_counts: Optional[dict]
+    ) -> LibrarianPipeline:
+        return LibrarianPipeline(
+            source,
+            components.retriever,
+            components.reranker,
+            components.scaler,
+            threshold=config.link_threshold,
+            pipeline_run_id=pipeline_run_id,
+            known_cre_ids=components.known_cre_ids,
+            cre_id_map=getattr(components, "cre_id_map", {}) or {},
+            cre_membership=getattr(components, "cre_membership", None),
+            shortlist_llm_fn=getattr(components, "shortlist_llm_fn", None),
+            shortlist_cache=getattr(components, "shortlist_cache", None),
+            use_focus_query=config.focus_query,
+            pref_inject=config.pref_inject,
+            prefer_audit=config.prefer_audit_ids,
+            safety_guard=getattr(components, "safety_guard", None),
+            parent_index=getattr(components, "parent_index", None),
+            leaf_drilldown=bool(getattr(components, "leaf_drilldown", False)),
+            leaf_drilldown_resources=tuple(
+                getattr(components, "leaf_drilldown_resources", ()) or ()
+            ),
+            leaf_drilldown_force_resources=tuple(
+                getattr(components, "leaf_drilldown_force_resources", ()) or ()
+            ),
+            leaf_drilldown_min_children=int(
+                getattr(components, "leaf_drilldown_min_children", 3) or 3
+            ),
+            leaf_drilldown_min_sections=int(
+                getattr(components, "leaf_drilldown_min_sections", 20)
+            ),
+            leaf_drilldown_keep_hub=bool(
+                getattr(components, "leaf_drilldown_keep_hub", False)
+            ),
+            leaf_drilldown_hub_first=bool(
+                getattr(components, "leaf_drilldown_hub_first", False)
+            ),
+            shortlist_judge_max_picks=int(
+                getattr(components, "shortlist_judge_max_picks", 3) or 3
+            ),
+            margin_gamma=getattr(components, "margin_gamma", None),
+            resource_family_counts=family_counts,
+            cre_names=getattr(components, "cre_names", None) or {},
+        )
 
     # A locked run must not leave its claim outstanding. `FOR UPDATE SKIP LOCKED`
     # holds every locked row until the transaction ends, and the caller owns that
@@ -253,14 +271,96 @@ def run_librarian_queue(
     # rolls back and re-raises. The unlocked path is untouched: without a lock
     # there is nothing to strand, and leaving the transaction to the caller is the
     # existing contract this module shares with Module B's `run_noise_filter`.
+    # (With batches, a batch that already committed stays committed; only the
+    # batch in flight is rolled back.)
     try:
-        result: RunResult = pipeline.run(at=at)
-        summary.read = result.stats.total
-        summary.linked = result.stats.linked
-        summary.review = result.stats.review
-        summary.skipped = result.stats.skipped
-        summary.errored = result.stats.errored
-        summary.safety_unevaluated = result.stats.safety_unevaluated
+        total_pending: Optional[int] = None
+        family_counts: Optional[dict] = None
+        if chunk > 0:
+            # One census for the whole run. The pipeline derives its resource-family
+            # sizes (the leaf-drilldown ``min_sections`` gate) from the rows of a
+            # batch; per-batch counts would shrink with the batch and change decisions.
+            pending = _make_source(None, frozenset()).pending_artifact_ids()
+            total_pending = len(pending) if limit is None else min(len(pending), limit)
+            if getattr(components, "leaf_drilldown", False):
+                from application.utils.librarian.leaf_drilldown import (
+                    count_resource_families,
+                )
+
+                family_counts = dict(count_resource_families(pending))
+
+        remaining = limit
+        exclude: "set[str]" = set()
+        while True:
+            if chunk <= 0:
+                batch_limit = limit
+            else:
+                batch_limit = chunk if remaining is None else min(chunk, remaining)
+            source = _make_source(batch_limit, frozenset(exclude))
+            pipeline = _make_pipeline(source, family_counts)
+            result: RunResult = pipeline.run(at=at)
+            batch_read = result.stats.total + len(source.rejected_row_ids)
+            if chunk > 0 and batch_read == 0:
+                break  # the queue is drained; nothing to persist or commit
+
+            summary.read += result.stats.total
+            summary.linked += result.stats.linked
+            summary.review += result.stats.review
+            summary.skipped += result.stats.skipped
+            summary.errored += result.stats.errored
+            summary.safety_unevaluated += result.stats.safety_unevaluated
+
+            if dry_run:
+                break
+
+            # Persist first, retire second, in ONE transaction. If the sink raises,
+            # nothing from this batch is consumed and it is retried by the next run.
+            assert sink is not None  # guarded above; narrows the Optional for mypy
+            # B's label per chunk is not in the pinned RFC envelope, so it is handed
+            # to the sink beside the batch. Optional: a sink with nowhere to record it
+            # does not implement the method and simply does not receive it.
+            accept = getattr(sink, "accept_source_labels", None)
+            if callable(accept) and result.source_labels:
+                accept(result.source_labels)
+            summary.persisted += sink.write(result.envelopes)
+
+            # Rows B wrote that C could not even model never reached the pipeline,
+            # so they are absent from its outcomes. Retire them here or the next run
+            # reads the same poison rows again, and every run after that. Failing the
+            # model is a definitive refusal — the row will not become modellable by
+            # being read a second time — so it is finished in the same sense a C.0
+            # rejection is. The row itself is never deleted, so the evidence survives.
+            finished = result.finished_row_ids() + source.rejected_row_ids
+            if source.rejected_row_ids:
+                # Counted in `read` as well as `skipped`. They were drawn from the
+                # queue and retired by this run, so leaving them out of `read` would
+                # make the outcomes add up to more rows than the run claims to have read.
+                rejected = len(source.rejected_row_ids)
+                summary.read += rejected
+                summary.skipped += rejected
+            summary.consumed += mark_consumed(session, finished, at=at)
+            session.commit()
+
+            if chunk <= 0:
+                break
+            # Rows read but not finished (errored) stay unconsumed for the next run;
+            # leave them out of the rest of THIS run so it cannot loop on them.
+            unfinished = set(source.read_row_ids) - set(finished)
+            newly_left_out = unfinished - exclude
+            exclude |= unfinished
+            logger.info(
+                "librarian run %s: decided %d of %s (%d errored left for the next run)",
+                pipeline_run_id,
+                summary.consumed,
+                total_pending if total_pending is not None else "?",
+                len(exclude),
+            )
+            if remaining is not None:
+                remaining -= batch_read
+                if remaining <= 0:
+                    break
+            if not finished and not newly_left_out:
+                break  # no progress: stop rather than spin
 
         if summary.safety_unevaluated:
             logger.warning(
@@ -276,34 +376,6 @@ def run_librarian_queue(
         if dry_run:
             summary.finalize_status()
             return summary
-
-        # Persist first, retire second. If the sink raises, nothing is consumed and
-        # the whole run is retried — the rows are still B's to hand back.
-        assert sink is not None  # guarded above; narrows the Optional for mypy
-        # B's label per chunk is not in the pinned RFC envelope, so it is handed to
-        # the sink beside the batch. Optional: a sink with nowhere to record it does
-        # not implement the method and simply does not receive it.
-        accept = getattr(sink, "accept_source_labels", None)
-        if callable(accept) and result.source_labels:
-            accept(result.source_labels)
-        summary.persisted = sink.write(result.envelopes)
-
-        # Rows B wrote that C could not even model never reached the pipeline, so
-        # they are absent from its outcomes. Retire them here or the next run reads
-        # the same poison rows again, and every run after that. Failing the model is
-        # a definitive refusal — the row will not become modellable by being read a
-        # second time — so it is finished in the same sense a C.0 rejection is. The
-        # row itself is never deleted, so the evidence survives.
-        finished = result.finished_row_ids() + source.rejected_row_ids
-        if source.rejected_row_ids:
-            # Counted in `read` as well as `skipped`. They were drawn from the queue
-            # and retired by this run, so leaving them out of `read` would make the
-            # outcomes add up to more rows than the run claims to have read.
-            rejected = len(source.rejected_row_ids)
-            summary.read += rejected
-            summary.skipped += rejected
-        summary.consumed = mark_consumed(session, finished, at=at)
-        session.commit()
     except BaseException:
         if lock_rows:
             session.rollback()

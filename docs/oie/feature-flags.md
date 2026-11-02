@@ -158,3 +158,8 @@ Then score neighborhood with `score_b2_hop_distance.py`.
 - Trained cross-encoder: deferred; not in the grid.
 - Live Module C re-run on every gold revision still required when fixtures change;
   see [evaluation-and-metrics.md](evaluation-and-metrics.md).
+
+
+## CRE_LIBRARIAN_COMMIT_EVERY (Module C persistence)
+
+Default `25`. `run_librarian_queue` works through the queue in batches of this many rows; each batch writes its `decision_queue` rows and stamps `consumed_at` in one transaction and commits. A crash keeps every committed batch, and re-running the same run id reads only the remainder (consumed rows are not read again; rows that errored are retried by the next run, not within the same one). The log shows `decided k of N` after each batch, and the admin OIE decisions panel fills as it goes. `0` restores the old behaviour: one write and one commit at the end. Dry runs are always a single pass. Decisions are identical either way: the resource-family census used by the leaf-drilldown gate is taken over the whole run, not per batch.

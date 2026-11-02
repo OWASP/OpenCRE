@@ -150,6 +150,12 @@ class LibrarianConfig:
     source_grounding: bool = False
     crosswalk_cage: bool = False
     coverage_fail_closed: bool = False
+    #: Rows per committed batch in ``run_librarian_queue``: each batch writes its
+    #: decisions and stamps ``consumed_at`` in one transaction, so a crash keeps
+    #: every batch already committed and a re-run resumes. 0 = the old behaviour
+    #: (one write and one commit at the end of the run). Hand-built configs keep 0;
+    #: ``load_config`` defaults to 25 (``CRE_LIBRARIAN_COMMIT_EVERY``).
+    commit_every: int = 0
 
 
 def _env_leaf_drilldown_resources() -> tuple[str, ...]:
@@ -189,6 +195,7 @@ def load_config() -> LibrarianConfig:
     batch_size = int(os.getenv("CRE_LIBRARIAN_BATCH_SIZE", "32"))
     ece_target = float(os.getenv("CRE_LIBRARIAN_ECE_TARGET", "0.10"))
     conformal_alpha = float(os.getenv("CRE_LIBRARIAN_CONFORMAL_ALPHA", "0.10"))
+    commit_every = max(0, int(os.getenv("CRE_LIBRARIAN_COMMIT_EVERY", "25")))
     standard_retrieval = _env_bool("CRE_LIBRARIAN_STANDARD_RETRIEVAL", False)
     standard_retrieval_families = _env_csv("CRE_LIBRARIAN_STANDARD_RETRIEVAL_FAMILIES")
     standard_top_k = int(os.getenv("CRE_LIBRARIAN_STANDARD_TOP_K", "10"))
@@ -348,6 +355,7 @@ def load_config() -> LibrarianConfig:
         batch_size=batch_size,
         ece_target=ece_target,
         conformal_alpha=conformal_alpha,
+        commit_every=commit_every,
         standard_retrieval=standard_retrieval,
         standard_retrieval_families=standard_retrieval_families,
         standard_top_k=standard_top_k,
