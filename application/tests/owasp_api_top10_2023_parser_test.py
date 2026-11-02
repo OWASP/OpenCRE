@@ -38,6 +38,21 @@ class TestOwaspApiTop10_2023Parser(unittest.TestCase):
 
         entries = result.results["OWASP API Security Top 10 2023"]
         self.assertEqual(10, len(entries))
+        self.assertEqual(
+            [
+                "https://api-security.owasp.org/editions/2023/en/0xa1-broken-object-level-authorization/",
+                "https://api-security.owasp.org/editions/2023/en/0xa2-broken-authentication/",
+                "https://api-security.owasp.org/editions/2023/en/0xa3-broken-object-property-level-authorization/",
+                "https://api-security.owasp.org/editions/2023/en/0xa4-unrestricted-resource-consumption/",
+                "https://api-security.owasp.org/editions/2023/en/0xa5-broken-function-level-authorization/",
+                "https://api-security.owasp.org/editions/2023/en/0xa6-unrestricted-access-to-sensitive-business-flows/",
+                "https://api-security.owasp.org/editions/2023/en/0xa7-server-side-request-forgery/",
+                "https://api-security.owasp.org/editions/2023/en/0xa8-security-misconfiguration/",
+                "https://api-security.owasp.org/editions/2023/en/0xa9-improper-inventory-management/",
+                "https://api-security.owasp.org/editions/2023/en/0xaa-unsafe-consumption-of-apis/",
+            ],
+            [entry.hyperlink for entry in entries],
+        )
         self.assertEqual("API1", entries[0].sectionID)
         self.assertEqual("Broken Object Level Authorization", entries[0].section)
         self.assertEqual(

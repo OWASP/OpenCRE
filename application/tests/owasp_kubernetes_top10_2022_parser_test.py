@@ -40,6 +40,21 @@ class TestOwaspKubernetesTop10_2022Parser(unittest.TestCase):
 
         entries = result.results["OWASP Kubernetes Top Ten 2022"]
         self.assertEqual(10, len(entries))
+        self.assertEqual(
+            [
+                "https://kubernetes-top10.owasp.org/2022/en/src/K01-insecure-workload-configurations",
+                "https://kubernetes-top10.owasp.org/2022/en/src/K02-supply-chain-vulnerabilities",
+                "https://kubernetes-top10.owasp.org/2022/en/src/K03-overly-permissive-rbac-configurations",
+                "https://kubernetes-top10.owasp.org/2022/en/src/K04-lack-of-centralized-policy-enforcement",
+                "https://kubernetes-top10.owasp.org/2022/en/src/K05-inadequate-logging-and-monitoring",
+                "https://kubernetes-top10.owasp.org/2022/en/src/K06-broken-authentication-mechanisms",
+                "https://kubernetes-top10.owasp.org/2022/en/src/K07-missing-network-segmentation-controls",
+                "https://kubernetes-top10.owasp.org/2022/en/src/K08-secrets-management-failures",
+                "https://kubernetes-top10.owasp.org/2022/en/src/K09-misconfigured-cluster-components",
+                "https://kubernetes-top10.owasp.org/2022/en/src/K10-outdated-and-vulnerable-kubernetes-components",
+            ],
+            [entry.hyperlink for entry in entries],
+        )
         self.assertEqual("K01", entries[0].sectionID)
         self.assertEqual("Insecure Workload Configurations", entries[0].section)
         self.assertEqual(
