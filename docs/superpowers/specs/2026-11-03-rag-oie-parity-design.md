@@ -82,9 +82,15 @@ python scripts/oie_owasp_eval/score_b2_hop_distance.py ...
 
 ## Success criteria (Phase 1 PR)
 
-- [ ] Spec + Phase 1 plan committed and tracked (gitignore exceptions)
-- [ ] Generator script + Makefile target + hermetic tests
-- [ ] Frontend hides description
-- [ ] `make lint` + targeted tests green
-- [ ] PR open against `staging`
-- [ ] PR notes next human steps: run generator → approve table → staging surgery → re-embed → `scripts/evaluate_librarian.py`
+- [x] Spec + Phase 1 plan committed and tracked (gitignore exceptions)
+- [x] Generator script + Makefile target + hermetic tests
+- [x] Frontend hides description
+- [x] `make lint` + targeted tests green
+- [x] PR open against `staging`
+- [x] PR notes next human steps: run generator → approve table → staging surgery → re-embed → `scripts/evaluate_librarian.py`
+
+## Implementation status (same PR #1200)
+
+Phases 2–7 ship as `application/utils/rag_parity/` adapters + plans under
+`docs/superpowers/plans/`, feature-flagged (`CRE_RAG_PARITY_*`), with hermetic
+tests. Homeserver surgery / live LLM / full librarian eval remain human steps.

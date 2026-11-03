@@ -350,4 +350,25 @@ generate-cre-descriptions:
 		--cache-file "$${CRE_CACHE_FILE:-$${DEV_DATABASE_URL:-postgresql://cre:password@127.0.0.1:5432/cre}}" \
 		$${LIMIT:+--limit $$LIMIT} $${FORCE:+--force} $${DRY_RUN:+--dry-run}
 
+# RAG/OIE parity (Phases 2–6 helpers). Dev/staging only — optional framework deps.
+rag-parity-ingest:
+	@[ -d "./.venv" ] && . ./.venv/bin/activate || ([ -d "./venv" ] && . ./venv/bin/activate); \
+	export PYTHONPATH="$(CURDIR)"; \
+	python scripts/rag_parity_ingest.py --path "$${PATH_FILE:?set PATH_FILE}" \
+		--node-id "$${NODE_ID:?set NODE_ID}" \
+		--cache-file "$${CRE_CACHE_FILE:-$${DEV_DATABASE_URL:-postgresql://cre:password@127.0.0.1:5432/cre}}" \
+		$${DRY_RUN:+--dry-run}
+
+rag-parity-eval:
+	@[ -d "./.venv" ] && . ./.venv/bin/activate || ([ -d "./venv" ] && . ./venv/bin/activate); \
+	export PYTHONPATH="$(CURDIR)"; \
+	python scripts/rag_parity_eval.py \
+		$${GOLD_JSON:+--gold-json $$GOLD_JSON} \
+		--output-json "$${OUTPUT_JSON:-$(CURDIR)/tmp/rag_parity_eval.json}"
+
+rag-parity-test:
+	@[ -d "./.venv" ] && . ./.venv/bin/activate || ([ -d "./venv" ] && . ./venv/bin/activate); \
+	export PYTHONPATH="$(CURDIR)"; \
+	python -m unittest discover -s application/tests/rag_parity -p '*_test.py' -v
+
 all: clean lint test dev dev-run
