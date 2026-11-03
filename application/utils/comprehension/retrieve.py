@@ -416,7 +416,17 @@ def fetch_comprehension_hits(
             if len(rankings) == 1:
                 hits = rankings[0]
             else:
-                hits = rrf(rankings, key=lambda h: h.url)
+                # Framework-native path: LlamaIndex QueryFusion RRF when LI_RETRIEVE
+                # or HYBRID is on (and LI is installed). Else hand-rolled extras.rrf.
+                hits = None
+                if flags.on("LI_RETRIEVE") or flags.on("HYBRID"):
+                    from application.utils.comprehension.li_retrieve import (
+                        fuse_rankings_with_llamaindex,
+                    )
+
+                    hits = fuse_rankings_with_llamaindex(rankings, key=lambda h: h.url)
+                if hits is None:
+                    hits = rrf(rankings, key=lambda h: h.url)
             if keyword_hits:
                 hits = supplement_with_keyword(hits, keyword_hits)
             hits = _with_talk_lane(conn, question, hits)

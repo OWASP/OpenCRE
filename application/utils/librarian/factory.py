@@ -350,6 +350,14 @@ def build_components(
             cre_names=cre_names,
         )
 
+    # Optional LI fusion over multi-query shortlists (does not change decide()/τ).
+    try:
+        from application.utils.librarian.li_fusion import wrap_retriever
+
+        retriever = wrap_retriever(retriever)
+    except Exception:  # noqa: BLE001
+        logger.debug("LI librarian fusion wrap skipped", exc_info=True)
+
     shortlist_llm = None
     try:
         from application.utils.librarian.shortlist_judge import (
