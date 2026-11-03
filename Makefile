@@ -341,4 +341,13 @@ backfill-opencre-ga:
 	export FLASK_APP="$(CURDIR)/cre.py"; \
 	python cre.py --cache_file "$${CRE_CACHE_FILE:-$(CURDIR)/standards_cache.sqlite}" --ga_backfill_opencre_direct
 
+# One-shot CRE description proposals → tmp/cre_description_approval.{csv,md}
+# Does not UPDATE cre.description. Homeserver: LIMIT=5 DRY_RUN=1 or FORCE=1.
+generate-cre-descriptions:
+	@[ -d "./.venv" ] && . ./.venv/bin/activate || ([ -d "./venv" ] && . ./venv/bin/activate); \
+	export PYTHONPATH="$(CURDIR)"; \
+	python scripts/generate_cre_descriptions.py \
+		--cache-file "$${CRE_CACHE_FILE:-$${DEV_DATABASE_URL:-postgresql://cre:password@127.0.0.1:5432/cre}}" \
+		$${LIMIT:+--limit $$LIMIT} $${FORCE:+--force} $${DRY_RUN:+--dry-run}
+
 all: clean lint test dev dev-run

@@ -71,7 +71,7 @@ export const CommonRequirementEnumeration = () => {
         <>
           <h4 className="cre-page__heading">{display.name}</h4>
           <h5 className="cre-page__sub-heading">ID: {display.id}</h5>
-          <div className="cre-page__description">{display.description}</div>
+          {/* Phase 1 RAG/OIE: cre.description may be populated for embeddings but is not rendered. */}
           {display && display.hyperlink && (
             <>
               <span>Reference: </span>
