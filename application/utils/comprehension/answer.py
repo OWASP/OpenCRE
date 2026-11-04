@@ -313,7 +313,9 @@ def answer_from_candidates(
             {"flags": ",".join(flags.active())},
         ):
             out = (
-                _answer_decomposed(question, complete) if flags.on("DECOMPOSE") else None
+                _answer_decomposed(question, complete)
+                if flags.on("DECOMPOSE")
+                else None
             )
             if out is None:
                 out = _answer(question, cands, complete)
