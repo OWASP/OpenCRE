@@ -2,7 +2,7 @@
 
 Read-only adapter: ``query`` runs the same dense SQL as ``retrieve._dense``.
 No second embedding corpus, no LI disk index. Gated by ``OWASP_CX_LI_VSTORE`` /
-``CRE_RAG_PARITY_LI_VSTORE`` (default off).
+``CRE_RAG_PARITY_LI_VSTORE`` (DEFAULT_ON since TASK-14.8; force off with ``=0``).
 """
 
 from __future__ import annotations

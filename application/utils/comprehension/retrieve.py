@@ -299,6 +299,20 @@ def _apply_authority(hits: List[LaneHit]) -> List[LaneHit]:
     return hits
 
 
+def _li_metadata_filter_hits(hits: List[LaneHit]) -> List[LaneHit]:
+    """Optional URL/prefix allowlist for LI hits (TASK-14.12).
+
+    ``OWASP_CX_LI_URL_SUBSTR`` = comma-separated substrings; empty = no filter.
+    """
+    raw = (os.environ.get("OWASP_CX_LI_URL_SUBSTR") or "").strip()
+    if not raw or not hits:
+        return hits
+    needles = [p.strip() for p in raw.split(",") if p.strip()]
+    if not needles:
+        return hits
+    return [h for h in hits if any(n in (h.url or "") for n in needles)]
+
+
 def fetch_comprehension_hits(
     question: str, queries: List[str] | None = None
 ) -> List[LaneHit]:
@@ -325,6 +339,15 @@ def fetch_comprehension_hits(
 
         _authority.reset_featured()
         texts = [question] + [q for q in (queries or []) if q and q != question]
+        # TASK-14.12: LI multi-query expand when only the raw question is present.
+        if flags.on("LI_RETRIEVE") and len(texts) == 1:
+            from application.utils.rag_parity.phase3_retrieve import expand_queries
+
+            def _light_expand(q: str) -> List[str]:
+                stripped = re.sub(r"[?!.]+$", "", (q or "").strip()).strip()
+                return [stripped] if stripped and stripped != q else []
+
+            texts = expand_queries(texts[0], expander=_light_expand) or texts
         k = retrieval_k()
         wide = k * 2 if flags.on("RERANK") else k
         with sqla.session.get_bind().connect() as conn:
@@ -359,6 +382,7 @@ def fetch_comprehension_hits(
                             )
                         except Exception:  # noqa: BLE001
                             pass
+                    vhits = _li_metadata_filter_hits(vhits)
                     hits = _with_talk_lane(conn, question, vhits)
                     hits = _apply_authority(hits)
                     if flags.on("EXPAND"):
