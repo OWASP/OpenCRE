@@ -431,6 +431,8 @@ def fetch_comprehension_hits(
             if len(fuse_lists) == 1:
                 hits = fuse_lists[0]
             else:
+                # TASK-14.13: LI QueryFusion is the primary fuse; hand RRF is
+                # fallback only when LI is off/unavailable.
                 hits = None
                 if flags.on("LI_RETRIEVE"):
                     from application.utils.comprehension.li_retrieve import (
