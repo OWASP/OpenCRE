@@ -279,7 +279,29 @@ def answer_from_candidates(
 
     reset_evidence()
     ckey = (question, tuple(flags.active()))
+    shared_cache = None
+    cache_prompt = ""
     if flags.on("CACHE"):
+        # TASK-14.17: optional shared Redis via CRE_RAG_PARITY_REDIS_ANSWER_CACHE
+        try:
+            from application.utils.rag_parity.flags import load_flags
+            from application.utils.rag_parity.phase7_answer_cache import (
+                build_answer_cache,
+                get_cached_answer,
+            )
+
+            if load_flags().redis_answer_cache:
+                shared_cache = build_answer_cache()
+                cache_prompt = question + "\0" + ",".join(flags.active())
+                payload = get_cached_answer(shared_cache, cache_prompt)
+                if (
+                    isinstance(payload, dict)
+                    and isinstance(payload.get("answer"), str)
+                    and isinstance(payload.get("cites"), list)
+                ):
+                    return payload["answer"], [str(c) for c in payload["cites"]]
+        except Exception:  # noqa: BLE001 — never break ask on cache errors
+            shared_cache = None
         got = _ANSWERS.get(ckey)
         if got and time.time() - got[0] < 3600:
             return got[1]
@@ -310,6 +332,21 @@ def answer_from_candidates(
         _ANSWERS[ckey] = (time.time(), out)
         if len(_ANSWERS) > 512:
             _ANSWERS.pop(next(iter(_ANSWERS)))
+        if shared_cache is not None and cache_prompt:
+            try:
+                from application.utils.rag_parity.phase7_answer_cache import (
+                    put_cached_answer,
+                )
+
+                ttl = int(os.environ.get("CRE_RAG_PARITY_ANSWER_CACHE_TTL", "3600"))
+                put_cached_answer(
+                    shared_cache,
+                    cache_prompt,
+                    {"answer": out[0], "cites": out[1]},
+                    ttl_seconds=ttl,
+                )
+            except Exception:  # noqa: BLE001
+                pass
     return out
 
 
