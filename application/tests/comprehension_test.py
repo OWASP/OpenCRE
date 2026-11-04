@@ -183,15 +183,22 @@ class ExtrasTest(unittest.TestCase):
         with mock.patch.dict(os.environ, {}, clear=False):
             for k in [k for k in os.environ if k.startswith("OWASP_CX_")]:
                 del os.environ[k]
-            # TOPPROJECTS + LI + CITATIONS default-on (TASK-14.8 / 14.10)
+            # TOPPROJECTS + LI + CITATIONS + LC_ROUTER default-on
             self.assertEqual(
                 flags.active(),
-                ["TOPPROJECTS", "LI_RETRIEVE", "LI_VSTORE", "CITATIONS"],
+                [
+                    "TOPPROJECTS",
+                    "LI_RETRIEVE",
+                    "LI_VSTORE",
+                    "LC_ROUTER",
+                    "CITATIONS",
+                ],
             )
             self.assertTrue(flags.on("TOPPROJECTS"))
             self.assertTrue(flags.on("LI_RETRIEVE"))
             self.assertTrue(flags.on("LI_VSTORE"))
             self.assertTrue(flags.on("CITATIONS"))
+            self.assertTrue(flags.on("LC_ROUTER"))
             self.assertNotIn("HYBRID", flags.NAMES)
             os.environ["OWASP_CX_EXPAND"] = "1"
             self.assertEqual(
@@ -201,6 +208,7 @@ class ExtrasTest(unittest.TestCase):
                     "TOPPROJECTS",
                     "LI_RETRIEVE",
                     "LI_VSTORE",
+                    "LC_ROUTER",
                     "CITATIONS",
                 ],
             )
@@ -226,14 +234,6 @@ class ExtrasTest(unittest.TestCase):
                 self.assertTrue(flags.on("TOPPROJECTS"), on)
         with mock.patch.dict(os.environ, {"OWASP_CX_TOPPROJECTS": ""}):
             self.assertTrue(flags.on("TOPPROJECTS"))  # empty = not set = default
-
-    def test_keywords_drop_stopwords(self):
-        from application.utils.comprehension.extras import keywords
-
-        self.assertEqual(
-            keywords("How many project leaders are listed for the ASVS?"),
-            ["many", "project", "leaders", "listed", "asvs"],
-        )
 
     def test_rrf_prefers_hits_in_both_lists(self):
         from application.utils.owasp_agent.lane_similarity import LaneHit
@@ -416,19 +416,6 @@ class SpeedFeaturesTest(unittest.TestCase):
             del os.environ["OWASP_CX_MERGED"]
 
 
-class KeywordQueryTest(unittest.TestCase):
-    def test_relaxed_and_queries_from_selective_to_loose(self):
-        from application.utils.comprehension.extras import relaxed_and_queries
-
-        qs = relaxed_and_queries(
-            ["masvs", "authentication", "control", "group", "purpose"]
-        )
-        self.assertEqual(qs[0].split()[0], "authentication")
-        self.assertEqual([len(q.split()) for q in qs], [5, 3, 2])
-        self.assertEqual(relaxed_and_queries(["asvs"]), ["asvs"])
-        self.assertEqual(relaxed_and_queries([]), [])
-
-
 class CostEstimateTest(unittest.TestCase):
     def test_estimate_scales_with_text_and_reports_raw_only_cheaper(self):
         from application.utils.comprehension.cost import estimate_repo, report
@@ -470,19 +457,6 @@ class EnrichTest(unittest.TestCase):
         self.assertEqual(
             store.enrich_chunks("O/S", [("a.md", 0, "x" * 200)], bad, workers=1), {}
         )
-
-
-class PhraseTest(unittest.TestCase):
-    def test_quoted_and_title_case_phrases(self):
-        from application.utils.comprehension.extras import phrase_queries, phrases
-
-        q = "What were the four requirements for a chapter during the 'Inactive Chapters' initiative at Global AppSec?"
-        ph = phrases(q)
-        self.assertIn("Inactive Chapters", ph)
-        self.assertIn("Global AppSec", ph)
-        qs = phrase_queries(q, ["requirements", "chapter"])
-        self.assertTrue(qs[0].startswith('"Inactive Chapters"'))
-        self.assertEqual(phrases("what is samm?"), [])
 
 
 class SynthesisModelTest(unittest.TestCase):

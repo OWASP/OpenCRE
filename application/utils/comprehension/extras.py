@@ -8,65 +8,6 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 LlmFn = Callable[[str, str], str]
 
-_STOP = frozenset(
-    "a an and are as at be by do does for from has have how i in is it its of on or "
-    "that the their there these this to was what when where which who whom why will with "
-    "you your about according between into than then they them can could should would".split()
-)
-
-
-def keywords(question: str, limit: int = 12) -> List[str]:
-    seen: List[str] = []
-    for t in re.findall(r"[A-Za-z0-9][A-Za-z0-9._-]+", question or ""):
-        t = t.lower().strip("._-")
-        if len(t) > 2 and t not in _STOP and t not in seen:
-            seen.append(t)
-    return seen[:limit]
-
-
-_QUOTED = re.compile(r"""['"\u2018\u201c]([^'"\u2019\u201d]{4,60})['"\u2019\u201d]""")
-_CAPS = re.compile(
-    r"\b[A-Z][A-Za-z0-9]+(?:\s+(?:of|the|and|for|to)\s+|\s+)[A-Z][A-Za-z0-9]+(?:\s+[A-Z][A-Za-z0-9]+)*\b"
-)
-
-
-def phrases(question: str) -> List[str]:
-    """Quoted spans and Title-Case word runs: names a keyword search should match exactly."""
-    out: List[str] = []
-    for m in _QUOTED.finditer(question or ""):
-        out.append(m.group(1).strip())
-    for m in _CAPS.finditer(question or ""):
-        if m.start() > 0 and m.group(0) not in out:
-            out.append(m.group(0))
-    seen: List[str] = []
-    for p in out:
-        if p.lower() not in [x.lower() for x in seen]:
-            seen.append(p)
-    return seen[:3]
-
-
-def phrase_queries(question: str, kws: Sequence[str]) -> List[str]:
-    """websearch queries that require the named phrases, then loosen to phrases alone."""
-    ph = phrases(question)
-    if not ph:
-        return []
-    quoted = " ".join(f'"{p}"' for p in ph)
-    rare = sorted(dict.fromkeys(kws), key=lambda w: -len(w))[:2]
-    return [f"{quoted} {' '.join(rare)}".strip(), quoted]
-
-
-def relaxed_and_queries(kws: Sequence[str]) -> List[str]:
-    """AND-queries over the longest (usually rarest) words, from most to least selective."""
-    by_len = sorted(dict.fromkeys(kws), key=lambda w: -len(w))
-    out: List[str] = []
-    for n in (5, 3, 2):
-        q = " ".join(by_len[:n])
-        if len(by_len) >= n and q not in out:
-            out.append(q)
-    if not out and by_len:
-        out.append(" ".join(by_len))
-    return out
-
 
 def rrf(
     rankings: Sequence[Sequence[Any]], key: Callable[[Any], str], k: int = 60
