@@ -183,13 +183,26 @@ class ExtrasTest(unittest.TestCase):
         with mock.patch.dict(os.environ, {}, clear=False):
             for k in [k for k in os.environ if k.startswith("OWASP_CX_")]:
                 del os.environ[k]
-            # only TOPPROJECTS is on by default; everything else needs its env var
-            self.assertEqual(flags.active(), ["TOPPROJECTS"])
+            # TOPPROJECTS + LI retrieve/vstore are on by default (TASK-14.8)
+            self.assertEqual(
+                flags.active(), ["TOPPROJECTS", "LI_RETRIEVE", "LI_VSTORE"]
+            )
             self.assertTrue(flags.on("TOPPROJECTS"))
+            self.assertTrue(flags.on("LI_RETRIEVE"))
+            self.assertTrue(flags.on("LI_VSTORE"))
             self.assertNotIn("HYBRID", flags.NAMES)
             os.environ["OWASP_CX_EXPAND"] = "1"
-            self.assertEqual(flags.active(), ["EXPAND", "TOPPROJECTS"])
+            self.assertEqual(
+                flags.active(),
+                ["EXPAND", "TOPPROJECTS", "LI_RETRIEVE", "LI_VSTORE"],
+            )
             os.environ.pop("OWASP_CX_EXPAND", None)
+            os.environ["OWASP_CX_LI_RETRIEVE"] = "0"
+            os.environ["OWASP_CX_LI_VSTORE"] = "0"
+            self.assertFalse(flags.on("LI_RETRIEVE"))
+            self.assertFalse(flags.on("LI_VSTORE"))
+            os.environ.pop("OWASP_CX_LI_RETRIEVE", None)
+            os.environ.pop("OWASP_CX_LI_VSTORE", None)
 
     def test_topprojects_can_still_be_switched_off(self):
         import os

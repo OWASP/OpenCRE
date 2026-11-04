@@ -32,7 +32,7 @@ NAMES = (
     "ROUTE",  # people/count questions: whole-project read with a stronger reader model
     "TOPPROJECTS",  # no project named: the 3 best-matching projects each contribute sources
     "DECOMPOSE",  # multi-part questions: answer each part separately, then combine
-    # RAG/OIE framework-native cutover (default off — enable on staging after ablate)
+    # RAG/OIE framework-native cutover
     "LI_RETRIEVE",  # public QueryFusionRetriever RRF (num_queries=1) over dense lists
     "LI_VSTORE",  # VectorStoreIndex over OpenCRE pgvector (read-only; no second SoT)
     "LC_ROUTER",  # LangChain tool-calling intent router (owasp_agent)
@@ -52,8 +52,9 @@ _PARITY_ALIASES = {
 }
 
 
-# Proven in the 246-question clean set (82.1% with it, 79.3% without), so it needs no env var.
-DEFAULT_ON = frozenset({"TOPPROJECTS"})
+# TOPPROJECTS: proven on 246-Q clean set. LI_VSTORE+LI_RETRIEVE: accepted on staging
+# ablates (TASK-14.1/14.2); rollback = git revert (TASK-14.8). Force off with =0.
+DEFAULT_ON = frozenset({"TOPPROJECTS", "LI_RETRIEVE", "LI_VSTORE"})
 
 
 def _truthy(raw: str) -> bool:

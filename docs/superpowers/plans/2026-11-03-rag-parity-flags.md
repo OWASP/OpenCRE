@@ -49,4 +49,4 @@ Decide policy is never flagged away — `opencre_decide_node` / Librarian always
 4. `OWASP_CX_CITATIONS=1` (measure citation quality)
 5. `OWASP_CX_MODERN_RERANK=1` only after ≥+3 pts vs baseline with wrong-auto-link flat (`COHERE_API_KEY` if using Cohere)
 
-Do **not** add LC/MODERN/CITATIONS to `DEFAULT_ON` without ablation evidence. LI_VSTORE/LI_RETRIEVE hardcode = TASK-14.8.
+`LI_VSTORE` + `LI_RETRIEVE` are in `DEFAULT_ON` (TASK-14.8); force off with `=0` for ablates. Rollback = git revert. Do **not** add LC/MODERN/CITATIONS to `DEFAULT_ON` without ablation evidence.

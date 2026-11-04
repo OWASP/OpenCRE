@@ -9,20 +9,20 @@ from unittest import mock
 
 
 class FlagsAliasTest(unittest.TestCase):
-    def test_parity_alias_enables_li_retrieve(self) -> None:
+    def test_parity_alias_can_force_li_retrieve_off(self) -> None:
         from application.utils.comprehension import flags
 
         with mock.patch.dict(os.environ, {}, clear=False):
             for k in list(os.environ):
                 if k.startswith("OWASP_CX_") or k.startswith("CRE_RAG_PARITY_"):
                     os.environ.pop(k, None)
+            self.assertTrue(flags.on("LI_RETRIEVE"))  # DEFAULT_ON (TASK-14.8)
+            os.environ["CRE_RAG_PARITY_LI_RETRIEVE"] = "0"
             self.assertFalse(flags.on("LI_RETRIEVE"))
-            os.environ["CRE_RAG_PARITY_LI_RETRIEVE"] = "1"
-            self.assertTrue(flags.on("LI_RETRIEVE"))
             os.environ.pop("CRE_RAG_PARITY_LI_RETRIEVE")
 
     def test_keyword_hybrid_flag_removed(self) -> None:
-        """Ask-side keyword/FTS HYBRID deleted; LI_HYBRID env must not enable LI_RETRIEVE."""
+        """Ask-side keyword/FTS HYBRID deleted; LI_HYBRID env must not disable LI."""
         from application.utils.comprehension import flags
 
         self.assertNotIn("HYBRID", flags.NAMES)
@@ -32,7 +32,7 @@ class FlagsAliasTest(unittest.TestCase):
                     os.environ.pop(k, None)
             os.environ["CRE_RAG_PARITY_LI_HYBRID"] = "1"
             os.environ["OWASP_CX_HYBRID"] = "1"
-            self.assertFalse(flags.on("LI_RETRIEVE"))
+            self.assertTrue(flags.on("LI_RETRIEVE"))  # still DEFAULT_ON
             self.assertNotIn("HYBRID", flags.active())
             os.environ.pop("CRE_RAG_PARITY_LI_HYBRID", None)
             os.environ.pop("OWASP_CX_HYBRID", None)

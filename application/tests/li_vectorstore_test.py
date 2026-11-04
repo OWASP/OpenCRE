@@ -10,26 +10,28 @@ from unittest import mock
 
 
 class LiVstoreFlagTest(unittest.TestCase):
-    def test_parity_alias_enables_li_vstore(self) -> None:
+    def test_parity_alias_can_force_li_vstore_off(self) -> None:
         from application.utils.comprehension import flags
 
         with mock.patch.dict(os.environ, {}, clear=False):
             for k in list(os.environ):
                 if k.startswith("OWASP_CX_") or k.startswith("CRE_RAG_PARITY_"):
                     os.environ.pop(k, None)
+            self.assertTrue(flags.on("LI_VSTORE"))  # DEFAULT_ON (TASK-14.8)
+            os.environ["CRE_RAG_PARITY_LI_VSTORE"] = "0"
             self.assertFalse(flags.on("LI_VSTORE"))
-            os.environ["CRE_RAG_PARITY_LI_VSTORE"] = "1"
-            self.assertTrue(flags.on("LI_VSTORE"))
             os.environ.pop("CRE_RAG_PARITY_LI_VSTORE")
 
-    def test_li_vstore_default_off(self) -> None:
+    def test_li_vstore_default_on(self) -> None:
         from application.utils.comprehension import flags
 
         with mock.patch.dict(os.environ, {}, clear=False):
             for k in list(os.environ):
                 if k.startswith("OWASP_CX_") or k.startswith("CRE_RAG_PARITY_"):
                     os.environ.pop(k, None)
-            self.assertFalse(flags.on("LI_VSTORE"))
+            self.assertTrue(flags.on("LI_VSTORE"))
+            self.assertIn("LI_VSTORE", flags.DEFAULT_ON)
+            self.assertIn("LI_RETRIEVE", flags.DEFAULT_ON)
 
 
 class LiVectorstoreModuleTest(unittest.TestCase):
