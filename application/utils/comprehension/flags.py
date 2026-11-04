@@ -53,8 +53,9 @@ _PARITY_ALIASES = {
 
 
 # TOPPROJECTS: proven on 246-Q clean set. LI_VSTORE+LI_RETRIEVE: accepted on staging
-# ablates (TASK-14.1/14.2); rollback = git revert (TASK-14.8). Force off with =0.
-DEFAULT_ON = frozenset({"TOPPROJECTS", "LI_RETRIEVE", "LI_VSTORE"})
+# ablates (TASK-14.1/14.2); rollback = git revert (TASK-14.8). CITATIONS: strip
+# uncited sentences (TASK-14.10). Force off with =0.
+DEFAULT_ON = frozenset({"TOPPROJECTS", "LI_RETRIEVE", "LI_VSTORE", "CITATIONS"})
 
 
 def _truthy(raw: str) -> bool:

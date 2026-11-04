@@ -183,18 +183,26 @@ class ExtrasTest(unittest.TestCase):
         with mock.patch.dict(os.environ, {}, clear=False):
             for k in [k for k in os.environ if k.startswith("OWASP_CX_")]:
                 del os.environ[k]
-            # TOPPROJECTS + LI retrieve/vstore are on by default (TASK-14.8)
+            # TOPPROJECTS + LI + CITATIONS default-on (TASK-14.8 / 14.10)
             self.assertEqual(
-                flags.active(), ["TOPPROJECTS", "LI_RETRIEVE", "LI_VSTORE"]
+                flags.active(),
+                ["TOPPROJECTS", "LI_RETRIEVE", "LI_VSTORE", "CITATIONS"],
             )
             self.assertTrue(flags.on("TOPPROJECTS"))
             self.assertTrue(flags.on("LI_RETRIEVE"))
             self.assertTrue(flags.on("LI_VSTORE"))
+            self.assertTrue(flags.on("CITATIONS"))
             self.assertNotIn("HYBRID", flags.NAMES)
             os.environ["OWASP_CX_EXPAND"] = "1"
             self.assertEqual(
                 flags.active(),
-                ["EXPAND", "TOPPROJECTS", "LI_RETRIEVE", "LI_VSTORE"],
+                [
+                    "EXPAND",
+                    "TOPPROJECTS",
+                    "LI_RETRIEVE",
+                    "LI_VSTORE",
+                    "CITATIONS",
+                ],
             )
             os.environ.pop("OWASP_CX_EXPAND", None)
             os.environ["OWASP_CX_LI_RETRIEVE"] = "0"
