@@ -44,6 +44,21 @@ class TestOwaspKubernetesTop10_2025Parser(unittest.TestCase):
 
         entries = result.results["OWASP Kubernetes Top Ten 2025 (Draft)"]
         self.assertEqual(10, len(entries))
+        self.assertEqual(
+            [
+                "https://kubernetes-top10.owasp.org/2025/en/src/K01-Insecure-Workload-Configurations.html",
+                "https://kubernetes-top10.owasp.org/2025/en/src/K02-Overly-Permissive-Authorization-Configurations.html",
+                "https://kubernetes-top10.owasp.org/2025/en/src/K03-Secrets-Management-Failures.html",
+                "https://kubernetes-top10.owasp.org/2025/en/src/K04-Lack-Of-Cluster-Level-Policy-Enforcement.html",
+                "https://kubernetes-top10.owasp.org/2025/en/src/K05-Missing-Network-Segmentation-Controls.html",
+                "https://kubernetes-top10.owasp.org/2025/en/src/K06-Overly-Exposed-Kubernetes-Components.html",
+                "https://kubernetes-top10.owasp.org/2025/en/src/K07-Misconfigured-And-Vulnerable-Cluster-Components.html",
+                "https://kubernetes-top10.owasp.org/2025/en/src/K08-Cluster-To-Cloud-Lateral-Movement.html",
+                "https://kubernetes-top10.owasp.org/2025/en/src/K09-Broken-Authentication-Mechanisms.html",
+                "https://kubernetes-top10.owasp.org/2025/en/src/K10-Inadequate-Logging-And-Monitoring.html",
+            ],
+            [entry.hyperlink for entry in entries],
+        )
         self.assertEqual("K01", entries[0].sectionID)
         self.assertEqual("Insecure Workload Configurations", entries[0].section)
         self.assertEqual(
