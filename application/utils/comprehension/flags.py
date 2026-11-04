@@ -11,7 +11,6 @@ from typing import Callable, Optional
 
 NAMES = (
     "EXPAND",  # neighbouring chunks around each raw hit
-    "HYBRID",  # keyword (full-text) search fused with vectors
     "RERANK",  # LLM rerank of a wide candidate pool
     "QUERY",  # query understanding: clean, decompose, clarify
     "VERIFY",  # check the answer against its sources
@@ -42,17 +41,14 @@ NAMES = (
 )
 
 # Alias CRE_RAG_PARITY_* → OWASP_CX_* so staging can flip either name.
-# LI_RETRIEVE and HYBRID are intentionally separate: LI_HYBRID used to alias into
-# both and forced LI fusion whenever keyword hybrid was on (confounded ablates).
-# Set OWASP_CX_LI_RETRIEVE=1 and/or OWASP_CX_HYBRID=1 explicitly (or both).
+# Ask-side keyword/FTS HYBRID (and CRE_RAG_PARITY_LI_HYBRID) was removed — dense
+# + LI QueryFusion/VectorStoreIndex is the retrieve path.
 _PARITY_ALIASES = {
     "LI_RETRIEVE": ("CRE_RAG_PARITY_LI_RETRIEVE",),
     "LI_VSTORE": ("CRE_RAG_PARITY_LI_VSTORE",),
     "LC_ROUTER": ("CRE_RAG_PARITY_LC_ROUTER",),
     "CITATIONS": ("CRE_RAG_PARITY_CITATIONS",),
     "MODERN_RERANK": ("CRE_RAG_PARITY_MODERN_RERANK",),
-    # Legacy name: keyword hybrid only (does NOT enable LI_RETRIEVE).
-    "HYBRID": ("CRE_RAG_PARITY_LI_HYBRID",),
 }
 
 

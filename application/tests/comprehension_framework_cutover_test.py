@@ -21,18 +21,21 @@ class FlagsAliasTest(unittest.TestCase):
             self.assertTrue(flags.on("LI_RETRIEVE"))
             os.environ.pop("CRE_RAG_PARITY_LI_RETRIEVE")
 
-    def test_li_hybrid_alias_does_not_enable_li_retrieve(self) -> None:
-        """CRE_RAG_PARITY_LI_HYBRID is keyword hybrid only — not LI fusion."""
+    def test_keyword_hybrid_flag_removed(self) -> None:
+        """Ask-side keyword/FTS HYBRID deleted; LI_HYBRID env must not enable LI_RETRIEVE."""
         from application.utils.comprehension import flags
 
+        self.assertNotIn("HYBRID", flags.NAMES)
         with mock.patch.dict(os.environ, {}, clear=False):
             for k in list(os.environ):
                 if k.startswith("OWASP_CX_") or k.startswith("CRE_RAG_PARITY_"):
                     os.environ.pop(k, None)
             os.environ["CRE_RAG_PARITY_LI_HYBRID"] = "1"
-            self.assertTrue(flags.on("HYBRID"))
+            os.environ["OWASP_CX_HYBRID"] = "1"
             self.assertFalse(flags.on("LI_RETRIEVE"))
-            os.environ.pop("CRE_RAG_PARITY_LI_HYBRID")
+            self.assertNotIn("HYBRID", flags.active())
+            os.environ.pop("CRE_RAG_PARITY_LI_HYBRID", None)
+            os.environ.pop("OWASP_CX_HYBRID", None)
 
 
 class LiRetrieveWiringTest(unittest.TestCase):
@@ -67,7 +70,7 @@ class LiRetrieveWiringTest(unittest.TestCase):
         self.assertNotIn("_reciprocal_rerank_fusion(", src)
         self.assertNotIn("object()", src)
 
-    def test_retrieve_module_wires_li_flag_not_hybrid_alone(self) -> None:
+    def test_retrieve_module_wires_li_flag_without_keyword_hybrid(self) -> None:
         from pathlib import Path
 
         src = Path("application/utils/comprehension/retrieve.py").read_text(
@@ -75,7 +78,10 @@ class LiRetrieveWiringTest(unittest.TestCase):
         )
         self.assertIn("fuse_rankings_with_llamaindex", src)
         self.assertIn('flags.on("LI_RETRIEVE")', src)
-        self.assertNotIn('flags.on("LI_RETRIEVE") or flags.on("HYBRID")', src)
+        self.assertNotIn('flags.on("HYBRID")', src)
+        self.assertNotIn("supplement_with_keyword", src)
+        self.assertNotIn("_KW_SQL", src)
+        self.assertNotIn("def _keyword(", src)
 
 
 class LcRouterWiringTest(unittest.TestCase):

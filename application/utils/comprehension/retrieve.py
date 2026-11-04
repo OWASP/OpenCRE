@@ -126,21 +126,6 @@ _DENSE_SQL = """
     LIMIT :limit
 """
 
-_KW_SQL = """
-    SELECT c.id, c.doc_type, c.embeddings_content, c.embeddings_url,
-           ts_rank_cd(to_tsvector('english', c.embeddings_content), q.query) AS score
-    FROM (
-        SELECT id, doc_type, embeddings_content, embeddings_url
-        FROM embeddings, websearch_to_tsquery('english', :kw) AS query
-        WHERE source_channel = :channel
-          AND embeddings_url LIKE 'owasp-agent://evidence/comprehension-%'
-          AND to_tsvector('english', embeddings_content) @@ query
-        LIMIT 300
-    ) c, websearch_to_tsquery('english', :kw) AS q(query)
-    ORDER BY score DESC
-    LIMIT :limit
-"""
-
 _ALL = "embeddings_url LIKE 'owasp-agent://evidence/comprehension-%'"
 
 
@@ -187,31 +172,6 @@ def _dense(
         {"q": q, "channel": CHANNEL_AGENT, "limit": limit, **(params or {})},
     ).fetchall()
     return [_hit(r, float(r.score or 0.0)) for r in rows or []]
-
-
-def _keyword(conn: Any, question: str, limit: int) -> List[LaneHit]:
-    """Full-text hits: AND the most distinctive words, relaxing until a few rows match.
-
-    An OR over common words matches thousands of rows and ranking them is slow, so
-    the candidate set is capped and the query is kept selective.
-    """
-    from sqlalchemy import text as sql_text
-
-    from application.utils.comprehension.extras import (
-        keywords,
-        phrase_queries,
-        relaxed_and_queries,
-    )
-
-    kws = keywords(question)
-    for kw in phrase_queries(question, kws) + relaxed_and_queries(kws):
-        rows = conn.execute(
-            sql_text(_KW_SQL),
-            {"kw": kw, "channel": CHANNEL_AGENT, "limit": limit},
-        ).fetchall()
-        if len(rows) >= 3:
-            return [_hit(r, float(r.score or 0.0)) for r in rows]
-    return []
 
 
 def _expand(conn: Any, hits: List[LaneHit]) -> None:
@@ -370,7 +330,6 @@ def fetch_comprehension_hits(
         with sqla.session.get_bind().connect() as conn:
             slugs = _known_slugs(conn)
             rankings: List[List[LaneHit]] = []
-            keyword_hits: List[LaneHit] = []
             from application.utils.comprehension.embedcache import embed_many
 
             # TASK-14.2: LI VectorStoreIndex owns dense retrieve when LI_VSTORE is on
@@ -418,8 +377,6 @@ def fetch_comprehension_hits(
                 rankings.append(dense)
                 if t == question:
                     _feature_projects(conn, q, dense)
-                if flags.on("HYBRID"):
-                    keyword_hits += _keyword(conn, t, wide)
                 scoped = matched_slugs(t, slugs)
                 if flags.on("PERPROJECT") and len(scoped) >= 2:
                     for slug in scoped:
@@ -446,14 +403,7 @@ def fetch_comprehension_hits(
                         for h in part:
                             h.score += 0.2
                         rankings.append(part)
-            # When LI_RETRIEVE + HYBRID: fold keyword into QueryFusion as another list
-            # (public RRF) instead of post-hoc supplement. HYBRID alone keeps hand RRF
-            # + supplement_with_keyword (unconfounded from LI). HYBRID is parked
-            # (TASK-14.3) — leave gated off on staging.
             fuse_lists: List[List[LaneHit]] = list(rankings)
-            if flags.on("LI_RETRIEVE") and flags.on("HYBRID") and keyword_hits:
-                fuse_lists.append(keyword_hits)
-                keyword_hits = []
             if len(fuse_lists) == 1:
                 hits = fuse_lists[0]
             else:
@@ -468,8 +418,6 @@ def fetch_comprehension_hits(
                     )
                 if hits is None:
                     hits = rrf(fuse_lists, key=lambda h: h.url)
-            if keyword_hits:
-                hits = supplement_with_keyword(hits, keyword_hits)
             hits = _with_talk_lane(conn, question, hits)
             hits = _apply_authority(hits)
             if flags.on("EXPAND"):
@@ -477,27 +425,6 @@ def fetch_comprehension_hits(
         return hits
     except Exception:
         return []
-
-
-def supplement_with_keyword(
-    dense: List[LaneHit], keyword: List[LaneHit], head: int = 0, take: int = 0
-) -> List[LaneHit]:
-    """Keep the strongest dense hits, slot a few keyword hits right behind them.
-
-    Interleaving by rank let name-only keyword matches push real semantic answers
-    out of the top spots, so keyword hits only supplement the dense head.
-    """
-    head = head or int(os.environ.get("OWASP_CX_HYBRID_HEAD", "6"))
-    take = take or int(os.environ.get("OWASP_CX_HYBRID_TAKE", "4"))
-    first = dense[:head]
-    seen = {h.url for h in first}
-    extra = [h for h in keyword if h.url not in seen][:take]
-    seen |= {h.url for h in extra}
-    out = first + extra + [h for h in dense[head:] if h.url not in seen]
-    top = float(out[0].score) if out else 0.0
-    for i, h in enumerate(out):  # keep the order stable under later score sorts
-        h.score = top - i * 1e-4
-    return out
 
 
 def prefetch_embedding(text: str) -> None:

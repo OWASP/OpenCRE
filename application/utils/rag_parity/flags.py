@@ -20,8 +20,7 @@ class RagParityFlags:
     # Phase 2
     ingest_pipeline: bool = False
     use_docling: bool = False
-    # Phase 3
-    li_hybrid_retrieve: bool = False
+    # Phase 3 (keyword/FTS LI_HYBRID removed — use LI_RETRIEVE / multi-query)
     lc_router: bool = False
     citation_synthesizer: bool = False
     # Phase 4
@@ -42,7 +41,6 @@ def load_flags() -> RagParityFlags:
     return RagParityFlags(
         ingest_pipeline=_env_bool("CRE_RAG_PARITY_INGEST", False),
         use_docling=_env_bool("CRE_RAG_PARITY_DOCLING", False),
-        li_hybrid_retrieve=_env_bool("CRE_RAG_PARITY_LI_HYBRID", False),
         lc_router=_env_bool("CRE_RAG_PARITY_LC_ROUTER", False),
         citation_synthesizer=_env_bool("CRE_RAG_PARITY_CITATIONS", False),
         modern_rerank=_env_bool("CRE_RAG_PARITY_MODERN_RERANK", False),

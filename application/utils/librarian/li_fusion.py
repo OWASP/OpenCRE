@@ -3,8 +3,7 @@
 When ``CRE_RAG_PARITY_LI_RETRIEVE`` / ``OWASP_CX_LI_RETRIEVE`` is on and LI is
 installed, expands the query lightly and fuses shortlists with public
 QueryFusionRetriever RRF. OpenCRE ``decide()`` / τ are unchanged — this only
-reshapes the candidate pool. ``CRE_RAG_PARITY_LI_HYBRID`` alone does not enable
-this path (keyword hybrid is ask-side only).
+reshapes the candidate pool.
 """
 
 from __future__ import annotations
