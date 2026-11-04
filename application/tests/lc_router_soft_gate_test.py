@@ -23,16 +23,39 @@ class LcRouterSoftGateTest(unittest.TestCase):
         self.assertNotEqual(intent, "clarify")
         self.assertIsInstance(intent, str)
 
-    def test_hard_lc_intent_still_used(self) -> None:
+    def test_hard_lc_intent_rescues_regex_clarify(self) -> None:
+        """LC runs only when regex yields clarify; hard LC intent then wins."""
         from application.utils.owasp_agent.router import classify_intent
 
         with mock.patch.dict(os.environ, {"OWASP_CX_LC_ROUTER": "1"}):
             with mock.patch(
-                "application.utils.owasp_agent.lc_router.classify_intent_langchain",
-                return_value="count_projects",
+                "application.utils.owasp_agent.router._classify_intent_regex",
+                return_value="clarify",
             ):
-                intent = classify_intent("how many OWASP projects are there?")
+                with mock.patch(
+                    "application.utils.owasp_agent.lc_router.classify_intent_langchain",
+                    return_value="count_projects",
+                ) as lc:
+                    intent = classify_intent("who is the chapter leader?")
         self.assertEqual(intent, "count_projects")
+        lc.assert_called()
+
+    def test_skips_lc_when_regex_confident(self) -> None:
+        from application.utils.owasp_agent.router import classify_intent
+
+        with mock.patch.dict(os.environ, {"OWASP_CX_LC_ROUTER": "1"}):
+            with mock.patch(
+                "application.utils.owasp_agent.router._classify_intent_regex",
+                return_value="cre_normative",
+            ):
+                with mock.patch(
+                    "application.utils.owasp_agent.lc_router.classify_intent_langchain",
+                ) as lc:
+                    intent = classify_intent(
+                        "How do I stop SQL injection in my application?"
+                    )
+        self.assertEqual(intent, "cre_normative")
+        lc.assert_not_called()
 
 
 if __name__ == "__main__":
