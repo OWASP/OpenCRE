@@ -283,12 +283,20 @@ def answer_from_candidates(
         got = _ANSWERS.get(ckey)
         if got and time.time() - got[0] < 3600:
             return got[1]
+    from application.utils.rag_parity.phase6_observability import traced_span
+
     try:
-        out = _answer_decomposed(question, complete) if flags.on("DECOMPOSE") else None
-        if out is None:
-            out = _answer(question, cands, complete)
-        if out is not None and flags.on("COMPLETE2"):
-            out = _complete_pass(question, out, cands, complete)
+        with traced_span(
+            "comprehension.answer",
+            {"flags": ",".join(flags.active())},
+        ):
+            out = (
+                _answer_decomposed(question, complete) if flags.on("DECOMPOSE") else None
+            )
+            if out is None:
+                out = _answer(question, cands, complete)
+            if out is not None and flags.on("COMPLETE2"):
+                out = _complete_pass(question, out, cands, complete)
     except (
         Exception
     ) as exc:  # noqa: BLE001 - provider 503/429/timeouts must not look like "not found"
