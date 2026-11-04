@@ -37,13 +37,35 @@ class RagParityFlags:
     langgraph_checkpointer: bool = False
 
 
+def _any_env_bool(*names: str, default: bool = False) -> bool:
+    """True if any named env is truthy; False if any is explicitly off; else default."""
+    saw = False
+    for name in names:
+        raw = os.environ.get(name)
+        if raw is None or not str(raw).strip():
+            continue
+        saw = True
+        if _env_bool(name, False):
+            return True
+    if saw:
+        return False
+    return default
+
+
 def load_flags() -> RagParityFlags:
+    # Prefer CRE_RAG_PARITY_*; also honor OWASP_CX_* ask aliases (TASK-14.11).
     return RagParityFlags(
         ingest_pipeline=_env_bool("CRE_RAG_PARITY_INGEST", False),
         use_docling=_env_bool("CRE_RAG_PARITY_DOCLING", False),
-        lc_router=_env_bool("CRE_RAG_PARITY_LC_ROUTER", False),
-        citation_synthesizer=_env_bool("CRE_RAG_PARITY_CITATIONS", False),
-        modern_rerank=_env_bool("CRE_RAG_PARITY_MODERN_RERANK", False),
+        lc_router=_any_env_bool(
+            "CRE_RAG_PARITY_LC_ROUTER", "OWASP_CX_LC_ROUTER", default=False
+        ),
+        citation_synthesizer=_any_env_bool(
+            "CRE_RAG_PARITY_CITATIONS", "OWASP_CX_CITATIONS", default=False
+        ),
+        modern_rerank=_any_env_bool(
+            "CRE_RAG_PARITY_MODERN_RERANK", "OWASP_CX_MODERN_RERANK", default=False
+        ),
         contextual_compression=_env_bool("CRE_RAG_PARITY_COMPRESSION", False),
         knowledge_claim_extract=_env_bool("CRE_RAG_PARITY_CLAIMS", False),
         langfuse=_env_bool("CRE_RAG_PARITY_LANGFUSE", False),

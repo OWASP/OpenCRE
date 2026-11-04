@@ -176,10 +176,14 @@ def _modern_rerank_merged(
         for i, h in enumerate(pool)
     ]
     try:
+        compress = (os.environ.get("CRE_RAG_PARITY_COMPRESSION", "") or "").strip()
+        compress_on = compress.lower() in ("1", "true", "yes", "on")
         hits = rerank_and_compress(
             question,
             docs,
-            flags=RagParityFlags(modern_rerank=True, contextual_compression=False),
+            flags=RagParityFlags(
+                modern_rerank=True, contextual_compression=compress_on
+            ),
         )
     except Exception:
         return merged

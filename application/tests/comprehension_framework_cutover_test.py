@@ -138,6 +138,7 @@ class ModernRerankWiringTest(unittest.TestCase):
         )
         self.assertIn("MODERN_RERANK", src)
         self.assertIn("rerank_and_compress", src)
+        self.assertIn("CRE_RAG_PARITY_COMPRESSION", src)
 
 
 class IngestScriptWiringTest(unittest.TestCase):
