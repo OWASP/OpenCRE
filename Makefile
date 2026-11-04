@@ -371,4 +371,13 @@ rag-parity-test:
 	export PYTHONPATH="$(CURDIR)"; \
 	python -m unittest discover -s application/tests/rag_parity -p '*_test.py' -v
 
+# TASK-14.15: knowledge_claim extract (dry-run JSON; no unsupervised graph writes)
+rag-parity-claims:
+	@[ -d "./.venv" ] && . ./.venv/bin/activate || ([ -d "./venv" ] && . ./venv/bin/activate); \
+	export PYTHONPATH="$(CURDIR)"; \
+	CRE_RAG_PARITY_CLAIMS=1 python scripts/rag_parity_claims.py \
+		--source-file "$${SOURCE_FILE:?set SOURCE_FILE}" \
+		--source-ref "$${SOURCE_REF:-}" \
+		--dry-run
+
 all: clean lint test dev dev-run
