@@ -126,6 +126,7 @@ Before deploy or `flask db upgrade`: `make alembic-guardrail` (or `python script
 | `autonomous-workflow.mdc` | Execute after approval; no unsolicited commits |
 | `context-management.mdc` | `/clear`, `@` refs, stale context recovery |
 | `production-db-ops-safety.mdc` | Destructive prod DB confirmation |
+| `framework-port-staging-gate.mdc` | Pre-staging gate for LI/LC-style framework ports (behavior diff, flag/router/blend parity, embed-text) |
 | `alembic-deploy-guardrail.mdc` | Pre-deploy migration guardrail |
 
 ## OpenCRE commands

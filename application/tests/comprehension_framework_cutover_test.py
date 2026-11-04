@@ -21,24 +21,53 @@ class FlagsAliasTest(unittest.TestCase):
             self.assertTrue(flags.on("LI_RETRIEVE"))
             os.environ.pop("CRE_RAG_PARITY_LI_RETRIEVE")
 
+    def test_li_hybrid_alias_does_not_enable_li_retrieve(self) -> None:
+        """CRE_RAG_PARITY_LI_HYBRID is keyword hybrid only — not LI fusion."""
+        from application.utils.comprehension import flags
+
+        with mock.patch.dict(os.environ, {}, clear=False):
+            for k in list(os.environ):
+                if k.startswith("OWASP_CX_") or k.startswith("CRE_RAG_PARITY_"):
+                    os.environ.pop(k, None)
+            os.environ["CRE_RAG_PARITY_LI_HYBRID"] = "1"
+            self.assertTrue(flags.on("HYBRID"))
+            self.assertFalse(flags.on("LI_RETRIEVE"))
+            os.environ.pop("CRE_RAG_PARITY_LI_HYBRID")
+
 
 class LiRetrieveWiringTest(unittest.TestCase):
-    def test_li_fusion_entrypoint_callable(self) -> None:
+    def test_li_queryfusion_fuses_two_lists(self) -> None:
         from application.utils.comprehension.li_retrieve import (
             fuse_rankings_with_llamaindex,
             li_available,
         )
 
+        if not li_available():
+            self.skipTest("llama_index not installed")
         hit_a = SimpleNamespace(url="u1", score=0.9)
         hit_b = SimpleNamespace(url="u2", score=0.8)
         out = fuse_rankings_with_llamaindex(
-            [[hit_a, hit_b], [hit_a]], key=lambda h: h.url
+            [[hit_a, hit_b], [hit_b, hit_a]], key=lambda h: h.url
         )
-        self.assertTrue(out is None or isinstance(out, list))
-        if li_available() and out is not None:
-            self.assertEqual({h.url for h in out}, {"u1", "u2"})
+        self.assertIsNotNone(out)
+        assert out is not None
+        self.assertEqual({h.url for h in out}, {"u1", "u2"})
+        # Both lists rank u* — RRF should keep both; top should be present.
+        self.assertIn(out[0].url, {"u1", "u2"})
 
-    def test_retrieve_module_wires_li_flag(self) -> None:
+    def test_li_source_uses_public_queryfusion_not_private_helper(self) -> None:
+        from pathlib import Path
+
+        src = Path("application/utils/comprehension/li_retrieve.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("QueryFusionRetriever(", src)
+        self.assertIn("FUSION_MODES.RECIPROCAL_RANK", src)
+        self.assertIn("num_queries=1", src)
+        self.assertNotIn("_reciprocal_rerank_fusion(", src)
+        self.assertNotIn("object()", src)
+
+    def test_retrieve_module_wires_li_flag_not_hybrid_alone(self) -> None:
         from pathlib import Path
 
         src = Path("application/utils/comprehension/retrieve.py").read_text(
@@ -46,6 +75,7 @@ class LiRetrieveWiringTest(unittest.TestCase):
         )
         self.assertIn("fuse_rankings_with_llamaindex", src)
         self.assertIn('flags.on("LI_RETRIEVE")', src)
+        self.assertNotIn('flags.on("LI_RETRIEVE") or flags.on("HYBRID")', src)
 
 
 class LcRouterWiringTest(unittest.TestCase):

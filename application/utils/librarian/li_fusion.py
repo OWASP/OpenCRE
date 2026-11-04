@@ -1,8 +1,10 @@
 """Optional LlamaIndex fusion wrapper around a Librarian C.1 retriever.
 
-When ``CRE_RAG_PARITY_LI_HYBRID`` / ``OWASP_CX_LI_RETRIEVE`` is on and LI is
-installed, expands the query lightly and fuses shortlists with LI RRF.
-OpenCRE ``decide()`` / τ are unchanged — this only reshapes the candidate pool.
+When ``CRE_RAG_PARITY_LI_RETRIEVE`` / ``OWASP_CX_LI_RETRIEVE`` is on and LI is
+installed, expands the query lightly and fuses shortlists with public
+QueryFusionRetriever RRF. OpenCRE ``decide()`` / τ are unchanged — this only
+reshapes the candidate pool. ``CRE_RAG_PARITY_LI_HYBRID`` alone does not enable
+this path (keyword hybrid is ask-side only).
 """
 
 from __future__ import annotations
@@ -20,7 +22,6 @@ class _Retriever(Protocol):
 
 def li_librarian_fusion_enabled() -> bool:
     for key in (
-        "CRE_RAG_PARITY_LI_HYBRID",
         "CRE_RAG_PARITY_LI_RETRIEVE",
         "OWASP_CX_LI_RETRIEVE",
     ):
@@ -39,7 +40,7 @@ def wrap_retriever(inner: _Retriever) -> _Retriever:
 
         if not li_available():
             logger.warning(
-                "CRE_RAG_PARITY_LI_HYBRID set but LlamaIndex missing; "
+                "OWASP_CX_LI_RETRIEVE set but LlamaIndex missing; "
                 "librarian retriever unchanged"
             )
             return inner

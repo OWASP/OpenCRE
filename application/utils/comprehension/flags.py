@@ -34,21 +34,23 @@ NAMES = (
     "TOPPROJECTS",  # no project named: the 3 best-matching projects each contribute sources
     "DECOMPOSE",  # multi-part questions: answer each part separately, then combine
     # RAG/OIE framework-native cutover (default off — enable on staging after ablate)
-    "LI_RETRIEVE",  # LlamaIndex QueryFusion RRF over existing dense rankings
+    "LI_RETRIEVE",  # public QueryFusionRetriever RRF (num_queries=1) over dense lists
     "LC_ROUTER",  # LangChain tool-calling intent router (owasp_agent)
     "CITATIONS",  # strip uncited sentences after synthesize
     "MODERN_RERANK",  # Cohere/LI modern rerank (prefer over/beside LLM RERANK)
 )
 
 # Alias CRE_RAG_PARITY_* → OWASP_CX_* so staging can flip either name.
+# LI_RETRIEVE and HYBRID are intentionally separate: LI_HYBRID used to alias into
+# both and forced LI fusion whenever keyword hybrid was on (confounded ablates).
+# Set OWASP_CX_LI_RETRIEVE=1 and/or OWASP_CX_HYBRID=1 explicitly (or both).
 _PARITY_ALIASES = {
-    "LI_RETRIEVE": ("CRE_RAG_PARITY_LI_RETRIEVE", "CRE_RAG_PARITY_LI_HYBRID"),
+    "LI_RETRIEVE": ("CRE_RAG_PARITY_LI_RETRIEVE",),
     "LC_ROUTER": ("CRE_RAG_PARITY_LC_ROUTER",),
     "CITATIONS": ("CRE_RAG_PARITY_CITATIONS",),
     "MODERN_RERANK": ("CRE_RAG_PARITY_MODERN_RERANK",),
-    "HYBRID": (
-        "CRE_RAG_PARITY_LI_HYBRID",
-    ),  # enabling LI hybrid also means hybrid retrieve
+    # Legacy name: keyword hybrid only (does NOT enable LI_RETRIEVE).
+    "HYBRID": ("CRE_RAG_PARITY_LI_HYBRID",),
 }
 
 

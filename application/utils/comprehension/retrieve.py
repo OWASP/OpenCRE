@@ -413,20 +413,27 @@ def fetch_comprehension_hits(
                         for h in part:
                             h.score += 0.2
                         rankings.append(part)
-            if len(rankings) == 1:
-                hits = rankings[0]
+            # When LI_RETRIEVE + HYBRID: fold keyword into QueryFusion as another list
+            # (public RRF) instead of post-hoc supplement. HYBRID alone keeps hand RRF
+            # + supplement_with_keyword (unconfounded from LI).
+            fuse_lists: List[List[LaneHit]] = list(rankings)
+            if flags.on("LI_RETRIEVE") and flags.on("HYBRID") and keyword_hits:
+                fuse_lists.append(keyword_hits)
+                keyword_hits = []
+            if len(fuse_lists) == 1:
+                hits = fuse_lists[0]
             else:
-                # Framework-native path: LlamaIndex QueryFusion RRF when LI_RETRIEVE
-                # or HYBRID is on (and LI is installed). Else hand-rolled extras.rrf.
                 hits = None
-                if flags.on("LI_RETRIEVE") or flags.on("HYBRID"):
+                if flags.on("LI_RETRIEVE"):
                     from application.utils.comprehension.li_retrieve import (
                         fuse_rankings_with_llamaindex,
                     )
 
-                    hits = fuse_rankings_with_llamaindex(rankings, key=lambda h: h.url)
+                    hits = fuse_rankings_with_llamaindex(
+                        fuse_lists, key=lambda h: h.url
+                    )
                 if hits is None:
-                    hits = rrf(rankings, key=lambda h: h.url)
+                    hits = rrf(fuse_lists, key=lambda h: h.url)
             if keyword_hits:
                 hits = supplement_with_keyword(hits, keyword_hits)
             hits = _with_talk_lane(conn, question, hits)
