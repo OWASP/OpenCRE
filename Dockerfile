@@ -2,8 +2,8 @@ FROM node:lts as build
 LABEL org.opencontainers.image.source = "https://github.com/OWASP/OpenCRE"
 WORKDIR /code
 RUN apt-get update && apt-get install -y chromium
-# node:lts no longer ships yarn (Node 26 dropped corepack); the lockfile is yarn v1
-RUN npm install -g yarn
+# node:lts may already ship yarn (EEXIST on npm install -g); lockfile is yarn v1
+RUN command -v yarn >/dev/null 2>&1 || npm install -g yarn
 COPY . /code
 RUN yarn install && yarn build
 
