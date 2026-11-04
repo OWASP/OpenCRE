@@ -373,6 +373,39 @@ def fetch_comprehension_hits(
             keyword_hits: List[LaneHit] = []
             from application.utils.comprehension.embedcache import embed_many
 
+            # TASK-14.2: LI VectorStoreIndex owns dense retrieve when LI_VSTORE is on
+            # (Postgres embeddings remain SoT). Falls back to hand path on failure.
+            if flags.on("LI_VSTORE"):
+                from application.utils.comprehension.li_vectorstore import (
+                    fetch_hits_via_vectorstore,
+                )
+
+                vstore_limit = max(wide, 300) if flags.on("TOPPROJECTS") else wide
+                vhits = fetch_hits_via_vectorstore(
+                    conn=conn,
+                    texts=texts,
+                    embed_many=lambda ts: embed_many(ts, handler.get_text_embeddings),
+                    limit=vstore_limit,
+                    where_sql=docs_where(),
+                )
+                if vhits is not None:
+                    if texts:
+                        # Keep TOPPROJECTS featured-project bias using the question vec.
+                        try:
+                            qvec = embed_many([texts[0]], handler.get_text_embeddings)[
+                                0
+                            ]
+                            _feature_projects(
+                                conn, to_pgvector_literal(list(qvec)), vhits
+                            )
+                        except Exception:  # noqa: BLE001
+                            pass
+                    hits = _with_talk_lane(conn, question, vhits)
+                    hits = _apply_authority(hits)
+                    if flags.on("EXPAND"):
+                        _expand(conn, hits[: max(k, 12)])
+                    return hits
+
             vecs = embed_many(texts, handler.get_text_embeddings)
             for t, vec in zip(texts, vecs):
                 q = to_pgvector_literal(list(vec))
@@ -415,7 +448,8 @@ def fetch_comprehension_hits(
                         rankings.append(part)
             # When LI_RETRIEVE + HYBRID: fold keyword into QueryFusion as another list
             # (public RRF) instead of post-hoc supplement. HYBRID alone keeps hand RRF
-            # + supplement_with_keyword (unconfounded from LI).
+            # + supplement_with_keyword (unconfounded from LI). HYBRID is parked
+            # (TASK-14.3) — leave gated off on staging.
             fuse_lists: List[List[LaneHit]] = list(rankings)
             if flags.on("LI_RETRIEVE") and flags.on("HYBRID") and keyword_hits:
                 fuse_lists.append(keyword_hits)
