@@ -49,6 +49,26 @@ _CRE_STYLE = re.compile(
     r"\b(map|mapping|maps|opencre|cre|mcp|what'?s new|what is new|compare|cheat ?sheet)\b",
     re.I,
 )
+_ANSWER_PLAN: dict = {}
+
+
+def _answer_plan(question: str) -> dict:
+    """LC structured plan for answer heuristics; {} when extract unavailable."""
+    if question in _ANSWER_PLAN:
+        return _ANSWER_PLAN[question]
+    plan: dict = {}
+    try:
+        from application.utils.comprehension.lc_extract import extract_answer_plan
+
+        got = extract_answer_plan(question)
+        if got:
+            plan = got
+    except Exception:  # noqa: BLE001
+        plan = {}
+    _ANSWER_PLAN[question] = plan
+    if len(_ANSWER_PLAN) > 256:
+        _ANSWER_PLAN.pop(next(iter(_ANSWER_PLAN)))
+    return plan
 
 
 def closest_projects(hits: Sequence[Any], limit: int = 3) -> List[str]:
@@ -86,7 +106,12 @@ def abstain_message(hits: Sequence[Any], question: str = "") -> str:
 
 
 def should_abstain(question: str) -> bool:
-    return abstain_enabled() and not _CRE_STYLE.search(question or "")
+    if not abstain_enabled():
+        return False
+    plan = _answer_plan(question)
+    if plan:
+        return not bool(plan.get("cre_style"))
+    return not bool(_CRE_STYLE.search(question or ""))
 
 
 _PLAN: dict = {}
@@ -360,7 +385,10 @@ _MULTIPART_RE = re.compile(
 
 
 def looks_multipart(question: str) -> bool:
-    """Cheap check so the splitting call only runs for questions that may have several parts."""
+    """True when the question has several parts — LC plan first, regex fallback."""
+    plan = _answer_plan(question)
+    if "multipart" in plan:
+        return bool(plan.get("multipart"))
     return bool(_MULTIPART_RE.search(question or ""))
 
 
@@ -469,6 +497,11 @@ def route_model(question: str) -> str:
     from application.utils.comprehension import flags
 
     if not flags.on("ROUTE"):
+        return ""
+    plan = _answer_plan(question)
+    if plan:
+        if plan.get("people_route") or plan.get("count_route"):
+            return os.environ.get("OWASP_CX_ROUTE_MODEL", "gemini/gemini-2.5-pro")
         return ""
     if _ROUTE_PEOPLE_RE.search(question or "") or _ROUTE_COUNT_RE.search(
         question or ""

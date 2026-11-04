@@ -61,8 +61,8 @@ def _external_aliases() -> dict:
     return out
 
 
-def matched_slugs(question: str, slugs: List[str], limit: int = 3) -> List[str]:
-    """Repo slugs whose alias phrase appears as whole words in the question (longest first)."""
+def _matched_slugs_phrase(question: str, slugs: List[str], limit: int = 3) -> List[str]:
+    """Phrase fallback: alias appears as whole words (longest first)."""
     q = " " + re.sub(r"[^a-z0-9]+", " ", (question or "").lower()).strip() + " "
     found = []
     ext = _external_aliases()
@@ -73,6 +73,28 @@ def matched_slugs(question: str, slugs: List[str], limit: int = 3) -> List[str]:
                 break
     found.sort(reverse=True)
     return [s for _, s in found[:limit]]
+
+
+def matched_slugs(question: str, slugs: List[str], limit: int = 3) -> List[str]:
+    """Repo slugs named in the question — LC structured extract, phrase fallback."""
+    if not slugs:
+        return []
+    ext = _external_aliases()
+    candidates = []
+    for slug in slugs:
+        alias = alias_phrase(slug)
+        extra = ", ".join(ext.get(slug, [])[:3])
+        label = f"{alias}" + (f" ({extra})" if extra else "")
+        candidates.append((slug, label))
+    try:
+        from application.utils.comprehension.lc_extract import extract_project_slugs
+
+        got = extract_project_slugs(question, candidates, limit=limit)
+        if got is not None:
+            return got
+    except Exception:  # noqa: BLE001 — never break retrieve on extract errors
+        pass
+    return _matched_slugs_phrase(question, slugs, limit=limit)
 
 
 def _known_slugs(conn) -> List[str]:
