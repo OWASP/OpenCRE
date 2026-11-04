@@ -1249,6 +1249,8 @@ def classify_intent(text: str, *, known_people: Optional[List[str]] = None) -> s
     from application.utils.owasp_agent.person_resolve import match_indexed_person
 
     # Framework-native cutover: LangChain tool-calling when OWASP_CX_LC_ROUTER=1.
+    # Soft LC intents (clarify/person/events) fall through to the regex router so
+    # normative/content asks are not misrouted (TASK-14.4; one-flag was −3.3pp).
     try:
         from application.utils.comprehension import flags as cx_flags
 
@@ -1258,7 +1260,11 @@ def classify_intent(text: str, *, known_people: Optional[List[str]] = None) -> s
             )
 
             lc_intent = classify_intent_langchain(text)
-            if lc_intent:
+            if lc_intent and lc_intent not in (
+                "clarify",
+                "person_lookup",
+                "events_near",
+            ):
                 return lc_intent
     except Exception:  # noqa: BLE001 — never break ask on router import/LLM errors
         pass

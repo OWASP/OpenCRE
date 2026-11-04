@@ -141,8 +141,14 @@ def classify_intent_langchain(
             "content": (
                 "You route OWASP community / OpenCRE questions. "
                 "Call exactly one tool that best matches the user intent. "
-                "Prefer cre_normative for standards/controls mapping; "
-                "ask_human when place/person/project is missing for a slot-heavy ask."
+                "Prefer cre_normative for how-to, mitigations, standards "
+                "(ASVS/MASVS/SAMM/Top Ten/WSTG), controls, and mapping. "
+                "Prefer project_lookup when an OWASP project/repo is named. "
+                "Use person_lookup only for who-is about a named person. "
+                "Use events_near only when a place is present. "
+                "Use ask_human only when a chapter/meetup/leader ask has no place "
+                "and no project/standard content. Never route security how-to "
+                "or false-premise security questions to ask_human/events_near."
             ),
         },
         {"role": "user", "content": text},
