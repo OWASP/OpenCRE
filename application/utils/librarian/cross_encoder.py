@@ -16,7 +16,7 @@ from cre_logging import get_logger
 logger = get_logger(__name__)
 
 import os
-from typing import Callable, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Callable, List, Mapping, Optional, Sequence, Tuple
 
 from application.utils.librarian.schemas import RetrievalAudit
 from application.utils.librarian.title_boost import (
@@ -132,28 +132,34 @@ class CrossEncoderReranker:
                 "candidates; the reranker expects exactly one score per pair"
             )
 
-        use_hybrid = (
-            self._hybrid_when_le > 0 and len(candidates) <= self._hybrid_when_le
-        )
-        if use_hybrid:
-            title_boosts = [
-                title_overlap_boost(text, blob, weight=1.0) for blob in blobs
-            ]
-            final = hybrid_rank_scores(
-                vectors=vectors,
-                ce_scores=ce_scores,
-                title_boosts=title_boosts,
-                alpha=self._hybrid_alpha,
-                beta=self._hybrid_beta,
-                gamma=self._hybrid_gamma,
-            )
+        # Prefer framework modern rerank when flagged (TASK librarian offload);
+        # title-boost / hybrid mix remains the fallback.
+        modern = _try_modern_rerank_order(text, candidates, blobs, ce_scores)
+        if modern is not None:
+            final = modern
         else:
-            final = apply_title_boost(
-                text,
-                ce_scores,
-                blobs,
-                weight=self._large_title_boost_weight,
+            use_hybrid = (
+                self._hybrid_when_le > 0 and len(candidates) <= self._hybrid_when_le
             )
+            if use_hybrid:
+                title_boosts = [
+                    title_overlap_boost(text, blob, weight=1.0) for blob in blobs
+                ]
+                final = hybrid_rank_scores(
+                    vectors=vectors,
+                    ce_scores=ce_scores,
+                    title_boosts=title_boosts,
+                    alpha=self._hybrid_alpha,
+                    beta=self._hybrid_beta,
+                    gamma=self._hybrid_gamma,
+                )
+            else:
+                final = apply_title_boost(
+                    text,
+                    ce_scores,
+                    blobs,
+                    weight=self._large_title_boost_weight,
+                )
 
         reranked = [
             c.model_copy(update={"score_rerank": float(s)})
@@ -161,6 +167,39 @@ class CrossEncoderReranker:
         ]
         reranked.sort(key=lambda c: c.score_rerank, reverse=True)
         return audit.model_copy(update={"reranked": reranked[: self._top_n]})
+
+
+def _try_modern_rerank_order(
+    query: str,
+    candidates: Sequence[Any],
+    blobs: Sequence[str],
+    ce_scores: Sequence[float],
+) -> Optional[List[float]]:
+    """Reorder via phase4 modern rerank when ``MODERN_RERANK`` is on; else ``None``."""
+    try:
+        from application.utils.comprehension import flags
+
+        if not flags.on("MODERN_RERANK"):
+            return None
+        from application.utils.rag_parity.flags import RagParityFlags
+        from application.utils.rag_parity.phase4_rerank import rerank_and_compress
+
+        docs = [(str(c.cre_id), blobs[i] or "") for i, c in enumerate(candidates)]
+        hits = rerank_and_compress(
+            query,
+            docs,
+            flags=RagParityFlags(modern_rerank=True, contextual_compression=False),
+        )
+        if not hits:
+            return None
+        by_id = {h.doc_id: float(h.score) for h in hits}
+        # Keep CE magnitude scale roughly: map modern scores onto ce range.
+        return [
+            by_id.get(str(c.cre_id), float(ce_scores[i]))
+            for i, c in enumerate(candidates)
+        ]
+    except Exception:  # noqa: BLE001
+        return None
 
 
 # Process-level CE cache: Module C grid / queue runners call build_components
