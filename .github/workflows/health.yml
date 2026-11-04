@@ -1,0 +1,71 @@
+name: Health monitor
+
+# Black-box checks of the public sites. Failures fail the run (GitHub emails the repository owners) and,
+# when the optional secrets ALERT_WEBHOOK_URL / NTFY_URL are set, also post to Slack/Discord or a phone.
+# Read-only: only GET requests; production gap analysis is never computed here (AGENTS.md).
+on:
+  schedule:
+    - cron: "*/15 * * * *" # quick checks: home page + REST API on production and staging
+    - cron: "30 6 * * *" # daily deep checks with the existing monitor scripts
+    - cron: "0 5 * * 1" # weekly: re-enable this workflow so GitHub never idles it out
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write # only used by the weekly keep-alive step
+
+concurrency:
+  group: health-monitor-${{ github.event.schedule || github.run_id }}
+  cancel-in-progress: false
+
+env:
+  ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
+  NTFY_URL: ${{ secrets.NTFY_URL }}
+
+jobs:
+  quick:
+    if: github.event.schedule == '*/15 * * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Production
+        run: python scripts/ops/health_check.py --env production --notify
+      - name: Staging (home page only; the API needs sign-in)
+        run: python scripts/ops/health_check.py --env staging --no-api --notify
+
+  deep:
+    if: github.event.schedule == '30 6 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Gap-analysis health (503s / empty results)
+        run: python scripts/monitor_ga_health.py --base-url https://opencre.org --output-json ga-health.json
+      - name: Gap-analysis completeness
+        run: python scripts/verify_ga_completeness.py --base-url https://opencre.org --output-json ga-completeness.json
+      - name: Chatbot front end (no authenticated prompts)
+        run: python scripts/monitor_chatbot_health.py --base-url https://opencre.org --output-json chatbot-health.json
+      - name: Alert on failure
+        if: failure()
+        run: python -c "from scripts.ops.notify import send_alert; print(send_alert('OpenCRE deep health check failed', 'See ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'))"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: health-reports
+          path: "*-health.json\nga-completeness.json"
+          if-no-files-found: ignore
+          retention-days: 14
+
+  keepalive:
+    if: github.event.schedule == '0 5 * * 1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Re-enable this workflow (GitHub idles scheduled workflows after 60 quiet days)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/health.yml/enable"
