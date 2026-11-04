@@ -367,13 +367,18 @@ class PublicCrePayloadHidingTest(unittest.TestCase):
         self.assertNotIn("embedding_id", cre.metadata.get("oie", {}))
         self.assertEqual(cre.description, "Public description")
 
-    def test_frontend_cre_page_renders_public_description_only(self) -> None:
+    def test_frontend_cre_page_hides_description_and_librarian_blurbs(self) -> None:
+        """Phase 1 RAG/OIE: cre.description may exist for embeddings but is not rendered.
+
+        Also keep the historical guard that librarian-private summary fields never
+        appear in the CRE detail page source.
+        """
         tsx = Path(
             "application/frontend/src/pages/CommonRequirementEnumeration/"
             "CommonRequirementEnumeration.tsx"
         ).read_text()
-        self.assertIn("cre-page__description", tsx)
-        self.assertIn("display.description", tsx)
+        self.assertNotIn("cre-page__description", tsx)
+        self.assertNotIn("display.description", tsx)
         self.assertNotIn("embeddings_content", tsx)
         self.assertNotIn("librarian_summary", tsx)
         self.assertNotIn("oie_cre_summaries", tsx)

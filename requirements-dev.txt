@@ -12,6 +12,14 @@ llama-index-core>=0.14.0
 llama-index-readers-docling>=0.4.0
 llama-index-node-parser-docling>=0.4.0
 langgraph>=0.2.0
+langchain-core>=0.3.0
+# RAG/OIE parity Phases 4–6 (optional at runtime; never on Heroku slug)
+cohere>=5.0.0
+langfuse>=2.0.0
+ragas>=0.2.0
+deepeval>=1.0.0
+opentelemetry-sdk>=1.20.0
+opentelemetry-exporter-otlp>=1.20.0
 
 # importer / embeddings scrape tooling (not needed for prod chat)
 playwright

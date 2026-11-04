@@ -33,18 +33,46 @@ NAMES = (
     "ROUTE",  # people/count questions: whole-project read with a stronger reader model
     "TOPPROJECTS",  # no project named: the 3 best-matching projects each contribute sources
     "DECOMPOSE",  # multi-part questions: answer each part separately, then combine
+    # RAG/OIE framework-native cutover (default off — enable on staging after ablate)
+    "LI_RETRIEVE",  # public QueryFusionRetriever RRF (num_queries=1) over dense lists
+    "LI_VSTORE",  # VectorStoreIndex over OpenCRE pgvector (read-only; no second SoT)
+    "LC_ROUTER",  # LangChain tool-calling intent router (owasp_agent)
+    "CITATIONS",  # strip uncited sentences after synthesize
+    "MODERN_RERANK",  # Cohere/LI modern rerank (prefer over/beside LLM RERANK)
 )
+
+# Alias CRE_RAG_PARITY_* → OWASP_CX_* so staging can flip either name.
+# LI_RETRIEVE and HYBRID are intentionally separate: LI_HYBRID used to alias into
+# both and forced LI fusion whenever keyword hybrid was on (confounded ablates).
+# Set OWASP_CX_LI_RETRIEVE=1 and/or OWASP_CX_HYBRID=1 explicitly (or both).
+_PARITY_ALIASES = {
+    "LI_RETRIEVE": ("CRE_RAG_PARITY_LI_RETRIEVE",),
+    "LI_VSTORE": ("CRE_RAG_PARITY_LI_VSTORE",),
+    "LC_ROUTER": ("CRE_RAG_PARITY_LC_ROUTER",),
+    "CITATIONS": ("CRE_RAG_PARITY_CITATIONS",),
+    "MODERN_RERANK": ("CRE_RAG_PARITY_MODERN_RERANK",),
+    # Legacy name: keyword hybrid only (does NOT enable LI_RETRIEVE).
+    "HYBRID": ("CRE_RAG_PARITY_LI_HYBRID",),
+}
 
 
 # Proven in the 246-question clean set (82.1% with it, 79.3% without), so it needs no env var.
 DEFAULT_ON = frozenset({"TOPPROJECTS"})
 
 
+def _truthy(raw: str) -> bool:
+    return raw.strip().lower() in ("1", "true", "yes", "on")
+
+
 def on(name: str) -> bool:
-    v = (os.environ.get(f"OWASP_CX_{name}", "") or "").strip().lower()
-    if not v:
-        return name in DEFAULT_ON
-    return v in ("1", "true", "yes", "on")
+    v = (os.environ.get(f"OWASP_CX_{name}", "") or "").strip()
+    if v:
+        return _truthy(v)
+    for alias in _PARITY_ALIASES.get(name, ()):
+        av = (os.environ.get(alias, "") or "").strip()
+        if av:
+            return _truthy(av)
+    return name in DEFAULT_ON
 
 
 def active() -> list:
