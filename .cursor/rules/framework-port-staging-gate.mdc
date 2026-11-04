@@ -1,0 +1,71 @@
+---
+description: Prevention gate before framework ports (LI/LC/etc.) ship to staging — behavior diff, flag/router/blend parity, embed-text verification
+alwaysApply: true
+---
+
+# Framework Port Staging Gate
+
+Before any **framework wiring or LI/LC-style port** ships to staging (LlamaIndex retrieve/hybrid/RRF, LangChain router, Docling/LI chunking swaps, modern rerank cutover, or any change that replaces hand-rolled retrieve/route/blend/embed paths), agents MUST run this gate. Do not deploy or enable staging flags until all three checks pass and are recorded in the handoff.
+
+Applies to OpenCRE ask, OWASP agent, Librarian, and related comprehension paths on homeserver staging (`deploy/staging`). Does not replace `verifiable-goals.mdc` lint/mypy/test or `production-db-ops-safety.mdc`.
+
+## When this gate is required
+
+- Wiring or swapping LlamaIndex / LangChain / Docling / modern rerank into live paths
+- Changing `CRE_RAG_PARITY_*` or `OWASP_CX_*` defaults that activate hybrid, LI retrieve, LC router, or fusion
+- Changing CRE hub (or other) embedding **text templates** or re-embed pipelines that feed search/rerank
+- Hot-patch or image deploys to staging that turn framework code paths on
+
+Skip only for pure docs, hermetic unit tests with no staging deploy, or flag-off scaffolding that cannot run in production containers.
+
+## Required checks (all must pass)
+
+### 1. Behavior diff (old vs new) on the same eval set — before deploy
+
+Measure **old path** and **new path** on the **same** fixed eval set (e.g. ask ablate `questions_abl_clean.jsonl` / designated main set; Librarian golden / live harness as appropriate).
+
+Record at least:
+
+| Dimension | What to compare |
+|-----------|-----------------|
+| Accuracy | Correct% / top-1 / family breakdown as applicable |
+| Latency | Avg (and p50 if available) end-to-end |
+| Routing | Intent/route distribution; misroutes (clarify/chapter/person on normative asks) |
+| Blending | Fusion/RRF/hybrid ranking behavior vs hand-rolled path |
+
+Do **not** ship to staging on “code looks equivalent.” Numbers first. Prefer local or flag-off vs flag-on on a non-production target; if staging is the only SoT, use a controlled ablate with rollback ready.
+
+### 2. Flag defaults, router activation, search blending — explicit parity
+
+Confirm and write down:
+
+- Flag defaults (`OWASP_CX_*`, `CRE_RAG_PARITY_*`, aliases in `comprehension/flags.py`) match the **prior** staging path unless intentionally changed
+- Router activation (e.g. `LC_ROUTER`) is not newly live merely because deps were installed or env leftovers existed — inert flags on old images must stay inert or be called out
+- Search blending (hand-rolled RRF vs LlamaIndex QueryFusion / hybrid supplement) matches the prior path unless intentionally changed
+
+Any intentional change MUST be called out in the PR/handoff (what changed, why, measured delta). Silent activation is a gate failure.
+
+### 3. Embed text contains actual content — not just an ID
+
+Before/after any embed-template or re-embed work:
+
+- Sample hub (CRE) `embeddings.embeddings_content` (and analogous node content if touched)
+- Verify description/prose fields contain **real text**, not an empty `description:` slot followed only by `id:…` / external id
+- If `cre.description` (or source prose) was updated, confirm re-embed actually refreshed `embeddings_content` (incremental skip must not leave stale empty-description vectors)
+
+SQL/sample evidence required in the handoff (e.g. ≥20 CRE rows where content includes description prose).
+
+## Ship rule (staging)
+
+Enable framework flags / cut over default paths on staging only if **accuracy and runtime are the same or better** than the recorded baseline for that eval set. Otherwise keep flags off and leave hand-rolled paths. Reference baselines from the active cre-backlog epic / latest staging ablate (e.g. ask ~67.1% / ~12.1s avg on 246 Q when that was the measured baseline).
+
+## Handoff evidence
+
+Report paths, commands, and numbers — not assertions alone:
+
+```
+framework-port gate — behavior diff: old A% / Xs vs new B% / Ys (eval set …)
+framework-port gate — flags/router/blend: match prior | intentional change: …
+framework-port gate — embed text sample: N/N rows contain description prose
+framework-port gate — ship decision: keep off | enable (criteria met)
+```

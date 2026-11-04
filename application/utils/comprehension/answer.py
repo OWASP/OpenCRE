@@ -136,28 +136,64 @@ def merge_with_dedicated(question: str, cands: Sequence[Any]) -> List[Any]:
     extra = [h for h in fetched if h.url not in seen]
     merged = list(cands) + extra
     merged.sort(key=lambda h: -float(getattr(h, "score", 0.0) or 0.0))
-    if flags.on("RERANK"):
+    if flags.on("MODERN_RERANK") or flags.on("RERANK"):
         comp = [h for h in merged if is_comprehension_hit(h)]
-        llm = flags.helper_llm()
         gap = float(os.environ.get("OWASP_CX_RERANK_GAP", "0.04"))
         close = len(comp) > 4 and (
             float(comp[0].score or 0.0) - float(comp[4].score or 0.0) < gap
         )
-        if llm and close:
-            pool = comp[:30]
-            try:
-                order = rerank_order(
-                    clean, [_split_citations(h.content)[0] for h in pool], llm
-                )
-            except Exception:
-                order = []
-            if order:
-                top = [pool[i] for i in order]
-                rest = [h for h in merged if h not in top]
-                merged = top + rest
-                for rank, h in enumerate(top):
-                    h.score = max(float(h.score or 0.0), 2.0 - 0.01 * rank)
+        if close and flags.on("MODERN_RERANK"):
+            merged = _modern_rerank_merged(clean, merged, comp)
+        elif close and flags.on("RERANK"):
+            llm = flags.helper_llm()
+            if llm:
+                pool = comp[:30]
+                try:
+                    order = rerank_order(
+                        clean, [_split_citations(h.content)[0] for h in pool], llm
+                    )
+                except Exception:
+                    order = []
+                if order:
+                    top = [pool[i] for i in order]
+                    rest = [h for h in merged if h not in top]
+                    merged = top + rest
+                    for rank, h in enumerate(top):
+                        h.score = max(float(h.score or 0.0), 2.0 - 0.01 * rank)
     return merged
+
+
+def _modern_rerank_merged(
+    question: str, merged: List[Any], comp: List[Any]
+) -> List[Any]:
+    """Prefer Cohere/LI modern rerank (phase4) when MODERN_RERANK is on."""
+    from application.utils.rag_parity.flags import RagParityFlags
+    from application.utils.rag_parity.phase4_rerank import rerank_and_compress
+
+    pool = comp[:30]
+    docs = [
+        (getattr(h, "url", str(i)), _split_citations(h.content)[0])
+        for i, h in enumerate(pool)
+    ]
+    try:
+        hits = rerank_and_compress(
+            question,
+            docs,
+            flags=RagParityFlags(modern_rerank=True, contextual_compression=False),
+        )
+    except Exception:
+        return merged
+    if not hits:
+        return merged
+    by_url = {getattr(h, "url", ""): h for h in pool}
+    top = [by_url[h.doc_id] for h in hits if h.doc_id in by_url]
+    if not top:
+        return merged
+    rest = [h for h in merged if h not in top]
+    out = top + rest
+    for rank, h in enumerate(top):
+        h.score = max(float(h.score or 0.0), 2.0 - 0.01 * rank)
+    return out
 
 
 def is_comprehension_hit(hit: Any) -> bool:

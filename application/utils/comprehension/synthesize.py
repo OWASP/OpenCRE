@@ -290,5 +290,15 @@ def synthesize(
     if extra:
         out = out.rstrip() + "\n\n" + extra
     out, number = renumber_citations(out, hits, used, cites)
+    if flags.on("CITATIONS"):
+        # Strip sentences that lost all [n] markers (uncited claims).
+        from application.utils.rag_parity.phase3_citations import (
+            synthesize_cited_answer,
+        )
+
+        out = synthesize_cited_answer(out, enabled=True)
+        # Drop cites that no longer appear after stripping.
+        kept = {int(n) for n in re.findall(r"\[(\d+)\]", out)}
+        cites = [c for i, c in enumerate(cites, start=1) if i in kept]
     _record_evidence(hits, used, number)
     return out, cites
