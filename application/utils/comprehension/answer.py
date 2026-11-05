@@ -53,16 +53,18 @@ _ANSWER_PLAN: dict = {}
 
 
 def _answer_plan(question: str) -> dict:
-    """LC structured plan for answer heuristics; {} when extract unavailable."""
+    """LC structured plan for answer heuristics; {} when extract off/unavailable."""
     if question in _ANSWER_PLAN:
         return _ANSWER_PLAN[question]
     plan: dict = {}
     try:
+        from application.utils.comprehension import flags
         from application.utils.comprehension.lc_extract import extract_answer_plan
 
-        got = extract_answer_plan(question)
-        if got:
-            plan = got
+        if flags.on("LC_EXTRACT"):
+            got = extract_answer_plan(question)
+            if got:
+                plan = got
     except Exception:  # noqa: BLE001
         plan = {}
     _ANSWER_PLAN[question] = plan
@@ -106,12 +108,15 @@ def abstain_message(hits: Sequence[Any], question: str = "") -> str:
 
 
 def should_abstain(question: str) -> bool:
+    """Hard-abstain allowed when the ask is not CRE-style (regex OR LC soft-positive)."""
     if not abstain_enabled():
         return False
+    if _CRE_STYLE.search(question or ""):
+        return False
     plan = _answer_plan(question)
-    if plan:
-        return not bool(plan.get("cre_style"))
-    return not bool(_CRE_STYLE.search(question or ""))
+    if plan.get("cre_style"):
+        return False
+    return True
 
 
 _PLAN: dict = {}
@@ -385,10 +390,10 @@ _MULTIPART_RE = re.compile(
 
 
 def looks_multipart(question: str) -> bool:
-    """True when the question has several parts — LC plan first, regex fallback."""
+    """True when the question has several parts — LC soft-positive, else regex."""
     plan = _answer_plan(question)
-    if "multipart" in plan:
-        return bool(plan.get("multipart"))
+    if plan.get("multipart"):
+        return True
     return bool(_MULTIPART_RE.search(question or ""))
 
 
@@ -499,10 +504,9 @@ def route_model(question: str) -> str:
     if not flags.on("ROUTE"):
         return ""
     plan = _answer_plan(question)
-    if plan:
-        if plan.get("people_route") or plan.get("count_route"):
-            return os.environ.get("OWASP_CX_ROUTE_MODEL", "gemini/gemini-2.5-pro")
-        return ""
+    # LC soft-positive only — False must not suppress regex people/count cues.
+    if plan.get("people_route") or plan.get("count_route"):
+        return os.environ.get("OWASP_CX_ROUTE_MODEL", "gemini/gemini-2.5-pro")
     if _ROUTE_PEOPLE_RE.search(question or "") or _ROUTE_COUNT_RE.search(
         question or ""
     ):

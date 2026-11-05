@@ -7,6 +7,9 @@ from typing import List, Sequence
 
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 _CITE = re.compile(r"\[(\d+)\]|\((?:CRE|Source)\s*[:#]?\s*[^)]+\)", re.I)
+# synthesize SYSTEM asks models to end with [1][3]; treat that as citing the whole answer.
+_TRAILING_CITES = re.compile(r"(?:\s*\[\d+\])+\s*$")
+_CITE_ONLY = re.compile(r"^(?:\s*\[\d+\])+\s*$")
 
 
 def sentences_with_citations(text: str) -> List[str]:
@@ -17,8 +20,22 @@ def sentences_with_citations(text: str) -> List[str]:
 
 
 def strip_uncited_sentences(text: str) -> str:
-    kept = sentences_with_citations(text)
-    return " ".join(kept)
+    draft = (text or "").strip()
+    if not draft:
+        return draft
+    # End-cite style: prose then trailing [n] markers — keep the full answer.
+    if _TRAILING_CITES.search(draft):
+        body = _TRAILING_CITES.sub("", draft).rstrip()
+        if body and not any(
+            _CITE.search(p) for p in _SENTENCE_SPLIT.split(body) if p.strip()
+        ):
+            return draft
+    kept = sentences_with_citations(draft)
+    cleaned = " ".join(kept)
+    # Never collapse a prose answer to citation markers only.
+    if cleaned and _CITE_ONLY.match(cleaned) and not _CITE_ONLY.match(draft):
+        return draft
+    return cleaned
 
 
 def synthesize_cited_answer(

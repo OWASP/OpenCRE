@@ -286,19 +286,18 @@ def synthesize(
     from application.utils.comprehension import paths
 
     cites = paths.order_and_cap(cites, max_resources())
-    extra = watch_lines(out, [hits[i - 1][0] for i in used])
-    if extra:
-        out = out.rstrip() + "\n\n" + extra
     out, number = renumber_citations(out, hits, used, cites)
     if flags.on("CITATIONS"):
-        # Strip sentences that lost all [n] markers (uncited claims).
+        # Strip uncited model prose before appending Watch: lines (those have no [n]).
         from application.utils.rag_parity.phase3_citations import (
             synthesize_cited_answer,
         )
 
         out = synthesize_cited_answer(out, enabled=True)
-        # Drop cites that no longer appear after stripping.
         kept = {int(n) for n in re.findall(r"\[(\d+)\]", out)}
         cites = [c for i, c in enumerate(cites, start=1) if i in kept]
+    extra = watch_lines(out, [hits[i - 1][0] for i in used])
+    if extra:
+        out = out.rstrip() + "\n\n" + extra
     _record_evidence(hits, used, number)
     return out, cites

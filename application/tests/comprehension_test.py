@@ -183,22 +183,21 @@ class ExtrasTest(unittest.TestCase):
         with mock.patch.dict(os.environ, {}, clear=False):
             for k in [k for k in os.environ if k.startswith("OWASP_CX_")]:
                 del os.environ[k]
-            # TOPPROJECTS + LI + CITATIONS + LC_ROUTER default-on
+            # TOPPROJECTS + LI default-on; LC/CITATIONS gated off until ask ≥ SoT
             self.assertEqual(
                 flags.active(),
                 [
                     "TOPPROJECTS",
                     "LI_RETRIEVE",
                     "LI_VSTORE",
-                    "LC_ROUTER",
-                    "CITATIONS",
                 ],
             )
             self.assertTrue(flags.on("TOPPROJECTS"))
             self.assertTrue(flags.on("LI_RETRIEVE"))
             self.assertTrue(flags.on("LI_VSTORE"))
-            self.assertTrue(flags.on("CITATIONS"))
-            self.assertTrue(flags.on("LC_ROUTER"))
+            self.assertFalse(flags.on("CITATIONS"))
+            self.assertFalse(flags.on("LC_ROUTER"))
+            self.assertFalse(flags.on("LC_EXTRACT"))
             self.assertNotIn("HYBRID", flags.NAMES)
             os.environ["OWASP_CX_EXPAND"] = "1"
             self.assertEqual(
@@ -208,8 +207,6 @@ class ExtrasTest(unittest.TestCase):
                     "TOPPROJECTS",
                     "LI_RETRIEVE",
                     "LI_VSTORE",
-                    "LC_ROUTER",
-                    "CITATIONS",
                 ],
             )
             os.environ.pop("OWASP_CX_EXPAND", None)

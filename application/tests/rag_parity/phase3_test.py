@@ -69,6 +69,23 @@ class CitationsTest(unittest.TestCase):
         self.assertIn("[1]", cleaned)
         self.assertNotIn("Uncited fluff", cleaned)
 
+    def test_preserves_end_cite_style_prose(self) -> None:
+        # synthesize SYSTEM asks models to end with [n] — do not reduce to markers only.
+        draft = (
+            "The OWASP SAMM is an open framework to improve software security. "
+            "It is technology and process agnostic. [1][3]"
+        )
+        cleaned = strip_uncited_sentences(draft)
+        self.assertIn("OWASP SAMM", cleaned)
+        self.assertIn("agnostic", cleaned)
+        self.assertIn("[1]", cleaned)
+
+    def test_cite_only_result_falls_back_to_draft(self) -> None:
+        draft = "Substantial prose about ASVS without inline markers. [2]"
+        cleaned = synthesize_cited_answer(draft, enabled=True)
+        self.assertIn("Substantial prose", cleaned)
+        self.assertNotEqual(cleaned.strip(), "[2]")
+
     def test_flag_off_passthrough(self) -> None:
         draft = "No cites at all."
         self.assertEqual(synthesize_cited_answer(draft, enabled=False), draft)

@@ -87,11 +87,14 @@ def matched_slugs(question: str, slugs: List[str], limit: int = 3) -> List[str]:
         label = f"{alias}" + (f" ({extra})" if extra else "")
         candidates.append((slug, label))
     try:
+        from application.utils.comprehension import flags
         from application.utils.comprehension.lc_extract import extract_project_slugs
 
-        got = extract_project_slugs(question, candidates, limit=limit)
-        if got is not None:
-            return got
+        if flags.on("LC_EXTRACT"):
+            got = extract_project_slugs(question, candidates, limit=limit)
+            # Empty list = model unsure; fall back to phrase match (do not clear hits).
+            if got:
+                return got
     except Exception:  # noqa: BLE001 — never break retrieve on extract errors
         pass
     return _matched_slugs_phrase(question, slugs, limit=limit)

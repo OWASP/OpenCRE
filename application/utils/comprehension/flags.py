@@ -36,6 +36,7 @@ NAMES = (
     "LI_RETRIEVE",  # public QueryFusionRetriever RRF (num_queries=1) over dense lists
     "LI_VSTORE",  # VectorStoreIndex over OpenCRE pgvector (read-only; no second SoT)
     "LC_ROUTER",  # LangChain tool-calling intent router (owasp_agent)
+    "LC_EXTRACT",  # LC structured extract for project slugs + answer plan
     "CITATIONS",  # strip uncited sentences after synthesize
     "MODERN_RERANK",  # Cohere/LI modern rerank (prefer over/beside LLM RERANK)
 )
@@ -47,18 +48,17 @@ _PARITY_ALIASES = {
     "LI_RETRIEVE": ("CRE_RAG_PARITY_LI_RETRIEVE",),
     "LI_VSTORE": ("CRE_RAG_PARITY_LI_VSTORE",),
     "LC_ROUTER": ("CRE_RAG_PARITY_LC_ROUTER",),
+    "LC_EXTRACT": ("CRE_RAG_PARITY_LC_EXTRACT",),
     "CITATIONS": ("CRE_RAG_PARITY_CITATIONS",),
     "MODERN_RERANK": ("CRE_RAG_PARITY_MODERN_RERANK",),
 }
 
 
 # TOPPROJECTS: proven on 246-Q clean set. LI_VSTORE+LI_RETRIEVE: accepted on staging
-# ablates (TASK-14.1/14.2); rollback = git revert (TASK-14.8). CITATIONS: strip
-# uncited sentences (TASK-14.10). Force off with =0.
-# LC_ROUTER: soft-gate + regex-first latency (TASK-14.9); force off with =0.
-DEFAULT_ON = frozenset(
-    {"TOPPROJECTS", "LI_RETRIEVE", "LI_VSTORE", "CITATIONS", "LC_ROUTER"}
-)
+# ablates (TASK-14.1/14.2); rollback = git revert (TASK-14.8).
+# CITATIONS / LC_ROUTER / LC_EXTRACT: off by default until ask ≥ LI_VSTORE SoT
+# (69.1%/8.25s); force on with =1 for gated ablates.
+DEFAULT_ON = frozenset({"TOPPROJECTS", "LI_RETRIEVE", "LI_VSTORE"})
 
 
 def _truthy(raw: str) -> bool:
