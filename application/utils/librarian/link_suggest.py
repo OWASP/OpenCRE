@@ -29,7 +29,8 @@ from application.defs import cre_defs as defs
 #: The public CRE id shape ("287-251"); everything else is treated as a row id.
 _PUBLIC_ID = re.compile(r"[0-9]{3}-[0-9]{3}")
 #: What a top_k string may be: an optional sign and ASCII digits, nothing else.
-_ASCII_INT = re.compile(r"[+-]?[0-9]+")
+#: Bounded, because int() raises its own ValueError past 4300 digits.
+_ASCII_INT = re.compile(r"[+-]?[0-9]{1,9}")
 
 #: Hard ceiling on one request's shortlist. The retriever's own top_k is the
 #: pipeline setting (20 by default); a caller may ask for fewer, never more.

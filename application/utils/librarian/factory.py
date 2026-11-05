@@ -116,11 +116,9 @@ def build_retriever_for(
         top_k=config.top_k_retrieval,
         threshold=config.link_threshold,
         pool=pool,
-        connection=(
-            database.session.connection()
-            if backend is RetrieverBackend.pgvector
-            else None
-        ),
+        # The session, not session.connection(): a Connection is closed by the
+        # next commit, and the mapping job commits after every section.
+        connection=database.session if backend is RetrieverBackend.pgvector else None,
     )
     return retriever, cre_embeddings
 

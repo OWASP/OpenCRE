@@ -1307,6 +1307,7 @@ def link_suggest() -> Any:
     try:
         from application.prompt_client import llm_error_utils
         from application.utils.librarian import link_suggest as suggest
+        from application.utils.librarian.candidate_retriever import EmptyPoolError
     except ImportError:
         abort(
             503,
@@ -1319,6 +1320,14 @@ def link_suggest() -> Any:
         results = suggest.suggest_links(database, payload, top_k=top_k)
     except suggest.InvalidStandardError as exc:
         abort(400, description=str(exc))
+    except SystemExit:
+        # The pgvector guards exit on purpose for the CLI. In a web worker that
+        # would kill the worker on every request, so it is a 503 here.
+        logger.error("link_suggest: pgvector guard refused", exc_info=True)
+        abort(503, "Link suggestion is unavailable on this deployment.")
+    except EmptyPoolError:
+        logger.error("link_suggest: no CRE embeddings to search", exc_info=True)
+        abort(503, "Link suggestion is unavailable: CRE embeddings are missing.")
     except ImportError:
         abort(
             503,

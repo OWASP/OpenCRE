@@ -18,6 +18,7 @@ from application import create_app, sqla
 from application.database import db
 from application.defs import cre_defs as defs
 from application.utils.librarian import link_suggest
+from application.utils.librarian.candidate_retriever import EmptyPoolError
 from application.utils.librarian.link_suggest import (
     DEFAULT_TOP_K,
     MAX_TOP_K,
@@ -109,7 +110,18 @@ class ClampTopKTest(unittest.TestCase):
         self.assertEqual(clamp_top_k(99), MAX_TOP_K)
 
     def test_rejects_non_positive_and_non_integer(self) -> None:
-        for bad in ("0", "-3", "x", 2.5, "--3", "\u00b2", "2_0", " 7 x", True):
+        for bad in (
+            "0",
+            "-3",
+            "x",
+            2.5,
+            "--3",
+            "\u00b2",
+            "2_0",
+            " 7 x",
+            True,
+            "9" * 5000,
+        ):
             with self.assertRaises(InvalidStandardError):
                 clamp_top_k(bad)
 
@@ -294,6 +306,31 @@ class LinkSuggestRouteTest(unittest.TestCase):
         resp = self._post(_standard(section=""))
         self.assertEqual(resp.status_code, 400)
         self.assertIn("section", resp.get_data(as_text=True))
+
+    def test_login_is_required(self) -> None:
+        os.environ.pop("NO_LOGIN", None)
+        resp = self._post(_standard())
+        self.assertEqual(resp.status_code, 401)
+
+    def test_pgvector_guard_is_a_503_and_does_not_exit_the_worker(self) -> None:
+        # Real factory on SQLite: only the backend setting is changed, because a
+        # stubbed retriever would never reach the guard that raises SystemExit.
+        with mock.patch.dict(
+            os.environ, {"CRE_LIBRARIAN_RETRIEVER_BACKEND": "pgvector"}
+        ):
+            with self.app.test_client() as c:
+                resp = c.post("/rest/v1/link/suggest", json=_standard())
+        self.assertEqual(resp.status_code, 503)
+
+    def test_empty_pool_is_a_503(self) -> None:
+        retriever = mock.Mock()
+        retriever.retrieve.side_effect = EmptyPoolError("no vectors")
+        with mock.patch.object(
+            link_suggest, "_default_retriever", return_value=retriever
+        ):
+            with self.app.test_client() as c:
+                resp = c.post("/rest/v1/link/suggest", json=_standard())
+        self.assertEqual(resp.status_code, 503)
 
     def test_bad_top_k_is_400(self) -> None:
         resp = self._post(_standard(), query="?top_k=zero")
