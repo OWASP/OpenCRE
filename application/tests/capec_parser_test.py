@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from application.defs import cre_defs as defs
 import unittest
 from application import create_app, sqla  # type: ignore
@@ -62,6 +66,13 @@ class TestCapecParser(unittest.TestCase):
                 sectionID="1",
                 section="Accessing Functionality Not Properly Constrained by ACLs",
                 version="3.7",
+                tags=[
+                    "family:taxonomy",
+                    "subtype:risk_list",
+                    "source:capec",
+                    "audience:developer",
+                    "maturity:stable",
+                ],
             ),
             defs.Standard(
                 name="CAPEC",
@@ -70,6 +81,13 @@ class TestCapecParser(unittest.TestCase):
                 sectionID="10",
                 section="Another CAPEC",
                 version="3.7",
+                tags=[
+                    "family:taxonomy",
+                    "subtype:risk_list",
+                    "source:capec",
+                    "audience:developer",
+                    "maturity:stable",
+                ],
             ),
         ]
         for name, nodes in entries.results.items():

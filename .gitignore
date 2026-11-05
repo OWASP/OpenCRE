@@ -43,6 +43,13 @@ Vagrantfile
 venv/
 venv-*/
 v/
+.venv/
+
+### Local AI/editor workspaces ###
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+.claude/
 
 ### Frontend 
 node_modules/
@@ -53,9 +60,25 @@ coverage/
 
 ### Dev db
 *.sqlite
+*.sqlite3
+*.db
+standards_cache.sqlite
 
 ### Docs
 *.md
+!AGENTS.md
+!docs/faq.md
+!docs/api/mcp.md
+!docs/Mid_eval_blog_gsoc2026/module_B_mideval_blog.md
+!docs/Final_eval_blog_gsoc2026/module_B_final_blog.md
+!application/utils/librarian/README.md
+!docs/gsoc_2026_module_c/*.md
+!docs/gsoc_2026_module_a/*.md
+!docs/Final_eval_blog_gsoc2026/*.md
+!docs/gsoc_2026_module_b/module_a_contract.md
+!docs/gsoc_2026_module_b/module_c_contract.md
+!docs/gsoc_2026_module_b/module_b_runbook.md
+!docs/gsoc_2026_module_b/final_metrics.md
 
 ### Dev DBDumps
 *.sql
@@ -70,3 +93,11 @@ tmp/
 
 ### CREs dir
 cres/*
+### Local project management tooling
+project management scripts/
+
+.harvester_cache/
+
+### Local MCP client config (machine-specific paths)
+.mcp.json
+

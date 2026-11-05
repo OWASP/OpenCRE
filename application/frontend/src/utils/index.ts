@@ -1,5 +1,6 @@
 import { DBSchema, openDB } from 'idb';
 export { groupLinksByType, LinksByType, getDocumentDisplayName } from './document';
+export { scrollMountToTop } from './scroll';
 
 const DB_NAME = 'DataCacheDB';
 const STORE_NAME = 'KeyValStore';

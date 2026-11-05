@@ -13,7 +13,15 @@ OpenCRE consists of:
 # Contribute code or mappings
 
 To see how you can contribute to the application or to the data (catalog or standard mappings), see [Contributing](docs/CONTRIBUTING.md).
+
+If this is your first code contribution, start with the [first-time contributor setup guide](docs/developmentSetup.md), then read the contribution process and quality bar.
 We really welcome you!
+
+# Documentation
+
+- [In-app Docs](https://www.opencre.org/docs) — getting started, FAQ, and interactive API reference
+- [FAQ](docs/faq.md) — frequently asked questions (also rendered at [/docs#faq](https://www.opencre.org/docs#faq))
+- [OpenAPI spec](docs/api/openapi.yaml) — public REST API (`/rest/v1/openapi.yaml` when running)
 
 # Roadmap
 
@@ -41,7 +49,7 @@ If you want to develop on OpenCRE or docker is not available in your environment
 ### Command Line
 
 To run outside of Docker you need to install OpenCRE.
-To install this application you need python3, yarn and virtualenv.
+To install this application you need Python 3.11.9, Node.js, Yarn Classic (the repository uses a Yarn v1 lockfile), and `virtualenv`. The Python version is pinned in `.python-version`; the repository does not currently pin a Node.js version.
 
 Clone the repository:
 
@@ -49,12 +57,7 @@ Clone the repository:
 git clone https://github.com/OWASP/OpenCRE
 ```
 
-(Recommended) Create and activate a Python virtual environment:
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
+`make install` creates and uses the project virtual environment. Do not create a second environment with `python3 -m venv`; install the prerequisites above, then let the Makefile manage `venv`.
 
 Install dependencies:
 
@@ -62,13 +65,21 @@ Install dependencies:
 make install
 ```
 
-Download the latest CRE graph from upstream by running:
+`make install` creates the local schema as part of installation. Download the latest CRE graph from upstream with:
 
 ```bash
 make upstream-sync
 ```
 
-Keep in mind that until [Issue #534](https://github.com/OWASP/OpenCRE/issues/534) is fixed you won't have access to gap analysis results locally.
+For contributors, this is the supported local data bootstrap path. You do
+**not** need access to the internal OpenCRE Google Sheet to work on the
+project.
+
+You can precompute local gap-analysis cache after imports with:
+
+```bash
+make backfill-gap-analysis
+```
 
 To run CRE locally then you can do:
 
@@ -82,16 +93,50 @@ To run the CLI application, you can run:
 python cre.py --help
 ```
 
-To download a remote CRE spreadsheet locally you can run:
+To export the CRE + standards taxonomy to CSV (CI-friendly), run:
 
 ```bash
-python cre.py --review --from_spreadsheet <google sheets url>
+python cre.py --export --csv <path/to/output.csv>
 ```
 
-To add a remote spreadsheet to your local database you can run:
+Example:
+
+```bash
+python cre.py --export --csv artifacts/cres_and_standards.csv
+```
+
+Notes:
+- `--export` is a dedicated export mode and exits after writing the CSV.
+- `--csv` is required when using `--export`.
+- This mode exports report data from the OpenCRE API and does not mutate the local DB.
+
+Maintainer-only: if you need to add a remote spreadsheet to your local
+database, you can run:
 
 ```bash
 python cre.py --add --from_spreadsheet <google sheets url>
+```
+
+Those spreadsheet commands are not required for ordinary contribution and local
+development. If you want to import your own mappings locally, use MyOpenCRE or
+the CSV import endpoint with imports enabled:
+
+```bash
+export CRE_ALLOW_IMPORT=true
+make start-containers
+```
+
+Then use:
+
+- `GET /rest/v1/cre_csv` to download a template
+- `POST /rest/v1/cre_csv_import` to upload your CSV after starting the local API
+- send the multipart file field as `cre_csv`
+
+Example, once `make dev-flask` is running:
+
+```bash
+curl -X POST http://localhost:5000/rest/v1/cre_csv_import \
+  -F cre_csv=@my_mappings.csv
 ```
 
 To run the web application for development you can run:
@@ -107,7 +152,7 @@ make dev-flask
 Alternatively, you can use the dockerfile with:
 
 ```bash
-make docker && make docker-run
+make docker-dev && make docker-dev-run
 ```
 
 Some features like Gap Analysis require a neo4j DB running, you can start this with:
@@ -115,6 +160,36 @@ Some features like Gap Analysis require a neo4j DB running, you can start this w
 ```bash
 make docker-neo4j
 ```
+
+To run only missing gap-analysis pair backfill (without starting Flask), use:
+
+```bash
+RUN_COUNT=8 bash scripts/backfill_gap_analysis.sh
+```
+
+### Production DB Operations (opencreorg)
+
+Prefer the dedicated scripts in `scripts/db/` for production operations. These scripts enforce safety guards and always capture a fresh backup before DB changes.
+
+- Backup only:
+  - `APP_NAME=opencreorg scripts/db/backup-opencreorg.sh`
+- Sync local Postgres to Heroku:
+  - `APP_NAME=opencreorg SOURCE_DB_URL="postgresql://cre:password@127.0.0.1:5432/cre" scripts/db/sync-local-to-opencreorg.sh`
+- Targeted SQL surgery:
+  - `APP_NAME=opencreorg scripts/db/surgery-opencreorg.sh --sql-file ./tmp/change.sql`
+
+For destructive surgery (`DELETE`, `DROP`, `TRUNCATE`, irreversible `ALTER`), use:
+
+```bash
+APP_NAME=opencreorg \
+CONFIRM_DESTRUCTIVE=I_UNDERSTAND_OPENCREORG_PROD_DB_DESTRUCTIVE_ACTION \
+scripts/db/surgery-opencreorg.sh --sql-file ./tmp/destructive-change.sql --destructive
+```
+
+Runbooks:
+
+- `docs/runbooks/opencreorg-db-sync-and-surgery.md`
+- `docs/runbooks/opencreorg-db-destructive-ops-checklist.md`
 
 Environment variables for app to connect to neo4jDB (default):
 
@@ -137,7 +212,7 @@ OpenCRE is fully supported on macOS. The following notes are optional and intend
 Install required tools using Homebrew:
 
 ```bash
-brew install python@3.11 yarn make
+brew install python@3.11 yarn make virtualenv
 ```
 
 > Note: Python 3.11 is recommended. Newer Python versions may cause dependency incompatibilities.
@@ -182,8 +257,12 @@ xcode-select --install
 Sync upstream CRE data (requires internet access):
 
 ```bash
+make migrate-upgrade
 make upstream-sync
 ```
+
+You do not need Google Sheet access for this workflow. `make upstream-sync`
+pulls the public OpenCRE graph into your local database.
 
 Then start the local server:
 
@@ -204,6 +283,8 @@ http://127.0.0.1:5000
 ## Using the OpenCRE API
 
 See [the myOpenCRE user guide](docs/my-opencre-user-guide.md) on using the OpenCRE API to, for example, add your own security guidelines and standards.
+
+For a local stdio MCP server over public REST reads, see [docs/api/mcp.md](docs/api/mcp.md).
 
 ## Docker building and running
 
@@ -232,12 +313,45 @@ Then edit `.env` and provide values appropriate for your environment.
 * Neo4j: `NEO4J_URL`
 * Redis: `REDIS_HOST`, `REDIS_PORT`, `REDIS_URL`, `REDIS_NO_SSL`
 * Flask: `FLASK_CONFIG`, `INSECURE_REQUESTS`
-* Embeddings: `NO_GEN_EMBEDDINGS`
+* Embeddings: `NO_GEN_EMBEDDINGS`, `CRE_EMBED_MODEL`, `CRE_EMBED_EXPECTED_DIM`, `CRE_VALIDATE_EMBED_DIM_ON_INIT`
+* LLM models/retries: `CRE_LLM_CHAT_MODEL`, `CRE_EMBED_ALIGN_MODEL`, `CRE_LLM_MAX_RETRIES`, `CRE_LLM_RETRY_SLEEP_SECONDS`
+* Provider credentials: `OPENAI_API_KEY`, `GEMINI_API_KEY`, `GCP_NATIVE`
 * Google Auth: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_SECRET_JSON`, `LOGIN_ALLOWED_DOMAINS`
 * GCP: `GCP_NATIVE`
 * Spreadsheet Auth: `OpenCRE_gspread_Auth`
+* Feature flags: `CRE_ENABLE_HEALTH` (enable the `GET /rest/v1/health` deploy/uptime probe; off by default, returns 404 when unset), `CRE_ENABLE_MYOPENCRE` (expose MyOpenCRE in `GET /api/capabilities`; off by default), `CRE_ENABLE_LOGIN` (expose Login/Logout UI via `capabilities.login`; off by default)
 
 See `.env.example` for full list and defaults.
+
+### LiteLLM backend (optional)
+
+OpenCRE uses LiteLLM for LLM calls. Configure models and provider credentials via environment variables.
+
+Recommended minimal example:
+
+```bash
+# Chat / completion models (LiteLLM model strings)
+CRE_LLM_CHAT_MODEL=gemini/gemini-2.5-flash
+CRE_EMBED_ALIGN_MODEL=gemini/gemini-2.5-flash
+
+# Embedding model used for persisted vectors
+CRE_EMBED_MODEL=gemini/gemini-embedding-001
+CRE_EMBED_EXPECTED_DIM=3072
+CRE_VALIDATE_EMBED_DIM_ON_INIT=1
+
+# Retry policy
+CRE_LLM_MAX_RETRIES=2
+CRE_LLM_RETRY_SLEEP_SECONDS=15
+
+# Provider credential (example for Gemini)
+GEMINI_API_KEY=your-key
+```
+
+Notes:
+
+* Treat changes to `CRE_EMBED_MODEL` or `CRE_EMBED_EXPECTED_DIM` as a data migration event (usually requires re-embedding).
+* `CRE_EMBED_EXPECTED_DIM` is a safety guard: writes fail fast on dimension mismatch.
+* Keep chat/alignment models and embedding model independently configurable; only embeddings must remain dimension-compatible with stored vectors.
 
 You can run the containers with:
 
@@ -261,6 +375,25 @@ make cover
 ```
 
 Try to keep the coverage above 70%.
+
+### Frontend end-to-end tests (Cypress)
+
+Frontend E2E tests run with [Cypress](https://www.cypress.io/) against a local Flask server.
+First seed a local database — this builds the schema from the ORM models and loads a small
+checked-in fixture graph into `./standards_cache.sqlite` — then run the suite headlessly:
+
+```bash
+make e2e-db   # rebuild and populate the local SQLite cache (discards any existing cache)
+make e2e      # build the frontend, start Flask on 127.0.0.1:5000, run Cypress
+```
+
+To watch the tests run interactively, start the backend in one terminal and open Cypress in
+another (after seeding with `make e2e-db`):
+
+```bash
+make dev-flask       # terminal 1: serves http://127.0.0.1:5000
+yarn cypress:open    # terminal 2: opens the Cypress runner
+```
 
 ---
 

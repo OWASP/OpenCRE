@@ -1,19 +1,16 @@
-from pprint import pprint
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import csv
 import io
-import logging
 from copy import deepcopy
 from typing import Any, Dict, List, Optional, Set
 import os
-import gspread
 import yaml
 from application.database import db
 from application.defs import cre_defs as defs
 from enum import Enum
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-logging.basicConfig()
 
 
 class GspreadAuth(Enum):
@@ -26,6 +23,26 @@ def findDups(x):
     return {val for val in x if (val in seen or seen.add(val))}
 
 
+def _records_from_worksheet_values(rows: List[List[Any]]) -> List[Dict[str, Any]]:
+    """Build row dicts from raw worksheet cell values without numeric coercion.
+
+    Uses the first row as column headers. Short data rows are padded with empty
+    strings. Raises ``ValueError`` when duplicate header names are present
+    so callers fail fast instead of silently collapsing columns in ``dict(zip)``.
+    """
+    if not rows:
+        return []
+    headers = rows[0]
+    duplicates = sorted(findDups(headers))
+    if duplicates:
+        raise ValueError(f"Duplicate worksheet headers: {duplicates}")
+    records: List[Dict[str, Any]] = []
+    for row in rows[1:]:
+        padded = list(row) + [""] * max(0, len(headers) - len(row))
+        records.append(dict(zip(headers, padded[: len(headers)], strict=True)))
+    return records
+
+
 def load_csv():
     pass
 
@@ -35,7 +52,10 @@ def read_spreadsheet(
 ) -> Dict[str, Any]:
     """given remote google spreadsheet url,
     reads each workbook into a collection of documents"""
+    import gspread  # lazy: Google Sheets import is CLI/local only
+
     result = {}
+    wsh = None
     try:
         if (
             os.environ.get("OpenCRE_gspread_Auth")
@@ -58,32 +78,25 @@ def read_spreadsheet(
                     "(remember, only numbered worksheets"
                     " will be processed by convention)" % wsh.title
                 )
-                records = wsh.get_all_records(
-                    head=1,
-                    numericise_ignore=list(
-                        range(1, wsh.col_count)
-                    ),  # Added numericise_ignore parameter
-                )  # workaround because of https://github.com/burnash/gspread/issues/1007 # this will break if the column names are in any other line
+                records = _records_from_worksheet_values(wsh.get_all_values())
                 toyaml = yaml.safe_load(yaml.safe_dump(records))
                 result[wsh.title] = toyaml
             elif not parse_numbered_only:
-                records = wsh.get_all_records(
-                    head=1,
-                    numericise_ignore=list(
-                        range(1, wsh.col_count)
-                    ),  # Added numericise_ignore parameter -- DO NOT make this 'all', gspread has a bug
-                )  # workaround because of https://github.com/burnash/gspread/issues/1007 # this will break if the column names are in any other line
+                records = _records_from_worksheet_values(wsh.get_all_values())
                 toyaml = yaml.safe_load(yaml.safe_dump(records))
                 result[wsh.title] = toyaml
     except gspread.exceptions.APIError as ae:
         logger.error('Error opening spreadsheet "%s" : "%s"' % (alias, url))
         logger.error(ae)
         exit(1)
-    except gspread.exceptions.GSpreadException as gse:
-        logger.error(
-            "If this exception says you have a duplicate cell name, the duplicate is",
-            findDups(wsh.row_values(1)),
-        )
+    except (gspread.exceptions.GSpreadException, ValueError) as gse:
+        if wsh is not None:
+            logger.error(
+                "If this exception says you have a duplicate cell name, the duplicate is",
+                findDups(wsh.row_values(1)),
+            )
+        else:
+            logger.error("Spreadsheet error before worksheets were loaded: %s", gse)
 
     return result
 
@@ -290,6 +303,8 @@ def write_csv(docs: List[Dict[str, Any]]) -> io.StringIO:
 
 def write_spreadsheet(title: str, docs: List[Dict[str, Any]], emails: List[str]) -> str:
     """upload local array of flat yamls to url, share with email list"""
+    import gspread  # lazy: Google Sheets write is CLI/local only
+
     gc = gspread.oauth()  # oauth config,
     # TODO (northdpole): make this configurable
     sh = gc.create("0." + title)

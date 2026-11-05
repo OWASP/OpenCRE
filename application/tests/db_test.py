@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import networkx as nx
 from application.utils.gap_analysis import make_resources_key, make_subresources_key
 import string
@@ -9,7 +13,6 @@ from unittest import mock
 from unittest.mock import patch
 import uuid
 from copy import copy, deepcopy
-from pprint import pprint
 from typing import Any, Dict, List, Union
 from flask import json as flask_json
 
@@ -124,6 +127,42 @@ class TestDB(unittest.TestCase):
 
         self.assertEqual(self.collection.get_by_tags([]), [])
         self.assertEqual(self.collection.get_by_tags(["this should not be a tag"]), [])
+
+    @patch("application.database.db.logger")
+    def test_get_by_tags_empty_nodes_regression(self, mock_logger) -> None:
+        """
+        Simulate get_nodes returning an empty list to test the error path in get_by_tags.
+        See PR #837 regression fix.
+        """
+        dbstandard = db.Node(
+            section="regression_section",
+            name="regression_name",
+            tags="regression_tag",
+            ntype=defs.Standard.__name__,
+        )
+        self.collection.session.add(dbstandard)
+        self.collection.session.commit()
+
+        with patch.object(
+            self.collection, "get_nodes", return_value=[]
+        ) as mock_get_nodes:
+            res = self.collection.get_by_tags(["regression_tag"])
+            self.assertEqual(res, [])
+
+            mock_get_nodes.assert_called_once_with(
+                name=dbstandard.name,
+                section=dbstandard.section,
+                subsection=dbstandard.subsection,
+                version=dbstandard.version,
+                link=dbstandard.link,
+                ntype=dbstandard.ntype,
+                sectionID=dbstandard.section_id,
+            )
+
+            mock_logger.fatal.assert_called_once_with(
+                "get_nodes() returned no documents for Node %s:%s:%s that exists, BUG!"
+                % (dbstandard.name, dbstandard.section, dbstandard.section_id)
+            )
 
     def test_get_standards_names(self) -> None:
         result = self.collection.get_node_names()
@@ -280,6 +319,25 @@ class TestDB(unittest.TestCase):
         with open(os.path.join(loc, crename), "r") as f:
             doc = yaml.safe_load(f)
             self.assertCountEqual(cre, doc)
+
+    def test_export_filenames_are_safe(self) -> None:
+        loc = tempfile.mkdtemp()
+        collection = db.Node_collection().with_graph()
+        collection.add_node(
+            defs.Standard(
+                name="A01:2021",
+                section="Broken Access Control",
+                sectionID="A01:2021",
+                hyperlink="https://example.com/a01",
+            )
+        )
+        collection.export(loc)
+        reserved = set('<>:"/\\|?*')
+        for name in os.listdir(loc):
+            self.assertFalse(
+                reserved & set(name),
+                f"exported filename contains a reserved character: {name}",
+            )
 
     def test_StandardFromDB(self) -> None:
         expected = defs.Standard(
@@ -745,6 +803,49 @@ class TestDB(unittest.TestCase):
 
         self.assertEqual([c_id_only], collection.get_CREs(internal_id=db_id_only.id))
 
+    @patch.object(db.Node_collection, "get_CREs")
+    def test_get_cre_by_db_id_returns_none_when_get_cres_empty(
+        self, get_cres_mock
+    ) -> None:
+        get_cres_mock.return_value = []
+        result = self.collection.get_cre_by_db_id(self.dbcre.id)
+        self.assertIsNone(result)
+        get_cres_mock.assert_called_once_with(external_id=self.dbcre.external_id)
+
+    def test_get_all_nodes_and_cres_does_not_use_per_id_lookups(self) -> None:
+        with patch.object(self.collection, "get_cre_by_db_id") as per_cre:
+            with patch.object(self.collection, "get_nodes") as per_node:
+                docs = self.collection._Node_collection__get_all_nodes_and_cres()
+        per_cre.assert_not_called()
+        per_node.assert_not_called()
+        self.assertGreaterEqual(len(docs), 4)  # 2 CREs + BarStand + Unlinked
+
+    def test_get_all_nodes_and_cres_cres_only_skips_nodes(self) -> None:
+        docs = self.collection._Node_collection__get_all_nodes_and_cres(cres_only=True)
+        self.assertTrue(all(d.doctype == defs.Credoctypes.CRE for d in docs))
+        self.assertCountEqual(["CREname", "GroupName"], [d.name for d in docs])
+        cre = next(d for d in docs if d.name == "CREname")
+        self.assertTrue(
+            any(
+                link.document.name == "BarStand"
+                for link in cre.links
+                if link.document.doctype != defs.Credoctypes.CRE
+            )
+        )
+
+    def test_get_all_nodes_and_cres_hydrates_same_as_per_id(self) -> None:
+        batch = self.collection._Node_collection__get_all_nodes_and_cres()
+        batch_cres = {d.id: d for d in batch if d.doctype == defs.Credoctypes.CRE}
+        for db_id in [row[0] for row in self.collection.session.query(db.CRE.id).all()]:
+            per_id = self.collection.get_cre_by_db_id(db_id)
+            self.assertIsNotNone(per_id)
+            self.assertEqual(per_id.todict(), batch_cres[per_id.id].todict())
+        batch_nodes = [d for d in batch if d.doctype != defs.Credoctypes.CRE]
+        self.assertTrue(any(n.name == "BarStand" for n in batch_nodes))
+        self.assertTrue(any(n.name == "Unlinked" for n in batch_nodes))
+        bar = next(n for n in batch_nodes if n.name == "BarStand")
+        self.assertTrue(any(link.document.name == "CREname" for link in bar.links))
+
     def test_get_standards(self) -> None:
         """Given: a Standard 'S1' that links to cres
         return the Standard in Document format"""
@@ -1045,6 +1146,33 @@ class TestDB(unittest.TestCase):
             res = self.collection.text_search(k)
             self.assertCountEqual(res, val)
 
+    def test_text_search_expands_xxe_aliases(self) -> None:
+        xxe_cre = defs.CRE(
+            id="764-507",
+            name="Restrict XML parsing (against XXE)",
+        )
+        cwe_611 = defs.Standard(
+            name="CWE",
+            section="Improper Restriction of XML External Entity Reference",
+            sectionID="611",
+            hyperlink="https://cwe.mitre.org/data/definitions/611.html",
+        )
+
+        self.collection.add_cre(xxe_cre)
+        self.collection.add_node(cwe_611)
+
+        results = self.collection.text_search("XXE")
+
+        self.assertIn("764-507", [doc.id for doc in results if doc.doctype == "CRE"])
+        self.assertTrue(
+            any(
+                doc.doctype == "Standard"
+                and doc.name == "CWE"
+                and doc.sectionID == "611"
+                for doc in results
+            )
+        )
+
     def test_dbNodeFromNode(self) -> None:
         data = {
             "tool": defs.Tool(
@@ -1083,7 +1211,7 @@ class TestDB(unittest.TestCase):
                 name="ccc",
                 description="c2",
                 link="https://example.com/code/hyperlink",
-                tags="1,2",
+                tags="111-111,222-222",
                 ntype=defs.Credoctypes.Code.value,
             ),
         }
@@ -1269,6 +1397,145 @@ class TestDB(unittest.TestCase):
         self.assertEqual(
             db.gap_analysis(collection.neo_db, ["788-788", "b"]),
             (["788-788", "b"], {}, {}),
+        )
+        self.assertFalse(
+            collection.gap_analysis_exists(make_resources_key(["788-788", "b"])),
+            "empty grouped_paths must not be written as a SQL GA cache row",
+        )
+
+    @patch.object(db.NEO_DB, "gap_analysis")
+    def test_gap_analysis_paths_without_base_standard_nodes(self, gap_mock):
+        """Neo paths whose starts were missing from ``base_standard`` must still persist."""
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+        path = [
+            {
+                "end": defs.CRE(name="bob", id="111-111"),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="788-788"),
+            },
+            {
+                "end": defs.CRE(name="bob", id="222-222"),
+                "relationship": "LINKED_TO",
+                "start": defs.CRE(name="bob", id="788-788"),
+            },
+        ]
+        gap_mock.return_value = (
+            [],
+            [
+                {
+                    "start": defs.CRE(name="bob", id="788-788"),
+                    "end": defs.CRE(name="bob", id="788-789"),
+                    "path": path,
+                }
+            ],
+        )
+        expected = (
+            ["788-788", "788-789"],
+            {
+                "788-788": {
+                    "start": defs.CRE(name="bob", id="788-788"),
+                    "paths": {
+                        "788-789": {
+                            "end": defs.CRE(name="bob", id="788-789"),
+                            "path": path,
+                            "score": 0,
+                        }
+                    },
+                    "extra": 0,
+                }
+            },
+            {"788-788": {"paths": {}}},
+        )
+        self.maxDiff = None
+        self.assertEqual(
+            db.gap_analysis(collection.neo_db, ["788-788", "788-789"]), expected
+        )
+        self.assertTrue(
+            collection.gap_analysis_exists(make_resources_key(["788-788", "788-789"])),
+        )
+
+    def test_add_gap_analysis_result_skips_empty_primary_insert(self):
+        collection = db.Node_collection()
+        key = make_resources_key(["788-788", "b"])
+        collection.add_gap_analysis_result(key, '{"result": {}}')
+        self.assertIsNone(
+            collection.session.query(db.GapAnalysisResults)
+            .filter(db.GapAnalysisResults.cache_key == key)
+            .first()
+        )
+        self.assertFalse(collection.gap_analysis_exists(key))
+
+    def test_add_gap_analysis_result_does_not_clobber_material_primary(self):
+        collection = db.Node_collection()
+        key = make_resources_key(["788-788", "b"])
+        material = '{"result": {"111-111": {"paths": {}}}}'
+        collection.add_gap_analysis_result(key, material)
+        collection.add_gap_analysis_result(key, '{"result": {}}')
+        row = (
+            collection.session.query(db.GapAnalysisResults)
+            .filter(db.GapAnalysisResults.cache_key == key)
+            .first()
+        )
+        self.assertEqual(row.ga_object, material)
+        self.assertTrue(collection.gap_analysis_exists(key))
+
+    def test_add_gap_analysis_result_allows_material_over_empty_primary(self):
+        collection = db.Node_collection()
+        key = make_resources_key(["788-788", "b"])
+        collection.session.add(
+            db.GapAnalysisResults(cache_key=key, ga_object='{"result": {}}')
+        )
+        collection.session.commit()
+        material = '{"result": {"111-111": {"paths": {}}}}'
+        collection.add_gap_analysis_result(key, material)
+        row = (
+            collection.session.query(db.GapAnalysisResults)
+            .filter(db.GapAnalysisResults.cache_key == key)
+            .first()
+        )
+        self.assertEqual(row.ga_object, material)
+
+    def test_add_gap_analysis_result_allows_empty_subresource(self):
+        collection = db.Node_collection()
+        sub = make_subresources_key(["788-788", "b"], "111-111")
+        collection.add_gap_analysis_result(sub, '{"result": {}}')
+        row = (
+            collection.session.query(db.GapAnalysisResults)
+            .filter(db.GapAnalysisResults.cache_key == sub)
+            .first()
+        )
+        self.assertIsNotNone(row)
+        self.assertEqual(row.ga_object, '{"result": {}}')
+
+    @patch.object(db.NEO_DB, "gap_analysis")
+    def test_gap_analysis_removes_stale_empty_primary_when_neo_empty(self, gap_mock):
+        """Placeholder ``{"result":{}}`` rows must not survive a recompute with no Neo paths."""
+        collection = db.Node_collection()
+        collection.neo_db.connected = True
+        key = make_resources_key(["788-788", "b"])
+        collection.session.add(
+            db.GapAnalysisResults(cache_key=key, ga_object='{"result": {}}')
+        )
+        sub = make_subresources_key(["788-788", "b"], "111-111")
+        collection.session.add(
+            db.GapAnalysisResults(cache_key=sub, ga_object='{"result": {}}')
+        )
+        collection.session.commit()
+        self.assertFalse(collection.gap_analysis_exists(key))
+
+        gap_mock.return_value = ([], [])
+        db.gap_analysis(collection.neo_db, ["788-788", "b"])
+
+        self.assertIsNone(
+            collection.session.query(db.GapAnalysisResults)
+            .filter(db.GapAnalysisResults.cache_key == key)
+            .first(),
+        )
+        self.assertIsNone(
+            collection.session.query(db.GapAnalysisResults)
+            .filter(db.GapAnalysisResults.cache_key == sub)
+            .first(),
         )
 
     @patch.object(db.NEO_DB, "gap_analysis")
@@ -2147,6 +2414,144 @@ class TestDB(unittest.TestCase):
         )
         self.assertEqual(tool_emb, {})
 
+    def test_delete_all_embeddings(self):
+        dbsa = db.Node(
+            subsection="",
+            section="Sec",
+            name="DelEmbTestStd",
+            link="https://example.com/x",
+            ntype=defs.Credoctypes.Standard.value,
+        )
+        self.collection.session.add(dbsa)
+        self.collection.session.commit()
+        embeddings = [random.uniform(-1, 1) for e in range(0, 768)]
+        self.collection.add_embedding(
+            db_object=dbsa,
+            doctype=defs.Credoctypes.Standard.value,
+            embeddings=embeddings,
+            embedding_text="x",
+        )
+        self.assertIsNotNone(self.collection.get_embedding(dbsa.id))
+        n = self.collection.delete_all_embeddings()
+        self.assertGreaterEqual(n, 1)
+        self.assertEqual(self.collection.get_embedding(dbsa.id), [])
+
+    def test_add_embedding_rejects_unexpected_dimension(self):
+        dbsa = db.Node(
+            subsection="",
+            section="Sec",
+            name="DimGuardStd",
+            link="https://example.com/d",
+            ntype=defs.Credoctypes.Standard.value,
+        )
+        self.collection.session.add(dbsa)
+        self.collection.session.commit()
+        os.environ["CRE_EMBED_EXPECTED_DIM"] = "3"
+        try:
+            with self.assertRaises(ValueError):
+                self.collection.add_embedding(
+                    db_object=dbsa,
+                    doctype=defs.Credoctypes.Standard.value,
+                    embeddings=[0.1, 0.2],
+                    embedding_text="x",
+                )
+        finally:
+            os.environ.pop("CRE_EMBED_EXPECTED_DIM", None)
+
+    def test_add_embedding_persists_embedding_contract_metadata(self):
+        dbsa = db.Node(
+            subsection="",
+            section="Sec",
+            name="MetaStd",
+            link="https://example.com/m",
+            ntype=defs.Credoctypes.Standard.value,
+        )
+        self.collection.session.add(dbsa)
+        self.collection.session.commit()
+        os.environ["CRE_EMBED_MODEL"] = "openai/text-embedding-3-small"
+        try:
+            self.collection.add_embedding(
+                db_object=dbsa,
+                doctype=defs.Credoctypes.Standard.value,
+                embeddings=[0.1, 0.2, 0.3],
+                embedding_text="x",
+            )
+            row = self.collection.get_embedding(dbsa.id)[0]
+            self.assertEqual(row.embedding_model_id, "openai/text-embedding-3-small")
+            self.assertEqual(row.embedding_dim, 3)
+        finally:
+            os.environ.pop("CRE_EMBED_MODEL", None)
+
+    def test_add_embedding_writes_embedding_vec_literal(self):
+        """Vectors are stored only in embedding_vec (#977 option C)."""
+        from application.database.pgvector_utils import to_pgvector_literal
+
+        dbsa = db.Node(
+            subsection="",
+            section="Sec",
+            name="DualWriteStd",
+            link="https://example.com/dw",
+            ntype=defs.Credoctypes.Standard.value,
+        )
+        self.collection.session.add(dbsa)
+        self.collection.session.commit()
+        vec = [0.1, 0.2, 0.3]
+        self.collection.add_embedding(
+            db_object=dbsa,
+            doctype=defs.Credoctypes.Standard.value,
+            embeddings=vec,
+            embedding_text="vec-only",
+        )
+        row = self.collection.get_embedding(dbsa.id)[0]
+        self.assertNotIn("embeddings", type(row).__table__.c)
+        self.assertEqual(row.embeddings_content, "vec-only")
+        self.assertEqual(row.embedding_vec, to_pgvector_literal(vec))
+        self.assertEqual(row.embedding_dim, 3)
+        by_type = self.collection.get_embeddings_by_doc_type(
+            defs.Credoctypes.Standard.value
+        )
+        self.assertEqual(by_type[dbsa.id], vec)
+
+    def test_assert_embedding_contract_fails_on_mixed_dimensions(self):
+        n1 = db.Node(
+            subsection="",
+            section="Sec",
+            name="D1",
+            link="https://example.com/d1",
+            ntype=defs.Credoctypes.Standard.value,
+        )
+        n2 = db.Node(
+            subsection="",
+            section="Sec",
+            name="D2",
+            link="https://example.com/d2",
+            ntype=defs.Credoctypes.Standard.value,
+        )
+        self.collection.session.add(n1)
+        self.collection.session.add(n2)
+        self.collection.session.commit()
+        os.environ["CRE_EMBED_MODEL"] = "openai/text-embedding-3-small"
+        try:
+            self.collection.add_embedding(
+                db_object=n1,
+                doctype=defs.Credoctypes.Standard.value,
+                embeddings=[0.1, 0.2],
+                embedding_text="x",
+            )
+            self.collection.add_embedding(
+                db_object=n2,
+                doctype=defs.Credoctypes.Standard.value,
+                embeddings=[0.1, 0.2, 0.3],
+                embedding_text="x",
+            )
+            with self.assertRaises(RuntimeError):
+                self.collection.assert_embedding_contract(
+                    expected_model_id="openai/text-embedding-3-small",
+                    expected_dim=2,
+                )
+        finally:
+            os.environ.pop("CRE_EMBED_MODEL", None)
+
     def test_get_standard_names(self):
         for s in ["sa", "sb", "sc", "sd"]:
             for sub in ["suba", "subb", "subc", "subd"]:
@@ -2158,7 +2563,32 @@ class TestDB(unittest.TestCase):
             self.collection.standards(),
         )
 
-    def test_all_cres_with_pagination(self):
+    def test_delete_gapanalysis_results_for_deletes_and_logs_count(self):
+        node_name = "BarStand"
+        key_1 = f"cache-{node_name}-1"
+        key_2 = f"cache-{node_name}-2"
+        unrelated_key = "cache-unrelated"
+        material = '{"result": {"111-111": {"paths": {}}}}'
+
+        # Insert rows directly: add_gap_analysis_result skips empty primary payloads.
+        for key in (key_1, key_2, unrelated_key):
+            self.collection.session.add(
+                db.GapAnalysisResults(cache_key=key, ga_object=material)
+            )
+        self.collection.session.commit()
+
+        with patch.object(db.logger, "info") as logger_info:
+            deleted = self.collection.delete_gapanalysis_results_for(node_name)
+
+        self.assertEqual(2, len(deleted))
+        self.assertFalse(self.collection.gap_analysis_exists(key_1))
+        self.assertFalse(self.collection.gap_analysis_exists(key_2))
+        self.assertTrue(self.collection.gap_analysis_exists(unrelated_key))
+        logger_info.assert_any_call(
+            "deleted %s gap analysis result objects for node %s", 2, node_name
+        )
+
+    def test_all_cres_with_pagination_with_single_digit_cre_ids(self):
         """"""
         cres = []
         nodes = []
@@ -2172,7 +2602,7 @@ class TestDB(unittest.TestCase):
             if i == 0 or i == 1:
                 cres.append(defs.CRE(name=f">> C{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
             else:
-                cres.append(defs.CRE(name=f"C{i}", id=f"{i}"))
+                cres.append(defs.CRE(name=f"C{i}", id=f"{i}{i}{i}-{i}{i}{i}"))
 
             dbcres.append(collection.add_cre(cres[i]))
             nodes.append(defs.Standard(section=f"S{i}", name=f"N{i}"))
@@ -2231,6 +2661,65 @@ class TestDB(unittest.TestCase):
         self.assertEqual(paginated_cres, [cres[0], cres[1]])
         self.assertEqual(page, 1)
         self.assertEqual(total_pages, 4)
+
+    def test_all_cres_with_pagination_hydrates_full_link_graph(self) -> None:
+        """Batch pagination must return the same link graph as get_CREs per CRE."""
+        sqla.session.remove()
+        sqla.drop_all()
+        sqla.create_all()
+        collection = db.Node_collection().with_graph()
+        parent = defs.CRE(name="Parent", id="100-100")
+        child1 = defs.CRE(name="Child1", id="101-101")
+        child2 = defs.CRE(name="Child2", id="102-102")
+        sibling = defs.CRE(name="Sibling", id="103-103")
+        std1 = defs.Standard(name="StdParent", section="SP")
+        std2 = defs.Standard(name="StdChild", section="SC")
+
+        db_parent = collection.add_cre(parent)
+        db_child1 = collection.add_cre(child1)
+        db_child2 = collection.add_cre(child2)
+        db_sibling = collection.add_cre(sibling)
+        db_std1 = collection.add_node(std1)
+        db_std2 = collection.add_node(std2)
+
+        collection.add_internal_link(
+            higher=db_parent, lower=db_child1, ltype=defs.LinkTypes.Contains
+        )
+        collection.add_internal_link(
+            higher=db_parent, lower=db_child2, ltype=defs.LinkTypes.Contains
+        )
+        collection.add_internal_link(
+            higher=db_sibling, lower=db_child2, ltype=defs.LinkTypes.Related
+        )
+        collection.add_link(cre=db_parent, node=db_std1, ltype=defs.LinkTypes.LinkedTo)
+        collection.add_link(cre=db_child1, node=db_std2, ltype=defs.LinkTypes.LinkedTo)
+        collection.session.commit()
+
+        paginated_cres, page, total_pages = collection.all_cres_with_pagination(
+            page=1, per_page=5
+        )
+
+        self.assertEqual(page, 1)
+        self.assertEqual(total_pages, 1)
+        self.assertEqual(4, len(paginated_cres))
+
+        for paginated_cre in paginated_cres:
+            expected = collection.get_CREs(external_id=paginated_cre.id)[0]
+            expected_dict = expected.todict()
+            actual_dict = paginated_cre.todict()
+            self.assertEqual(expected_dict["id"], actual_dict["id"])
+            self.assertEqual(expected_dict["name"], actual_dict["name"])
+            self.assertEqual(
+                expected_dict.get("description"), actual_dict.get("description")
+            )
+            self.assertCountEqual(
+                expected_dict.get("links", []), actual_dict.get("links", [])
+            )
+
+        child1_paginated = next(c for c in paginated_cres if c.id == "101-101")
+        link_types = {link.ltype for link in child1_paginated.links}
+        self.assertIn(defs.LinkTypes.PartOf, link_types)
+        self.assertIn(defs.LinkTypes.LinkedTo, link_types)
 
     def test_get_cre_hierarchy(self) -> None:
         # this needs a clean database and a clean graph so reinit everything

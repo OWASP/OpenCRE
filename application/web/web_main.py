@@ -1,38 +1,44 @@
 # type: ignore
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 # silence mypy for the routes file
 import csv
 from functools import wraps
 import json
-import logging
 import os
 import io
 import pathlib
 import re
 import urllib.parse
-from alive_progress import alive_bar
 from typing import Any
-from application.utils import oscal_utils, redis
 
 from rq import job, exceptions
+from rq import Queue
 
-from application.utils import spreadsheet_parsers
-from application.utils import oscal_utils, redis
+from application.utils import redis
 from application.database import db
-from application.cmd import cre_main
 from application.defs import cre_defs as defs
 from application.defs import cre_exceptions
-from application.config import ENABLE_MYOPENCRE
-
+from application.feature_flags import (
+    is_cre_import_allowed,
+    is_health_endpoint_enabled,
+    is_login_enabled,
+    is_myopencre_enabled,
+)
+from application.web import identity
 from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors, gap_analysis
-from application.prompt_client import prompt_client as prompt_client
+from application.web.openapi_registry import openapi_documented
 from enum import Enum
 from flask import json as flask_json
 from flask import (
     Blueprint,
     abort,
     jsonify,
+    make_response,
     redirect,
     request,
     send_from_directory,
@@ -42,12 +48,38 @@ from flask import (
 )
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
+from sqlalchemy.exc import SQLAlchemyError
 from application.utils.spreadsheet import write_csv
 import oauthlib
 import google.auth.transport.requests
 
-
 ITEMS_PER_PAGE = 20
+MAX_ITEMS_PER_PAGE = 100
+OPENCRE_STANDARD_NAME = gap_analysis.OPENCRE_STANDARD_NAME
+
+
+def _llm_error_status_code(err: BaseException) -> int | None:
+    """Best-effort extraction of an HTTP-like status code from provider errors."""
+    for attr in ("status", "status_code", "http_status", "code"):
+        value = getattr(err, attr, None)
+        if isinstance(value, int) and 400 <= value <= 599:
+            return value
+
+    if isinstance(getattr(err, "args", None), tuple) and err.args:
+        nested = err.args[0]
+        if isinstance(nested, dict):
+            for key in ("code", "status_code"):
+                value = nested.get(key)
+                if isinstance(value, int) and 400 <= value <= 599:
+                    return value
+            nested_error = nested.get("error")
+            if isinstance(nested_error, dict):
+                for key in ("code", "status_code"):
+                    value = nested_error.get(key)
+                    if isinstance(value, int) and 400 <= value <= 599:
+                        return value
+    return None
+
 
 app = Blueprint(
     "web",
@@ -57,9 +89,30 @@ app = Blueprint(
     ),
 )
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+
+def _ga_timeout_seconds() -> int:
+    raw = str(gap_analysis.GAP_ANALYSIS_TIMEOUT or "129600s")
+    m = re.match(r"^\s*(\d+)\s*s?\s*$", raw)
+    if m:
+        return int(m.group(1))
+    return 129600
+
+
+def _is_heroku_deploy() -> bool:
+    """True on Heroku/read-only web dynos where GA must be served from SQL cache only."""
+    return os.environ.get("DYNO") is not None or bool(os.environ.get("HEROKU"))
+
+
+def _compute_ga_without_redis(
+    database: db.Node_collection, standards: list[str]
+) -> dict:
+    cache_key = gap_analysis.make_resources_key(standards)
+    db.gap_analysis(neo_db=database.neo_db, node_names=standards, cache_key=cache_key)
+    cached = database.get_gap_analysis_result(cache_key=cache_key)
+    if not cached:
+        return {"result": {}}
+    parsed = json.loads(cached) if isinstance(cached, str) else cached
+    return {"result": parsed.get("result", {})}
 
 
 class SupportedFormats(Enum):
@@ -68,26 +121,6 @@ class SupportedFormats(Enum):
     JSON = "json"
     YAML = "yaml"
     OSCAL = "oscal"
-
-
-def _normalize_source_name(source: Any) -> str | None:
-    """
-    Normalize integration source names so analytics aggregation stays stable.
-    """
-    if source is None:
-        return None
-
-    normalized_source = str(source).strip().lower()
-    if not normalized_source:
-        return None
-
-    normalized_source = normalized_source.replace(" ", "-")
-    normalized_source = re.sub(r"[^a-z0-9._:-]", "-", normalized_source)
-    normalized_source = re.sub(r"-{2,}", "-", normalized_source).strip("-")
-    if not normalized_source:
-        return None
-
-    return normalized_source[:64]
 
 
 def extend_cre_with_tag_links(
@@ -128,15 +161,20 @@ if os.environ.get("POSTHOG_API_KEY") and os.environ.get("POSTHOG_HOST"):
     )
 
 
+@openapi_documented("find_cre")
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
-@app.route("/rest/v1/name/<crename>", methods=["GET"])
+# path: converter — many CRE names contain "/" (e.g. "MFA/OTP", "Deploy/build").
+@app.route("/rest/v1/name/<path:crename>", methods=["GET"])
 def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
-    source = _normalize_source_name(request.args.get("source"))
     if posthog:
-        capture_id = f"id:{creid};name{crename}"
-        if source:
-            capture_id += f";source:{source}"
-        posthog.capture(f"find_cre", capture_id)
+        source = request.args.get("source")
+        source_norm = ""
+        if source and source.strip():
+            source_norm = re.sub(r"[^a-z0-9.]+", "-", source.lower()).strip("-")
+        payload = f"id:{creid};name{crename}"
+        if source_norm:
+            payload += f";source:{source_norm}"
+        posthog.capture("find_cre", payload)
     database = db.Node_collection()
     include_only = request.args.getlist("include_only")
     # opt_osib = request.args.get("osib")
@@ -162,12 +200,22 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
             return write_csv(docs=docs).getvalue().encode("utf-8")
 
         elif opt_format == SupportedFormats.OSCAL.value:
+            try:
+                from application.utils import oscal_utils
+            except ImportError:
+                abort(
+                    503,
+                    "OSCAL export is unavailable on this deployment "
+                    "(compliance-trestle not installed).",
+                )
+
             result = {"data": json.loads(oscal_utils.document_to_oscal(cre))}
 
         return jsonify(result)
     abort(404, "CRE does not exist")
 
 
+@openapi_documented("find_node_by_name")
 @app.route("/rest/v1/<ntype>/<name>", methods=["GET"])
 @app.route("/rest/v1/standard/<name>", methods=["GET"])
 @app.route("/rest/v1/<ntype>/<name>/sectionid/<sectionID>", methods=["GET"])
@@ -187,7 +235,7 @@ def find_node_by_name(
     sectionID: str = "",
 ) -> Any:
     if posthog:
-        posthog.capture(f"find_node_by_name", f"name:{name};nodeType{ntype}")
+        posthog.capture("find_node_by_name", f"name:{name};nodeType{ntype}")
 
     database = db.Node_collection()
     opt_section = section or request.args.get("section")
@@ -252,6 +300,15 @@ def find_node_by_name(
             return write_csv(docs=docs).getvalue().encode("utf-8")
 
         elif opt_format == SupportedFormats.OSCAL.value:
+            try:
+                from application.utils import oscal_utils
+            except ImportError:
+                abort(
+                    503,
+                    "OSCAL export is unavailable on this deployment "
+                    "(compliance-trestle not installed).",
+                )
+
             return jsonify(json.loads(oscal_utils.list_to_oscal(nodes)))
 
         # if opt_osib:
@@ -265,11 +322,12 @@ def find_node_by_name(
 
 
 # TODO: (spyros) paginate
+@openapi_documented("find_document_by_tag")
 @app.route("/rest/v1/tags", methods=["GET"])
 def find_document_by_tag() -> Any:
     tags = request.args.getlist("tag")
     if posthog:
-        posthog.capture(f"find_document_by_tag", f"tags:{tags}")
+        posthog.capture("find_document_by_tag", f"tags:{tags}")
 
     database = db.Node_collection()
     # opt_osib = request.args.get("osib")
@@ -288,50 +346,68 @@ def find_document_by_tag() -> Any:
             )
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
+            try:
+                from application.utils import oscal_utils
+            except ImportError:
+                abort(
+                    503,
+                    "OSCAL export is unavailable on this deployment "
+                    "(compliance-trestle not installed).",
+                )
+
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
         return jsonify(result)
     abort(404, "Tag does not exist")
 
 
+@openapi_documented("map_analysis")
 @app.route("/rest/v1/map_analysis", methods=["GET"])
 def map_analysis() -> Any:
     standards = request.args.getlist("standard")
     if posthog:
-        posthog.capture(f"map_analysis", f"standards:{standards}")
+        posthog.capture("map_analysis", f"standards:{standards}")
 
     database = db.Node_collection()
-    standards = request.args.getlist("standard")
+    if len(standards) < 2:
+        abort(400, "Please provide two standards")
+    standards = standards[:2]
     standards_hash = gap_analysis.make_resources_key(standards)
 
-    # First, check if we have cached results in the database
-    if database.gap_analysis_exists(standards_hash):
-        gap_analysis_result = database.get_gap_analysis_result(standards_hash)
-        if gap_analysis_result:
-            return jsonify(flask_json.loads(gap_analysis_result))
+    # ----- PR #825: OpenCRE fast path (SQL cache only on Heroku) -----
+    if OPENCRE_STANDARD_NAME in standards:
+        if database.gap_analysis_exists(standards_hash):
+            cached = database.get_gap_analysis_result(cache_key=standards_hash)
+            if cached:
+                parsed = json.loads(cached)
+                if "result" in parsed:
+                    return jsonify({"result": parsed.get("result")})
+        if _is_heroku_deploy():
+            abort(404, "No such Cache")
+        direct_gap_analysis = gap_analysis.build_direct_cre_overlap_map_analysis(
+            standards, standards_hash, database
+        )
+        if direct_gap_analysis:
+            return jsonify(direct_gap_analysis)
+        abort(404, "No direct overlap found for requested standards")
 
-    # On Heroku (read-only), check if standards exist before attempting Redis/queue operations
-    is_heroku = os.environ.get("DYNO") is not None
-    if is_heroku:
-        # Check if all requested standards exist
-        try:
-            existing_standards = database.standards()
-            if isinstance(existing_standards, (list, tuple, set)):
-                existing_lower = {str(s).lower() for s in existing_standards}
-                missing = [s for s in standards if str(s).lower() not in existing_lower]
-                if missing:
-                    logger.info(
-                        f"On Heroku: gap analysis request {standards_hash} references "
-                        f"standards that do not exist: {', '.join(missing)}, returning 404"
-                    )
-                    abort(
-                        404, f"One or more standards do not exist: {', '.join(missing)}"
-                    )
-        except Exception as exc:
-            # If we can't verify standards, log but don't fail (defensive)
-            logger.warning(f"Could not verify standards existence on Heroku: {exc}")
+    # ----- upstream: cached result -----
+    cache_key = standards_hash
+    if database.gap_analysis_exists(cache_key):
+        cached = database.get_gap_analysis_result(cache_key=cache_key)
+        if cached:
+            parsed = json.loads(cached)
+            if "result" in parsed:
+                return jsonify({"result": parsed.get("result")})
 
-    # If calculations are disabled, return 404
+    # Heroku serves precomputed GA from Postgres only — never Redis, RQ, or Neo4j.
+    if _is_heroku_deploy():
+        logger.info(
+            "On Heroku: gap analysis cache miss for %s, returning 404",
+            standards_hash,
+        )
+        abort(404, "No such Cache")
+
     if os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS"):
         logger.info(
             f"Gap analysis calculations are disabled by CRE_NO_CALCULATE_GAP_ANALYSIS; "
@@ -339,20 +415,64 @@ def map_analysis() -> Any:
         )
         abort(404, "Gap analysis calculations are disabled")
 
-    # Now call schedule() which will handle Redis/queue operations
-    gap_analysis_dict = gap_analysis.schedule(standards, database)
-    if "result" in gap_analysis_dict:
-        return jsonify(gap_analysis_dict)
-    if gap_analysis_dict.get("error"):
-        abort(404)
-    return jsonify({"job_id": gap_analysis_dict.get("job_id")})
+    # ----- upstream: Redis / RQ path with synchronous fallback -----
+    db_url = os.environ.get("CRE_CACHE_FILE") or os.environ.get("PROD_DATABASE_URL")
+    if not db_url:
+        db_url = str(getattr(getattr(database.session, "bind", None), "url", ""))
+    try:
+        conn = redis.connect()
+        ga_queue_name = os.environ.get("CRE_GA_QUEUE_NAME", "ga")
+        q = Queue(name=ga_queue_name, connection=conn)
+        inflight_key = f"ga:inflight:{cache_key}"
+        inflight_job_id_raw = conn.get(inflight_key)
+        inflight_job_id = (
+            inflight_job_id_raw.decode("utf-8")
+            if isinstance(inflight_job_id_raw, bytes)
+            else str(inflight_job_id_raw) if inflight_job_id_raw else ""
+        )
+        if inflight_job_id:
+            try:
+                inflight_job = job.Job.fetch(id=inflight_job_id, connection=conn)
+                if inflight_job.get_status() in (
+                    job.JobStatus.QUEUED,
+                    job.JobStatus.STARTED,
+                ):
+                    return jsonify({"job_id": inflight_job_id})
+            except exceptions.NoSuchJobError:
+                conn.delete(inflight_key)
+
+        j = q.enqueue_call(
+            description=f"{standards[0]}->{standards[1]}",
+            func="application.cmd.cre_main.run_gap_pair_job",
+            kwargs={
+                "importing_name": standards[0],
+                "peer_name": standards[1],
+                "db_connection_str": db_url,
+            },
+            timeout=gap_analysis.GAP_ANALYSIS_TIMEOUT,
+        )
+        conn.set(inflight_key, str(j.id))
+        conn.expire(inflight_key, _ga_timeout_seconds())
+        return jsonify({"job_id": str(j.id)})
+    except Exception as exc:
+        logger.warning(
+            "Redis/RQ unavailable in map_analysis for %s; using synchronous fallback: %s",
+            cache_key,
+            exc,
+        )
+        try:
+            return jsonify(_compute_ga_without_redis(database, standards))
+        except Exception as fallback_exc:
+            logger.exception("Synchronous GA fallback failed for %s", cache_key)
+            abort(503, f"Gap analysis unavailable: {fallback_exc}")
 
 
+@openapi_documented("map_analysis_weak_links")
 @app.route("/rest/v1/map_analysis_weak_links", methods=["GET"])
 def map_analysis_weak_links() -> Any:
     standards = request.args.getlist("standard")
     if posthog:
-        posthog.capture(f"map_analysis_weak_links", f"standards:{standards}")
+        posthog.capture("map_analysis_weak_links", f"standards:{standards}")
 
     key = request.args.get("key")
     cache_key = gap_analysis.make_subresources_key(standards=standards, key=key)
@@ -373,11 +493,15 @@ def map_analysis_weak_links() -> Any:
     abort(404, "No such Cache")
 
 
+@openapi_documented("fetch_job")
 @app.route("/rest/v1/ma_job_results", methods=["GET"])
 def fetch_job() -> Any:
     logger.debug("fetching job results")
     jobid = request.args.get("id")
-    conn = redis.connect()
+    try:
+        conn = redis.connect()
+    except Exception as exc:
+        abort(503, f"Job queue unavailable: {exc}")
     try:
         res = job.Job.fetch(id=jobid, connection=conn)
     except exceptions.NoSuchJobError as nje:
@@ -416,7 +540,7 @@ def fetch_job() -> Any:
                 if ga:
                     # logger.__delattr__("and results in cache")
                     ga = flask_json.loads(ga)
-                    if "result" in ga:
+                    if ga.get("result"):
                         return jsonify(ga)
                     else:
                         logger.error(
@@ -432,14 +556,43 @@ def fetch_job() -> Any:
         abort(500)
 
 
+@openapi_documented("standards")
 @app.route("/rest/v1/standards", methods=["GET"])
 def standards() -> Any:
     if posthog:
-        posthog.capture(f"standards", "")
+        posthog.capture("standards", "")
 
     database = db.Node_collection()
-    standards = database.standards()
+    standards = list(database.standards())
+    if OPENCRE_STANDARD_NAME not in standards:
+        standards.append(OPENCRE_STANDARD_NAME)
+    standards = apply_user_resource_filter(database, standards)
     return standards
+
+
+@openapi_documented("ga_standards")
+@app.route("/rest/v1/ga_standards", methods=["GET"])
+def ga_standards() -> Any:
+    """
+    Standards eligible for gap analysis selection.
+    Keeps GA dropdowns aligned with backend GA gating.
+    """
+    if posthog:
+        posthog.capture("ga_standards", "")
+
+    database = db.Node_collection()
+    standards = list(database.standards())
+    if OPENCRE_STANDARD_NAME not in standards:
+        standards.append(OPENCRE_STANDARD_NAME)
+    from application.cmd import cre_main
+
+    eligible = [
+        s
+        for s in standards
+        if s == OPENCRE_STANDARD_NAME
+        or cre_main.resource_name_ga_eligible_in_db(database, s)
+    ]
+    return sorted(eligible)
 
 
 @app.route("/rest/v1/openapi.yaml", methods=["GET"])
@@ -457,9 +610,10 @@ def openapi_spec() -> Any:
     )
 
 
+@openapi_documented("text_search")
 @app.route("/rest/v1/text_search", methods=["GET"])
 def text_search() -> Any:
-    """
+    r"""
     Performs arbitrary text search among all known documents.
     Formats supported:
         * 'CRE:<id>' will search for the <id> in cre ids
@@ -472,8 +626,10 @@ def text_search() -> Any:
     """
     database = db.Node_collection()
     text = request.args.get("text")
+    if not text:
+        return jsonify({"error": "text parameter is required"}), 400
     if posthog:
-        posthog.capture(f"text_search", f"text:{text}")
+        posthog.capture("text_search", f"text:{text}")
 
     opt_format = request.args.get("format")
     documents = database.text_search(text)
@@ -486,6 +642,15 @@ def text_search() -> Any:
             )
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
+            try:
+                from application.utils import oscal_utils
+            except ImportError:
+                abort(
+                    503,
+                    "OSCAL export is unavailable on this deployment "
+                    "(compliance-trestle not installed).",
+                )
+
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
         res = [doc.todict() for doc in documents]
@@ -494,6 +659,29 @@ def text_search() -> Any:
         abort(404, "No object matches the given search terms")
 
 
+@openapi_documented("health")
+@app.route("/rest/v1/health", methods=["GET"])
+def health() -> Any:
+    """Deploy/uptime health probe (feature-flagged, off by default).
+
+    Enable with CRE_ENABLE_HEALTH=1. Scope is intentionally narrow and fast so
+    it can gate deploys without failing for the wrong reason:
+      - 200: app up, serving DB reachable, dataset non-empty (CREs and
+        standards present).
+      - 503: DB unreachable or dataset empty/broken.
+    Deeper checks (gap-analysis completeness, mapping coverage, Neo4j/Redis)
+    are deliberately excluded and live in ops tooling instead.
+    """
+    if not is_health_endpoint_enabled():
+        abort(404)
+
+    database = db.Node_collection()
+    result = database.health_check()
+    status_code = 200 if result.get("ok") else 503
+    return jsonify(result), status_code
+
+
+@openapi_documented("find_root_cres")
 @app.route("/rest/v1/root_cres", methods=["GET"])
 def find_root_cres() -> Any:
     """
@@ -501,7 +689,7 @@ def find_root_cres() -> Any:
 
     """
     if posthog:
-        posthog.capture(f"find_root_cres", "")
+        posthog.capture("find_root_cres", "")
 
     database = db.Node_collection()
     # opt_osib = request.args.get("osib")
@@ -520,6 +708,15 @@ def find_root_cres() -> Any:
             )
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
+            try:
+                from application.utils import oscal_utils
+            except ImportError:
+                abort(
+                    503,
+                    "OSCAL export is unavailable on this deployment "
+                    "(compliance-trestle not installed).",
+                )
+
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
         return jsonify(result)
@@ -529,6 +726,22 @@ def find_root_cres() -> Any:
 @app.errorhandler(404)
 def page_not_found(e) -> Any:
     return "Resource Not found", 404
+
+
+_REPO_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..")
+)
+_DOCS_DIR = os.path.join(_REPO_ROOT, "docs")
+
+
+@app.route("/docs/faq.md", methods=["GET"])
+def faq_markdown() -> Any:
+    """Serve FAQ markdown for the in-app docs page."""
+    return send_from_directory(
+        directory=_DOCS_DIR,
+        path="faq.md",
+        mimetype="text/markdown; charset=utf-8",
+    )
 
 
 # If no other routes are matched, serve the react app, or any other static files (like bundle.js)
@@ -545,11 +758,19 @@ def index(path: str) -> Any:
 def smartlink(
     name: str, ntype: str = defs.Credoctypes.Standard.value, section: str = ""
 ) -> Any:
-    """if node is found, show node, else redirect"""
+    """If a standard section node is found, redirect to it.
+
+    If the node has exactly one linked CRE, redirect directly to that CRE
+    page instead of the intermediate standard-section page, so the user
+    immediately sees the full wealth of CRE information.
+    If the node has multiple CRE links, redirect to the standard-section
+    node page as before.  If the node is not found in the database, fall
+    back to any known external redirect (e.g. the Mitre CWE catalogue).
+    """
     # ATTENTION: DO NOT MESS WITH THIS FUNCTIONALITY WITHOUT A TICKET AND CORE CONTRIBUTORS APPROVAL!
     # CRITICAL FUNCTIONALITY DEPENDS ON THIS!
     if posthog:
-        posthog.capture(f"smartlink", f"name:{name}")
+        posthog.capture("smartlink", f"name:{name}")
 
     database = db.Node_collection()
     opt_version = request.args.get("version")
@@ -583,21 +804,40 @@ def smartlink(
         logger.info(
             f"found node of type {ntype}, name {name} and section {section}, redirecting to opencre"
         )
+        cre_links = [
+            lnk
+            for lnk in nodes[0].links
+            if lnk.document.doctype == defs.Credoctypes.CRE
+        ]
+        if len(cre_links) == 1:
+            logger.info(
+                f"exactly one CRE linked to {ntype}/{name}/{section},"
+                f" redirecting directly to CRE {cre_links[0].document.id}"
+            )
+            return redirect(f"/cre/{cre_links[0].document.id}")
         if found_section_id:
             return redirect(f"/node/{ntype}/{name}/sectionid/{section}")
         return redirect(f"/node/{ntype}/{name}/section/{section}")
-    elif doctype == defs.Credoctypes.Standard.value and redirectors.redirect(
-        name, section
-    ):
-        logger.info(
-            f"did not find node of type {ntype}, name {name} and section {section}, redirecting to external resource"
-        )
-        return redirect(redirectors.redirect(name, section))
-    else:
-        logger.warning(f"not sure what happened, 404")
-        return abort(404, "Document does not exist")
+    elif doctype == defs.Credoctypes.Standard.value:
+        url = redirectors.redirect(name, section)
+        if (
+            url
+            and isinstance(url, str)
+            and (
+                url.startswith("https://cwe.mitre.org/")
+                or url.startswith("https://capec.mitre.org/")
+            )
+        ):
+            logger.info(
+                f"did not find node of type {ntype}, name {name} and section {section}, redirecting to external resource"
+            )
+            return redirect(url)
+
+    logger.warning("not sure what happened, 404")
+    return abort(404, "Document does not exist")
 
 
+@openapi_documented("deeplink")
 @app.route("/rest/v1/deeplink/<ntype>/<name>", methods=["GET"])
 @app.route("/rest/v1/deeplink/<name>", methods=["GET"])
 @app.route("/deeplink/<ntype>/<name>", methods=["GET"])
@@ -617,7 +857,7 @@ def deeplink(
     opt_version = request.args.get("version")
     opt_subsection = request.args.get("subsection")
     if posthog:
-        posthog.capture(f"deeplink", f"name:{name}")
+        posthog.capture("deeplink", f"name:{name}")
 
     if opt_section:
         opt_section = urllib.parse.unquote(opt_section)
@@ -658,25 +898,341 @@ def before_request():
 
 @app.after_request
 def add_header(response):
+    # Per-user endpoints must never be shared-cached; no-store wins over the
+    # default max-age for them (this hook runs after the view). Covers the
+    # resource selection AND the identity endpoint (returns the user's email)
+    # plus its deprecated alias, and MCP grant management.
+    if request.path in (
+        "/rest/v1/user/resources",
+        "/rest/v1/user/mcp_grants",
+        "/rest/v1/auth/user",
+        "/rest/v1/user",
+    ):
+        response.cache_control.no_store = True
+        return response
     response.cache_control.max_age = 300
     return response
+
+
+def _is_logged_in() -> bool:
+    """Single source of truth for browser-session presence.
+
+    Keyed on ``session['user_id']`` (recorded by the login flow since #980) — not
+    ``google_id``/``name``. Both ``login_required`` and its content-negotiation
+    branch route through here, so the predicate lives in exactly one place.
+
+    An MCP bearer token is deliberately *not* logged-in here: ``login_required``
+    stays session-only so a leaked MCP token cannot unlock chat, admin, or other
+    general authenticated routes. MyOpenCRE resources use
+    ``login_or_mcp_required`` instead.
+    """
+    return identity.is_session_authenticated()
+
+
+def _auth_challenge():
+    """Response for an unauthenticated request, negotiated by Accept.
+
+    Default is a clean 401 so tooling (curl/requests/scripts, a bare ``*/*`` or
+    a missing Accept header) and ``/admin/*`` tooling get a machine-readable
+    challenge instead of being 302'd into login HTML. Only real browsers -- which
+    advertise ``text/html`` in Accept (e.g.
+    ``text/html,application/xhtml+xml,...;q=0.9,*/*;q=0.8``) -- get the 302 to the
+    login flow. Matched as a substring, so a bare ``*/*`` does not qualify.
+
+    The redirect target is the constant login route with no ``?next`` param:
+    ``auth_login`` does not consume a return target and ``auth_callback`` always
+    lands on ``/chatbot``, so forwarding the request path here would be a dead
+    (and taint-flagged) value. Return-to-page is a separate, future feature that
+    would store a validated target in the session at login time.
+    """
+    if "text/html" in request.headers.get("Accept", ""):
+        return redirect("/rest/v1/auth/login")
+    allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
+    abort(
+        401,
+        description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
+    )
 
 
 def login_required(f):
     @wraps(f)
     def login_r(*args, **kwargs):
-        if os.environ.get("NO_LOGIN"):
+        if os.environ.get("NO_LOGIN") == "1":
             return f(*args, **kwargs)
-        if "google_id" not in session or "name" not in session:
-            allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
-            abort(
-                401,
-                description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
-            )
-        else:
-            return f(*args, **kwargs)
+        if not _is_logged_in():
+            return _auth_challenge()
+        return f(*args, **kwargs)
 
     return login_r
+
+
+def login_or_mcp_required(f):
+    """Admit a browser session or a verified MCP bearer (not general login)."""
+
+    @wraps(f)
+    def login_or_mcp_r(*args, **kwargs):
+        if os.environ.get("NO_LOGIN") == "1":
+            return f(*args, **kwargs)
+        if identity.current_identity() is None:
+            return _auth_challenge()
+        return f(*args, **kwargs)
+
+    return login_or_mcp_r
+
+
+def feature_enabled_or_default(is_enabled: Any, default_factory: Any) -> Any:
+    """Gate a view on a feature predicate.
+
+    When ``is_enabled()`` is false the wrapped view is skipped and
+    ``default_factory()`` is returned, so callers receive a safe default instead
+    of an auth error. When true the view runs (typically behind ``login_required``).
+    """
+
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            if not is_enabled():
+                return default_factory()
+            return f(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def _resolve_current_user(database):
+    """Return the persisted User for the current session, creating it if absent.
+
+    Prefers ``session['user_id']`` (recorded by the login flow) and only falls
+    back to resolving/creating by the OIDC subject when it is absent — e.g. a
+    session established before the id was recorded. Returns None when there is no
+    authenticated subject.
+    """
+    user_id = session.get("user_id")
+    if user_id:
+        user = database.session.query(db.User).filter(db.User.id == user_id).first()
+        if user is not None:
+            return user
+    google_sub = session.get("google_id")
+    if not google_sub:
+        return None
+    user = database.get_user_by_sub(google_sub)
+    if user is None:
+        user = database.upsert_user(
+            google_sub=google_sub,
+            email=session.get("email") or "",
+            display_name=session.get("name"),
+        )
+    return user
+
+
+def apply_user_resource_filter(database, names):
+    """Restrict ``names`` to the current user's saved resource selection.
+
+    No-op (returns ``names`` unchanged) unless login AND MyOpenCRE are enabled, a
+    user is resolved, and that user has a non-empty selection — same discipline
+    as the resource-selection API. ``?all=true`` bypasses the filter for a single
+    request. ``OPENCRE_STANDARD_NAME`` is always kept (it is the core graph and is
+    already special-cased). Part of #586.
+    """
+    if request.args.get("all") == "true":
+        return names
+    if not (is_login_enabled() and is_myopencre_enabled()):
+        return names
+    user = _resolve_current_user(database)
+    if user is None:
+        return names
+    selection = database.get_user_resource_selection(user.id)
+    if not selection:
+        return names
+    keep = set(selection) | {OPENCRE_STANDARD_NAME}
+    return [name for name in names if name in keep]
+
+
+def admin_imports_enabled_required(f):
+    @wraps(f)
+    def enabled_r(*args, **kwargs):
+        if not is_cre_import_allowed():
+            abort(404, description="Admin imports API is disabled")
+        return f(*args, **kwargs)
+
+    return enabled_r
+
+
+@app.route("/admin/imports/runs", methods=["GET"])
+@login_required
+@admin_imports_enabled_required
+def admin_import_runs() -> Any:
+    source = request.args.get("source")
+    limit = int(request.args.get("limit") or 50)
+    offset = int(request.args.get("offset") or 0)
+    runs = db.list_import_runs(source=source, limit=limit, offset=offset)
+    out = []
+    for r in runs:
+        cs = db.get_staged_change_set(run_id=r.id)
+        out.append(
+            {
+                "id": r.id,
+                "source": r.source,
+                "version": r.version,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+                "has_conflicts": bool(cs.has_conflicts) if cs else False,
+                "staging_status": cs.staging_status if cs else None,
+            }
+        )
+    return jsonify({"runs": out})
+
+
+@app.route("/admin/imports/runs/<run_id>", methods=["GET"])
+@login_required
+@admin_imports_enabled_required
+def admin_import_run(run_id: str) -> Any:
+    r = db.get_import_run(run_id=run_id)
+    if not r:
+        abort(404, description="Import run not found")
+    cs = db.get_staged_change_set(run_id=r.id)
+    return jsonify(
+        {
+            "id": r.id,
+            "source": r.source,
+            "version": r.version,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+            "change_set": {
+                "has_conflicts": bool(cs.has_conflicts) if cs else False,
+                "staging_status": cs.staging_status if cs else None,
+            },
+        }
+    )
+
+
+@app.route("/admin/imports/runs/<run_id>/changeset", methods=["GET"])
+@login_required
+@admin_imports_enabled_required
+def admin_import_run_changeset(run_id: str) -> Any:
+    r = db.get_import_run(run_id=run_id)
+    if not r:
+        abort(404, description="Import run not found")
+    cs = db.get_staged_change_set(run_id=r.id)
+    if not cs:
+        return jsonify({"run_id": run_id, "changeset": []})
+    from application.utils import import_diff
+
+    ops = import_diff.change_set_from_json(cs.changeset_json)
+
+    def _op_to_dict(op: import_diff.ChangeSetOp) -> dict:
+        d = import_diff.asdict(op) if hasattr(import_diff, "asdict") else None
+        if d is None:
+            from dataclasses import asdict as _asdict
+
+            d = _asdict(op)
+        if isinstance(d.get("key"), tuple):
+            d["key"] = list(d["key"])
+        return d
+
+    return jsonify(
+        {
+            "run_id": run_id,
+            "has_conflicts": bool(cs.has_conflicts),
+            "staging_status": cs.staging_status,
+            "changeset": [_op_to_dict(op) for op in ops],
+        }
+    )
+
+
+@app.route("/admin/imports/runs/<run_id>/changeset/graph", methods=["GET"])
+@login_required
+@admin_imports_enabled_required
+def admin_import_run_changeset_graph(run_id: str) -> Any:
+    r = db.get_import_run(run_id=run_id)
+    if not r:
+        abort(404, description="Import run not found")
+    cs = db.get_staged_change_set(run_id=r.id)
+    if not cs:
+        return jsonify({"nodes": [], "edges": []})
+
+    from application.utils import import_diff, import_graph
+
+    ops = import_diff.change_set_from_json(cs.changeset_json)
+    graph_data = import_graph.change_set_to_graph(ops)
+
+    return jsonify(graph_data)
+
+
+@app.route("/admin/imports/runs/<run_id>/accept", methods=["POST"])
+@login_required
+@admin_imports_enabled_required
+def admin_import_run_accept(run_id: str) -> Any:
+    cs = db.get_staged_change_set(run_id=run_id)
+    if not cs:
+        abort(404, description="No staged change set for this run")
+    if cs.staging_status == "discarded":
+        abort(400, description="Cannot accept a discarded run")
+    if cs.staging_status == "applied":
+        abort(400, description="Run already applied")
+    if cs.has_conflicts:
+        abort(409, description="Change set has conflicts; resolve before accept")
+    db.update_staged_change_set(run_id=run_id, staging_status="accepted")
+    return jsonify({"run_id": run_id, "staging_status": "accepted"})
+
+
+@app.route("/admin/imports/runs/<run_id>/discard", methods=["POST"])
+@login_required
+@admin_imports_enabled_required
+def admin_import_run_discard(run_id: str) -> Any:
+    cs = db.get_staged_change_set(run_id=run_id)
+    if not cs:
+        abort(404, description="No staged change set for this run")
+    if cs.staging_status == "applied":
+        abort(400, description="Cannot discard an applied run")
+    db.update_staged_change_set(run_id=run_id, staging_status="discarded")
+    return jsonify({"run_id": run_id, "staging_status": "discarded"})
+
+
+@app.route("/admin/imports/runs/<run_id>/impact", methods=["GET"])
+@login_required
+@admin_imports_enabled_required
+def admin_import_run_impact(run_id: str) -> Any:
+    from application.utils import import_impact
+
+    r = db.get_import_run(run_id=run_id)
+    if not r:
+        abort(404, description="Import run not found")
+    database = db.Node_collection().with_graph()
+    return jsonify(import_impact.impact_summary_for_run(run_id, database))
+
+
+@app.route("/admin/imports/runs/<run_id>/apply", methods=["POST"])
+@login_required
+@admin_imports_enabled_required
+def admin_import_run_apply(run_id: str) -> Any:
+    from application.utils import import_apply
+
+    raw = request.args.get("dry_run") or ""
+    dry_run = str(raw).lower() in ("1", "true", "yes", "on")
+    try:
+        res = import_apply.apply_changeset(
+            run_id=run_id,
+            dry_run=dry_run,
+            db_connection_str=os.environ.get("CRE_CACHE_FILE", ""),
+            run_post_apply_effects=not dry_run
+            and request.args.get("skip_post_apply", "").lower()
+            not in ("1", "true", "yes", "on"),
+        )
+        return jsonify(
+            {
+                "run_id": res.run_id,
+                "dry_run": res.dry_run,
+                "staging_status": res.staging_status,
+                "touched_keys": [list(k) for k in res.touched_keys],
+                "applied_ops": res.applied_ops,
+                "skipped_ops": res.skipped_ops,
+                "already_applied": res.already_applied,
+            }
+        )
+    except import_apply.ApplyConflict as ae:
+        abort(409, description=str(ae))
+    except import_apply.ApplyError as ae:
+        abort(400, description=str(ae))
 
 
 @app.route("/rest/v1/completion", methods=["POST"])
@@ -684,13 +1240,50 @@ def login_required(f):
 def chat_cre() -> Any:
     message = request.get_json(force=True)
     if posthog:
-        posthog.capture(f"chat_cre", "")
+        posthog.capture("chat_cre", "")
 
     database = db.Node_collection()
-    prompt = prompt_client.PromptHandler(database)
-    response = prompt.generate_text(
-        message.get("prompt"), instructions=message.get("instructions")
-    )
+    # Lazy import to avoid loading heavy prompt/ML dependencies at web boot.
+    try:
+        from application.prompt_client import llm_error_utils, prompt_client
+
+        prompt = prompt_client.PromptHandler(database)
+    except ImportError:
+        abort(
+            503,
+            "Chat is unavailable on this deployment (ML/LLM dependencies not installed).",
+        )
+    except RuntimeError as exc:
+        # PromptHandler raises RuntimeError when litellm is missing.
+        if "litellm" not in str(exc).lower():
+            raise
+        abort(
+            503,
+            "Chat is unavailable on this deployment (ML/LLM dependencies not installed).",
+        )
+
+    try:
+        response = prompt.generate_text(
+            message.get("prompt"), instructions=message.get("instructions")
+        )
+    except Exception as e:
+        if llm_error_utils.is_rate_limit_error(e):
+            return (
+                jsonify(
+                    {
+                        "error": (
+                            "The AI service is temporarily rate-limited or out of quota. "
+                            "Please try again in a minute."
+                        )
+                    }
+                ),
+                503,
+            )
+        status_code = _llm_error_status_code(e) or 500
+        return (
+            jsonify({"error": f"AI Service Error: {str(e)}"}),
+            status_code,
+        )
     return jsonify(response)
 
 
@@ -723,7 +1316,7 @@ class CREFlow:
                     "openid",
                 ],
                 redirect_uri=(
-                    request.root_url.rstrip("/") + url_for("web.callback")
+                    request.root_url.rstrip("/") + url_for("web.auth_callback")
                 ).replace("http://", "https://"),
             )
         return cls.__instance
@@ -732,12 +1325,27 @@ class CREFlow:
         raise ValueError("class is a singleton, please call instance() instead")
 
 
-@app.route("/rest/v1/login")
-def login():
-    if os.environ.get("NO_LOGIN"):
+@app.route("/rest/v1/auth/login")
+def auth_login():
+    if os.environ.get("NO_LOGIN") == "1":
         session["state"] = {"state": True}
         session["google_id"] = "some dev id"
         session["name"] = "dev user"
+        # Persist the dev account as well, so local/dev sessions carry a real
+        # user_id for user-scoped endpoints to hang data on. Without this the
+        # dev session looks logged in but has no User row. Mirrors the callback.
+        if is_login_enabled():
+            try:
+                user = db.Node_collection().upsert_user(
+                    google_sub=session["google_id"],
+                    email="",
+                    display_name=session["name"],
+                )
+                session["user_id"] = user.id
+            except SQLAlchemyError as e:
+                logger.error(
+                    "failed to persist dev user on login: %s", type(e).__name__
+                )
         return redirect("/chatbot")
     flow_instance = CREFlow.instance()
     authorization_url, state = flow_instance.flow.authorization_url()
@@ -745,16 +1353,16 @@ def login():
     return redirect(authorization_url)
 
 
-@app.route("/rest/v1/user")
+@app.route("/rest/v1/auth/user")
 @login_required
-def logged_in_user():
-    if os.environ.get("NO_LOGIN"):
+def auth_user():
+    if os.environ.get("NO_LOGIN") == "1":
         return "foobar"
     return session.get("email")
 
 
-@app.route("/rest/v1/callback")
-def callback():
+@app.route("/rest/v1/auth/callback")
+def auth_callback():
     flow_instance = CREFlow.instance()
     try:
         flow_instance.flow.fetch_token(
@@ -763,7 +1371,7 @@ def callback():
     except oauthlib.oauth2.rfc6749.errors.MismatchingStateError as mse:
         return redirect("/chatbot")
     if not session.get("state") or session.get("state") != request.args["state"]:
-        redirect(url_for("web.login"))  # State does not match!
+        return redirect(url_for("web.auth_login"))  # State does not match!
     credentials = flow_instance.flow.credentials
     token_request = google.auth.transport.requests.Request()
     id_info = id_token.verify_oauth2_token(
@@ -792,20 +1400,132 @@ def callback():
             401,
             description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
         )
+
+    # Persist the account when login is enabled. ``session['user_id']`` is what
+    # ``_is_logged_in`` checks, so if persistence cannot establish it we must NOT
+    # redirect as if login succeeded: that would leave a "logged-in-looking"
+    # session that fails every ``login_required`` call and bounces the user back
+    # into the login flow. Fail explicitly (retryable) instead.
+    if is_login_enabled():
+        google_sub = id_info.get("sub")
+        if not google_sub:
+            logger.error(
+                "OIDC callback returned no 'sub' claim; cannot establish session"
+            )
+            abort(
+                401, description="Login failed: identity provider returned no subject"
+            )
+        try:
+            user = db.Node_collection().upsert_user(
+                google_sub=google_sub,
+                email=id_info.get("email") or "",
+                display_name=id_info.get("name"),
+            )
+            session["user_id"] = user.id
+        except SQLAlchemyError as e:
+            # Log only the exception class: the message can carry SQL parameters
+            # such as the user's email or OIDC subject. Surface a retryable 503
+            # rather than a silently broken session.
+            logger.error("failed to persist user on login: %s", type(e).__name__)
+            abort(
+                503,
+                description="Login temporarily unavailable, please try again",
+            )
     return redirect("/chatbot")
 
 
-@app.route("/rest/v1/logout")
-def logout():
+@app.route("/rest/v1/auth/logout")
+def auth_logout():
     session.clear()
     return redirect("/")
 
 
+# --- Deprecated auth aliases (RFC #876 TODO 1 migration) --------------------
+# Keep the old paths working during the migration but signal deprecation. These
+# are header-only (no redirect to the canonical path), so /callback's OAuth
+# code/state flow is left untouched.
+def _deprecated_auth(response, canonical):
+    resp = make_response(response)
+    resp.headers["Deprecation"] = "true"
+    resp.headers["Link"] = f'<{canonical}>; rel="successor-version"'
+    return resp
+
+
+@app.route("/rest/v1/login")
+def login():
+    return _deprecated_auth(auth_login(), "/rest/v1/auth/login")
+
+
+@app.route("/rest/v1/user")
+def logged_in_user():
+    return _deprecated_auth(auth_user(), "/rest/v1/auth/user")
+
+
+@app.route("/rest/v1/callback")
+def callback():
+    return _deprecated_auth(auth_callback(), "/rest/v1/auth/callback")
+
+
+@app.route("/rest/v1/logout")
+def logout():
+    return _deprecated_auth(auth_logout(), "/rest/v1/auth/logout")
+
+
+@openapi_documented("get_user_resources")
+@app.route("/rest/v1/user/resources", methods=["GET"])
+@feature_enabled_or_default(
+    lambda: is_login_enabled() and is_myopencre_enabled(),
+    lambda: jsonify({"selected": []}),
+)
+@login_or_mcp_required
+@identity.require_scopes(identity.SCOPE_MYOPENCRE_READ)
+def get_user_resources() -> Any:
+    """Return the standard names the current user has selected."""
+    database = db.Node_collection()
+    user = identity.current_user() or _resolve_current_user(database)
+    if user is None:
+        abort(401, description="Not authenticated")
+    return jsonify({"selected": database.get_user_resource_selection(user.id)})
+
+
+@openapi_documented("put_user_resources")
+@app.route("/rest/v1/user/resources", methods=["PUT"])
+@feature_enabled_or_default(
+    lambda: is_login_enabled() and is_myopencre_enabled(),
+    lambda: jsonify({"selected": []}),
+)
+@login_or_mcp_required
+@identity.require_scopes(identity.SCOPE_MYOPENCRE_WRITE)
+def put_user_resources() -> Any:
+    """Replace the current user's selected standards."""
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or not isinstance(body.get("selected"), list):
+        abort(400, description="Body must be a JSON object with a 'selected' list")
+    raw_selected = body["selected"]
+    if not all(isinstance(name, str) and name.strip() for name in raw_selected):
+        abort(400, description="'selected' must be a list of non-empty strings")
+    # Normalize before storing: otherwise " ASVS " and "ASVS" both validate but
+    # persist as distinct rows, defeating the dedupe.
+    selected = [name.strip() for name in raw_selected]
+    # OpenCRE is always part of a non-empty selection (matches the read filter and
+    # the "OpenCRE is always included" UI copy). An empty selection stays empty —
+    # [] means "show everything", so injecting OpenCRE would wrongly narrow it.
+    if selected and OPENCRE_STANDARD_NAME not in selected:
+        selected.append(OPENCRE_STANDARD_NAME)
+    database = db.Node_collection()
+    user = identity.current_user() or _resolve_current_user(database)
+    if user is None:
+        abort(401, description="Not authenticated")
+    stored = database.set_user_resource_selection(user.id, selected)
+    return jsonify({"selected": stored})
+
+
+@openapi_documented("all_cres")
 @app.route("/rest/v1/all_cres", methods=["GET"])
 def all_cres() -> Any:
     database = db.Node_collection()
     if posthog:
-        posthog.capture(f"all_cres", "")
+        posthog.capture("all_cres", "")
 
     page = 1
     per_page = ITEMS_PER_PAGE
@@ -817,6 +1537,7 @@ def all_cres() -> Any:
         and int(request.args.get("per_page")) > 0
     ):
         per_page = int(request.args.get("per_page"))
+    per_page = min(per_page, MAX_ITEMS_PER_PAGE)
 
     documents, page, total_pages = database.all_cres_with_pagination(page, per_page)
     if documents:
@@ -828,17 +1549,11 @@ def all_cres() -> Any:
 # Importing Handlers
 
 
-@app.route("/api/capabilities")
-def capabilities():
-    return jsonify({"myopencre": ENABLE_MYOPENCRE})
-
-
+@openapi_documented("get_cre_csv")
 @app.route("/rest/v1/cre_csv", methods=["GET"])
 def get_cre_csv() -> Any:
-    if not ENABLE_MYOPENCRE:
-        abort(404)
     if posthog:
-        posthog.capture(f"get_cre_csv", "")
+        posthog.capture("get_cre_csv", "")
 
     database = db.Node_collection()
     root_cres = database.get_root_cres()
@@ -862,12 +1577,53 @@ def get_cre_csv() -> Any:
     abort(404)
 
 
+@openapi_documented("get_config")
+@app.route("/rest/v1/config", methods=["GET"])
+def get_config() -> Any:
+    return jsonify({"CRE_ALLOW_IMPORT": is_cre_import_allowed()})
+
+
+@app.route("/api/capabilities", methods=["GET"])
+def get_capabilities() -> Any:
+    """Expose frontend feature capabilities (MyOpenCRE, login UI)."""
+    return jsonify(
+        {
+            "myopencre": is_myopencre_enabled(),
+            "login": is_login_enabled(),
+        }
+    )
+
+
+@app.route("/admin/imports/rerun", methods=["POST"])
+@login_required
+@admin_imports_enabled_required
+def admin_imports_rerun() -> Any:
+    # A placeholder for triggering an actual import.
+    # In a real system, this would enqueue a background job.
+    source = request.json.get("source")
+    if not source:
+        return abort(400, "source is required")
+
+    database = db.Node_collection().with_graph()
+    try:
+        run = db.create_import_run(source=source, version="re-run")
+    except Exception:
+        run = None
+
+    # Simulate basic empty changes so we don't break the UI.
+    from application.utils import import_diff
+
+    db.persist_staged_change_set(
+        run_id=run.id if run else "test-id",
+        changeset_json=import_diff.change_set_to_json([]),
+    )
+
+    return jsonify({"status": "success", "run_id": run.id if run else "test-id"})
+
+
 @app.route("/rest/v1/cre_csv_import", methods=["POST"])
 def import_from_cre_csv() -> Any:
-    if not ENABLE_MYOPENCRE:
-        abort(404)
-
-    if not os.environ.get("CRE_ALLOW_IMPORT"):
+    if not is_cre_import_allowed():
         abort(
             403,
             "Importing is disabled, set the environment variable CRE_ALLOW_IMPORT to allow this functionality",
@@ -875,9 +1631,7 @@ def import_from_cre_csv() -> Any:
 
     # TODO: (spyros) add optional gap analysis and embeddings calculation
     database = db.Node_collection().with_graph()
-
     file = request.files.get("cre_csv")
-
     calculate_embeddings = (
         False if not request.args.get("calculate_embeddings") else True
     )
@@ -885,94 +1639,141 @@ def import_from_cre_csv() -> Any:
         False if not request.args.get("calculate_gap_analysis") else True
     )
 
-    # ------------------------
-    # Request-level checks only
-    # ------------------------
-
     if file is None:
-        return (
-            jsonify(
-                {
-                    "success": False,
-                    "type": "FILE_ERROR",
-                    "message": "No file provided",
-                }
-            ),
-            400,
-        )
-
+        abort(400, "No file provided")
     contents = file.read()
-
     try:
-        decoded_contents = contents.decode("utf-8")
+        contents_text = contents.decode("utf-8")
     except UnicodeDecodeError:
-        return (
-            jsonify(
-                {
-                    "success": False,
-                    "type": "FILE_ERROR",
-                    "message": "CSV file must be UTF-8 encoded",
-                }
-            ),
+        abort(400, "Invalid CSV encoding. Expected UTF-8.")
+
+    # Triple-quoted blobs were previously mis-parsed into bogus root CREs (#554).
+    if '"""' in contents_text:
+        abort(
             400,
+            "Invalid CSV content: triple-quoted text detected. "
+            "Use standard CSV quoting (double quotes) instead.",
         )
-
-    rows = list(csv.DictReader(decoded_contents.splitlines()))
-
-    # ------------------------
-    # Delegate validation + parsing
-    # ------------------------
 
     try:
-        documents = spreadsheet_parsers.parse_export_format(rows)
-    except ValueError as ve:
-        # CSV validation errors raised by spreadsheet parser
-        return (
-            jsonify(
-                {
-                    "success": False,
-                    "type": "VALIDATION_ERROR",
-                    "message": str(ve),
-                }
-            ),
-            400,
-        )
+        csv_read = csv.DictReader(contents_text.splitlines())
+        rows = list(csv_read)
+    except csv.Error as exc:
+        abort(400, f"Invalid CSV content: {exc}")
+
+    try:
+        from application.utils.external_project_parsers.parsers import myopencre_parser
+
+        parse_result = myopencre_parser.parse_rows_to_documents(rows)
     except cre_exceptions.DuplicateLinkException as dle:
         abort(500, f"error during parsing of the incoming CSV, err:{dle}")
+    except ValueError as ve:
+        abort(400, f"invalid CSV contents: {ve}")
 
-    # ------------------------
-    # Import execution (unchanged)
-    # ------------------------
+    if not parse_result or not parse_result.results:
+        abort(400, "No documents parsed from CSV")
 
-    cres = documents.pop(defs.Credoctypes.CRE.value, [])
-    standards = documents
+    parse_result.calculate_embeddings = calculate_embeddings
+    parse_result.calculate_gap_analysis = calculate_gap_analysis
 
-    new_cres = []
+    cre_key = defs.Credoctypes.CRE.value
+    cres = parse_result.results.get(cre_key) or []
+    cre_existed_before = {
+        cre.id: bool(database.get_CREs(external_id=cre.id)) for cre in cres if cre.id
+    }
+
+    try:
+        run = db.create_import_run(source="myopencre_csv", version=None)
+    except Exception:
+        run = None
+
+    from application.utils import import_pipeline
+    from application.prompt_client import prompt_client
+
+    import_pipeline.apply_parse_result(
+        parse_result=parse_result,
+        collection=database,
+        prompt_handler=prompt_client.PromptHandler(database=database),
+        db_connection_str=os.environ.get("CRE_CACHE_FILE", ""),
+        import_run_id=run.id if run else None,
+        import_source=run.source if run else None,
+    )
+
+    new_cre_external_ids: list[str] = []
     for cre in cres:
-        new_cre, exists = cre_main.register_cre(cre, database)
-        if not exists:
-            new_cres.append(new_cre)
-
-    for _, entries in standards.items():
-        cre_main.register_standard(
-            collection=database,
-            standard_entries=list(entries),
-            generate_embeddings=calculate_embeddings,
-            calculate_gap_analysis=calculate_gap_analysis,
-        )
-
-    import_type = "created"
-    if not new_cres and not standards:
-        import_type = "noop"
-
+        if not cre.id or cre_existed_before.get(cre.id, False):
+            continue
+        existing = database.get_CREs(external_id=cre.id)
+        if existing:
+            doc0 = existing[0]
+            eid = (
+                getattr(doc0, "external_id", None)
+                or getattr(doc0, "id", None)
+                or cre.id
+            )
+            new_cre_external_ids.append(str(eid))
+    standards_only = {k: v for k, v in parse_result.results.items() if k != cre_key}
     return jsonify(
         {
             "status": "success",
-            "new_cres": [c.external_id for c in new_cres],
-            "new_standards": len(standards),
-            "import_type": import_type,
+            "new_cres": new_cre_external_ids,
+            "new_standards": len(standards_only),
         }
     )
+
+
+def _requested_scope() -> str:
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or "scope" not in body:
+        abort(400, description="Body must be a JSON object with a 'scope' field")
+    scope = body["scope"]
+    if not isinstance(scope, str) or scope.strip() not in identity.ALL_SCOPES:
+        abort(
+            400,
+            description=f"'scope' must be one of: {', '.join(identity.ALL_SCOPES)}",
+        )
+    return scope.strip()
+
+
+@openapi_documented("get_user_mcp_grants")
+@app.route("/rest/v1/user/mcp_grants", methods=["GET"])
+@login_required
+@identity.session_only
+def get_user_mcp_grants() -> Any:
+    """Return the scopes granted to the current user's MCP client."""
+    database = db.Node_collection()
+    user = identity.current_user()
+    if user is None:
+        abort(401, description="Not authenticated")
+    return jsonify({"granted": database.get_mcp_grants(user.id)})
+
+
+@openapi_documented("put_user_mcp_grant")
+@app.route("/rest/v1/user/mcp_grants", methods=["PUT"])
+@login_required
+@identity.session_only
+def put_user_mcp_grant() -> Any:
+    """Grant one scope to the current user's MCP client."""
+    scope = _requested_scope()
+    database = db.Node_collection()
+    user = identity.current_user()
+    if user is None:
+        abort(401, description="Not authenticated")
+    return jsonify({"granted": database.add_mcp_grant(user.id, scope)})
+
+
+@openapi_documented("delete_user_mcp_grant")
+@app.route("/rest/v1/user/mcp_grants", methods=["DELETE"])
+@login_required
+@identity.session_only
+def delete_user_mcp_grant() -> Any:
+    """Revoke one scope from the current user's MCP client."""
+    scope = _requested_scope()
+    database = db.Node_collection()
+    user = identity.current_user()
+    if user is None:
+        abort(401, description="Not authenticated")
+    return jsonify({"granted": database.revoke_mcp_grant(user.id, scope)})
 
 
 # /End Importing Handlers

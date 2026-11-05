@@ -1,6 +1,7 @@
 main#explorer-content {
   .tags {
     display: flex;
+    flex-wrap: wrap;
     gap: 4px;
     height: 100%;
     justify-content: center;

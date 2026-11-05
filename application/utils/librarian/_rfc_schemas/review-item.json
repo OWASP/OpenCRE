@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opencre.org/schemas/oie/review-item.json",
+  "title": "ReviewItem",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "review_id",
+    "chunk_id",
+    "artifact_id",
+    "pipeline_run_id",
+    "created_at",
+    "status",
+    "reason_code",
+    "knowledge",
+    "retrieval",
+    "update_detection"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "pattern": "^0\\.\\d+\\.\\d+$" },
+    "review_id": { "type": "string" },
+    "chunk_id": { "type": "string" },
+    "artifact_id": { "type": "string" },
+    "pipeline_run_id": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "status": { "const": "review_required" },
+    "reason_code": {
+      "type": "string",
+      "enum": [
+        "BELOW_THRESHOLD",
+        "NO_CANDIDATES",
+        "ADVERSARIAL_FLAG",
+        "UPDATE_AMBIGUOUS"
+      ]
+    },
+    "knowledge": { "$ref": "link-proposal.json#/$defs/knowledge_snapshot" },
+    "retrieval": { "$ref": "link-proposal.json#/$defs/retrieval_audit" },
+    "suggested_links": {
+      "type": "array",
+      "items": { "$ref": "proposed-link.json" }
+    },
+    "update_detection": { "$ref": "link-proposal.json#/$defs/update_detection" }
+  }
+}

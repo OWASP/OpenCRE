@@ -1,0 +1,72 @@
+---
+description: Two-phase planning for big changes; builder must not be sole judge
+alwaysApply: true
+---
+
+# Multi-Agent Workflow (Human Plan → Agent Execute)
+
+For **big changes**, split work into two phases. Do not skip Phase 1.
+
+## What counts as a big change
+
+- New feature, new standard importer, or new user-facing capability
+- Expected to touch **3+ files** or **>500 lines** of diff
+- Refactor or migration with behavioral risk
+- Touches critical paths (auth, secrets, production data, payments)
+- Incomplete requirements or meaningful product/design choices
+
+Small fixes: single-file bugfix, typo, test-only tweak, clear one-liner → `plan-first-workflow.mdc` only.
+
+## Phase 1 — Human-led planning (no code)
+
+**Stop before editing.**
+
+1. Acknowledge this is a big change; planning comes first.
+2. Ask minimum questions: goal, data sources, pattern to mirror, acceptance criteria, out of scope.
+3. Draft a plan: steps, `@` file paths, similar code, test/validation plan, risks.
+4. Wait for explicit approval ("proceed", "approved", or confirmed edited plan).
+5. No commits, push, or implementation code in Phase 1. Read-only research is fine.
+   Tests and production code begin in Phase 2 after approval (see `tdd-workflow.mdc`).
+
+## Phase 2 — Agent execution
+
+After approval:
+
+1. Execute per `autonomous-workflow.mdc`.
+2. Follow the approved plan; pause if material deviation is needed.
+3. Implement incrementally; verify as you go (`verifiable-goals.mdc`).
+4. Hand off with checklist including test evidence.
+
+## Builder ≠ Judge (required on substantive work)
+
+| Role | Responsibility |
+|------|----------------|
+| **Builder** | Implements approved plan |
+| **Judge** | Independent review — edge cases, security, test gaps |
+
+Invoke judge via subagent, parallel agent, or fresh context:
+
+- "Use a subagent to review this change for edge cases and security issues."
+
+Do not mark substantive work complete without independent review or documented reason to skip.
+
+**Re-review:** Required only when judge findings change behavior, tests, or security posture materially. Style-only nits fixed in-place do not require a second judge pass.
+
+## Decision tree
+
+```
+User request received
+  │
+  ├─ Missing goal / criteria / context / constraints?
+  │     └─ STOP → ask questions OR offer Requirements template (requirements-gate.mdc)
+  │
+  ├─ Typo / rename / one-sentence fix?
+  │     └─ Implement → quality checks → show evidence
+  │
+  ├─ Multi-file / new feature / refactor / critical path?
+  │     └─ Plan Mode → detailed plan → WAIT for approval → implement
+  │           → quality checks → subagent review → handoff with evidence
+  │
+  └─ Otherwise
+        └─ Brief plan → implement → quality checks → handoff with evidence
+```

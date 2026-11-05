@@ -1,0 +1,56 @@
+[
+  {
+    "source": "owasp_cheatsheets",
+    "cheatsheet_id": "Authentication_Cheat_Sheet",
+    "title": "Authentication Cheat Sheet",
+    "hyperlink": "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html",
+    "category": "authentication",
+    "status": "approved",
+    "candidate_cres": [
+      {
+        "cre_id": "764-507",
+        "score": 0.91,
+        "confidence": "high",
+        "reason": "Direct overlap on credential storage guidance."
+      },
+      {
+        "cre_id": "138-679",
+        "score": 0.62,
+        "confidence": "medium",
+        "reason": "Partial overlap on session handling."
+      }
+    ]
+  },
+  {
+    "source": "owasp_cheatsheets",
+    "cheatsheet_id": "Cryptographic_Storage_Cheat_Sheet",
+    "title": "Cryptographic Storage Cheat Sheet",
+    "hyperlink": "https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html",
+    "category": "cryptography",
+    "status": "approved",
+    "candidate_cres": [
+      {
+        "cre_id": "223-780",
+        "score": 0.88,
+        "confidence": "high",
+        "reason": "Encryption-at-rest requirements match."
+      }
+    ]
+  },
+  {
+    "source": "owasp_cheatsheets",
+    "cheatsheet_id": "Clickjacking_Defense_Cheat_Sheet",
+    "title": "Clickjacking Defense Cheat Sheet",
+    "hyperlink": "https://cheatsheetseries.owasp.org/cheatsheets/Clickjacking_Defense_Cheat_Sheet.html",
+    "category": "html",
+    "status": "suggested",
+    "candidate_cres": [
+      {
+        "cre_id": "000-000",
+        "score": 0.41,
+        "confidence": "low",
+        "reason": "Weak signal; awaiting reviewer confirmation."
+      }
+    ]
+  }
+]

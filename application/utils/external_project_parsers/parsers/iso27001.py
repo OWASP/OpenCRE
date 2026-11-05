@@ -1,6 +1,8 @@
-import logging
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import os
-from pprint import pprint
 from typing import Dict, Any
 from application.database import db
 from application.defs import cre_defs as defs
@@ -8,15 +10,13 @@ import urllib
 import re
 import tempfile
 from application.prompt_client import prompt_client as prompt_client
+from application.utils.external_project_parsers import base_parser_defs
 from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,
     ParseResult,
 )
 from typing import List
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 nist_id_re = re.compile("(?P<nist_id>\w\w\-\d+)")
 
@@ -78,9 +78,10 @@ class ISO27001(ParserInterface):
     #     return nist_table
 
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
-        return ParseResult(
-            results={self.name: []}
-        )  # the doc above does not have names we get the names from the spreadsheet for now, disable
+        # The doc above does not have names; we currently get ISO names from the spreadsheet.
+        # Keep this parser effectively disabled but return a well-formed empty result.
+        results = {self.name: []}
+        return ParseResult(results=results)
         # url = self.url
         # documents: List[defs.Standard] = []
         # nist_nodes = cache.get_nodes(name="NIST 800-53 v5")

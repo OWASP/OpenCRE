@@ -1,21 +1,21 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import yaml
 import urllib
-import logging
 import os
 from typing import Dict, Any
 from application.database import db
 from application.defs import cre_defs as defs
 import re
 from application.prompt_client import prompt_client as prompt_client
+from application.utils.external_project_parsers import base_parser_defs
 from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,
     ParseResult,
 )
 import requests
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class JuiceShop(ParserInterface):
@@ -52,7 +52,14 @@ class JuiceShop(ParserInterface):
                 hyperlink="https://demo.owasp-juice.shop//#/score-board?searchQuery="
                 + urllib.parse.quote(challenge["name"]),
                 tooltype=defs.ToolTypes.Training,
-                tags=[challenge["category"]],
+                tags=base_parser_defs.build_tags(
+                    family=base_parser_defs.Family.GUIDANCE,
+                    subtype=base_parser_defs.Subtype.TRAINING_APP,
+                    audience=base_parser_defs.Audience.DEVELOPER,
+                    maturity=base_parser_defs.Maturity.STABLE,
+                    source="owasp_juice_shop",
+                    extra=[challenge["category"]],
+                ),
             )
 
             existing = cache.get_nodes(
@@ -60,7 +67,7 @@ class JuiceShop(ParserInterface):
             )
             if existing:
                 embeddings = cache.get_embeddings_for_doc(existing[0])
-                if embeddings:
+                if embeddings and getattr(embeddings, "embedding_vec", None):
                     logger.info(
                         f"Node {chal.todict()} already exists and has embeddings, skipping"
                     )
@@ -97,4 +104,6 @@ class JuiceShop(ParserInterface):
                     f"stored {chal.section} but could not link it to any CRE reliably"
                 )
             chals.append(chal)
-        return ParseResult(results={self.name: chals})
+        results = {self.name: chals}
+        base_parser_defs.validate_classification_tags(results)
+        return ParseResult(results=results)

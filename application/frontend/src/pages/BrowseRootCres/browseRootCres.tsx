@@ -9,7 +9,7 @@ import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndica
 import { useEnvironment } from '../../hooks';
 import { applyFilters, filterContext } from '../../hooks/applyFilters';
 import { Document } from '../../types';
-import { groupLinksByType } from '../../utils';
+import { groupLinksByType, scrollMountToTop } from '../../utils';
 import { SearchResults } from '../Search/components/SearchResults';
 
 export const BrowseRootCres = () => {
@@ -20,7 +20,7 @@ export const BrowseRootCres = () => {
 
   useEffect(() => {
     setLoading(true);
-    window.scrollTo(0, 0);
+    scrollMountToTop();
 
     axios
       .get(`${apiUrl}/root_cres`)

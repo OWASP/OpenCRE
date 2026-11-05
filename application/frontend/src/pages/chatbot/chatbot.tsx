@@ -1,6 +1,6 @@
 import './chatbot.scss';
 
-import { sanitize } from 'dompurify';
+import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 import React, { useEffect, useRef, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -9,6 +9,12 @@ import { Button, Container, Form, Grid, Header, Icon } from 'semantic-ui-react';
 
 import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
+
+/** Render chatbot markdown safely for dangerouslySetInnerHTML. */
+export function renderChatMarkdown(markdown: string): string {
+  const parsed = marked.parse(markdown, { async: false });
+  return DOMPurify.sanitize(String(parsed), { USE_PROFILES: { html: true } });
+}
 
 export const Chatbot = () => {
   type ChatMessage = {
@@ -38,6 +44,7 @@ export const Chatbot = () => {
     'What controls from OWASP ASVS help prevent broken access control?',
     'Explain secure session management mistakes and mitigations with examples.',
   ];
+  const MAX_CHAT_INSTRUCTIONS_CHARS = 200;
 
   const DEFAULT_CHAT_STATE: ChatState = {
     term: '',
@@ -100,12 +107,12 @@ export const Chatbot = () => {
   }, [chatMessages]);
 
   function login() {
-    fetch(`${apiUrl}/user`, { method: 'GET' })
+    fetch(`${apiUrl}/auth/user`, { method: 'GET', headers: { Accept: 'application/json' } })
       .then((response) => {
         if (response.status === 200) {
           response.text().then((loggedInUser) => setUser(loggedInUser));
         } else {
-          window.location.href = `${apiUrl}/login`;
+          window.location.href = `${apiUrl}/auth/login`;
         }
       })
       .catch((fetchError) => {
@@ -123,7 +130,7 @@ export const Chatbot = () => {
 
   function processResponse(response: string) {
     const responses = response.split('```');
-    const resultBlocks: JSX.Element[] = [];
+    const resultBlocks: React.ReactElement[] = [];
 
     responses.forEach((txt, i) => {
       if (i % 2 === 0) {
@@ -131,7 +138,7 @@ export const Chatbot = () => {
           <p
             key={i}
             dangerouslySetInnerHTML={{
-              __html: sanitize(marked(txt), { USE_PROFILES: { html: true } }),
+              __html: renderChatMarkdown(txt),
             }}
           />
         );
@@ -169,7 +176,7 @@ export const Chatbot = () => {
 
     fetch(`${apiUrl}/completion`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ prompt: currentTerm, instructions: currentInstructions }),
     })
       .then(async (response) => {
@@ -230,6 +237,13 @@ export const Chatbot = () => {
         <a href={d.hyperlink} target="_blank" rel="noopener noreferrer">
           <strong>{d.name}</strong> - section {d.section ?? d.sectionID}
         </a>
+        {d.embeddingsUrl ? (
+          <div className="reference-link">
+            <a href={d.embeddingsUrl} target="_blank" rel="noopener noreferrer">
+              Scoped source (embedding URL)
+            </a>
+          </div>
+        ) : null}
         <div className="reference-link">
           <a href={link}>View in OpenCRE</a>
         </div>
@@ -384,6 +398,7 @@ export const Chatbot = () => {
                     <label>Instructions</label>
                     <Form.Input
                       fluid
+                      maxLength={MAX_CHAT_INSTRUCTIONS_CHARS}
                       value={chat.instructions}
                       onChange={(e) => setChat({ ...chat, instructions: e.target.value })}
                       placeholder={DEFAULT_CHAT_INSTRUCTIONS}

@@ -32,7 +32,7 @@ export const groupLinksByType = (node: Document): LinksByType =>
   node.links ? groupBy(node.links, (link) => link.ltype) : {};
 
 export const orderLinksByType = (lbt: LinksByType): LinksByType => {
-  const order = ['Contains', 'Linked To', 'Automatically linked to', 'Is Part Of', 'Related'];
+  const order = ['Linked To', 'Automatically linked to', 'Contains', 'Is Part Of', 'Related'];
   const res: LinksByType = {};
   for (const itm of order) {
     if (lbt[itm]) {
@@ -88,6 +88,16 @@ export const getApiEndpoint = (doc: Document, apiUrl: string): string => {
   }
 
   return `${apiUrl}/id/${doc.id}`;
+};
+
+export const getTopicDisplayName = (document: Document): string => {
+  if (!document) {
+    return '';
+  }
+  if (document.doctype === DOCUMENT_TYPES.TYPE_CRE) {
+    return document.name || '';
+  }
+  return getDocumentDisplayName(document);
 };
 
 export const getDocumentTypeText = (linkType, docType, parentDocType = ''): string => {

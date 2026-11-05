@@ -1,0 +1,5 @@
+# Default code owners for all paths.
+# With require_code_owner_reviews on main, a maintainer approval satisfies
+# merge requirements on contributor PRs. GitHub blocks authors from approving
+# their own PR as a code owner review.
+* @northdpole @robvanderveer @Pa04rth @paoga87

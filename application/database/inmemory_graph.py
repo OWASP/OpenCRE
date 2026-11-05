@@ -1,13 +1,11 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import sys
-import logging
 import networkx as nx
 from typing import List, Tuple
 from application.defs import cre_defs as defs
-
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class CycleDetectedError(Exception):
@@ -81,7 +79,7 @@ class CRE_Graph:
         if creID in rootIDs:
             return 0
 
-        if self.__parent_child_subgraph == None:
+        if self.__parent_child_subgraph is None:
             if len(self.__graph.edges) == 0:
                 raise ValueError("Graph has no edges")
             include_cres = []

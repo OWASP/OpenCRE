@@ -35,6 +35,12 @@
   &__link-type-container hr {
     margin: 15px 0;
   }
+
+  &__link-type-container {
+    border-left: 3px solid rgba(33, 133, 208, 0.2);
+    margin-left: 0.5rem;
+    padding-left: 0.75rem;
+  }
 }
 
 

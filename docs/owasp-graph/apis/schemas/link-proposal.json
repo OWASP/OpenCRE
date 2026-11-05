@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opencre.org/schemas/oie/link-proposal.json",
+  "title": "LinkProposal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "chunk_id",
+    "artifact_id",
+    "pipeline_run_id",
+    "classified_at",
+    "status",
+    "knowledge",
+    "retrieval",
+    "links",
+    "update_detection"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "pattern": "^0\\.\\d+\\.\\d+$" },
+    "chunk_id": { "type": "string" },
+    "artifact_id": { "type": "string" },
+    "pipeline_run_id": { "type": "string" },
+    "classified_at": { "type": "string", "format": "date-time" },
+    "status": { "const": "linked" },
+    "knowledge": { "$ref": "#/$defs/knowledge_snapshot" },
+    "retrieval": { "$ref": "#/$defs/retrieval_audit" },
+    "links": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "proposed-link.json" }
+    },
+    "update_detection": { "$ref": "#/$defs/update_detection" }
+  },
+  "$defs": {
+    "knowledge_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "source", "locator"],
+      "properties": {
+        "text": { "type": "string" },
+        "source": { "$ref": "source-ref.json" },
+        "locator": { "$ref": "locator.json" },
+        "security_summary": { "type": "string" }
+      }
+    },
+    "cre_candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cre_id"],
+      "properties": {
+        "cre_id": { "type": "string" },
+        "cre_name": { "type": "string" },
+        "score_vector": { "type": "number" },
+        "score_rerank": { "type": "number" },
+        "score_hybrid": { "type": "number" }
+      }
+    },
+    "retrieval_audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["retriever", "candidates", "reranked", "threshold"],
+      "properties": {
+        "retriever": { "type": "string" },
+        "candidates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/cre_candidate" }
+        },
+        "reranked": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/cre_candidate" }
+        },
+        "threshold": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "update_detection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["is_update"],
+      "properties": {
+        "is_update": { "type": "boolean" },
+        "prior_chunk_id": { "type": "string" },
+        "prior_document_ref": { "type": "string" },
+        "adversarial_flags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}
