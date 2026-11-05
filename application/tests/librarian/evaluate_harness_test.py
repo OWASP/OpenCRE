@@ -345,10 +345,6 @@ class BoundaryGateTest(unittest.TestCase):
         self.assertIn("FAILED (gates did not run)", out.getvalue())
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class CalibrationCoverageTest(unittest.TestCase):
     """#1166: rows that never reach the C.3 fit must count against the gate."""
 
@@ -387,7 +383,7 @@ class CalibrationCoverageTest(unittest.TestCase):
         self.assertIsNotNone(scaler, "T is still fitted so C.4 can report")
         self.assertIn("reached calibration: 4/5", report)
         self.assertIn("1 of 5 eligible rows did not reach the fit", report)
-        self.assertIn("FAILED (gate denominator incomplete)", report)
+        self.assertIn("FAILED (gate denominator incomplete; ", report)
 
     def test_full_coverage_gates_on_ece_only(self) -> None:
         rows = [r for r in self._rows() if r.id != "p3"]
@@ -414,6 +410,38 @@ class CalibrationCoverageTest(unittest.TestCase):
         )
         self.assertAlmostEqual(scaler.temperature, scaler_check.temperature, places=6)
         self.assertEqual(status, 0 if ece_check < 0.10 else 1)
+
+    def _well_calibrated_pipe(self) -> "CountingPipeline":
+        # Coin-flip shortlists on a balanced set: ECE is 0 at any T, so only
+        # coverage can decide these two tests.
+        return CountingPipeline(
+            {
+                "alpha": [("616-305", 0.0), ("999-999", 0.0)],
+                "alpha2": [("616-305", 0.0), ("999-999", 0.0)],
+                "beta": [("111-111", 0.0), ("222-222", 0.0)],
+                "beta2": [("111-111", 0.0), ("222-222", 0.0)],
+            }
+        )
+
+    def test_passing_ece_with_partial_coverage_still_fails(self) -> None:
+        rows, pipe = self._rows(), self._well_calibrated_pipe()
+        audits = harness.live_audits(rows, pipe, pipe)
+        with _captured_stdout() as out:
+            status, _ = harness.report_calibration(rows, audits)
+        report = out.getvalue()
+        self.assertEqual(status, 1, "the #1166 case: ECE passes, rows are missing")
+        self.assertIn("gate ECE<0.10: FAIL", report)
+        self.assertNotIn("PASS", report)
+        self.assertIn("ECE alone met the bar", report)
+
+    def test_passing_ece_with_full_coverage_passes(self) -> None:
+        rows = [r for r in self._rows() if r.id != "p3"]
+        pipe = self._well_calibrated_pipe()
+        audits = harness.live_audits(rows, pipe, pipe)
+        with _captured_stdout() as out:
+            status, _ = harness.report_calibration(rows, audits)
+        self.assertEqual(status, 0)
+        self.assertIn("gate ECE<0.10: PASS", out.getvalue())
 
     def test_missing_audit_rows_are_counted_in_the_decision_report(self) -> None:
         from application.utils.librarian.calibration.temperature import (
@@ -500,3 +528,7 @@ class CalibrationCoverageTest(unittest.TestCase):
         self.assertIn(
             "no rows with an expected decision in this selection", out.getvalue()
         )
+
+
+if __name__ == "__main__":
+    unittest.main()

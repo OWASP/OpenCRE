@@ -344,12 +344,13 @@ def report_calibration(
     Reads the shared ``audits`` from ``live_audits``, the same shortlists
     ``report_retrieval_recall`` scores, so the positive slice is not retrieved and
     reranked a second time just to calibrate on it. Confidence is the top-1 mass
-    of softmax(logits / T); prints ECE at T=1 vs the fitted T and PASS/FAIL on
-    ECE < 0.10.
+    of softmax(logits / T); prints ECE at T=1 vs the fitted T and PASS/FAIL. PASS
+    needs ECE < 0.10 and every eligible row to have reached the fit (#1166).
 
-    Returns ``(status, scaler)``. Status is 1 on a failed gate, and also on a
-    degenerate calibration set, so a live run can never exit 0 without the gate
-    actually having run. The fitted scaler is handed back (``None`` when the set
+    Returns ``(status, scaler)``. Status is 1 on a failed gate, on eligible rows
+    missing from the fit, and on a degenerate calibration set, so a live run can
+    never exit 0 without the gate actually having run over the whole selection.
+    The fitted scaler is handed back (``None`` when the set
     was degenerate) so the C.4 report thresholds on this same ``T`` instead of
     fitting its own.
     """
@@ -398,11 +399,14 @@ def report_calibration(
     print(
         f"calibration (C.3, {used} rows): fitted T={scaler.temperature:.3f}; "
         f"ECE {ece_raw:.3f} (raw, T=1) -> {ece_cal:.3f} (calibrated, in-sample); "
-        f"gate ECE<0.10: {'PASS' if ece_ok else 'FAIL'}; "
+        f"gate ECE<0.10: {'PASS' if gate_ok else 'FAIL'}; "
         f"reached calibration: {used}/{eligible}"
     )
     if not coverage_ok:
-        print("calibration (C.3): FAILED (gate denominator incomplete)")
+        print(
+            "calibration (C.3): FAILED (gate denominator incomplete; "
+            f"ECE alone {'met' if ece_ok else 'missed'} the bar)"
+        )
     return (0 if gate_ok else 1), scaler
 
 
