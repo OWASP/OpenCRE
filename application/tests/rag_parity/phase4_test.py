@@ -43,9 +43,7 @@ class RerankCompressTest(unittest.TestCase):
 
         from application.utils.rag_parity.flags import load_flags
 
-        with mock.patch.dict(
-            os.environ, {"OWASP_CX_MODERN_RERANK": "1"}, clear=False
-        ):
+        with mock.patch.dict(os.environ, {"OWASP_CX_MODERN_RERANK": "1"}, clear=False):
             for k in ("CRE_RAG_PARITY_MODERN_RERANK",):
                 os.environ.pop(k, None)
             self.assertTrue(load_flags().modern_rerank)

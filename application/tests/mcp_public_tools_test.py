@@ -384,6 +384,7 @@ class McpPublicToolsTest(unittest.TestCase):
 
     # --- E. Server list/call smoke (in-process) ---
 
+    @patch.dict(os.environ, {"OWASP_AGENT_ENABLED": "0"})
     def test_server_lists_and_calls_tool(self) -> None:
         self._seed_cre_and_node()
         client = self._rest()
