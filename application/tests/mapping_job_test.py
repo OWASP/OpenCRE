@@ -434,6 +434,32 @@ class MappingJobTest(unittest.TestCase):
         statuses = [r.status for r in self._rows().values()]
         self.assertEqual(1, statuses.count(SectionStatus.PENDING.value))
 
+    def test_section_deleted_mid_run_does_not_abort_the_batch(self) -> None:
+        last = self._rows()["1.4"]
+        real_write = self.collection.set_section_mapping
+        deleted = []
+
+        def write_then_delete(section_id: str, **kwargs: Any) -> bool:
+            moved = real_write(section_id, **kwargs)
+            if not deleted:
+                deleted.append(last.id)
+                sqla.session.delete(last)
+                sqla.session.commit()
+            return moved
+
+        with mock.patch.object(
+            self.collection, "set_section_mapping", write_then_delete
+        ):
+            summary = run_mapping(
+                self.standard.id,
+                self.collection,
+                components=_components(self.by_text, self.conf),
+                config=_config(),
+            )
+        self.assertEqual(
+            (4, 0, 1), (summary.considered, summary.errored, summary.skipped)
+        )
+
     def test_summary_counts_only_writes_that_landed(self) -> None:
         with mock.patch.object(
             self.collection, "set_section_mapping", return_value=False

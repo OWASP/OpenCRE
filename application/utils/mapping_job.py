@@ -98,9 +98,13 @@ def _outcome_for(
     """C.1 to C.4 for one section: ``(cre_db_id, confidence, status)``."""
     audit = components.retriever.retrieve(text)
     audit = components.reranker.rerank(text, audit)
-    reranked = [c for c in audit.reranked if c.score_rerank is not None]
-    logits = [float(c.score_rerank) for c in reranked]
-    cre_ids = [c.cre_id for c in reranked] or [c.cre_id for c in audit.candidates]
+    scored = [
+        (c.cre_id, float(c.score_rerank))
+        for c in audit.reranked
+        if c.score_rerank is not None
+    ]
+    logits = [logit for _, logit in scored]
+    cre_ids = [cre_id for cre_id, _ in scored] or [c.cre_id for c in audit.candidates]
     confidence = components.scaler.confidence(logits) if logits else 0.0
     result = decide(confidence, cre_ids, threshold=threshold)
 
@@ -142,9 +146,11 @@ def run_mapping(
         SectionStatus.UNMAPPABLE.value: "unmappable",
     }
 
-    for row in database.get_user_standard_sections_by_status(standard_id, statuses):
+    rows = database.get_user_standard_sections_by_status(standard_id, statuses)
+    # Ids up front: every commit below expires the rows, so reading one later is a
+    # query that can fail, and the error path must not depend on it.
+    for row, row_id, section_id in [(r, r.id, r.section_id) for r in rows]:
         summary.considered += 1
-        section_id = row.section_id
         try:
             # Read once: the write below must match the text that was scored.
             text = row.section_text
@@ -152,7 +158,7 @@ def run_mapping(
                 text, database, components, config.link_threshold
             )
             moved = database.set_section_mapping(
-                row.id,
+                row_id,
                 scored_text=text,
                 cre_db_id=cre_db_id,
                 confidence=confidence,
