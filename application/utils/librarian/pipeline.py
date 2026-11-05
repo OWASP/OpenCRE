@@ -29,13 +29,15 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, Iterable, List, Optional, Protocol, Sequence, Union
 
-from application.utils.librarian.decision_engine import decide
+from application.utils.librarian.decision_engine import DecisionResult, decide
 from application.utils.librarian.emitter import emit
 from application.utils.librarian.safety_guard import NullSafetyGuard, SafetyGuard
 from application.utils.librarian.schemas import (
+    Decision,
     KnowledgeQueueItem,
     LinkProposal,
     RetrievalAudit,
+    ReasonCode,
     ReviewItem,
 )
 from application.utils.librarian.section_validator import (
@@ -103,6 +105,40 @@ class Scaler(Protocol):
     """C.3: reranked logits -> one calibrated top-1 confidence."""
 
     def confidence(self, logits: Sequence[float]) -> float: ...
+
+
+def decide_shortlist(
+    scaler: Scaler,
+    logits: Sequence[float],
+    cre_ids: Sequence[str],
+    *,
+    threshold: float,
+    adversarial: bool = False,
+    update_ambiguous: bool = False,
+) -> DecisionResult:
+    """Score one reranked shortlist with C.3 and decide it with C.4.
+
+    C.3's confidence is the top-1 mass of ``softmax(logits / T)``, which only
+    means something relative to rival candidates: over a one-candidate shortlist
+    it is 1.0 by construction, however poor that match is. With fewer than two
+    candidates there is nothing to calibrate against, so the confidence is 0.0
+    and a lone candidate never auto-links, whatever the threshold (τ = 0
+    included). ``decide`` still runs first, so an empty shortlist reports
+    NO_CANDIDATES and the safety flags keep their precedence.
+    """
+    confidence = scaler.confidence(logits) if len(logits) >= 2 else 0.0
+    result = decide(
+        confidence,
+        cre_ids,
+        threshold=threshold,
+        adversarial=adversarial,
+        update_ambiguous=update_ambiguous,
+    )
+    if result.decision == Decision.linked and len(logits) < 2:
+        return DecisionResult(
+            Decision.review, confidence, result.cre_ids, ReasonCode.below_threshold
+        )
+    return result
 
 
 @dataclass(frozen=True)
@@ -196,7 +232,7 @@ class LibrarianPipeline:
         *,
         threshold: float,
         pipeline_run_id: str,
-        safety_guard: Optional[SafetyGuard] = None
+        safety_guard: Optional[SafetyGuard] = None,
     ) -> None:
         self._source = source
         self._retriever = retriever
@@ -236,11 +272,11 @@ class LibrarianPipeline:
                 reranked = [c for c in audit.reranked if c.score_rerank is not None]
                 logits = [float(c.score_rerank) for c in reranked]
                 cre_ids = [c.cre_id for c in reranked]
-                confidence = self._scaler.confidence(logits) if logits else 0.0
 
                 verdict = self._safety_guard.evaluate(section)
-                result = decide(
-                    confidence,
+                result = decide_shortlist(
+                    self._scaler,
+                    logits,
                     cre_ids,
                     threshold=self._threshold,
                     adversarial=verdict.adversarial,

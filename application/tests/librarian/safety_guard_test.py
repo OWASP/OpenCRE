@@ -70,7 +70,12 @@ class _Retriever:
 class _Reranker:
     def rerank(self, text, audit):
         return audit.model_copy(
-            update={"reranked": [CreCandidate(cre_id="616-305", score_rerank=9.0)]}
+            update={
+                "reranked": [
+                    CreCandidate(cre_id="616-305", score_rerank=9.0),
+                    CreCandidate(cre_id="117-371", score_rerank=-2.0),
+                ]
+            }
         )
 
 

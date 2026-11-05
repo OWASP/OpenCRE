@@ -10,9 +10,11 @@ logger = get_logger(__name__)
 import unittest
 from datetime import datetime, timezone
 
-from application.utils.librarian.pipeline import LibrarianPipeline
+from application.utils.librarian.calibration.temperature import TemperatureScaler
+from application.utils.librarian.pipeline import LibrarianPipeline, decide_shortlist
 from application.utils.librarian.schemas import (
     CreCandidate,
+    Decision,
     KnowledgeQueueItem,
     LinkProposal,
     ReasonCode,
@@ -80,7 +82,12 @@ class _Scaler:
         return self._conf
 
 
-TOP = [CreCandidate(cre_id="616-305", score_rerank=1.5)]
+# Two candidates: C.3's softmax confidence is only defined against a rival, so a
+# one-candidate shortlist never auto-links (see test_single_candidate_*).
+TOP = [
+    CreCandidate(cre_id="616-305", score_rerank=1.5),
+    CreCandidate(cre_id="117-371", score_rerank=-2.0),
+]
 
 
 def _pipeline(rows, reranked, conf):
@@ -114,6 +121,52 @@ class PipelineTest(unittest.TestCase):
         env = result.envelopes[0]
         self.assertIsInstance(env, ReviewItem)
         self.assertEqual(env.reason_code, ReasonCode.no_candidates)
+
+    def test_single_candidate_shortlist_reviews_below_threshold(self):
+        # softmax over one logit is 1.0 whatever the match quality, so a lone
+        # candidate must not auto-link however confident the scaler says it is.
+        lone = [CreCandidate(cre_id="616-305", score_rerank=-12.0)]
+        result = _pipeline([_row()], lone, 1.0).run(at=AT)
+        env = result.envelopes[0]
+        self.assertIsInstance(env, ReviewItem)
+        self.assertEqual(env.reason_code, ReasonCode.below_threshold)
+        self.assertEqual(result.stats.linked, 0)
+
+    def test_single_candidate_with_the_real_scaler_reviews(self):
+        lone = [CreCandidate(cre_id="616-305", score_rerank=-12.0)]
+        pipeline = LibrarianPipeline(
+            _Source([_row()]),
+            _Retriever(),
+            _Reranker(lone),
+            TemperatureScaler(temperature=1.0),
+            threshold=0.8,
+            pipeline_run_id=RUN,
+        )
+        result = pipeline.run(at=AT)
+        self.assertIsInstance(result.envelopes[0], ReviewItem)
+
+    def test_single_candidate_reviews_even_at_a_zero_threshold(self):
+        # At tau = 0 a confidence of 0.0 would still clear the bar, so the
+        # lone-candidate rule cannot rest on the confidence alone.
+        lone = [CreCandidate(cre_id="616-305", score_rerank=-12.0)]
+        pipeline = LibrarianPipeline(
+            _Source([_row()]),
+            _Retriever(),
+            _Reranker(lone),
+            _Scaler(1.0),
+            threshold=0.0,
+            pipeline_run_id=RUN,
+        )
+        env = pipeline.run(at=AT).envelopes[0]
+        self.assertIsInstance(env, ReviewItem)
+        self.assertEqual(env.reason_code, ReasonCode.below_threshold)
+
+    def test_single_candidate_keeps_safety_reason_precedence(self):
+        result = decide_shortlist(
+            _Scaler(1.0), [-12.0], ["616-305"], threshold=0.0, adversarial=True
+        )
+        self.assertEqual(result.decision, Decision.review)
+        self.assertEqual(result.reason_code, ReasonCode.adversarial_flag)
 
     def test_uncertain_row_is_skipped_at_boundary(self):
         result = _pipeline([_row(label="NOISE")], TOP, 0.95).run(at=AT)
