@@ -43,7 +43,8 @@ semver
 python-markdown-maker
 
 # chat (/rest/v1/completion) — embed prompt via LiteLLM, match with sklearn
-litellm
+# 1.107.x reported malicious (2026-10-26): stay below it until a clean release is confirmed.
+litellm<1.107
 numpy
 scipy
 scikit-learn
