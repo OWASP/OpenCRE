@@ -2485,15 +2485,18 @@ class Node_collection:
         return rows
 
     def upsert_user_standard_sections(
-        self, standard_id: str, sections: Sequence[Tuple[str, str]]
+        self, standard_id: str, user_id: str, sections: Sequence[Tuple[str, str]]
     ) -> int:
         """Insert or refresh sections as ``(section_id, section_text)`` pairs.
 
         New rows start ``PENDING``. A re-uploaded row whose text changed goes
         back to ``PENDING`` so the job re-maps it, unless the user has already
         decided it: ``USER_CONFIRMED`` / ``USER_REJECTED`` keep their status and
-        mapping, because user decisions are ground truth. Returns rows touched.
+        mapping, because user decisions are ground truth. Returns rows touched,
+        which is 0 when ``user_id`` does not own the standard.
         """
+        if self._owned_standard(standard_id, user_id) is None:
+            return 0
         now = self._utcnow_naive()
         existing = {
             row.section_id: row
@@ -2573,6 +2576,7 @@ class Node_collection:
         self,
         section_id: str,
         *,
+        scored_text: str,
         cre_db_id: Optional[str],
         confidence: Optional[float],
         status: str,
@@ -2582,11 +2586,14 @@ class Node_collection:
         Never moves a user-decided row, whatever it is asked to write, and the
         check is part of the UPDATE itself: a user who confirms a section
         between the job loading it and writing it wins, because the worker's
-        stale PENDING view is never consulted. That invariant lives here so no
-        caller can break it by accident.
+        stale PENDING view is never consulted. ``scored_text`` is checked the same
+        way, so a re-upload during the run stays PENDING for the next run instead
+        of taking the old text's mapping. That invariant lives here so no caller
+        can break it by accident.
         """
         updated = UserStandardSection.query.filter(
             UserStandardSection.id == section_id,
+            UserStandardSection.section_text == scored_text,
             UserStandardSection.status.notin_(list(USER_DECIDED_STATUSES)),
         ).update(
             {

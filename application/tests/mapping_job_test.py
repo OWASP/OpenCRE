@@ -13,6 +13,8 @@ logger = get_logger(__name__)
 
 import unittest
 from datetime import datetime, timezone
+from typing import Any
+from unittest import mock
 
 from application import create_app, sqla
 from application.database import db
@@ -133,6 +135,7 @@ class MappingJobTest(unittest.TestCase):
         self.standard = self.collection.create_user_standard(self.user.id, "My Policy")
         self.collection.upsert_user_standard_sections(
             self.standard.id,
+            self.user.id,
             [
                 ("1.1", "challenge nonce must be 64 bits"),
                 ("1.2", "salt every credential"),
@@ -307,6 +310,7 @@ class MappingJobTest(unittest.TestCase):
         )
         touched = self.collection.upsert_user_standard_sections(
             self.standard.id,
+            self.user.id,
             [
                 ("1.1", "changed text"),
                 ("1.2", "changed text too"),
@@ -326,7 +330,9 @@ class MappingJobTest(unittest.TestCase):
         the same call, not insert a second one into the unique constraint."""
         std = self.collection.create_user_standard(self.user.id, "Dupes")
         touched = self.collection.upsert_user_standard_sections(
-            std.id, [("9.1", "first text"), ("9.1", "second text"), ("9.2", "x")]
+            std.id,
+            self.user.id,
+            [("9.1", "first text"), ("9.1", "second text"), ("9.2", "x")],
         )
         rows = {
             r.section_id: r
@@ -359,6 +365,7 @@ class MappingJobTest(unittest.TestCase):
         self.collection.confirm_section_mapping(row.id, self.salt.id, self.user.id)
         moved = self.collection.set_section_mapping(
             row.id,
+            scored_text=row.section_text,
             cre_db_id=self.nonce.id,
             confidence=0.99,
             status=SectionStatus.AUTO_MAPPED.value,
@@ -372,12 +379,80 @@ class MappingJobTest(unittest.TestCase):
         row = self._rows()["1.1"]
         moved = self.collection.set_section_mapping(
             row.id,
+            scored_text=row.section_text,
             cre_db_id=self.nonce.id,
             confidence=0.9,
             status=SectionStatus.AUTO_MAPPED.value,
         )
         self.assertTrue(moved)
         self.assertEqual(self._rows()["1.1"].status, SectionStatus.AUTO_MAPPED.value)
+
+    def test_job_write_refuses_text_it_did_not_score(self) -> None:
+        row = self._rows()["1.1"]
+        self.collection.upsert_user_standard_sections(
+            self.standard.id, self.user.id, [("1.1", "password rotation")]
+        )
+        moved = self.collection.set_section_mapping(
+            row.id,
+            scored_text="challenge nonce must be 64 bits",
+            cre_db_id=self.nonce.id,
+            confidence=0.95,
+            status=SectionStatus.AUTO_MAPPED.value,
+        )
+        self.assertFalse(moved)
+        after = self._rows()["1.1"]
+        self.assertEqual(after.status, SectionStatus.PENDING.value)
+        self.assertIsNone(after.cre_db_id)
+
+    def test_upload_to_someone_elses_standard_changes_nothing(self) -> None:
+        touched = self.collection.upsert_user_standard_sections(
+            self.standard.id, self.other.id, [("1.1", "hijacked"), ("9.9", "new")]
+        )
+        self.assertEqual(touched, 0)
+        rows = self._rows()
+        self.assertEqual(rows["1.1"].section_text, "challenge nonce must be 64 bits")
+        self.assertNotIn("9.9", rows)
+
+    def test_failure_after_scoring_is_contained_to_its_section(self) -> None:
+        real_write = self.collection.set_section_mapping
+        calls = []
+
+        def flaky(section_id: str, **kwargs: Any) -> bool:
+            calls.append(section_id)
+            if len(calls) == 1:
+                raise RuntimeError("write failed")
+            return real_write(section_id, **kwargs)
+
+        with mock.patch.object(self.collection, "set_section_mapping", flaky):
+            summary = run_mapping(
+                self.standard.id,
+                self.collection,
+                components=_components(self.by_text, self.conf),
+                config=_config(),
+            )
+        self.assertEqual((4, 1), (summary.considered, summary.errored))
+        statuses = [r.status for r in self._rows().values()]
+        self.assertEqual(1, statuses.count(SectionStatus.PENDING.value))
+
+    def test_summary_counts_only_writes_that_landed(self) -> None:
+        with mock.patch.object(
+            self.collection, "set_section_mapping", return_value=False
+        ):
+            summary = run_mapping(
+                self.standard.id,
+                self.collection,
+                components=_components(self.by_text, self.conf),
+                config=_config(),
+            )
+        self.assertEqual(
+            (4, 0, 0, 0),
+            (
+                summary.skipped,
+                summary.auto_mapped,
+                summary.needs_review,
+                summary.unmappable,
+            ),
+        )
 
     def test_partial_failure_is_raised_so_rq_records_it(self) -> None:
         ok = MappingSummary(standard_id="s", threshold=0.8, considered=2, auto_mapped=2)

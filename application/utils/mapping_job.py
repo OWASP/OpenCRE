@@ -18,7 +18,10 @@ refuses to move them even if asked.
 
 This runs in a worker (the rq entry point is ``run_mapping_job``), which is
 why it may load the cross-encoder; the web process gets shortlists from
-``/rest/v1/link/suggest`` instead and never pays for the model.
+``/rest/v1/link/suggest`` instead and never pays for the model. That worker must
+have the ML dependencies: ``requirements.txt`` keeps torch and
+sentence-transformers off Heroku, so the stock Heroku worker cannot run this job.
+Point ``CRE_MAPPING_QUEUE_NAME`` at a queue only an ML-capable worker consumes.
 """
 
 from cre_logging import get_logger
@@ -27,7 +30,7 @@ logger = get_logger(__name__)
 
 import os
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, Optional, Sequence
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 from application.database.db import SectionStatus
 from application.utils.librarian.config_loader import LibrarianConfig, load_config
@@ -63,6 +66,8 @@ class MappingSummary:
     unmappable: int = 0
     #: sections whose stage raised; left as they were so the next run retries
     errored: int = 0
+    #: sections a user decided or re-uploaded mid-run; the job's write did not land
+    skipped: int = 0
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -82,6 +87,33 @@ def _store_id_for(database: Any, candidate_id: str) -> Optional[str]:
         return None
     internal_id: Optional[str] = database.get_cre_internal_id(cre.id)
     return internal_id
+
+
+def _outcome_for(
+    text: str,
+    database: Any,
+    components: LibrarianComponents,
+    threshold: float,
+) -> Tuple[Optional[str], Optional[float], str]:
+    """C.1 to C.4 for one section: ``(cre_db_id, confidence, status)``."""
+    audit = components.retriever.retrieve(text)
+    audit = components.reranker.rerank(text, audit)
+    reranked = [c for c in audit.reranked if c.score_rerank is not None]
+    logits = [float(c.score_rerank) for c in reranked]
+    cre_ids = [c.cre_id for c in reranked] or [c.cre_id for c in audit.candidates]
+    confidence = components.scaler.confidence(logits) if logits else 0.0
+    result = decide(confidence, cre_ids, threshold=threshold)
+
+    if result.reason_code is ReasonCode.no_candidates:
+        return None, None, SectionStatus.UNMAPPABLE.value
+    cre_db_id = _store_id_for(database, result.cre_ids[0])
+    if result.decision is Decision.linked and cre_db_id is not None:
+        status = SectionStatus.AUTO_MAPPED.value
+    else:
+        # Below threshold, or a candidate the graph could not resolve: a human
+        # decides, with the Librarian's confidence beside it.
+        status = SectionStatus.NEEDS_REVIEW.value
+    return cre_db_id, round(result.confidence, 4), status
 
 
 def run_mapping(
@@ -104,54 +136,45 @@ def run_mapping(
 
         components = build_components(database, config=config)
     summary = MappingSummary(standard_id=standard_id, threshold=config.link_threshold)
+    counters = {
+        SectionStatus.AUTO_MAPPED.value: "auto_mapped",
+        SectionStatus.NEEDS_REVIEW.value: "needs_review",
+        SectionStatus.UNMAPPABLE.value: "unmappable",
+    }
 
     for row in database.get_user_standard_sections_by_status(standard_id, statuses):
         summary.considered += 1
+        section_id = row.section_id
         try:
-            audit = components.retriever.retrieve(row.section_text)
-            audit = components.reranker.rerank(row.section_text, audit)
-            reranked = [c for c in audit.reranked if c.score_rerank is not None]
-            logits = [float(c.score_rerank) for c in reranked]
-            cre_ids = [c.cre_id for c in reranked] or [
-                c.cre_id for c in audit.candidates
-            ]
-            confidence = components.scaler.confidence(logits) if logits else 0.0
-            result = decide(confidence, cre_ids, threshold=config.link_threshold)
+            # Read once: the write below must match the text that was scored.
+            text = row.section_text
+            cre_db_id, confidence, status = _outcome_for(
+                text, database, components, config.link_threshold
+            )
+            moved = database.set_section_mapping(
+                row.id,
+                scored_text=text,
+                cre_db_id=cre_db_id,
+                confidence=confidence,
+                status=status,
+            )
         except Exception:
+            # A failed statement leaves the transaction aborted on Postgres, which
+            # would fail every later section too.
+            database.session.rollback()
             summary.errored += 1
             logger.warning(
                 "mapping job: section %s of standard %s failed; left for retry",
-                row.section_id,
+                section_id,
                 standard_id,
                 exc_info=True,
             )
             continue
-
-        if result.reason_code is ReasonCode.no_candidates:
-            database.set_section_mapping(
-                row.id,
-                cre_db_id=None,
-                confidence=None,
-                status=SectionStatus.UNMAPPABLE.value,
-            )
-            summary.unmappable += 1
-            continue
-
-        cre_db_id = _store_id_for(database, result.cre_ids[0])
-        if result.decision is Decision.linked and cre_db_id is not None:
-            status = SectionStatus.AUTO_MAPPED.value
-            summary.auto_mapped += 1
+        if moved:
+            field_name = counters[status]
+            setattr(summary, field_name, getattr(summary, field_name) + 1)
         else:
-            # Below threshold, or a candidate the graph could not resolve: a
-            # human decides, with the Librarian's confidence beside it.
-            status = SectionStatus.NEEDS_REVIEW.value
-            summary.needs_review += 1
-        database.set_section_mapping(
-            row.id,
-            cre_db_id=cre_db_id,
-            confidence=round(result.confidence, 4),
-            status=status,
-        )
+            summary.skipped += 1
 
     logger.info("mapping job: %s", summary.to_dict())
     return summary
