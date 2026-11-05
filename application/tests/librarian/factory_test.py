@@ -125,7 +125,7 @@ class BuildRetrieverForTest(unittest.TestCase):
         with mock.patch.dict(
             os.environ, {"CRE_LIBRARIAN_RETRIEVER_BACKEND": "pgvector"}, clear=True
         ), mock.patch(
-            "application.utils.librarian.factory.build_retriever"
+            "application.utils.librarian.candidate_retriever.build_retriever"
         ) as build_retriever:
             build_retriever_for(database, embed_fn=lambda _t: [0.1])
         self.assertIs(database.session, build_retriever.call_args.kwargs["connection"])
