@@ -61,3 +61,28 @@ class TestPromptHandler(unittest.TestCase):
             prompt, instructions=prompt_client.DEFAULT_CHAT_INSTRUCTIONS
         )
         self.assertFalse(result["accurate"])
+
+    def test_instructions_are_normalized(self):
+        default = prompt_client.DEFAULT_CHAT_INSTRUCTIONS
+        limit = prompt_client.MAX_CHAT_INSTRUCTIONS_CHARS
+        self.assertEqual(default, prompt_client.normalize_chat_instructions(None))
+        self.assertEqual(default, prompt_client.normalize_chat_instructions("  "))
+        self.assertEqual(default, prompt_client.normalize_chat_instructions(["x"]))
+        self.assertEqual("Hindi", prompt_client.normalize_chat_instructions(" Hindi "))
+        self.assertEqual(
+            limit, len(prompt_client.normalize_chat_instructions("x" * (limit + 1)))
+        )
+
+    def test_rendered_prompt_marks_instructions_as_untrusted(self):
+        for knowledge in ("some knowledge", None):
+            rendered = prompt_client._render_chat_prompt(
+                question="What is XSS?",
+                retrieved_knowledge=knowledge,
+                instructions="Answer in Hindi",
+            )
+            self.assertIn(
+                "<<<ANSWER_INSTRUCTIONS_START\nAnswer in Hindi\n"
+                "ANSWER_INSTRUCTIONS_END>>>",
+                rendered,
+            )
+            self.assertIn("ANSWER_INSTRUCTIONS only to the language", rendered)

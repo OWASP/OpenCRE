@@ -29,6 +29,8 @@ import requests
 
 
 SIMILARITY_THRESHOLD = float(os.environ.get("CHATBOT_SIMILARITY_THRESHOLD", "0.7"))
+DEFAULT_CHAT_INSTRUCTIONS = "Answer in English"
+MAX_CHAT_INSTRUCTIONS_CHARS = 200
 PROMPT_TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
 PROMPT_TEMPLATE_ENV = Environment(
     loader=FileSystemLoader(PROMPT_TEMPLATES_DIR),
@@ -54,10 +56,23 @@ def _extract_embeddings(response: Any) -> List[List[float]]:
     return litellm_router.extract_embeddings(response)
 
 
-def _render_chat_prompt(*, question: str, retrieved_knowledge: Optional[str]) -> str:
+def normalize_chat_instructions(instructions: Any) -> str:
+    """Clean the user's answer instructions, falling back to the default."""
+    if not isinstance(instructions, str) or not instructions.strip():
+        return DEFAULT_CHAT_INSTRUCTIONS
+    return instructions.strip()[:MAX_CHAT_INSTRUCTIONS_CHARS]
+
+
+def _render_chat_prompt(
+    *,
+    question: str,
+    retrieved_knowledge: Optional[str],
+    instructions: str = DEFAULT_CHAT_INSTRUCTIONS,
+) -> str:
     template = PROMPT_TEMPLATE_ENV.get_template("chat_prompt.j2")
     return template.render(
         question=question,
+        instructions=instructions,
         retrieved_knowledge=retrieved_knowledge or "",
         has_retrieved_knowledge=bool(retrieved_knowledge),
     )
@@ -771,10 +786,16 @@ class PromptHandler:
             return vectors
         return vectors[0]
 
-    def create_chat_completion(self, prompt: str, closest_object_str: str) -> str:
+    def create_chat_completion(
+        self,
+        prompt: str,
+        closest_object_str: str,
+        instructions: str = DEFAULT_CHAT_INSTRUCTIONS,
+    ) -> str:
         rag_instruction = _render_chat_prompt(
             question=prompt,
             retrieved_knowledge=closest_object_str,
+            instructions=instructions,
         )
         messages = [
             {
@@ -858,10 +879,13 @@ class PromptHandler:
                 )
                 raise
 
-    def query_llm(self, raw_question: str) -> str:
+    def query_llm(
+        self, raw_question: str, instructions: str = DEFAULT_CHAT_INSTRUCTIONS
+    ) -> str:
         direct_instruction = _render_chat_prompt(
             question=raw_question,
             retrieved_knowledge=None,
+            instructions=instructions,
         )
         messages = [
             {
@@ -1225,7 +1249,9 @@ class PromptHandler:
             return None, None
         return most_similar_id, max_similarity
 
-    def generate_text(self, prompt: str) -> Dict[str, str]:
+    def generate_text(
+        self, prompt: str, instructions: Optional[str] = None
+    ) -> Dict[str, str]:
         """
         Generate text is a frontend method used for the chatbot
         It matches the prompt/user question to an embedding from our database and then sends both the
@@ -1233,6 +1259,8 @@ class PromptHandler:
 
         Args:
             prompt (str): user question
+            instructions (Optional[str]): user supplied language or format request.
+                It reaches the LLM only and never the embedding used for matching.
 
         Returns:
             Dict[str,str]: a dictionary with the response and the closest object
@@ -1240,6 +1268,7 @@ class PromptHandler:
         timestamp = datetime.now().strftime("%I:%M:%S %p")
         if not prompt:
             return {"response": "", "table": "", "timestamp": timestamp}
+        answer_instructions = normalize_chat_instructions(instructions)
         logger.debug(f"getting embeddings for {prompt}")
         question_embedding = self.ai_client.get_text_embeddings(prompt)
         logger.debug(f"retrieved embeddings for {prompt}")
@@ -1290,6 +1319,7 @@ class PromptHandler:
             answer = self.ai_client.create_chat_completion(
                 prompt=prompt,
                 closest_object_str=closest_object_str,
+                instructions=answer_instructions,
             )
             accurate = True
 
@@ -1301,7 +1331,7 @@ class PromptHandler:
                     row["embeddingsUrl"] = narrow
             table.append(row)
         else:
-            answer = self.ai_client.query_llm(prompt)
+            answer = self.ai_client.query_llm(prompt, instructions=answer_instructions)
 
         logger.debug(f"retrieved completion for {prompt}")
         result = f"Answer: {answer}"
