@@ -22,7 +22,8 @@ auto-link, even handed the right id.
 records the human's decision (fsync'd) through `JsonlCorrectionsLog` first and
 stamps `consumed_at` second. A crash between the two leaves the row unconsumed
 and the decision re-recordable, never the reverse. A re-record appends a second
-line for the same `review_id`; readers take the last one. This is the same rule
+line for the same row; readers take the last one per `(review_id,
+pipeline_run_id)`, because `review_id` alone repeats across runs. This is the same rule
 Module C follows against Module B's queue, one handoff downstream.
 
 ## What is in this package (D0)
@@ -43,7 +44,7 @@ queue a human watches.
 
 `docs/gsoc_2026_module_d/click_speed_prototype.html` is the founding RFC's
 pre-code experiment: open it in a browser, review ten fake items with `y`, `n`
-and `c`, and it measures whether the flow stays under the RFC's 3-second bar. It
+and `c` (press space to start), and it measures whether the flow stays under the RFC's 3-second bar. It
 passes only if the average and every single item are under 3s and at least 8 of
 10 answers are right, so mashing a key or undoing a slow item does not count.
 No measured human run is recorded yet; record one here before D1 is held to it.

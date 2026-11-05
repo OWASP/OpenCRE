@@ -5,12 +5,13 @@ this shape: "simple human oversight without db bloat", so decisions append to a
 JSONL log rather than growing new tables. Each line is a ``HumanDecision``, the
 D -> feedback contract pinned in ``docs/owasp-graph/apis/module-d-hitl.md`` and
 ``schemas/human-decision.json``, and a test validates real lines against that
-schema. ``review_id`` joins a line back to its envelope, and ``decision_queue``
-rows are never deleted, so (input, prediction, human label) stays reconstructable
-even for a line that carries no ``loss_event``.
+schema. ``chunk_id`` plus ``pipeline_run_id`` joins a line back to its one
+``decision_queue`` row (``review_id`` alone repeats across runs), and those rows
+are never deleted, so (input, prediction, human label) stays reconstructable even
+for a line that carries no ``loss_event``.
 
-Replaying a review appends a second line for the same ``review_id``. The log
-stays append-only, so readers take the **last** line per ``review_id``.
+Replaying a review appends a second line for the same row. The log stays
+append-only, so readers take the **last** line per ``(review_id, pipeline_run_id)``.
 
 This log is the durable half of the two-step verdict flow: **record here first,
 stamp ``consumed_at`` second.** A crash in between leaves the row unconsumed
@@ -101,8 +102,8 @@ class HumanDecision(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    schema_version: str = SCHEMA_VERSION
-    decision_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    schema_version: str = Field(default=SCHEMA_VERSION, pattern=r"^0\.\d+\.\d+$")
+    decision_id: uuid.UUID = Field(default_factory=uuid.uuid4)
     review_id: str
     chunk_id: str
     pipeline_run_id: str

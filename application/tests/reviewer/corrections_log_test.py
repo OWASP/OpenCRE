@@ -17,7 +17,7 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from unittest import mock
 
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, FormatChecker
 from pydantic import ValidationError
 from referencing import Registry, Resource
 
@@ -76,7 +76,9 @@ def _validator() -> Draft202012Validator:
     registry = Registry().with_resources(
         [(s["$id"], Resource.from_contents(s)) for s in schemas]
     )
-    return Draft202012Validator(schemas[0], registry=registry)
+    return Draft202012Validator(
+        schemas[0], registry=registry, format_checker=FormatChecker()
+    )
 
 
 class HumanDecisionTest(unittest.TestCase):
@@ -97,6 +99,8 @@ class HumanDecisionTest(unittest.TestCase):
             dict(action="reject"),
             dict(action="reject", rejection=RejectionDetail(reason_code="X")),
             dict(decided_by=""),
+            dict(decision_id="not-a-uuid"),
+            dict(schema_version="1.0.0"),
         ):
             with self.assertRaises(ValidationError, msg=bad):
                 _decision(**bad)

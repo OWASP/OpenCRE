@@ -59,7 +59,7 @@ const ITEMS = [
   {text:"Use per-user salts and a memory-hard KDF for stored passwords.", reason:"BELOW_THRESHOLD", conf:0.63, want:"y",
    cands:["916-115 Password storage", "186-121 Approved hash functions"]},
 ];
-let i = 0, t0 = performance.now(), verdicts = [], typing = null;
+let i = 0, t0 = performance.now(), verdicts = [], typing = null, started = false;
 const spent = ITEMS.map(() => 0);
 const card = document.getElementById("card"),
       progress = document.getElementById("progress"),
@@ -111,10 +111,14 @@ function finish() {
               "FAIL: too slow on some item, or too many wrong answers."}</p>
     <p class="keys">refresh to run again</p></div>`;
 }
-setInterval(() => { if (i < ITEMS.length)
+setInterval(() => { if (started && i < ITEMS.length)
   timer.textContent = (spent[i] + (performance.now()-t0)/1000).toFixed(1) + "s"; }, 100);
 document.addEventListener("keydown", e => {
   if (e.repeat) return;   // held key must not auto-verdict a run of items
+  if (!started) {         // read the keys first; the clock starts on space
+    if (e.key === " ") { started = true; show(); }
+    return;
+  }
   if (typing !== null) {
     if (e.key === "Enter") { if (typing) decide("c"); }
     else if (e.key === "Escape") { typing = null; render(); }
@@ -127,7 +131,8 @@ document.addEventListener("keydown", e => {
   else if (e.key === "c" && i < ITEMS.length) { typing = ""; render(); }
   else if (e.key === "u") undo();
 });
-show();
+progress.textContent = "ready";
+card.innerHTML = `<div class="done"><p>Read the keys below, then press <kbd>space</kbd> to start.</p></div>`;
 </script>
 </body>
 </html>

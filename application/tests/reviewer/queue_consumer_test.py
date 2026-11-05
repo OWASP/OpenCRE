@@ -18,6 +18,7 @@ from application.database.db import DecisionQueueItem
 from application.utils.librarian.envelope_sink import DbEnvelopeSink
 from application.utils.reviewer.corrections_log import HumanDecision, RejectionDetail
 from application.utils.reviewer.queue_consumer import mark_reviewed, record_and_retire
+from application.utils.reviewer.review_source import DbReviewSource
 from application.tests.reviewer._envelopes import RUN, linked, review
 
 AT = datetime(2026, 9, 17, 12, 0, 0, tzinfo=timezone.utc)
@@ -90,6 +91,7 @@ class RecordAndRetireTest(unittest.TestCase):
         sink.write([review("chk:1")])
         sqla.session.commit()
         self.row = sqla.session.query(DecisionQueueItem).one()
+        (self.review,) = DbReviewSource(sqla.session).items()
         self.log = MagicMock()
         self.decision = HumanDecision(
             review_id="review:chk:1",
@@ -108,7 +110,7 @@ class RecordAndRetireTest(unittest.TestCase):
 
     def test_records_then_stamps(self) -> None:
         stamped = record_and_retire(
-            sqla.session, self.log, self.decision, self.row.id, at=AT
+            sqla.session, self.log, self.decision, self.review, at=AT
         )
         self.assertEqual(1, stamped)
         self.log.record.assert_called_once_with(self.decision)
@@ -118,7 +120,15 @@ class RecordAndRetireTest(unittest.TestCase):
     def test_a_failed_record_leaves_the_row_unretired(self) -> None:
         self.log.record.side_effect = OSError("disk full")
         with self.assertRaises(OSError):
-            record_and_retire(sqla.session, self.log, self.decision, self.row.id, at=AT)
+            record_and_retire(sqla.session, self.log, self.decision, self.review, at=AT)
+        sqla.session.refresh(self.row)
+        self.assertIsNone(self.row.consumed_at)
+
+    def test_a_decision_about_another_row_changes_nothing(self) -> None:
+        other = self.decision.model_copy(update={"chunk_id": "chk:2"})
+        with self.assertRaises(ValueError):
+            record_and_retire(sqla.session, self.log, other, self.review, at=AT)
+        self.log.record.assert_not_called()
         sqla.session.refresh(self.row)
         self.assertIsNone(self.row.consumed_at)
 

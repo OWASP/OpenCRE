@@ -16,7 +16,7 @@ log first, stamp here second. ``record_and_retire`` is that order as code, and i
 what a review flow should call. A crash between the two leaves the row unconsumed
 and the decision re-recordable, never the other way round, where the row is
 retired and the decision lost. A re-record appends a second line for the same
-``review_id``, and readers take the last one.
+row, and readers take the last one per ``(review_id, pipeline_run_id)``.
 """
 
 from cre_logging import get_logger
@@ -30,7 +30,10 @@ from application.utils.reviewer.corrections_log import (
     HumanDecision,
     JsonlCorrectionsLog,
 )
-from application.utils.reviewer.review_source import REVIEWABLE_STATUS
+from application.utils.reviewer.review_source import (
+    REVIEWABLE_STATUS,
+    PendingReview,
+)
 
 # Same bind-parameter ceiling reasoning as Module C's write-back.
 _CHUNK_SIZE = 500
@@ -86,16 +89,26 @@ def record_and_retire(
     session: Any,
     log: JsonlCorrectionsLog,
     decision: HumanDecision,
-    row_id: str,
+    review: PendingReview,
     *,
     at: datetime,
 ) -> int:
-    """Persist ``decision``, then stamp its row; return rows stamped.
+    """Persist ``decision``, then stamp ``review``'s row; return rows stamped.
 
-    The caller owns the session and commits, as with ``mark_reviewed``.
+    Refuses a decision made about a different row before writing anything, since
+    that row would retire with no decision of its own on record. The caller owns
+    the session and commits, as with ``mark_reviewed``.
     """
+    if (decision.chunk_id, decision.pipeline_run_id) != (
+        review.chunk_id,
+        review.pipeline_run_id,
+    ):
+        raise ValueError(
+            f"decision for {decision.chunk_id} in run {decision.pipeline_run_id} "
+            f"does not belong to row {review.row_id}"
+        )
     log.record(decision)
-    return mark_reviewed(session, [row_id], at=at)
+    return mark_reviewed(session, [review.row_id], at=at)
 
 
 __all__ = ["mark_reviewed", "record_and_retire"]
