@@ -44,8 +44,9 @@ pass and one fitted `T` — the pipeline is built once per run, not once per
 report.
 
 **C.3 is the only *additional* gate a live run adds.** A failed or skipped ECE
-gate returns non-zero, so a live run cannot pass without calibration having
-actually run, and C.4 stays informational. The hermetic gates still apply on top:
+gate returns non-zero, and so does a run where eligible rows never reached the
+fit, so a live run cannot pass without calibration having actually run over the
+whole selection. C.4 stays informational. The hermetic gates still apply on top:
 a failed C.0.5 explicit slice, or a C.0 boundary that rejects the whole dataset,
 fails the run in either mode (§5).
 
@@ -200,6 +201,12 @@ and artifact id; `RunStats.errored` counts them separately from `skipped`.
 A degenerate calibration set — all top-1 labels the same class — cannot identify
 `T`. The harness fails rather than skipping, so this is reported, not hidden.
 Widen the slice selection so both the positive and hard_negative slices are in.
+
+**C.3 fails with "gate denominator incomplete"**
+Eligible rows never reached the fit, so the `reached calibration: used/eligible`
+line shows `used` below `eligible`. Widening the selection will not help. Find
+the rows with no audit or an empty reranked shortlist and fix why they came back
+empty.
 
 ---
 
