@@ -22,7 +22,10 @@ class RerankHit:
 
 
 def default_rerank_provider() -> str:
-    return os.environ.get("CRE_RAG_PARITY_RERANK_PROVIDER", "cohere").strip().lower()
+    """Comma-separated provider chain, tried in order (default: Cohere, then LLM)."""
+    return (
+        os.environ.get("CRE_RAG_PARITY_RERANK_PROVIDER", "cohere,llm").strip().lower()
+    )
 
 
 def identity_rerank(
@@ -54,6 +57,42 @@ def try_cohere_rerank(
     return out
 
 
+def try_llm_rerank(
+    query: str, docs: Sequence[Tuple[str, str]]
+) -> List[Tuple[str, float]]:
+    """Listwise LLM rerank (LiteLLM); fallback when Cohere is unavailable."""
+    import json
+    import re
+
+    from application.prompt_client.litellm_router import resilient_completion
+
+    if not docs:
+        return []
+    model = os.environ.get("CRE_RAG_PARITY_LLM_RERANK_MODEL", "gemini/gemini-2.5-flash")
+    listing = "\n".join(f"[{i}] {t[:600]}" for i, (_id, t) in enumerate(docs))
+    prompt = (
+        "Rank these passages by relevance to the question, most relevant first.\n"
+        f"Question: {query}\n\nPassages:\n{listing}\n\n"
+        "Reply with only a JSON array of passage indices, e.g. [2,0,1]."
+    )
+    resp = resilient_completion(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        context="llm rerank",
+        temperature=0,
+    )
+    raw = (resp.choices[0].message.content or "").strip()
+    m = re.search(r"\[.*?\]", raw, re.DOTALL)
+    order = (
+        [int(i) for i in json.loads(m.group(0)) if 0 <= int(i) < len(docs)] if m else []
+    )
+    if not order:
+        raise RuntimeError("llm rerank returned no ranking")
+    seen = list(dict.fromkeys(order)) + [i for i in range(len(docs)) if i not in order]
+    n = len(seen)
+    return [(docs[i][0], float(n - rank) / n) for rank, i in enumerate(seen)]
+
+
 def resolve_rerank_fn(
     flags: Optional[RagParityFlags] = None,
     *,
@@ -64,19 +103,23 @@ def resolve_rerank_fn(
     cfg = flags or load_flags()
     if not cfg.modern_rerank:
         return identity_rerank
-    provider = default_rerank_provider()
-    if provider == "cohere":
+    chain = [p.strip() for p in default_rerank_provider().split(",") if p.strip()]
+    providers = [globals()[_PROVIDERS[p]] for p in chain if p in _PROVIDERS]
+    if not providers:
+        return identity_rerank
 
-        def _call(
-            query: str, docs: Sequence[Tuple[str, str]]
-        ) -> List[Tuple[str, float]]:
+    def _call(query: str, docs: Sequence[Tuple[str, str]]) -> List[Tuple[str, float]]:
+        for fn in providers:
             try:
-                return try_cohere_rerank(query, docs)
-            except Exception:  # noqa: BLE001
-                return identity_rerank(query, docs)
+                return fn(query, docs)
+            except Exception:  # noqa: BLE001 — fall through to the next provider
+                continue
+        return identity_rerank(query, docs)
 
-        return _call
-    return identity_rerank
+    return _call
+
+
+_PROVIDERS = {"cohere": "try_cohere_rerank", "llm": "try_llm_rerank"}
 
 
 def contextual_compress(

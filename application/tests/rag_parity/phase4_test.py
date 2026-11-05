@@ -43,12 +43,43 @@ class RerankCompressTest(unittest.TestCase):
 
         from application.utils.rag_parity.flags import load_flags
 
-        with mock.patch.dict(
-            os.environ, {"OWASP_CX_MODERN_RERANK": "1"}, clear=False
-        ):
+        with mock.patch.dict(os.environ, {"OWASP_CX_MODERN_RERANK": "1"}, clear=False):
             for k in ("CRE_RAG_PARITY_MODERN_RERANK",):
                 os.environ.pop(k, None)
             self.assertTrue(load_flags().modern_rerank)
+
+
+class RerankChainTest(unittest.TestCase):
+    def _flags(self):
+        from application.utils.rag_parity.flags import RagParityFlags
+
+        return RagParityFlags(modern_rerank=True, contextual_compression=False)
+
+    def test_falls_back_from_cohere_to_llm(self) -> None:
+        from unittest import mock
+
+        from application.utils.rag_parity import phase4_rerank as m
+
+        docs = [("a", "x"), ("b", "y")]
+        with mock.patch.object(
+            m, "try_cohere_rerank", side_effect=RuntimeError
+        ), mock.patch.object(
+            m, "try_llm_rerank", return_value=[("b", 1.0), ("a", 0.5)]
+        ):
+            out = m.resolve_rerank_fn(self._flags())("q", docs)
+        self.assertEqual([d for d, _ in out], ["b", "a"])
+
+    def test_falls_back_to_identity_when_all_fail(self) -> None:
+        from unittest import mock
+
+        from application.utils.rag_parity import phase4_rerank as m
+
+        docs = [("a", "x"), ("b", "y")]
+        with mock.patch.object(
+            m, "try_cohere_rerank", side_effect=RuntimeError
+        ), mock.patch.object(m, "try_llm_rerank", side_effect=RuntimeError):
+            out = m.resolve_rerank_fn(self._flags())("q", docs)
+        self.assertEqual([d for d, _ in out], ["a", "b"])
 
 
 if __name__ == "__main__":
