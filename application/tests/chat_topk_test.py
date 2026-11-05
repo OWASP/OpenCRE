@@ -30,8 +30,8 @@ from application.prompt_client.chat_retrieval import (
     ChatPassage,
     ChatRetriever,
     apply_breakoff,
+    fit_to_budget,
     render_passages,
-    split_budget,
 )
 
 
@@ -101,11 +101,25 @@ class BreakoffRuleTest(unittest.TestCase):
         self.assertEqual(apply_breakoff([], floor=0.7, delta=0.1, cap=5), [])
         self.assertEqual(apply_breakoff([("a", 0.9)], floor=0.7, delta=0.1, cap=0), [])
 
-    def test_budget_split(self) -> None:
-        self.assertEqual(split_budget(8000, 5), 1600)
-        self.assertEqual(split_budget(8000, 1), 8000)
-        self.assertEqual(split_budget(8000, 0), 8000)
-        self.assertEqual(split_budget(500, 10), 200)  # never starve a passage
+    def test_short_passages_hand_their_budget_to_long_ones(self) -> None:
+        long_one = ChatPassage("a", KIND_STANDARD, 0.9, rank=1, content="x" * 7000)
+        stubs = [
+            ChatPassage(str(i), KIND_CRE, 0.8, rank=i, content="y" * 40)
+            for i in range(2, 6)
+        ]
+        passages = [long_one] + stubs
+        fit_to_budget(8000, passages)
+        self.assertEqual(7000, len(long_one.content))
+        self.assertTrue(all(len(p.content) == 40 for p in stubs))
+
+    def test_budget_is_shared_when_every_passage_is_long(self) -> None:
+        passages = [
+            ChatPassage(str(i), KIND_STANDARD, 0.9, rank=i, content="x" * 5000)
+            for i in range(1, 4)
+        ]
+        fit_to_budget(3000, passages)
+        self.assertLessEqual(len(render_passages(passages)), 3000)
+        self.assertGreater(min(len(p.content) for p in passages), 900)
 
 
 # ---------------------------------------------------------- retriever, pgvector
@@ -133,7 +147,12 @@ class ChatRetrieverPgvectorTest(unittest.TestCase):
             "asvs": _Node(
                 name="ASVS", doctype="Standard", section="V1", hyperlink="https://asvs"
             ),
-            "cre1": _Node(id="011-010", name="Threat modeling", doctype="CRE"),
+            "cre1": _Node(
+                id="011-010",
+                name="Threat modeling",
+                doctype="CRE",
+                description="Analyse threats early",
+            ),
         }
         embeddings = {
             "samm": _emb(
@@ -189,12 +208,69 @@ class ChatRetrieverPgvectorTest(unittest.TestCase):
         )
         self.assertEqual(cols, ["cre_id", "node_id"])
 
-    def test_passage_budget_is_split_across_passages(self) -> None:
+    def test_rendered_passages_fit_the_budget(self) -> None:
         retriever, _ = self._retriever(char_budget=3000)
         passages = retriever.retrieve("q", [0.1, 0.2])
         self.assertEqual(len(passages), 3)
-        for p in passages:
-            self.assertLessEqual(len(p.content), 1000)
+        self.assertLessEqual(len(render_passages(passages)), 3000)
+
+    def _lanes(
+        self,
+        standards: List[Tuple[str, float]],
+        cres: List[Tuple[str, float]],
+        nodes: Dict[str, _Node],
+    ) -> ChatRetriever:
+        embeddings = {oid: _emb(f"text of {oid}") for oid, _ in standards}
+        embeddings.update(
+            {oid: _emb("Credoctypes.CRE\n name:x\n description:\n") for oid, _ in cres}
+        )
+        return ChatRetriever(
+            _pgvector_database(standards, cres, nodes, embeddings),
+            top_k_retrieve=8,
+            top_k_cre=4,
+            top_k_prompt=5,
+            floor=0.7,
+            breakoff_delta=0.08,
+            char_budget=8000,
+        )
+
+    def test_name_only_cre_cannot_evict_a_standard(self) -> None:
+        nodes = {
+            "std": _Node(name="ASVS", doctype="Standard", section="V1"),
+            "cre": _Node(id="683-036", name="Wireless link", doctype="CRE"),
+        }
+        passages = self._lanes([("std", 0.74)], [("cre", 0.83)], nodes).retrieve(
+            "q", [0.1]
+        )
+        self.assertEqual(["std", "cre"], [p.object_id for p in passages])
+        self.assertEqual("", passages[1].content)
+        self.assertNotIn("Credoctypes", render_passages(passages))
+
+    def test_only_name_only_cres_is_no_result(self) -> None:
+        nodes = {"cre": _Node(id="683-036", name="Wireless link", doctype="CRE")}
+        retriever = self._lanes([], [("cre", 0.83)], nodes)
+        self.assertEqual([], retriever.retrieve("q", [0.1]))
+
+    def test_cre_description_is_real_knowledge(self) -> None:
+        nodes = {
+            "cre": _Node(
+                id="683-036", name="Wireless", doctype="CRE", description="Use WPA3"
+            )
+        }
+        passages = self._lanes([], [("cre", 0.83)], nodes).retrieve("q", [0.1])
+        self.assertEqual(["Use WPA3"], [p.content for p in passages])
+
+    def test_one_document_filling_the_top_k_does_not_hide_the_next_one(self) -> None:
+        # #962: eight Cheat Sheets sections outrank SAMM, which must still appear.
+        standards = [(f"cs{i}", 0.85 - i * 0.002) for i in range(8)]
+        standards.append(("samm", 0.82))
+        nodes = {
+            oid: _Node(name="Cheat Sheets", doctype="Standard", section=oid)
+            for oid, _ in standards
+        }
+        nodes["samm"] = _Node(name="SAMM", doctype="Standard", section="TA")
+        passages = self._lanes(standards, [], nodes).retrieve("q", [0.1])
+        self.assertEqual(["cs0", "samm"], [p.object_id for p in passages])
 
     def test_table_rows_keep_frontend_shape_plus_rank_score_and_url(self) -> None:
         retriever, _ = self._retriever()
@@ -401,6 +477,23 @@ class GenerateTextTopKTest(unittest.TestCase):
         self.assertEqual(ai.llm_calls, 1)
         self.assertEqual(ai.prompts, [])  # no grounded completion was attempted
 
+    def test_no_knowledge_marker_is_stripped_and_drops_the_accuracy_claim(self) -> None:
+        self.assertEqual(
+            ("general essay", False),
+            prompt_client_mod._split_no_knowledge_marker("general essay&\n"),
+        )
+        self.assertEqual(
+            ("a & b", True), prompt_client_mod._split_no_knowledge_marker("a & b")
+        )
+
+    def test_answer_that_used_no_passage_claims_nothing(self) -> None:
+        handler, ai = _handler_with([_passage(1, "a", "SAMM", "samm text")])
+        ai.create_chat_completion = lambda **_: "general essay&"
+        out = handler.generate_text("q")
+        self.assertEqual("Answer: general essay", out["response"])
+        self.assertFalse(out["accurate"])
+        self.assertEqual([], out["table"])
+
     def test_empty_prompt_short_circuits(self) -> None:
         handler, ai = _handler_with([])
         out = handler.generate_text("")
@@ -570,9 +663,7 @@ class ReviewFollowUpsTest(unittest.TestCase):
             _passage(2, "b", long_title, "y" * 5000, "https://example.test/two"),
             _passage(3, "c", long_title, "z" * 5000),
         ]
-        per = chat_retrieval.content_budget(3000, passages)
-        for p in passages:
-            p.content = p.content[:per]
+        fit_to_budget(3000, passages)
         rendered = render_passages(passages)
         self.assertLessEqual(len(rendered), 3000)
         self.assertEqual(

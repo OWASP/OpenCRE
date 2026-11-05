@@ -63,6 +63,15 @@ def _render_chat_prompt(*, question: str, retrieved_knowledge: Optional[str]) ->
     )
 
 
+def _split_no_knowledge_marker(answer: str) -> Tuple[str, bool]:
+    """Returns the answer without chat_prompt.j2's ``&`` marker, and whether the
+    model used the retrieved knowledge, which is when the marker is absent."""
+    stripped = answer.rstrip()
+    if stripped.endswith("&"):
+        return stripped[:-1].rstrip(), False
+    return answer, True
+
+
 def is_valid_url(url):
     return url.startswith("http://") or url.startswith("https://")
 
@@ -1280,11 +1289,14 @@ class PromptHandler:
                 prompt=prompt,
                 closest_object_str=knowledge,
             )
-            accurate = True
-            table = [p.table_row() for p in passages]
+            # chat_prompt.j2 rule 5: a trailing '&' means no passage was used.
+            answer, used_passages = _split_no_knowledge_marker(answer)
+            if used_passages:
+                accurate = True
+                table = [p.table_row() for p in passages]
         else:
             # Nothing above the floor: unchanged fallback, and we do not claim accuracy.
-            answer = self.ai_client.query_llm(prompt)
+            answer, _ = _split_no_knowledge_marker(self.ai_client.query_llm(prompt))
 
         logger.debug(f"retrieved completion for {prompt}")
         result = f"Answer: {answer}"

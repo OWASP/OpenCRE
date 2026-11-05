@@ -202,12 +202,26 @@ export const Chatbot = () => {
   function displayDocument(d: Document) {
     if (!d || !d.doctype) return null;
 
+    const citation = d.rank ? `[${d.rank}] ` : '';
+
+    if (d.doctype === 'CRE') {
+      return (
+        <div className="reference-card">
+          <a href={`/cre/${d.id}`}>
+            {citation}
+            <strong>{d.name}</strong> — CRE {d.id}
+          </a>
+        </div>
+      );
+    }
+
     let link = `/node/${d.doctype.toLowerCase()}/${d.name}`;
     link += d.section ? `/section/${d.section}` : `/sectionid/${d.sectionID}`;
 
     return (
       <div className="reference-card">
         <a href={d.hyperlink} target="_blank" rel="noopener noreferrer">
+          {citation}
           <strong>{d.name}</strong> — section {d.section ?? d.sectionID}
         </a>
         {d.embeddingsUrl ? (

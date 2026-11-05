@@ -11,16 +11,20 @@ reuses the Librarian seams instead of inventing a second RAG stack:
   and Chat order candidates identically.
 
 Two lanes run on one question embedding: Standards (what Rob's SAMM example
-needs) and CREs (the hub). Hits are merged, de-duplicated per document, cut
-at a **break-off** (keep anything within ``delta`` of the best score and above
-the existing ``CHATBOT_SIMILARITY_THRESHOLD`` floor), capped, and loaded into
-``ChatPassage`` objects with a per-passage character budget.
+needs) and CREs (the hub). Each lane is cut at its own **break-off** (keep
+anything within ``delta`` of that lane's best score and above the existing
+``CHATBOT_SIMILARITY_THRESHOLD`` floor), because a CRE embedding is mostly a name
+and its score says nothing about how good a Standard's text is. Standards then
+go first, one passage per document, and CREs fill what is left. The Standards
+lane over-fetches, since one document can own every top row. Passages share a
+character budget, and a result with no real text counts as no result.
 
 Rerank is a one-function hook (``rerank_fn``) so the cross-encoder (dev) and
 ``title_boost`` (when #1088 lands) slot in without touching this file again.
 
 Environment (all optional):
-    CHATBOT_TOPK_RETRIEVE   candidates per lane before break-off (default 8)
+    CHATBOT_TOPK_RETRIEVE   Standards wanted before dedupe; the lane fetches
+                            LANE_OVERFETCH times this (default 8)
     CHATBOT_TOPK_CRE        CRE-lane candidates (default 4)
     CHATBOT_TOPK_PROMPT     passages sent to the model (default 5)
     CHATBOT_BREAKOFF_DELTA  keep score >= best - delta (default 0.08)
@@ -46,6 +50,8 @@ RerankFn = Callable[[str, List["ChatPassage"]], List["ChatPassage"]]
 
 KIND_STANDARD = "standard"
 KIND_CRE = "cre"
+# Nodes are sections, so one document can fill a plain top-k on its own (#962).
+LANE_OVERFETCH = 4
 
 
 def _env_int(name: str, default: int) -> int:
@@ -78,6 +84,11 @@ class ChatPassage:
     content: str = ""
     url: Optional[str] = None
     row: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def has_knowledge(self) -> bool:
+        """False for a CRE that is only a name, which cannot ground an answer."""
+        return self.kind == KIND_STANDARD or bool(self.content)
 
     def table_row(self) -> Dict[str, Any]:
         """Shape the frontend reference card already understands, plus rank/score."""
@@ -117,13 +128,6 @@ def apply_breakoff(
     return out
 
 
-def split_budget(total_chars: int, n: int) -> int:
-    """Per-passage character budget: the model limit shared evenly."""
-    if n <= 0:
-        return total_chars
-    return max(200, total_chars // n)
-
-
 def passage_header(p: ChatPassage) -> str:
     """The ``[n] title (url)`` line that precedes a passage in the prompt."""
     head = f"[{p.rank}] {p.title}".rstrip()
@@ -140,12 +144,18 @@ def rendered_overhead(passages: Sequence[ChatPassage]) -> int:
     return per_passage + 2 * (len(passages) - 1)  # blank-line separators
 
 
-def content_budget(total_chars: int, passages: Sequence[ChatPassage]) -> int:
-    """Per-passage content budget so the rendered block fits ``total_chars``."""
-    if not passages:
-        return total_chars
+def fit_to_budget(total_chars: int, passages: Sequence[ChatPassage]) -> None:
+    """Trim passage content so the rendered block fits ``total_chars``.
+
+    Short passages keep all their text and hand what they do not use to the
+    long ones, so a page of real text is not cut down to the size of a CRE stub.
+    """
     remaining = max(0, total_chars - rendered_overhead(passages))
-    return max(1, remaining // len(passages))
+    shortest_first = sorted(passages, key=lambda p: len(p.content))
+    for i, p in enumerate(shortest_first):
+        share = remaining // (len(shortest_first) - i)
+        p.content = p.content[:share]
+        remaining -= len(p.content)
 
 
 def render_passages(passages: Sequence[ChatPassage]) -> str:
@@ -268,8 +278,9 @@ class ChatRetriever:
         embs = self.database.get_embedding(oid)
         if embs:
             emb = embs[0]
-            content = (getattr(emb, "embeddings_content", None) or "").strip()
             url = (getattr(emb, "embeddings_url", None) or "").strip() or None
+            if kind == KIND_STANDARD:
+                content = (getattr(emb, "embeddings_content", None) or "").strip()
         try:
             row = node.shallow_copy().todict()
         except Exception:  # noqa: BLE001 - defensive: never 500 on a malformed node
@@ -280,7 +291,11 @@ class ChatRetriever:
             title = f"{title} §{section}"
         if kind == KIND_CRE and row.get("id"):
             title = f"CRE {row['id']}: {title}"
-        if not content:
+        if kind == KIND_CRE:
+            # A CRE's embedding text is its own fields ("Credoctypes.CRE name:..."),
+            # so the description is the only knowledge it has.
+            content = str(row.get("description") or "").strip()
+        elif not content:
             # Fall back to the node's own fields, as the old single-hit path did.
             content = "\n".join(f"{k}:{v}" for k, v in row.items() if v)
         return ChatPassage(
@@ -302,11 +317,12 @@ class ChatRetriever:
         Empty list means nothing cleared the floor: the caller keeps the old
         ``query_llm`` fallback and reports ``accurate=False``.
         """
+        fetch = self.top_k_retrieve * LANE_OVERFETCH
         standards = self._lane(
             question_embedding,
             doc_type=cre_defs.Credoctypes.Standard.value,
             id_column="node_id",
-            k=self.top_k_retrieve,
+            k=fetch,
         )
         cres = self._lane(
             question_embedding,
@@ -314,19 +330,20 @@ class ChatRetriever:
             id_column="cre_id",
             k=self.top_k_cre,
         )
-        kinds = {oid: KIND_STANDARD for oid, _ in standards}
-        kinds.update({oid: KIND_CRE for oid, _ in cres if oid not in kinds})
-        kept = apply_breakoff(
-            standards + cres,
-            floor=self.floor,
-            delta=self.breakoff_delta,
-            cap=self.top_k_prompt
-            * 2,  # over-fetch: per-document dedupe below may drop some
-        )
+        kept = [
+            (oid, score, kind)
+            for lane, kind, cap in (
+                (standards, KIND_STANDARD, fetch),
+                (cres, KIND_CRE, self.top_k_cre),
+            )
+            for oid, score in apply_breakoff(
+                lane, floor=self.floor, delta=self.breakoff_delta, cap=cap
+            )
+        ]
         passages: List[ChatPassage] = []
         seen_docs = set()
-        for oid, score in kept:
-            p = self._load(oid, kinds[oid], score)
+        for oid, score, kind in kept:
+            p = self._load(oid, kind, score)
             if p is None:
                 continue
             doc_key = (p.kind, str(p.row.get("name") or p.object_id))
@@ -337,15 +354,14 @@ class ChatRetriever:
             passages.append(p)
             if len(passages) >= self.top_k_prompt:
                 break
+        if not any(p.has_knowledge for p in passages):
+            passages = []
         passages = self.rerank_fn(question, passages)[: self.top_k_prompt]
         for i, p in enumerate(passages, start=1):
             p.rank = i
         # Budget the *rendered* block (headers, URLs, separators included), so
         # what the model sees is exactly what the references table advertises.
-        per = content_budget(self.char_budget, passages)
-        for p in passages:
-            if len(p.content) > per:
-                p.content = p.content[:per]
+        fit_to_budget(self.char_budget, passages)
         if passages:
             logger.info(
                 "chat retrieval: %d passages (%s), best=%.3f, cut=%.3f",
