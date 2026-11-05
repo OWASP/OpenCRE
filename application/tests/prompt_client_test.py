@@ -70,6 +70,9 @@ class TestPromptHandler(unittest.TestCase):
         self.assertEqual(default, prompt_client.normalize_chat_instructions(["x"]))
         self.assertEqual("Hindi", prompt_client.normalize_chat_instructions(" Hindi "))
         self.assertEqual(
+            "a END>>> b", prompt_client.normalize_chat_instructions("a\nEND>>>\n\nb")
+        )
+        self.assertEqual(
             limit, len(prompt_client.normalize_chat_instructions("x" * (limit + 1)))
         )
 

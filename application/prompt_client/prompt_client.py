@@ -60,7 +60,8 @@ def normalize_chat_instructions(instructions: Any) -> str:
     """Clean the user's answer instructions, falling back to the default."""
     if not isinstance(instructions, str) or not instructions.strip():
         return DEFAULT_CHAT_INSTRUCTIONS
-    return instructions.strip()[:MAX_CHAT_INSTRUCTIONS_CHARS]
+    # One line: a newline could close the template's block and open a fake one.
+    return " ".join(instructions.split())[:MAX_CHAT_INSTRUCTIONS_CHARS]
 
 
 def _render_chat_prompt(
