@@ -319,7 +319,9 @@ def calibration_set(
         if audit is None:
             continue
         reranked = [c for c in audit.reranked if c.score_rerank is not None]
-        if not reranked:
+        # A one-candidate softmax is 1.0 whatever T is, and C.4 never links such
+        # a row, so it carries no signal for fitting T or measuring ECE.
+        if len(reranked) < 2:
             continue
         expected = set(row.expected.cre_ids or [])
         logit_sets.append([float(c.score_rerank) for c in reranked])
@@ -403,8 +405,7 @@ def report_decision_accuracy(
     reason codes that depend on them lag until that lands; and tuning the threshold
     itself is the Week 7 experiment, so hard-gating it now would be premature.
     """
-    from application.utils.librarian.decision_engine import decide
-    from application.utils.librarian.pipeline import shortlist_confidence
+    from application.utils.librarian.pipeline import decide_shortlist
     from application.utils.librarian.schemas import Decision
 
     graded = [r for r in rows if r.expected.decision is not None and r.id in audits]
@@ -419,8 +420,7 @@ def report_decision_accuracy(
         reranked = [c for c in audit.reranked if c.score_rerank is not None]
         logits = [float(c.score_rerank) for c in reranked]
         cre_ids = [c.cre_id for c in reranked]
-        confidence = shortlist_confidence(scaler, logits)
-        result = decide(confidence, cre_ids, threshold=threshold)
+        result = decide_shortlist(scaler, logits, cre_ids, threshold=threshold)
         matched = result.decision == row.expected.decision
         if matched:
             dec_match += 1

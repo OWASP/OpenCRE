@@ -11,9 +11,10 @@ import unittest
 from datetime import datetime, timezone
 
 from application.utils.librarian.calibration.temperature import TemperatureScaler
-from application.utils.librarian.pipeline import LibrarianPipeline
+from application.utils.librarian.pipeline import LibrarianPipeline, decide_shortlist
 from application.utils.librarian.schemas import (
     CreCandidate,
+    Decision,
     KnowledgeQueueItem,
     LinkProposal,
     ReasonCode,
@@ -143,6 +144,29 @@ class PipelineTest(unittest.TestCase):
         )
         result = pipeline.run(at=AT)
         self.assertIsInstance(result.envelopes[0], ReviewItem)
+
+    def test_single_candidate_reviews_even_at_a_zero_threshold(self):
+        # At tau = 0 a confidence of 0.0 would still clear the bar, so the
+        # lone-candidate rule cannot rest on the confidence alone.
+        lone = [CreCandidate(cre_id="616-305", score_rerank=-12.0)]
+        pipeline = LibrarianPipeline(
+            _Source([_row()]),
+            _Retriever(),
+            _Reranker(lone),
+            _Scaler(1.0),
+            threshold=0.0,
+            pipeline_run_id=RUN,
+        )
+        env = pipeline.run(at=AT).envelopes[0]
+        self.assertIsInstance(env, ReviewItem)
+        self.assertEqual(env.reason_code, ReasonCode.below_threshold)
+
+    def test_single_candidate_keeps_safety_reason_precedence(self):
+        result = decide_shortlist(
+            _Scaler(1.0), [-12.0], ["616-305"], threshold=0.0, adversarial=True
+        )
+        self.assertEqual(result.decision, Decision.review)
+        self.assertEqual(result.reason_code, ReasonCode.adversarial_flag)
 
     def test_uncertain_row_is_skipped_at_boundary(self):
         result = _pipeline([_row(label="NOISE")], TOP, 0.95).run(at=AT)
