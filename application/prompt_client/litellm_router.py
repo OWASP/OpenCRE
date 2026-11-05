@@ -21,11 +21,40 @@ from application.prompt_client.llm_error_utils import is_rate_limit_error
 LlmFn = Callable[[str, str], str]
 
 
+DEFAULT_MAX_RETRIES = 2
+DEFAULT_RETRY_SLEEP_SECONDS = 15
+
+
+def _env_non_negative_int(name: str, default: int) -> int:
+    """Read an int env var; fall back to ``default`` (with a warning) if
+    missing/blank/illegal, and clamp negative values to 0."""
+    raw = os.environ.get(name)
+    if raw is None or not raw.strip():
+        if raw is not None:
+            logger.warning("%s is empty; using default %s", name, default)
+        return default
+    try:
+        value = int(raw.strip())
+    except (TypeError, ValueError):
+        logger.warning("Invalid %s=%r; using default %s", name, raw, default)
+        return default
+    if value < 0:
+        logger.warning("%s=%s is negative; clamping to 0", name, value)
+        return 0
+    return value
+
+
 def retry_policy() -> tuple[int, int]:
-    """Return (max_retries, sleep_seconds) from CRE_LLM_* env vars."""
+    """Return (max_retries, sleep_seconds) from CRE_LLM_* env vars.
+
+    Illegal or missing values fall back to the defaults (illegal ones log a
+    warning); negative values are clamped to 0.
+    """
     return (
-        int(os.environ.get("CRE_LLM_MAX_RETRIES", "2")),
-        int(os.environ.get("CRE_LLM_RETRY_SLEEP_SECONDS", "15")),
+        _env_non_negative_int("CRE_LLM_MAX_RETRIES", DEFAULT_MAX_RETRIES),
+        _env_non_negative_int(
+            "CRE_LLM_RETRY_SLEEP_SECONDS", DEFAULT_RETRY_SLEEP_SECONDS
+        ),
     )
 
 
