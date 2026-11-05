@@ -85,21 +85,21 @@ class LiRetrieveWiringTest(unittest.TestCase):
 
 
 class LcRouterWiringTest(unittest.TestCase):
-    def test_classify_intent_calls_lc_when_regex_clarify(self) -> None:
+    def test_classify_intent_calls_lc_first_when_flag_on(self) -> None:
         from application.utils.owasp_agent.router import classify_intent
 
         with mock.patch.dict(os.environ, {"OWASP_CX_LC_ROUTER": "1"}):
             with mock.patch(
-                "application.utils.owasp_agent.router._classify_intent_regex",
-                return_value="clarify",
-            ):
+                "application.utils.owasp_agent.lc_router.classify_intent_langchain",
+                return_value="project_lookup",
+            ) as lc:
                 with mock.patch(
-                    "application.utils.owasp_agent.lc_router.classify_intent_langchain",
-                    return_value="project_lookup",
-                ) as lc:
+                    "application.utils.owasp_agent.router._classify_intent_regex",
+                ) as regex:
                     intent = classify_intent("who is the chapter leader?")
                     self.assertEqual(intent, "project_lookup")
                     lc.assert_called()
+                    regex.assert_not_called()
 
     def test_classify_intent_falls_back_without_lc_result(self) -> None:
         from application.utils.owasp_agent.router import classify_intent

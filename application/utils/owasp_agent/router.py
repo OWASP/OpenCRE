@@ -1242,30 +1242,27 @@ def is_malicious_request(text: str) -> bool:
     return bool(_MALICIOUS_TOPIC_RE.search(t)) and not _DEFENSIVE_CUE_RE.search(t)
 
 
-_LC_SOFT_INTENTS = frozenset({"clarify", "person_lookup", "events_near"})
-
-
 def classify_intent(text: str, *, known_people: Optional[List[str]] = None) -> str:
-    """Route ask intent: regex first; optional LC only to rescue ``clarify``.
+    """Route ask intent: LC one-call when ``LC_ROUTER`` on; regex only on failure.
 
-    TASK-14.9: skip the LangChain LLM call when regex already has a content
-    intent (latency). Soft LC intents still never override content (TASK-14.4).
+    TASK-14.24: framework tool-call is the hot-path SoT (one LLM call). Regex
+    remains the fallback when LangChain/API returns nothing or raises. Soft-gate
+    (regex-first, LC only on clarify) is removed when the flag is on.
     """
-    intent = _classify_intent_regex(text, known_people=known_people)
     try:
         from application.utils.comprehension import flags as cx_flags
 
-        if cx_flags.on("LC_ROUTER") and intent == "clarify":
+        if cx_flags.on("LC_ROUTER"):
             from application.utils.owasp_agent.lc_router import (
                 classify_intent_langchain,
             )
 
             lc_intent = classify_intent_langchain(text)
-            if lc_intent and lc_intent not in _LC_SOFT_INTENTS:
+            if lc_intent:
                 return lc_intent
     except Exception:  # noqa: BLE001 — never break ask on router import/LLM errors
         pass
-    return intent
+    return _classify_intent_regex(text, known_people=known_people)
 
 
 def _classify_intent_regex(
