@@ -409,9 +409,10 @@ def preload(target_url: str) -> List[str]:
     A pair still running under the same job id is left alone, since GA jobs may
     run for GAP_ANALYSIS_TIMEOUT. A pair counts a failure on a non-200 response,
     on a 200 with neither result nor job id, and when its job id changes, because
-    map_analysis only enqueues a new job once the last one ended without a result.
-    After PRELOAD_MAX_FAILURES a pair is dropped so one bad pair cannot block the
-    run forever.
+    map_analysis enqueues a new job when the last one ended without a result (or
+    its in-flight key expired). Seeing the same job again clears the count. After
+    PRELOAD_MAX_FAILURES failures in a row a pair is dropped, so one bad pair
+    cannot block the run forever.
 
     Returns the dropped pairs as ``A->B`` strings.
     """
@@ -454,6 +455,9 @@ def preload(target_url: str) -> List[str]:
             if job_id:
                 last_job_ids[pair] = job_id
                 if previous_job_id is None or previous_job_id == job_id:
+                    # A job that is still alive clears earlier blips, so ten
+                    # scattered 503s cannot drop a healthy long-running job.
+                    failures[pair] = 0
                     continue
 
             failures[pair] += 1

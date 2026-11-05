@@ -74,6 +74,17 @@ class PreloadTest(unittest.TestCase):
         # The first poll only records the job id, it is not a failure.
         self.assertEqual(gap_analysis.PRELOAD_MAX_FAILURES + 1, out["polls"]["A->B"])
 
+    def test_scattered_errors_do_not_drop_a_running_job(self) -> None:
+        def answer(_pair: str, n: int) -> MagicMock:
+            if n > 200:
+                return _response(body={"result": {"k": 1}})
+            if n % 20 == 0:
+                return _response(status=503)
+            return _response(body={"job_id": "same-job"})
+
+        out = self._run(["A", "B"], answer)
+        self.assertEqual([], out["dropped"])
+
     def test_failures_are_counted_per_pair(self) -> None:
         def answer(pair: str, _n: int) -> MagicMock:
             if pair == "A->B":
