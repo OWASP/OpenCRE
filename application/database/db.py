@@ -1,16 +1,19 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from sqlalchemy import CheckConstraint
 import networkx as nx
 import uuid
 import neo4j
 import os
-import logging
 import re
 import time
 import yaml
 
-from pprint import pprint
+from datetime import datetime, timezone
 
-from collections import Counter
+from collections import Counter, defaultdict
 from itertools import permutations
 from typing import Any, Dict, List, Optional, Tuple, cast
 from neomodel.exceptions import (
@@ -23,7 +26,7 @@ from sqlalchemy.orm import aliased
 from flask_sqlalchemy.model import DefaultMeta
 from sqlalchemy import func, delete, cast as sql_cast, literal, or_
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.exc import OperationalError, IntegrityError
+from sqlalchemy.exc import OperationalError, IntegrityError, SQLAlchemyError
 
 from neomodel import (
     config,
@@ -47,14 +50,11 @@ from application.utils.gap_analysis import (
     make_resources_key,
     make_subresources_key,
     primary_gap_analysis_payload_is_material,
+    should_persist_primary_gap_analysis_cache,
 )
 
 
 from .. import sqla  # type: ignore
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 BaseModel: DefaultMeta = sqla.Model
@@ -62,6 +62,13 @@ BaseModel: DefaultMeta = sqla.Model
 
 def generate_uuid():
     return str(uuid.uuid4())
+
+
+def safe_filename(name: str) -> str:
+    """Turn a document id into a filename that works on every platform."""
+    name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "-", name)
+    name = name.replace(" ", "_")
+    return name.rstrip(" .")
 
 
 class Node(BaseModel):  # type: ignore
@@ -173,7 +180,6 @@ class Embeddings(BaseModel):  # type: ignore
     __tablename__ = "embeddings"
 
     id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
-    embeddings = sqla.Column(sqla.String, nullable=False)
     doc_type = sqla.Column(sqla.String, nullable=False)
     cre_id = sqla.Column(
         sqla.String,
@@ -190,6 +196,10 @@ class Embeddings(BaseModel):  # type: ignore
     embeddings_content = sqla.Column(sqla.String, nullable=True, default=None)
     embedding_model_id = sqla.Column(sqla.String, nullable=True, default=None)
     embedding_dim = sqla.Column(sqla.Integer, nullable=True, default=None)
+    # Postgres: real ``vector(N)`` via Alembic (c7d8e9f0a1b2) — sole store for
+    # vectors (legacy CSV ``embeddings`` column is dropped in that migration).
+    # SQLite/tests: Text holding a pgvector literal ``[1.0,2.0,...]``.
+    embedding_vec = sqla.Column(sqla.Text, nullable=False)
 
 
 class GapAnalysisResults(BaseModel):
@@ -253,6 +263,304 @@ class StagedChangeSet(BaseModel):  # type: ignore
     created_at = sqla.Column(sqla.DateTime, nullable=False)
 
 
+class User(BaseModel):  # type: ignore
+    """Persisted account identity for OIDC login (issue #586, RFC #876 TODO 1).
+
+    ``google_sub`` is the immutable OIDC ``sub`` claim (the same value stored in
+    ``session['google_id']``); email can change, so identity is anchored on the sub.
+    """
+
+    __tablename__ = "users"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    google_sub = sqla.Column(sqla.String, nullable=False)
+    email = sqla.Column(sqla.String, nullable=False)
+    display_name = sqla.Column(sqla.String, nullable=True)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+    last_seen_at = sqla.Column(sqla.DateTime, nullable=False)
+
+    resource_selection = sqla.relationship(
+        "UserResourceSelection",
+        cascade="all, delete-orphan",
+    )
+
+    __table_args__ = (sqla.UniqueConstraint(google_sub, name="uq_users_google_sub"),)
+
+
+class UserResourceSelection(BaseModel):  # type: ignore
+    """A single standard name a user has chosen to keep in view (issue #586)."""
+
+    __tablename__ = "user_resource_selection"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    user_id = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("users.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+    standard_name = sqla.Column(sqla.String, nullable=False)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+
+    __table_args__ = (
+        sqla.UniqueConstraint(
+            user_id, standard_name, name="uq_user_resource_selection"
+        ),
+    )
+
+
+class McpGrants(BaseModel):  # type: ignore
+    """One OpenCRE scope granted to a user's MCP client.
+
+    Google's device flow only carries ``openid email profile``, so OpenCRE
+    permissions cannot live in the token and are recorded here instead.
+    """
+
+    __tablename__ = "mcp_grants"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    user_id = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("users.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+    scope = sqla.Column(sqla.String, nullable=False)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+    revoked_at = sqla.Column(sqla.DateTime, nullable=True)
+
+    __table_args__ = (sqla.UniqueConstraint(user_id, scope, name="uq_mcp_grants"),)
+
+
+class ArtifactIngestEvent(BaseModel):  # type: ignore
+    """Tracks one harvested artifact persisted per import run."""
+
+    __tablename__ = "artifact_ingest_event"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    run_id = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey("import_run.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=False,
+    )
+    artifact_id = sqla.Column(sqla.String, nullable=False)
+    harvest_mode = sqla.Column(sqla.String, nullable=False)
+    event_type = sqla.Column(sqla.String, nullable=False)
+    source_json = sqla.Column(sqla.Text, nullable=False)
+    locator_json = sqla.Column(sqla.Text, nullable=False)
+    artifact_json = sqla.Column(sqla.Text, nullable=False)
+    harvest_json = sqla.Column(sqla.Text, nullable=False)
+    observed_at = sqla.Column(sqla.DateTime, nullable=False)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+
+    __table_args__ = (
+        sqla.UniqueConstraint(
+            run_id,
+            artifact_id,
+            name="uq_artifact_ingest_event_run_artifact",
+        ),
+    )
+
+
+class IngestChunk(BaseModel):  # type: ignore
+    """Tracks every chunk belonging to an artifact ingest event."""
+
+    __tablename__ = "ingest_chunk"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    artifact_event_id = sqla.Column(
+        sqla.String,
+        sqla.ForeignKey(
+            "artifact_ingest_event.id",
+            onupdate="CASCADE",
+            ondelete="CASCADE",
+        ),
+        nullable=False,
+    )
+    chunk_id = sqla.Column(sqla.String, nullable=False)
+    text = sqla.Column(sqla.Text, nullable=False)
+    char_count = sqla.Column(sqla.Integer, nullable=False)
+    span_json = sqla.Column(sqla.Text, nullable=False)
+    delta_json = sqla.Column(sqla.Text, nullable=True)
+    created_at = sqla.Column(sqla.DateTime, nullable=False)
+
+    __table_args__ = (
+        sqla.UniqueConstraint(
+            artifact_event_id,
+            chunk_id,
+            name="uq_ingest_chunk_artifact_chunk",
+        ),
+    )
+
+
+class HarvesterCheckpoint(BaseModel):  # type: ignore
+    __tablename__ = "harvester_checkpoint"
+    repository_id = sqla.Column(sqla.String, primary_key=True)
+    provider = sqla.Column(sqla.String, nullable=False)
+    owner = sqla.Column(sqla.String, nullable=False)
+    repository = sqla.Column(sqla.String, nullable=False)
+    branch = sqla.Column(sqla.String, nullable=False)
+    last_processed_commit = sqla.Column(sqla.String, nullable=True)
+    created_at = sqla.Column(
+        sqla.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at = sqla.Column(
+        sqla.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    __table_args__ = (
+        sqla.UniqueConstraint(
+            "provider",
+            "owner",
+            "repository",
+            "branch",
+            name="uq_harvester_checkpoint_canonical_source",
+        ),
+    )
+
+
+def _serialize_json_value(value: Any) -> str:
+    if value is None:
+        return "null"
+    if isinstance(value, str):
+        return value
+    return flask_json.dumps(value)
+
+
+def _normalize_utc_datetime(value: Any) -> Any:
+    from datetime import datetime, timezone
+
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value
+        return value.astimezone(timezone.utc)
+    return value
+
+
+# --- Module B: Noise/Relevance Filter (harvest in -> knowledge queue out) ---
+
+
+class HarvestInput(BaseModel):  # type: ignore
+    """Module A's harvested chunks, staged for Module B to classify.
+
+    Module A writes one row per chunk (the full Module A v0.3 ChangeRecord in
+    `payload`). The orchestrator triggers Module B, which reads the rows for a
+    given `pipeline_run_id`, classifies them, and marks each `processed`.
+    Contract: docs/gsoc_2026_module_b/orchestrator_integration_design.md.
+    """
+
+    __tablename__ = "harvest_input"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    pipeline_run_id = sqla.Column(sqla.String, nullable=False, index=True)
+    status = sqla.Column(
+        sqla.String, nullable=False, default="pending"
+    )  # pending | processed | error
+    # A's ChangeRecord (contract v0.3). JSONB on Postgres, JSON on SQLite
+    # (dev/CI/tests); Module B parses it with schemas.ChangeRecord directly.
+    payload = sqla.Column(sqla.JSON().with_variant(JSONB, "postgresql"), nullable=False)
+    created_at = sqla.Column(
+        sqla.DateTime, nullable=False, server_default=sqla.func.now()
+    )
+    __table_args__ = (
+        sqla.Index("ix_harvest_input_run_status", "pipeline_run_id", "status"),
+    )
+
+
+class KnowledgeQueueItem(BaseModel):  # type: ignore
+    """Module B's output queue: security-knowledge chunks for Module C.
+
+    Module B inserts KNOWLEDGE and UNCERTAIN verdicts (NOISE is dropped),
+    deduped on `content_hash`. Module C reads unconsumed rows and sets
+    `consumed_at`. Contract: docs/gsoc_2026_module_b/module_c_contract.md (v0.2).
+    """
+
+    __tablename__ = "knowledge_queue"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    content_hash = sqla.Column(sqla.String, nullable=False)  # B-computed dedup key
+    # provenance / traceability (Module A v0.3 record)
+    chunk_id = sqla.Column(sqla.String, nullable=False)
+    artifact_id = sqla.Column(sqla.String, nullable=False)
+    pipeline_run_id = sqla.Column(sqla.String, nullable=False)
+    schema_version = sqla.Column(sqla.String, nullable=False)
+    source_type = sqla.Column(sqla.String, nullable=False)  # github | rss
+    source_repo = sqla.Column(sqla.String, nullable=True)
+    source_commit_sha = sqla.Column(sqla.String, nullable=True)
+    source_committed_at = sqla.Column(sqla.String, nullable=True)  # ISO-8601, unparsed
+    feed_url = sqla.Column(sqla.String, nullable=True)
+    post_guid = sqla.Column(sqla.String, nullable=True)
+    locator_kind = sqla.Column(sqla.String, nullable=False)
+    locator_path = sqla.Column(sqla.String, nullable=False)
+    span_index = sqla.Column(sqla.Integer, nullable=False)
+    span_total = sqla.Column(sqla.Integer, nullable=False)
+    span_heading_path = sqla.Column(sqla.Text, nullable=True)  # JSON-encoded list[str]
+    # payload + B's verdict
+    text = sqla.Column(sqla.Text, nullable=False)
+    llm_label = sqla.Column(sqla.String, nullable=False)  # KNOWLEDGE | UNCERTAIN
+    confidence = sqla.Column(sqla.Float, nullable=False)
+    llm_reasoning = sqla.Column(sqla.Text, nullable=True)
+    created_at = sqla.Column(
+        sqla.DateTime, nullable=False, server_default=sqla.func.now()
+    )
+    consumed_at = sqla.Column(sqla.DateTime, nullable=True)
+    __table_args__ = (
+        sqla.Index("ix_knowledge_queue_unconsumed", "consumed_at"),
+        sqla.UniqueConstraint("content_hash", name="uq_content_hash"),
+    )
+
+
+class DecisionQueueItem(BaseModel):  # type: ignore
+    """Module C's output queue: decided chunks for Module D.
+
+    The C -> D counterpart of ``knowledge_queue``, and deliberately the same
+    shape of handoff: C inserts one row per decided chunk, Module D reads the
+    rows it cares about and sets ``consumed_at``. Nothing is deleted, so the
+    table doubles as the audit trail of what C decided and what D did with it.
+
+    Both outcomes land here, separated by ``status`` — exactly as B puts
+    KNOWLEDGE and UNCERTAIN in one queue and lets its readers filter:
+
+      ``linked``           an auto-link C is confident in (RFC ``LinkProposal``);
+                           the graph writer is the consumer.
+      ``review_required``  routed to a human (RFC ``ReviewItem``), carrying the
+                           ``reason_code`` that explains why; Module D's HITL
+                           review is the consumer.
+
+    ``envelope`` holds the whole RFC document — the retrieval audit included —
+    so a decision can be re-read and explained long after the run. The columns
+    beside it are for querying and filtering, not a second source of truth; they
+    are projected from the same envelope.
+    """
+
+    __tablename__ = "decision_queue"
+    id = sqla.Column(sqla.String, primary_key=True, default=generate_uuid)
+    # provenance, carried verbatim from Module A through B
+    chunk_id = sqla.Column(sqla.String, nullable=False)
+    artifact_id = sqla.Column(sqla.String, nullable=False)
+    pipeline_run_id = sqla.Column(sqla.String, nullable=False)
+    schema_version = sqla.Column(sqla.String, nullable=False)
+    # B's label on the chunk this decision was made from: KNOWLEDGE | UNCERTAIN.
+    # Recall-first means B forwards both, so a consumer needs to tell a decision
+    # made on a confident chunk from one made on a chunk B was unsure about.
+    source_label = sqla.Column(sqla.String, nullable=True)
+    # C's verdict
+    status = sqla.Column(sqla.String, nullable=False)  # linked | review_required
+    reason_code = sqla.Column(sqla.String, nullable=True)  # review rows only
+    review_id = sqla.Column(sqla.String, nullable=True)  # review rows only
+    confidence = sqla.Column(sqla.Float, nullable=True)  # top-1 calibrated
+    # the full RFC LinkProposal / ReviewItem
+    envelope = sqla.Column(
+        sqla.JSON().with_variant(JSONB, "postgresql"), nullable=False
+    )
+    created_at = sqla.Column(
+        sqla.DateTime, nullable=False, server_default=sqla.func.now()
+    )
+    consumed_at = sqla.Column(sqla.DateTime, nullable=True)
+    __table_args__ = (
+        sqla.Index("ix_decision_queue_unconsumed", "consumed_at"),
+        sqla.Index("ix_decision_queue_run_status", "pipeline_run_id", "status"),
+        # One decision per chunk per run: replaying a run must not double-write.
+        sqla.UniqueConstraint(
+            "chunk_id", "pipeline_run_id", name="uq_decision_chunk_run"
+        ),
+    )
+
+
 def create_import_run(source: str, version: Optional[str] = None) -> ImportRun:
     """Create and persist an import run record. Returns the new ImportRun."""
     from datetime import datetime, timezone
@@ -298,6 +606,68 @@ def get_previous_import_run(source: str, current_run_id: str) -> Optional[Import
         .order_by(ImportRun.created_at.desc(), ImportRun.id.desc())
         .first()
     )
+
+
+def create_artifact_ingest_event(
+    *,
+    run_id: str,
+    artifact_id: str,
+    harvest_mode: str,
+    event_type: str,
+    source_json: Any,
+    locator_json: Any,
+    artifact_json: Any,
+    harvest_json: Any,
+    observed_at: Any,
+) -> ArtifactIngestEvent:
+    from datetime import datetime, timezone
+
+    observed_at = _normalize_utc_datetime(observed_at)
+
+    event = ArtifactIngestEvent(
+        id=generate_uuid(),
+        run_id=run_id,
+        artifact_id=artifact_id,
+        harvest_mode=harvest_mode,
+        event_type=event_type,
+        source_json=_serialize_json_value(source_json),
+        locator_json=_serialize_json_value(locator_json),
+        artifact_json=_serialize_json_value(artifact_json),
+        harvest_json=_serialize_json_value(harvest_json),
+        observed_at=observed_at,
+        created_at=_normalize_utc_datetime(datetime.now(timezone.utc)),
+    )
+    sqla.session.add(event)
+    sqla.session.commit()
+    return event
+
+
+def create_ingest_chunk(
+    *,
+    artifact_event_id: str,
+    chunk_id: str,
+    text: str,
+    char_count: int,
+    span_json: Any,
+    delta_json: Optional[Any] = None,
+) -> IngestChunk:
+    from datetime import datetime, timezone
+
+    chunk = IngestChunk(
+        id=generate_uuid(),
+        artifact_event_id=artifact_event_id,
+        chunk_id=chunk_id,
+        text=text,
+        char_count=char_count,
+        span_json=_serialize_json_value(span_json),
+        delta_json=(
+            _serialize_json_value(delta_json) if delta_json is not None else None
+        ),
+        created_at=_normalize_utc_datetime(datetime.now(timezone.utc)),
+    )
+    sqla.session.add(chunk)
+    sqla.session.commit()
+    return chunk
 
 
 def persist_standard_snapshot(
@@ -435,7 +805,7 @@ class NeoDocument(StructuredNode):
 
     @classmethod
     def to_cre_def(self, node, parse_links=True):
-        raise Exception(f"Shouldn't be parsing a NeoDocument")
+        raise Exception("Shouldn't be parsing a NeoDocument")
 
     @classmethod
     def get_links(self, links_dict):
@@ -457,7 +827,7 @@ class NeoNode(NeoDocument):
 
     @classmethod
     def to_cre_def(self, node, parse_links=True):
-        raise Exception(f"Shouldn't be parsing a NeoNode")
+        raise Exception("Shouldn't be parsing a NeoNode")
 
 
 class NeoStandard(NeoNode):
@@ -991,6 +1361,184 @@ class Node_collection:
 
         return self
 
+    def upsert_user(
+        self, google_sub: str, email: str, display_name: Optional[str] = None
+    ) -> User:
+        """Create or refresh the User row for an OIDC ``sub`` (issue #586).
+
+        Idempotent on ``google_sub``: a repeat login updates the existing row's
+        profile fields and ``last_seen_at`` instead of inserting a duplicate.
+        """
+        from datetime import datetime, timezone
+
+        now = datetime.now(timezone.utc)
+
+        def _apply_profile(u: User) -> None:
+            if email:
+                u.email = email
+            if display_name is not None:
+                u.display_name = display_name
+            u.last_seen_at = now
+
+        user = self.session.query(User).filter(User.google_sub == google_sub).first()
+        if user is not None:
+            _apply_profile(user)
+            self.session.commit()
+            return user
+
+        user = User(
+            id=generate_uuid(),
+            google_sub=google_sub,
+            email=email,
+            display_name=display_name,
+            created_at=now,
+            last_seen_at=now,
+        )
+        self.session.add(user)
+        try:
+            self.session.commit()
+        except IntegrityError:
+            # A concurrent login inserted the same google_sub first; recover by
+            # rolling back and updating the now-existing row (mirrors add_node).
+            self.session.rollback()
+            existing = (
+                self.session.query(User).filter(User.google_sub == google_sub).first()
+            )
+            if existing is None:
+                raise
+            _apply_profile(existing)
+            self.session.commit()
+            return existing
+        return user
+
+    def get_user_by_sub(self, google_sub: str) -> Optional[User]:
+        return self.session.query(User).filter(User.google_sub == google_sub).first()
+
+    def get_mcp_grants(self, user_id: str) -> List[str]:
+        """Return the scopes granted to this user's MCP client, newest last."""
+        rows = (
+            self.session.query(McpGrants)
+            .filter(McpGrants.user_id == user_id)
+            .filter(McpGrants.revoked_at.is_(None))
+            .order_by(McpGrants.scope)
+            .all()
+        )
+        return [row.scope for row in rows]
+
+    def add_mcp_grant(self, user_id: str, scope: str) -> List[str]:
+        """Grant ``scope`` to this user's MCP client, reviving a revoked row."""
+        from datetime import datetime, timezone
+
+        now = datetime.now(timezone.utc)
+        existing = (
+            self.session.query(McpGrants)
+            .filter(McpGrants.user_id == user_id)
+            .filter(McpGrants.scope == scope)
+            .first()
+        )
+        if existing is None:
+            self.session.add(McpGrants(user_id=user_id, scope=scope, created_at=now))
+        else:
+            existing.revoked_at = None
+        self.session.commit()
+        return self.get_mcp_grants(user_id)
+
+    def bootstrap_mcp_grants(self, user_id: str, scopes: List[str]) -> List[str]:
+        """Grant ``scopes`` the first time an MCP client is seen for a user.
+
+        Applies only when the user has no rows at all. Someone who revoked a
+        scope must never have it silently restored, so a revoked row counts as
+        history and suppresses the bootstrap.
+        """
+        from datetime import datetime, timezone
+
+        seen = (
+            self.session.query(McpGrants).filter(McpGrants.user_id == user_id).count()
+        )
+        if seen:
+            return self.get_mcp_grants(user_id)
+
+        now = datetime.now(timezone.utc)
+        for scope in scopes:
+            self.session.add(McpGrants(user_id=user_id, scope=scope, created_at=now))
+        try:
+            self.session.commit()
+        except IntegrityError:
+            # A concurrent first call inserted the same rows; theirs stand.
+            self.session.rollback()
+        return self.get_mcp_grants(user_id)
+
+    def revoke_mcp_grant(self, user_id: str, scope: str) -> List[str]:
+        """Revoke ``scope`` without deleting the row, so the change is auditable."""
+        from datetime import datetime, timezone
+
+        self.session.query(McpGrants).filter(McpGrants.user_id == user_id).filter(
+            McpGrants.scope == scope
+        ).filter(McpGrants.revoked_at.is_(None)).update(
+            {"revoked_at": datetime.now(timezone.utc)}
+        )
+        self.session.commit()
+        return self.get_mcp_grants(user_id)
+
+    def get_user_resource_selection(self, user_id: str) -> List[str]:
+        """Return the standard names a user has selected, ordered by name."""
+        rows = (
+            self.session.query(UserResourceSelection)
+            .filter(UserResourceSelection.user_id == user_id)
+            .order_by(UserResourceSelection.standard_name)
+            .all()
+        )
+        return [row.standard_name for row in rows]
+
+    def set_user_resource_selection(
+        self, user_id: str, standard_names: List[str]
+    ) -> List[str]:
+        """Replace a user's resource selection with ``standard_names`` (deduped)."""
+        from datetime import datetime, timezone
+
+        now = datetime.now(timezone.utc)
+        deduped: List[str] = []
+        for name in standard_names:
+            if name not in deduped:
+                deduped.append(name)
+
+        def _replace() -> List[str]:
+            # Serialize concurrent replacements for this user by locking the
+            # parent User row: a second PUT for the same user waits here until
+            # ours commits, then its DELETE sees our rows. Without this, two
+            # *disjoint* selections could both commit (no IntegrityError) and
+            # merge, breaking replacement semantics. FOR UPDATE is a no-op on
+            # SQLite (dev/tests).
+            self.session.query(User).filter(
+                User.id == user_id
+            ).with_for_update().first()
+            self.session.query(UserResourceSelection).filter(
+                UserResourceSelection.user_id == user_id
+            ).delete()
+            for name in deduped:
+                self.session.add(
+                    UserResourceSelection(
+                        id=generate_uuid(),
+                        user_id=user_id,
+                        standard_name=name,
+                        created_at=now,
+                    )
+                )
+            # Capture our selection while still holding the lock, so the return
+            # value can't reflect a later concurrent write.
+            stored = self.get_user_resource_selection(user_id)
+            self.session.commit()
+            return stored
+
+        try:
+            return _replace()
+        except IntegrityError:
+            # Same-key collision on uq_user_resource_selection; roll back and
+            # retry the replace exactly once (mirrors upsert_user). A second
+            # failure propagates — no retry loop.
+            self.session.rollback()
+            return _replace()
+
     def __get_external_links(self) -> List[Tuple[CRE, Node, str]]:
         external_links: List[Tuple[CRE, Node, str]] = []
 
@@ -1041,17 +1589,10 @@ class Node_collection:
     def __get_all_nodes_and_cres(
         self, cres_only: bool = False
     ) -> List[cre_defs.Document]:
-        result = []
-        nodes = []
-        cres = []
+        result: List[cre_defs.Document] = []
         if not cres_only:
-            node_ids = self.session.query(Node.id).all()
-            for nid in node_ids:
-                result.extend(self.get_nodes(db_id=nid[0]))
-
-        cre_ids = self.session.query(CRE.id).all()
-        for cid in cre_ids:
-            result.append(self.get_cre_by_db_id(cid[0]))
+            result.extend(self._hydrate_nodes_batch(self.session.query(Node).all()))
+        result.extend(self._hydrate_cres_batch(self.session.query(CRE).all()))
         return result
 
     @classmethod
@@ -1171,23 +1712,23 @@ class Node_collection:
             cre_where_clause.append(sqla.and_(CRE.tags.like("%{}%".format(tag))))
 
         nodes = Node.query.filter(*nodes_where_clause).all() or []
-        for node in nodes:
-            node = self.get_nodes(
-                name=node.name,
-                section=node.section,
-                subsection=node.subsection,
-                version=node.version,
-                link=node.link,
-                ntype=node.ntype,
-                sectionID=node.section_id,
+        for db_node in nodes:
+            resolved = self.get_nodes(
+                name=db_node.name,
+                section=db_node.section,
+                subsection=db_node.subsection,
+                version=db_node.version,
+                link=db_node.link,
+                ntype=db_node.ntype,
+                sectionID=db_node.section_id,
             )
-            if node:
-                documents.extend(node)
+            if resolved:
+                documents.extend(resolved)
             else:
                 logger.fatal(
-                    "db.get_node returned None for"
+                    "get_nodes() returned no documents for "
                     "Node %s:%s:%s that exists, BUG!"
-                    % (node.name, node.section, node.section_id)
+                    % (db_node.name, db_node.section, db_node.section_id)
                 )
 
         cres = CRE.query.filter(*cre_where_clause).all() or []
@@ -1343,7 +1884,13 @@ class Node_collection:
         if not external_id:
             logger.error(f"CRE {id} does not exist in the db")
             return None
-        return self.get_CREs(external_id=external_id[0])[0]
+        cres = self.get_CREs(external_id=external_id[0])
+        if not cres:
+            logger.error(
+                f"CRE {id} exists but get_CREs returned no results for external_id={external_id[0]}"
+            )
+            return None
+        return cres[0]
 
     def list_node_ids_by_ntype(self, ntype: str) -> List[str]:
         # Always return plain strings (never SQLAlchemy row tuples).
@@ -1442,7 +1989,6 @@ class Node_collection:
         include_only: Optional[List[str]] = None,
         internal_id: Optional[str] = None,
     ) -> List[cre_defs.CRE]:
-        cres: List[cre_defs.CRE] = []
         query = CRE.query
         if not external_id and not name and not description and not internal_id:
             logger.error(
@@ -1477,40 +2023,146 @@ class Node_collection:
             )
             return []
 
-        for matching_cre in dbcres:
-            cre = CREfromDB(matching_cre)
-            cre.links = self.__make_cre_links(
-                cre=matching_cre, include_only_nodes=include_only
-            )
-            cre.links.extend(self.__make_cre_internal_links(cre=matching_cre))
-            cres.append(cre)
-        return cres
+        return self._hydrate_cres_batch(dbcres, include_only_nodes=include_only)
 
-    def __make_cre_internal_links(self, cre: CRE) -> List[cre_defs.Link]:
-        links = []
-        internal_links = (
+    def _hydrate_nodes_batch(
+        self,
+        dbnodes: List[Node],
+        include_only: Optional[List[str]] = None,
+    ) -> List[cre_defs.Node]:
+        """Hydrate Standard/Tool/Code nodes and their CRE links without per-row queries."""
+        if not dbnodes:
+            return []
+
+        node_ids = [node.id for node in dbnodes]
+        links_by_node: Dict[str, List[Links]] = defaultdict(list)
+        cre_ids: set = set()
+        for link in self.session.query(Links).filter(Links.node.in_(node_ids)).all():
+            links_by_node[link.node].append(link)
+            cre_ids.add(link.cre)
+
+        cres_by_id: Dict[str, CRE] = {}
+        if cre_ids:
+            cres_by_id = {
+                cre.id: cre
+                for cre in self.session.query(CRE).filter(CRE.id.in_(cre_ids)).all()
+            }
+
+        nodes: List[cre_defs.Node] = []
+        for dbnode in dbnodes:
+            node = nodeFromDB(dbnode=dbnode)
+            for dbcre_link in links_by_node.get(dbnode.id, []):
+                dbcre = cres_by_id.get(dbcre_link.cre)
+                if not dbcre:
+                    logger.fatal(
+                        f"CRE {dbcre_link.cre} exists in the links but not in the cre table, database corrupt?"
+                    )
+                    raise AssertionError(
+                        f"CRE {dbcre_link.cre} exists in the links but not in the cre table, database corrupt?"
+                    )
+                if not include_only or (
+                    dbcre.external_id in include_only or dbcre.name in include_only
+                ):
+                    node.add_link(
+                        cre_defs.Link(
+                            ltype=cre_defs.LinkTypes.from_str(dbcre_link.type),
+                            document=CREfromDB(dbcre),
+                        )
+                    )
+            nodes.append(node)
+        return nodes
+
+    def _hydrate_cres_batch(
+        self,
+        dbcres: List[CRE],
+        include_only_nodes: Optional[List[str]] = None,
+    ) -> List[cre_defs.CRE]:
+        if not dbcres:
+            return []
+
+        cre_ids = [cre.id for cre in dbcres]
+        node_links_by_cre: Dict[str, List[Links]] = defaultdict(list)
+        node_ids: set = set()
+        for link in self.session.query(Links).filter(Links.cre.in_(cre_ids)).all():
+            node_links_by_cre[link.cre].append(link)
+            node_ids.add(link.node)
+
+        nodes_by_id: Dict[str, Node] = {}
+        if node_ids:
+            nodes_by_id = {
+                node.id: node
+                for node in self.session.query(Node).filter(Node.id.in_(node_ids)).all()
+            }
+
+        internal_links_by_cre: Dict[str, List[InternalLinks]] = defaultdict(list)
+        linked_cre_ids: set = set()
+        for internal_link in (
             self.session.query(InternalLinks)
             .filter(
-                sqla.or_(InternalLinks.cre == cre.id, InternalLinks.group == cre.id)
+                sqla.or_(
+                    InternalLinks.cre.in_(cre_ids),
+                    InternalLinks.group.in_(cre_ids),
+                )
             )
             .all()
-        )
+        ):
+            linked_cre_ids.add(internal_link.cre)
+            linked_cre_ids.add(internal_link.group)
+            if internal_link.cre in cre_ids:
+                internal_links_by_cre[internal_link.cre].append(internal_link)
+            if internal_link.group in cre_ids:
+                internal_links_by_cre[internal_link.group].append(internal_link)
 
-        if len(internal_links) == 0:
+        cres_by_id: Dict[str, CRE] = {cre.id: cre for cre in dbcres}
+        extra_cre_ids = linked_cre_ids - set(cre_ids)
+        if extra_cre_ids:
+            for linked in (
+                self.session.query(CRE).filter(CRE.id.in_(extra_cre_ids)).all()
+            ):
+                cres_by_id[linked.id] = linked
+
+        result: List[cre_defs.CRE] = []
+        for matching_cre in dbcres:
+            cre = CREfromDB(matching_cre)
+            cre.links = self._assemble_cre_node_links(
+                node_links_by_cre.get(matching_cre.id, []),
+                nodes_by_id,
+                include_only_nodes,
+            )
+            seen_internal: set = set()
+            internal_rows = []
+            for row in internal_links_by_cre.get(matching_cre.id, []):
+                key = (row.cre, row.group, row.type)
+                if key not in seen_internal:
+                    seen_internal.add(key)
+                    internal_rows.append(row)
+            cre.links.extend(
+                self._assemble_cre_internal_links(
+                    matching_cre, internal_rows, cres_by_id
+                )
+            )
+            result.append(cre)
+        return result
+
+    def _assemble_cre_internal_links(
+        self,
+        cre: CRE,
+        internal_links: List[InternalLinks],
+        cres_by_id: Dict[str, CRE],
+    ) -> List[cre_defs.Link]:
+        links: List[cre_defs.Link] = []
+        if not internal_links:
             logger.debug(
                 f"CRE {cre.name}:{cre.external_id}:{cre.id} has no internal links"
             )
 
         for internal_link in internal_links:
-
-            linked_cre_query = self.session.query(CRE)
             link_type = cre_defs.LinkTypes.from_str(internal_link.type)
 
             if internal_link.cre == cre.id:
-                # if we are the lower cre in this relationship, we need to flip the "Contains" linktypes
-                linked_cre = linked_cre_query.filter(
-                    CRE.id == internal_link.group
-                ).first()  # get the higher cre so we can add the link
+                linked_cre = cres_by_id.get(internal_link.group)
+                if not linked_cre:
+                    continue
                 if link_type == cre_defs.LinkTypes.Contains:
                     links.append(
                         cre_defs.Link(
@@ -1518,24 +2170,28 @@ class Node_collection:
                             document=CREfromDB(linked_cre),
                         )
                     )
-                elif (
-                    link_type == cre_defs.LinkTypes.Related
-                ):  # if it's not a "Contains" link, it's a "Related" link
+                elif link_type == cre_defs.LinkTypes.Related:
                     links.append(
                         cre_defs.Link(ltype=link_type, document=CREfromDB(linked_cre))
                     )
                 continue
-            # if we are are the higher cre then we don't need to do anything, relationship types are always "higher"->"lower"
-            linked_cre = linked_cre_query.filter(CRE.id == internal_link.cre).first()
-            links.append(cre_defs.Link(ltype=link_type, document=CREfromDB(linked_cre)))
+
+            linked_cre = cres_by_id.get(internal_link.cre)
+            if linked_cre:
+                links.append(
+                    cre_defs.Link(ltype=link_type, document=CREfromDB(linked_cre))
+                )
         return links
 
-    def __make_cre_links(
-        self, cre: CRE, include_only_nodes: List[str]
+    def _assemble_cre_node_links(
+        self,
+        node_links: List[Links],
+        nodes_by_id: Dict[str, Node],
+        include_only_nodes: Optional[List[str]],
     ) -> List[cre_defs.Link]:
-        links = []
-        for link in self.session.query(Links).filter(Links.cre == cre.id).all():
-            node = self.session.query(Node).filter(Node.id == link.node).first()
+        links: List[cre_defs.Link] = []
+        for link in node_links:
+            node = nodes_by_id.get(link.node)
             if node and (not include_only_nodes or node.name in include_only_nodes):
                 links.append(
                     cre_defs.Link(
@@ -1606,31 +2262,13 @@ class Node_collection:
 
         if not dry_run:
             for _, doc in docs.items():
-                title = ""
-                if hasattr(doc, "id"):
-                    title = (
-                        doc.id.replace("/", "-")
-                        .replace(" ", "_")
-                        .replace('"', "")
-                        .replace("'", "")
-                        + ".yaml"
-                    )
-                elif hasattr(doc, "sectionID"):
-                    title = (
-                        doc.name
-                        + "_"
-                        + doc.sectionID.replace("/", "-")
-                        .replace(" ", "_")
-                        .replace('"', "")
-                        .replace("'", "")
-                        + ".yaml"
-                    )
-                else:
+                if not hasattr(doc, "id"):
                     logger.fatal(
-                        f"doc does not have neither sectionID nor id, this is a bug! {doc.__dict__}"
+                        f"doc does not have an id, this is a bug! {doc.__dict__}"
                     )
+                    continue
                 file.writeToDisk(
-                    file_title=title,
+                    file_title=safe_filename(doc.id) + ".yaml",
                     file_content=yaml.safe_dump(doc.todict()),
                     cres_loc=dir,
                 )
@@ -1640,13 +2278,11 @@ class Node_collection:
     def all_cres_with_pagination(
         self, page: int = 1, per_page: int = 10
     ) -> List[cre_defs.CRE]:
-        result: List[cre_defs.CRE] = []
         cres = self.session.query(CRE).paginate(
             page=int(page), per_page=per_page, error_out=False
         )
         total_pages = cres.pages
-        for cre in cres.items:
-            result.extend(self.get_CREs(external_id=cre.external_id))
+        result = self._hydrate_cres_batch(list(cres.items))
         return result, page, total_pages
 
     def get_cre_path(self, fromID: str, toID: str) -> List[cre_defs.Document]:
@@ -1731,10 +2367,16 @@ class Node_collection:
             .filter(GapAnalysisResults.cache_key.like(f"%{node_name}%"))
             .all()
         )
+        deleted_count = 0
         for r in res:
-            result = self.session.delete(r)
-            if result:
-                logger.info(f"deleted {result.rowcount} objects")
+            self.session.delete(r)
+            deleted_count += 1
+        if deleted_count:
+            logger.info(
+                "deleted %s gap analysis result objects for node %s",
+                deleted_count,
+                node_name,
+            )
         self.session.commit()
         self.session.flush()
         return res
@@ -1910,7 +2552,7 @@ class Node_collection:
             ltype (cre_defs.LinkTypes, optional): the linktype
         Returns: the cre_defs.Link or None in case of error (cycle)
         """
-        if ltype == None:
+        if ltype is None:
             raise ValueError("Every link should have a link type")
 
         if ltype == cre_defs.LinkTypes.PartOf:
@@ -2095,6 +2737,10 @@ class Node_collection:
                 CRE ids before it performs a free text search
            Anything else will be a case insensitive LIKE query in the database
         """
+        search_terms = self._expand_text_search_aliases(text)
+        if not search_terms:
+            return []
+        text = text.strip()
         # structured text search first
         cre_id_search = r"CRE(:| )(?P<id>\d+-\d+)"
         cre_naked_id_search = r"\d\d\d-\d\d\d"
@@ -2146,33 +2792,80 @@ class Node_collection:
             if results:
                 return list(set(results))
         # fuzzy matches second
-        args = [f"%{text}%", "", "", "", "", ""]
         results = {}
-        s = set([p for p in permutations(args, 6)])
-        for combo in s:
-            nodes = self.get_nodes(
-                name=combo[0],
-                section=combo[1],
-                subsection=combo[2],
-                link=combo[3],
-                description=combo[4],
-                partial=True,
-                ntype=None,  # type: ignore
-                sectionID=combo[5],
-            )
-            if nodes:
-                for node in nodes:
-                    node_key = f"{node.name}:{node.version}:{node.section}:{node.sectionID}:{node.subsection}:"
-                    results[node_key] = node
-        args = [f"%{text}%", None, None]
-        for combo in permutations(args, 3):
-            cres = self.get_CREs(
-                name=combo[0], external_id=combo[1], description=combo[2], partial=True
-            )
-            if cres:
-                for cre in cres:
-                    results[cre.id] = cre
+        for search_term in search_terms:
+            args = [f"%{search_term}%", "", "", "", "", ""]
+            s = set([p for p in permutations(args, 6)])
+            for combo in s:
+                nodes = self.get_nodes(
+                    name=combo[0],
+                    section=combo[1],
+                    subsection=combo[2],
+                    link=combo[3],
+                    description=combo[4],
+                    partial=True,
+                    ntype=None,  # type: ignore
+                    sectionID=combo[5],
+                )
+                if nodes:
+                    for node in nodes:
+                        node_key = f"{node.name}:{node.version}:{node.section}:{node.sectionID}:{node.subsection}:"
+                        results[node_key] = node
+            args = [f"%{search_term}%", None, None]
+            for combo in permutations(args, 3):
+                cres = self.get_CREs(
+                    name=combo[0],
+                    external_id=combo[1],
+                    description=combo[2],
+                    partial=True,
+                )
+                if cres:
+                    for cre in cres:
+                        results[cre.id] = cre
         return list(results.values())
+
+    def _expand_text_search_aliases(self, text: str) -> List[str]:
+        normalized = text.strip()
+        if not normalized:
+            return []
+        lowered = normalized.lower()
+        aliases = {
+            "xxe": [
+                "XXE",
+                "XML External Entity",
+                "XML External Entity Reference",
+            ],
+            "xss": [
+                "XSS",
+                "Cross Site Scripting",
+                "Cross-Site Scripting",
+            ],
+            "ssrf": [
+                "SSRF",
+                "Server Side Request Forgery",
+                "Server-Side Request Forgery",
+            ],
+            "csrf": [
+                "CSRF",
+                "Cross Site Request Forgery",
+                "Cross-Site Request Forgery",
+            ],
+            "rce": [
+                "RCE",
+                "Remote Code Execution",
+            ],
+        }
+        expanded = [normalized]
+        expanded.extend(aliases.get(lowered, []))
+        deduped = []
+        seen = set()
+        for entry in expanded:
+            key = entry.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(entry)
+        return deduped
 
     def get_root_cres(self):
         """Returns CRES that only have "Contains" links"""
@@ -2195,27 +2888,112 @@ class Node_collection:
             )
             .all()
         )
-        result = []
-        for c in cres:
-            result.extend(self.get_CREs(external_id=c.external_id))
-        return result
+        return self._hydrate_cres_batch(list(cres))
+
+    def health_check(self) -> Dict[str, Any]:
+        """Lightweight liveness/readiness probe for the serving database.
+
+        Intended for use by a deploy/uptime health endpoint, NOT for deep
+        operational checks (GA completeness, mapping coverage, etc.) which are
+        slow and belong in ops tooling. Performs cheap COUNT queries and never
+        raises: connectivity failures are reported as ``ok=False`` so the caller
+        can return an appropriate status code.
+
+        Returns a dict with:
+          - ``ok``: True only if the DB is reachable AND holds a non-empty
+            dataset (at least one CRE and one standard/node).
+          - ``db_reachable``: True if the COUNT queries executed.
+          - ``cre_count`` / ``standards_count``: populated when reachable.
+          - ``reason``: short human-readable explanation when ``ok`` is False.
+        """
+        try:
+            cre_count = self.session.query(func.count(CRE.id)).scalar() or 0
+            standards_count = self.session.query(func.count(Node.id)).scalar() or 0
+        except OperationalError:
+            return {
+                "ok": False,
+                "db_reachable": False,
+                "reason": "database unreachable",
+            }
+        except SQLAlchemyError:  # pragma: no cover - defensive, never fail open
+            return {
+                "ok": False,
+                "db_reachable": False,
+                "reason": "database health query failed",
+            }
+
+        if cre_count == 0 or standards_count == 0:
+            return {
+                "ok": False,
+                "db_reachable": True,
+                "cre_count": cre_count,
+                "standards_count": standards_count,
+                "reason": "empty dataset",
+            }
+
+        return {
+            "ok": True,
+            "db_reachable": True,
+            "cre_count": cre_count,
+            "standards_count": standards_count,
+        }
 
     def get_embeddings_by_doc_type(self, doc_type: str) -> Dict[str, List[float]]:
+        from application.database.pgvector_utils import (
+            parse_stored_embedding_vec,
+            require_embedding_vec_store,
+        )
+
+        require_embedding_vec_store(
+            self.session.get_bind(), context="get_embeddings_by_doc_type"
+        )
         res = {}
         embeddings = (
             self.session.query(Embeddings).filter(Embeddings.doc_type == doc_type).all()
         )
         if embeddings:
             for entry in embeddings:
+                vec = parse_stored_embedding_vec(entry.embedding_vec)
+                if not vec:
+                    continue
                 if doc_type == cre_defs.Credoctypes.CRE.value:
-                    res[entry.cre_id] = [float(e) for e in entry.embeddings.split(",")]
+                    res[entry.cre_id] = vec
                 else:
-                    res[entry.node_id] = [float(e) for e in entry.embeddings.split(",")]
+                    res[entry.node_id] = vec
+        return res
+
+    def get_embedding_contents_by_doc_type(self, doc_type: str) -> Dict[str, str]:
+        """Return ``{id -> embeddings_content}`` for a doc type.
+
+        ``embeddings_content`` is the text a vector was built from — the pair
+        text the Module C.2 cross-encoder scores a candidate against. Keyed by
+        cre_id for CREs, node_id otherwise, mirroring
+        ``get_embeddings_by_doc_type``. Rows with no content are skipped.
+        """
+        res: Dict[str, str] = {}
+        embeddings = (
+            self.session.query(Embeddings).filter(Embeddings.doc_type == doc_type).all()
+        )
+        for entry in embeddings:
+            if not entry.embeddings_content:
+                continue
+            if doc_type == cre_defs.Credoctypes.CRE.value:
+                res[entry.cre_id] = entry.embeddings_content
+            else:
+                res[entry.node_id] = entry.embeddings_content
         return res
 
     def get_embeddings_by_doc_type_paginated(
         self, doc_type: str, page: int = 1, per_page: int = 100
     ) -> Tuple[Dict[str, List[float]], int, int]:
+        from application.database.pgvector_utils import (
+            parse_stored_embedding_vec,
+            require_embedding_vec_store,
+        )
+
+        require_embedding_vec_store(
+            self.session.get_bind(), context="get_embeddings_by_doc_type_paginated"
+        )
         res = {}
         embeddings = (
             self.session.query(Embeddings)
@@ -2225,13 +3003,21 @@ class Node_collection:
         total_pages = embeddings.pages
         if embeddings.items:
             for entry in embeddings.items:
+                vec = parse_stored_embedding_vec(entry.embedding_vec)
+                if not vec:
+                    continue
                 if doc_type == cre_defs.Credoctypes.CRE.value:
-                    res[entry.cre_id] = [float(e) for e in entry.embeddings.split(",")]
+                    res[entry.cre_id] = vec
                 else:
-                    res[entry.node_id] = [float(e) for e in entry.embeddings.split(",")]
+                    res[entry.node_id] = vec
         return res, total_pages, page
 
     def get_embeddings_for_doc(self, doc: cre_defs.Node | cre_defs.CRE) -> Embeddings:
+        from application.database.pgvector_utils import require_embedding_vec_store
+
+        require_embedding_vec_store(
+            self.session.get_bind(), context="get_embeddings_for_doc"
+        )
         if doc.doctype == cre_defs.Credoctypes.CRE:
             obj = self.session.query(CRE).filter(CRE.external_id == doc.id).first()
             return (
@@ -2300,8 +3086,16 @@ class Node_collection:
                     f"embedding dimension mismatch for {db_object.id}: "
                     f"expected {expected_dim}, got {len(embeddings)}"
                 )
+        from application.database.pgvector_utils import (
+            require_embedding_vec_store,
+            to_pgvector_literal,
+        )
+
+        require_embedding_vec_store(self.session.get_bind(), context="add_embedding")
         existing = self.get_embedding(db_object.id)
-        embeddings_str = ",".join([str(e) for e in embeddings])
+        # Sole store is ``embedding_vec`` (pgvector on Postgres; Text literal
+        # on SQLite). Never LLM re-embed here — see pgvector_utils.
+        embedding_vec_literal = to_pgvector_literal(embeddings)
         resolved_node_url: Optional[str] = None
         if doctype != cre_defs.Credoctypes.CRE:
             resolved_node_url = (
@@ -2312,32 +3106,32 @@ class Node_collection:
             emb = None
             if doctype == cre_defs.Credoctypes.CRE:
                 emb = Embeddings(
-                    embeddings=embeddings_str,
                     cre_id=db_object.id,
                     doc_type=cre_defs.Credoctypes.CRE.value,
                     embeddings_content=embedding_text,
                     embedding_model_id=embedding_model_id,
                     embedding_dim=embedding_dim,
+                    embedding_vec=embedding_vec_literal,
                 )
             else:
                 emb = Embeddings(
-                    embeddings=embeddings_str,
                     node_id=db_object.id,
                     doc_type=db_object.ntype,
                     embeddings_content=embedding_text,
                     embeddings_url=resolved_node_url,
                     embedding_model_id=embedding_model_id,
                     embedding_dim=embedding_dim,
+                    embedding_vec=embedding_vec_literal,
                 )
             self.session.add(emb)
             self.session.commit()
             return emb
         else:
             logger.debug(f"knew of embedding for object {db_object.id} ,updating")
-            existing[0].embeddings = embeddings_str
             existing[0].embeddings_content = embedding_text
             existing[0].embedding_model_id = embedding_model_id
             existing[0].embedding_dim = embedding_dim
+            existing[0].embedding_vec = embedding_vec_literal
             if doctype != cre_defs.Credoctypes.CRE:
                 if embeddings_url is not None:
                     existing[0].embeddings_url = embeddings_url
@@ -2346,6 +3140,79 @@ class Node_collection:
             self.session.commit()
 
             return existing
+
+    def can_use_pgvector_similarity(self) -> bool:
+        """True when Postgres has ``embeddings.embedding_vec`` for SQL cosine."""
+        cached = getattr(self, "_pgvector_similarity_ready", None)
+        if cached is not None:
+            return bool(cached)
+        try:
+            bind = self.session.get_bind()
+            from application.database.pgvector_utils import embedding_vec_column_exists
+
+            ready = getattr(
+                bind.dialect, "name", ""
+            ) == "postgresql" and embedding_vec_column_exists(bind)
+        except Exception:
+            ready = False
+        self._pgvector_similarity_ready = ready
+        return ready
+
+    def find_most_similar_embedding_id(
+        self,
+        query_embedding: List[float],
+        *,
+        doc_type: str,
+        id_column: str,
+        similarity_threshold: float,
+    ) -> Tuple[Optional[str], Optional[float]]:
+        """Top-1 cosine match via pgvector ``<=>`` (Postgres only).
+
+        Returns ``(object_id, score)`` or ``(None, None)`` below threshold /
+        when no rows match. Refuses SQLite / missing ``embedding_vec`` with
+        ``SystemExit`` — callers that need a soft fallback must gate on
+        ``can_use_pgvector_similarity()`` first and use sklearn instead.
+        """
+        from application.database.pgvector_utils import (
+            fail_pgvector_unavailable,
+            most_similar_id_sql,
+            to_pgvector_literal,
+        )
+        from sqlalchemy import text as sql_text
+
+        if not self.can_use_pgvector_similarity():
+            fail_pgvector_unavailable(context="find_most_similar_embedding_id")
+
+        sql = most_similar_id_sql(id_column)
+        bind = self.session.get_bind()
+        params = {
+            "q": to_pgvector_literal(query_embedding),
+            "doc_type": doc_type,
+        }
+        try:
+            # Prefer the Session so we stay inside the app transaction; fall
+            # back to a Connection from the Engine for SQLAlchemy 2.
+            if hasattr(self.session, "execute"):
+                row = self.session.execute(sql_text(sql), params).fetchone()
+            else:
+                with bind.connect() as conn:
+                    row = conn.execute(sql_text(sql), params).fetchone()
+            if not row:
+                return None, None
+            score = float(row.score)
+            if score < similarity_threshold:
+                return None, None
+            return str(row.object_id), score
+        except SystemExit:
+            raise
+        except Exception as exc:
+            # Match prior sklearn-path resilience: chat/import should degrade
+            # to "no match" rather than 500 on a transient driver/query error.
+            logger.warning(
+                "pgvector similarity query failed (%s); returning no match",
+                exc,
+            )
+            return None, None
 
     def assert_embedding_contract(
         self,
@@ -2428,6 +3295,22 @@ class Node_collection:
             .filter(GapAnalysisResults.cache_key == cache_key)
             .first()
         )
+        if gap_analysis_cache_key_is_primary(cache_key):
+            existing_payload = existing.ga_object if existing else None
+            if not should_persist_primary_gap_analysis_cache(
+                ga_object, existing_payload
+            ):
+                if existing is None:
+                    logger.info(
+                        "Skipping empty primary gap analysis cache insert for %s",
+                        cache_key,
+                    )
+                else:
+                    logger.warning(
+                        "Refusing non-material primary gap analysis update for %s",
+                        cache_key,
+                    )
+                return
         if existing:
             existing.ga_object = ga_object
             self.session.add(existing)
@@ -2597,7 +3480,7 @@ def gap_analysis(
         key = node.id
         if not key:
             logger.error(
-                f"key is empty, this is a bug and this gap analysis will not progress"
+                "key is empty, this is a bug and this gap analysis will not progress"
             )
             continue
         if key not in grouped_paths:
@@ -2623,7 +3506,7 @@ def gap_analysis(
         end_key = path["end"].id
         if not end_key:
             logger.error(
-                f"end_key is empty, this is a bug and this gap analysis will not progress"
+                "end_key is empty, this is a bug and this gap analysis will not progress"
             )
             continue
         path["score"] = get_path_score(path)
@@ -2644,7 +3527,7 @@ def gap_analysis(
         else:
             if end_key in grouped_paths[key]["paths"]:
                 continue
-            if end_key in extra_paths_dict[key]:
+            if end_key in extra_paths_dict[key]["paths"]:
                 if extra_paths_dict[key]["paths"][end_key]["score"] > path["score"]:
                     extra_paths_dict[key]["paths"][end_key] = path
             else:

@@ -1,0 +1,43 @@
+repositories:
+  - id: owasp-asvs
+    type: github
+    enabled: true
+    owner: OWASP
+    repo: ASVS
+    branch: master
+    paths:
+      include:
+        - "4.0/en/**/*.md"
+
+      exclude:
+        - "**/archive/**"
+
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1200
+      overlap_tokens: 100
+
+    polling:
+      mode: incremental
+      interval_minutes: 60
+
+  - id: owasp-cheatsheets
+    type: github
+    enabled: true
+
+    owner: OWASP
+    repo: CheatSheetSeries
+    branch: master
+
+    paths:
+      include:
+        - "cheatsheets/**/*.md"
+
+    chunking:
+      strategy: markdown_heading
+      max_tokens: 1000
+      overlap_tokens: 100
+
+    polling:
+      mode: incremental
+      interval_minutes: 120

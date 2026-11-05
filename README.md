@@ -13,7 +13,15 @@ OpenCRE consists of:
 # Contribute code or mappings
 
 To see how you can contribute to the application or to the data (catalog or standard mappings), see [Contributing](docs/CONTRIBUTING.md).
+
+If this is your first code contribution, start with the [first-time contributor setup guide](docs/developmentSetup.md), then read the contribution process and quality bar.
 We really welcome you!
+
+# Documentation
+
+- [In-app Docs](https://www.opencre.org/docs) — getting started, FAQ, and interactive API reference
+- [FAQ](docs/faq.md) — frequently asked questions (also rendered at [/docs#faq](https://www.opencre.org/docs#faq))
+- [OpenAPI spec](docs/api/openapi.yaml) — public REST API (`/rest/v1/openapi.yaml` when running)
 
 # Roadmap
 
@@ -41,7 +49,7 @@ If you want to develop on OpenCRE or docker is not available in your environment
 ### Command Line
 
 To run outside of Docker you need to install OpenCRE.
-To install this application you need python3, yarn and virtualenv.
+To install this application you need Python 3.11.9, Node.js, Yarn Classic (the repository uses a Yarn v1 lockfile), and `virtualenv`. The Python version is pinned in `.python-version`; the repository does not currently pin a Node.js version.
 
 Clone the repository:
 
@@ -49,12 +57,7 @@ Clone the repository:
 git clone https://github.com/OWASP/OpenCRE
 ```
 
-(Recommended) Create and activate a Python virtual environment:
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
+`make install` creates and uses the project virtual environment. Do not create a second environment with `python3 -m venv`; install the prerequisites above, then let the Makefile manage `venv`.
 
 Install dependencies:
 
@@ -62,11 +65,15 @@ Install dependencies:
 make install
 ```
 
-Download the latest CRE graph from upstream by running:
+`make install` creates the local schema as part of installation. Download the latest CRE graph from upstream with:
 
 ```bash
 make upstream-sync
 ```
+
+For contributors, this is the supported local data bootstrap path. You do
+**not** need access to the internal OpenCRE Google Sheet to work on the
+project.
 
 You can precompute local gap-analysis cache after imports with:
 
@@ -103,16 +110,33 @@ Notes:
 - `--csv` is required when using `--export`.
 - This mode exports report data from the OpenCRE API and does not mutate the local DB.
 
-To download a remote CRE spreadsheet locally you can run:
-
-```bash
-python cre.py --review --from_spreadsheet <google sheets url>
-```
-
-To add a remote spreadsheet to your local database you can run:
+Maintainer-only: if you need to add a remote spreadsheet to your local
+database, you can run:
 
 ```bash
 python cre.py --add --from_spreadsheet <google sheets url>
+```
+
+Those spreadsheet commands are not required for ordinary contribution and local
+development. If you want to import your own mappings locally, use MyOpenCRE or
+the CSV import endpoint with imports enabled:
+
+```bash
+export CRE_ALLOW_IMPORT=true
+make start-containers
+```
+
+Then use:
+
+- `GET /rest/v1/cre_csv` to download a template
+- `POST /rest/v1/cre_csv_import` to upload your CSV after starting the local API
+- send the multipart file field as `cre_csv`
+
+Example, once `make dev-flask` is running:
+
+```bash
+curl -X POST http://localhost:5000/rest/v1/cre_csv_import \
+  -F cre_csv=@my_mappings.csv
 ```
 
 To run the web application for development you can run:
@@ -128,7 +152,7 @@ make dev-flask
 Alternatively, you can use the dockerfile with:
 
 ```bash
-make docker && make docker-run
+make docker-dev && make docker-dev-run
 ```
 
 Some features like Gap Analysis require a neo4j DB running, you can start this with:
@@ -188,7 +212,7 @@ OpenCRE is fully supported on macOS. The following notes are optional and intend
 Install required tools using Homebrew:
 
 ```bash
-brew install python@3.11 yarn make
+brew install python@3.11 yarn make virtualenv
 ```
 
 > Note: Python 3.11 is recommended. Newer Python versions may cause dependency incompatibilities.
@@ -233,8 +257,12 @@ xcode-select --install
 Sync upstream CRE data (requires internet access):
 
 ```bash
+make migrate-upgrade
 make upstream-sync
 ```
+
+You do not need Google Sheet access for this workflow. `make upstream-sync`
+pulls the public OpenCRE graph into your local database.
 
 Then start the local server:
 
@@ -255,6 +283,8 @@ http://127.0.0.1:5000
 ## Using the OpenCRE API
 
 See [the myOpenCRE user guide](docs/my-opencre-user-guide.md) on using the OpenCRE API to, for example, add your own security guidelines and standards.
+
+For a local stdio MCP server over public REST reads, see [docs/api/mcp.md](docs/api/mcp.md).
 
 ## Docker building and running
 
@@ -289,6 +319,7 @@ Then edit `.env` and provide values appropriate for your environment.
 * Google Auth: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_SECRET_JSON`, `LOGIN_ALLOWED_DOMAINS`
 * GCP: `GCP_NATIVE`
 * Spreadsheet Auth: `OpenCRE_gspread_Auth`
+* Feature flags: `CRE_ENABLE_HEALTH` (enable the `GET /rest/v1/health` deploy/uptime probe; off by default, returns 404 when unset), `CRE_ENABLE_MYOPENCRE` (expose MyOpenCRE in `GET /api/capabilities`; off by default), `CRE_ENABLE_LOGIN` (expose Login/Logout UI via `capabilities.login`; off by default)
 
 See `.env.example` for full list and defaults.
 
@@ -344,6 +375,25 @@ make cover
 ```
 
 Try to keep the coverage above 70%.
+
+### Frontend end-to-end tests (Cypress)
+
+Frontend E2E tests run with [Cypress](https://www.cypress.io/) against a local Flask server.
+First seed a local database — this builds the schema from the ORM models and loads a small
+checked-in fixture graph into `./standards_cache.sqlite` — then run the suite headlessly:
+
+```bash
+make e2e-db   # rebuild and populate the local SQLite cache (discards any existing cache)
+make e2e      # build the frontend, start Flask on 127.0.0.1:5000, run Cypress
+```
+
+To watch the tests run interactively, start the backend in one terminal and open Cypress in
+another (after seeding with `make e2e-db`):
+
+```bash
+make dev-flask       # terminal 1: serves http://127.0.0.1:5000
+yarn cypress:open    # terminal 2: opens the Cypress runner
+```
 
 ---
 

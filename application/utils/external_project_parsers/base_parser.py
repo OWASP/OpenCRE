@@ -1,17 +1,14 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from application.utils.external_project_parsers import base_parser_defs
 from rq import Queue
 from application.utils import redis
-from application.prompt_client import prompt_client as prompt_client
-import logging
 import time
-from alive_progress import alive_bar
 from application.utils.external_project_parsers.parsers import *
 from application.utils import gap_analysis
 import os, json
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class BaseParser:
@@ -22,6 +19,7 @@ class BaseParser:
         db_connection_str: str,
     ):
         from application.cmd import cre_main
+        from application.prompt_client import prompt_client as prompt_client
 
         db = cre_main.db_connect(db_connection_str)
 
@@ -55,6 +53,8 @@ class BaseParser:
         somehow finds all the importers that have been registered (either reflection for implementing classes or an explicit method that registers all available importers)
         and schedules jobs to call those importers, monitors the jobs and alerts when done same as cre_main
         """
+        from alive_progress import alive_bar
+
         importers = []
         jobs = []
         conn = redis.connect()

@@ -1,5 +1,9 @@
 """Tests for Module C diff scaffolding (Step 6) and change-set (Step 7)."""
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import unittest
 from application.defs import cre_defs as defs
 from application.utils.import_diff import (

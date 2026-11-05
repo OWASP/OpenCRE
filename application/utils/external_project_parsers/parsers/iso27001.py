@@ -1,6 +1,8 @@
-import logging
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import os
-from pprint import pprint
 from typing import Dict, Any
 from application.database import db
 from application.defs import cre_defs as defs
@@ -15,9 +17,6 @@ from application.utils.external_project_parsers.base_parser_defs import (
 )
 from typing import List
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 nist_id_re = re.compile("(?P<nist_id>\w\w\-\d+)")
 

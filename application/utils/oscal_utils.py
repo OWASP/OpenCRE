@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import random
 from trestle.oscal import catalog
 from trestle.oscal import common
@@ -47,7 +51,7 @@ def document_to_oscal(
             version=version,
             links=[common.Link(href=hyperlink)],
         )
-    if uuid == None or uuid == "":
+    if uuid is None or uuid == "":
         uuid = str(uuid4())
     c = catalog.Catalog(metadata=m, uuid=uuid)
     controls: List[catalog.Control] = []

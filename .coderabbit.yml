@@ -1,0 +1,35 @@
+# https://docs.coderabbit.ai/reference/configuration
+
+chat:
+  auto_reply: true
+code_generation:
+  docstrings:
+    language: en-US
+early_access: true
+issue_enrichment:
+  auto_enrich:
+    enabled: false
+language: en-US
+reviews:
+  assess_linked_issues: true
+  auto_apply_labels: false
+  auto_review:
+    base_branches:
+      - main
+    drafts: false
+    enabled: true
+  collapse_walkthrough: false
+  high_level_summary: true
+  high_level_summary_in_walkthrough: true
+  labeling_instructions: []
+  poem: false
+  # Keeping it "chill" initially , will change it to "assertive" once everyone will get accustomed to it
+  profile: chill
+  request_changes_workflow: false
+  review_status: true
+  sequence_diagrams: false
+  tone_and_style_guidelines: "You are reviewing code for an open-source project.Be highly encouraging, educational, and explain the 'why' behind any suggested changes."
+  ignore_paths:
+    - '*.md'
+    - 'docs/**'
+    - 'yarn.lock'

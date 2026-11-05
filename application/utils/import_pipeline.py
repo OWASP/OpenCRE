@@ -9,14 +9,15 @@ Step 9 contract (docs/importing-next-steps.md):
 
 from __future__ import annotations
 
-import logging
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from typing import Any, List, Optional
 
 from application.database import db as db_mod
 from application.prompt_client import prompt_client
 from application.utils.external_project_parsers import base_parser_defs
-
-logger = logging.getLogger(__name__)
 
 
 def parse_result_from_yaml_document_forest(

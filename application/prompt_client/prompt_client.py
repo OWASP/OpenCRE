@@ -1,38 +1,32 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from application.database import db
 from application.defs import cre_defs
 from datetime import datetime
 from multiprocessing import Pool
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
 from io import BytesIO
 from urllib.parse import urlparse
 
-from application.prompt_client import embed_alignment
+from application.prompt_client import embed_alignment, litellm_router
 
-from playwright.sync_api import Error as PlaywrightError
-from playwright.sync_api import TimeoutError as PlaywrightTimeoutError, sync_playwright
 from scipy import sparse
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import Dict, List, Any, Tuple, Optional
 from pydantic import ValidationError
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
-import logging
 
 try:
     from pypdf import PdfReader
 except ImportError:
     PdfReader = None  # type: ignore[misc, assignment]
-import nltk
 import numpy as np
 import os
 import json
 import re
 import requests
-import time
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 SIMILARITY_THRESHOLD = float(os.environ.get("CHATBOT_SIMILARITY_THRESHOLD", "0.7"))
 PROMPT_TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
@@ -53,54 +47,11 @@ def _safe_truncate_for_log(text: str, limit: int = 600) -> str:
 
 
 def _extract_content_text(response: Any) -> str:
-    choices = getattr(response, "choices", None)
-    if not choices and isinstance(response, dict):
-        choices = response.get("choices")
-    if not choices:
-        raise ValueError("LLM response did not contain choices")
-    msg = choices[0].message
-    content = getattr(msg, "content", None)
-    if content is None and isinstance(msg, dict):
-        content = msg.get("content")
-    if content is None:
-        raise ValueError("LLM response did not contain message content")
-    if isinstance(content, list):
-        return "".join(
-            c.get("text", "") if isinstance(c, dict) else str(c) for c in content
-        ).strip()
-    return str(content).strip()
+    return litellm_router.extract_content_text(response)
 
 
 def _extract_embeddings(response: Any) -> List[List[float]]:
-    data = getattr(response, "data", None)
-    if data is None and isinstance(response, dict):
-        data = response.get("data")
-    if not isinstance(data, list):
-        raise ValueError("Embedding response missing data list")
-    vectors: List[List[float]] = []
-    for item in data:
-        emb = getattr(item, "embedding", None)
-        if emb is None and isinstance(item, dict):
-            emb = item.get("embedding")
-        if not isinstance(emb, list):
-            raise ValueError("Embedding item missing vector")
-        vectors.append([float(x) for x in emb])
-    return vectors
-
-
-def _is_llm_rate_limit_error(err: Exception) -> bool:
-    msg = str(err).lower()
-    if "rate limit" in msg or "too many requests" in msg:
-        return True
-    if "resource exhausted" in msg or "quota" in msg or "exceeded quota" in msg:
-        return True
-    status = (
-        getattr(err, "status_code", None)
-        or getattr(err, "status", None)
-        or getattr(err, "http_status", None)
-        or getattr(err, "code", None)
-    )
-    return status == 429
+    return litellm_router.extract_embeddings(response)
 
 
 def _render_chat_prompt(*, question: str, retrieved_knowledge: Optional[str]) -> str:
@@ -247,6 +198,11 @@ class in_memory_embeddings:
                 )
                 continue
 
+            # Playwright is for scrape/import embedding generation only — not chat.
+            # Import after the PDF branch so PDF-only extraction works without Playwright.
+            from playwright.sync_api import Error as PlaywrightError
+            from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
             page = None
             try:
                 page = self.__context.new_page()
@@ -301,6 +257,9 @@ class in_memory_embeddings:
         for attempts in range(1, 10):
             if _is_likely_pdf_url(url):
                 return None
+            from playwright.sync_api import Error as PlaywrightError
+            from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
             page = None
             try:
                 page = self.__context.new_page()
@@ -343,6 +302,8 @@ class in_memory_embeddings:
             ] = {}
 
     def clean_content(self, content):
+        from nltk.tokenize import word_tokenize  # lazy: scrape/import path only
+
         content = re.sub("\s+", " ", content.strip())
 
         # split into words
@@ -363,6 +324,9 @@ class in_memory_embeddings:
 
     def setup_playwright(self):
         # in case we want to run without connectivity to ai_client or playwright
+        import nltk
+        from playwright.sync_api import sync_playwright
+
         self.__playwright = sync_playwright().start()
         nltk.download("punkt")
         nltk.download("punkt_tab")
@@ -388,7 +352,7 @@ class in_memory_embeddings:
         Returns:
             List[str]: a list of db ids which do not have embeddings
         """
-        logger.info(f"syncing nodes with embeddings")
+        logger.info("syncing nodes with embeddings")
         missing_embeddings = []
         for doc_type in cre_defs.Credoctypes:
             db_ids = []
@@ -707,13 +671,7 @@ class PromptHandler:
     embeddings_instance = None  # instance of our in_memory_embeddings singletton
 
     def __init__(self, database: db.Node_collection, load_all_embeddings=False) -> None:
-        try:
-            import litellm  # type: ignore
-        except ImportError as e:
-            raise RuntimeError(
-                "litellm package is required for PromptHandler LLM calls"
-            ) from e
-        self._litellm = litellm
+        self._litellm = litellm_router.get_litellm()
         self.chat_model = os.environ.get(
             "CRE_LLM_CHAT_MODEL", "gemini/gemini-2.5-flash"
         )
@@ -721,9 +679,8 @@ class PromptHandler:
             "CRE_EMBED_MODEL", "gemini/gemini-embedding-001"
         )
         self.align_model = os.environ.get("CRE_EMBED_ALIGN_MODEL", self.chat_model)
-        self._llm_max_retries = int(os.environ.get("CRE_LLM_MAX_RETRIES", "2"))
-        self._llm_retry_sleep_seconds = int(
-            os.environ.get("CRE_LLM_RETRY_SLEEP_SECONDS", "15")
+        self._llm_max_retries, self._llm_retry_sleep_seconds = (
+            litellm_router.retry_policy()
         )
         expected_dim_raw = os.environ.get("CRE_EMBED_EXPECTED_DIM", "").strip()
         self._expected_embed_dim = int(expected_dim_raw) if expected_dim_raw else None
@@ -765,21 +722,12 @@ class PromptHandler:
                 )
 
     def _with_llm_rate_limit_retry(self, fn: Any, *, context: str) -> Any:
-        for attempt in range(self._llm_max_retries + 1):
-            try:
-                return fn()
-            except Exception as e:
-                if not _is_llm_rate_limit_error(e) or attempt >= self._llm_max_retries:
-                    raise
-                logger.info(
-                    "rate/quota limited during %s; sleeping %ss (attempt %s/%s)",
-                    context,
-                    self._llm_retry_sleep_seconds,
-                    attempt + 1,
-                    self._llm_max_retries + 1,
-                )
-                time.sleep(self._llm_retry_sleep_seconds)
-        raise RuntimeError("unreachable: retry loop exited unexpectedly")
+        return litellm_router.with_rate_limit_retry(
+            fn,
+            context=context,
+            max_retries=self._llm_max_retries,
+            retry_sleep_seconds=self._llm_retry_sleep_seconds,
+        )
 
     def get_model_name(self) -> str:
         return self.chat_model
@@ -803,11 +751,15 @@ class PromptHandler:
             else self._truncate_one(text)
         )
 
-        def _call() -> Any:
-            return self._litellm.embedding(model=self.embed_model, input=payload)
-
         vectors = _extract_embeddings(
-            self._with_llm_rate_limit_retry(_call, context="LiteLLM embeddings")
+            litellm_router.embedding(
+                model=self.embed_model,
+                input=payload,
+                client=self._litellm,
+                context="LiteLLM embeddings",
+                max_retries=self._llm_max_retries,
+                retry_sleep_seconds=self._llm_retry_sleep_seconds,
+            )
         )
         if self._expected_embed_dim is not None:
             for v in vectors:
@@ -835,10 +787,14 @@ class PromptHandler:
             {"role": "user", "content": rag_instruction},
         ]
 
-        def _call() -> Any:
-            return self._litellm.completion(model=self.chat_model, messages=messages)
-
-        resp = self._with_llm_rate_limit_retry(_call, context="LiteLLM chat completion")
+        resp = litellm_router.completion(
+            model=self.chat_model,
+            messages=messages,
+            client=self._litellm,
+            context="LiteLLM chat completion",
+            max_retries=self._llm_max_retries,
+            retry_sleep_seconds=self._llm_retry_sleep_seconds,
+        )
         return _extract_content_text(resp)
 
     def align_embedding_span_json(
@@ -857,25 +813,16 @@ class PromptHandler:
             },
         }
 
-        def _call_with_json_schema() -> Any:
-            return self._litellm.completion(
+        try:
+            resp = litellm_router.completion(
                 model=self.align_model,
                 messages=messages,
+                client=self._litellm,
+                context="LiteLLM align_embedding_span_json",
+                max_retries=self._llm_max_retries,
+                retry_sleep_seconds=self._llm_retry_sleep_seconds,
                 response_format=strict_format,
                 temperature=0.2,
-            )
-
-        def _call_json_object_fallback() -> Any:
-            return self._litellm.completion(
-                model=self.align_model,
-                messages=messages,
-                response_format={"type": "json_object"},
-                temperature=0.2,
-            )
-
-        try:
-            resp = self._with_llm_rate_limit_retry(
-                _call_with_json_schema, context="LiteLLM align_embedding_span_json"
             )
         except Exception as e:
             logger.warning(
@@ -883,9 +830,15 @@ class PromptHandler:
                 self.align_model,
                 e,
             )
-            resp = self._with_llm_rate_limit_retry(
-                _call_json_object_fallback,
+            resp = litellm_router.completion(
+                model=self.align_model,
+                messages=messages,
+                client=self._litellm,
                 context="LiteLLM align_embedding_span_json fallback",
+                max_retries=self._llm_max_retries,
+                retry_sleep_seconds=self._llm_retry_sleep_seconds,
+                response_format={"type": "json_object"},
+                temperature=0.2,
             )
 
         text = _extract_content_text(resp)
@@ -921,10 +874,14 @@ class PromptHandler:
             {"role": "user", "content": direct_instruction},
         ]
 
-        def _call() -> Any:
-            return self._litellm.completion(model=self.chat_model, messages=messages)
-
-        resp = self._with_llm_rate_limit_retry(_call, context="LiteLLM query_llm")
+        resp = litellm_router.completion(
+            model=self.chat_model,
+            messages=messages,
+            client=self._litellm,
+            context="LiteLLM query_llm",
+            max_retries=self._llm_max_retries,
+            retry_sleep_seconds=self._llm_retry_sleep_seconds,
+        )
         return _extract_content_text(resp)
 
     def generate_embeddings_for(self, item_name: str):
@@ -1060,6 +1017,15 @@ class PromptHandler:
         Returns:
             str: _description_
         """
+        if self.database.can_use_pgvector_similarity():
+            match_id, _score = self.database.find_most_similar_embedding_id(
+                item_embedding,
+                doc_type=cre_defs.Credoctypes.CRE.value,
+                id_column="cre_id",
+                similarity_threshold=SIMILARITY_THRESHOLD,
+            )
+            return match_id
+
         if not hasattr(self, "existing_cre_embeddings"):
             (
                 self.existing_cre_embeddings,
@@ -1102,6 +1068,15 @@ class PromptHandler:
         Returns:
             str: the database id of the closest database standard
         """
+        if self.database.can_use_pgvector_similarity():
+            match_id, _score = self.database.find_most_similar_embedding_id(
+                standard_text_embedding,
+                doc_type=cre_defs.Credoctypes.Standard.value,
+                id_column="node_id",
+                similarity_threshold=SIMILARITY_THRESHOLD,
+            )
+            return match_id
+
         if not hasattr(self, "existing_node_embeddings"):
             (
                 self.existing_node_embeddings,
@@ -1145,6 +1120,14 @@ class PromptHandler:
         Returns:
             str: the ID of the CRE with the closest cosine_similarity
         """
+        if self.database.can_use_pgvector_similarity():
+            return self.database.find_most_similar_embedding_id(
+                item_embedding,
+                doc_type=cre_defs.Credoctypes.CRE.value,
+                id_column="cre_id",
+                similarity_threshold=similarity_threshold,
+            )
+
         embedding_array = sparse.csr_matrix(
             np.array(item_embedding).reshape(1, -1)
         )  # convert embedding into a 1-dimentional numpy array
@@ -1159,7 +1142,7 @@ class PromptHandler:
         max_similarity = -1
         most_similar_index = 0
         most_similar_id = ""
-        for page in range(starting_page, total_pages):
+        for page in range(starting_page, total_pages + 1):
             existing_cres, existing_cre_ids = self.__load_cre_embeddings(embeddings)
 
             similarities = cosine_similarity(embedding_array, existing_cres)
@@ -1167,17 +1150,18 @@ class PromptHandler:
                 max_similarity = np.max(similarities)
                 most_similar_index = np.argmax(similarities)
                 most_similar_id = existing_cre_ids[most_similar_index]
-            (
-                embeddings,
-                total_pages,
-                _,
-            ) = self.database.get_embeddings_by_doc_type_paginated(
-                cre_defs.Credoctypes.CRE.value, page=page
-            )
+            if page < total_pages:
+                (
+                    embeddings,
+                    total_pages,
+                    _,
+                ) = self.database.get_embeddings_by_doc_type_paginated(
+                    cre_defs.Credoctypes.CRE.value, page=page + 1
+                )
 
         if max_similarity < similarity_threshold:
             logger.info(
-                f"there is no good cre candidate for this standard section, returning nothing"
+                "there is no good cre candidate for this standard section, returning nothing"
             )
             return None, None
         return most_similar_id, max_similarity
@@ -1197,6 +1181,14 @@ class PromptHandler:
         Returns:
             str: the db id of the most similar object
         """
+        if self.database.can_use_pgvector_similarity():
+            return self.database.find_most_similar_embedding_id(
+                question_embedding,
+                doc_type=cre_defs.Credoctypes.Standard.value,
+                id_column="node_id",
+                similarity_threshold=similarity_threshold,
+            )
+
         embedding_array = sparse.csr_matrix(
             np.array(question_embedding).reshape(1, -1)
         )  # convert embedding into a 1-dimentional numpy array
@@ -1222,9 +1214,10 @@ class PromptHandler:
                 most_similar_index = int(np.argmax(similarities))
                 most_similar_id = existing_standard_ids[most_similar_index]
 
-            embeddings, _, _ = self.database.get_embeddings_by_doc_type_paginated(
-                doc_type=cre_defs.Credoctypes.Standard.value, page=page
-            )
+            if page < total_pages:
+                embeddings, _, _ = self.database.get_embeddings_by_doc_type_paginated(
+                    doc_type=cre_defs.Credoctypes.Standard.value, page=page + 1
+                )
         if max_similarity < similarity_threshold:
             logger.info(
                 f"there is no good standard candidate for this other standard section, returning nothing, max similarity was {max_similarity}"

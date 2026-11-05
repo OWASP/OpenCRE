@@ -1,5 +1,8 @@
 # script to parse CRE links from  README.md files of a given list of projects
-import logging
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import os
 import re
 import urllib
@@ -15,10 +18,6 @@ from application.utils.external_project_parsers.base_parser_defs import (
     ParseResult,
 )
 import requests
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class MiscTools(ParserInterface):

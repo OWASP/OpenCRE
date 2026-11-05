@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opencre.org/schemas/oie/locator.json",
+  "title": "Locator",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "id"],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": ["repo_path", "url", "feed_item"]
+    },
+    "id": { "type": "string", "minLength": 1 },
+    "path": { "type": "string" },
+    "url": { "type": "string", "format": "uri" },
+    "title": { "type": "string" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "kind": { "const": "repo_path" } } },
+      "then": { "required": ["path"] }
+    },
+    {
+      "if": {
+        "properties": { "kind": { "enum": ["url", "feed_item"] } }
+      },
+      "then": { "required": ["url"] }
+    }
+  ]
+}

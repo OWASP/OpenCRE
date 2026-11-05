@@ -1,6 +1,9 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from io import StringIO
 import csv
-import logging
 from application.database import db
 from application.defs import cre_defs as defs
 from application.prompt_client import prompt_client as prompt_client
@@ -10,10 +13,6 @@ from application.utils.external_project_parsers.base_parser_defs import (
     ParseResult,
 )
 import requests
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class CloudNativeSecurityControls(ParserInterface):
@@ -58,7 +57,7 @@ class CloudNativeSecurityControls(ParserInterface):
             )
             if existing:
                 embeddings = cache.get_embeddings_for_doc(existing[0])
-                if embeddings:
+                if embeddings and getattr(embeddings, "embedding_vec", None):
                     logger.info(
                         f"Node {cnsc.todict()} already exists and has embeddings, skipping"
                     )

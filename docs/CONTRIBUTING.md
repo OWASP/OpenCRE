@@ -34,7 +34,7 @@ You can reach us in the [OWASP Slack](https://owasp.org/slack/invite) at channel
 
 ## How Can I Contribute?
 
-The "Issues" page lists a number of features we would like to implement, we have tagged the ones we believe are easy to pick up with the tag `good first issue` and/or `beginner`. Alternatively you can contribute content (see below) or request features or mappings by opening an Issue.
+The "Issues" page lists a number of features we would like to implement, we have tagged the ones we believe are easy to pick up with the tag `good first issue` and/or `beginner`. For the canonical first-time setup, read the [development setup guide](developmentSetup.md). Alternatively you can contribute content (see below) or request features or mappings by opening an Issue.
 
 > **Note:** Due to a wave of low effort, poorly tested and often destructive AI-powered issues often created only for the sake of opening a pull request, we will be aggressively closing both issues and pull requests that link to issues not acknowledged by the maintainers.
 
@@ -78,7 +78,7 @@ Again, this only works if you have control over the content of the standard. Con
 
 ### Reporting Bugs
 
-When you are creating a bug report, please [include as many details as possible](#how-do-i-submit-a-good-bug-report). Fill out [the required template](https://github.com/common-requirement-enumeration/.github/blob/main/.github/ISSUE_TEMPLATE.md), the information it asks for helps us resolve issues faster.
+When you are creating a bug report, please [include as many details as possible](#how-do-i-submit-a-good-bug-report). Fill out [the required template](https://github.com/OWASP/OpenCRE/blob/main/.github/ISSUE_TEMPLATE.md), the information it asks for helps us resolve issues faster.
 
 > **Note:** If you find a **Closed** issue that seems like it is the same thing that you're experiencing, open a new issue and include a link to the original issue in the body of your new one.
 
@@ -94,7 +94,7 @@ Please avoid opening GitHub issues for small frontend or cosmetic bugs such as:
 
 #### How Do I Submit A (Good) Bug Report?
 
-Bugs are tracked as [GitHub issues](https://guides.github.com/features/issues/). Create an issue and provide the following information by filling in [the template](https://github.com/common-requirement-enumeration/.github/blob/main/.github/ISSUE_TEMPLATE.md).
+Bugs are tracked as [GitHub issues](https://guides.github.com/features/issues/). Create an issue and provide the following information by filling in [the template](https://github.com/OWASP/OpenCRE/blob/main/.github/ISSUE_TEMPLATE.md).
 
 Explain the problem and include additional details to help maintainers reproduce the problem:
 
@@ -109,7 +109,7 @@ Explain the problem and include additional details to help maintainers reproduce
 
 This section guides you through submitting an enhancement suggestion, including completely new features and minor improvements to existing functionality. Following these guidelines helps maintainers and the community understand your suggestion :pencil: and find related suggestions :mag_right:.
 
-When you are creating an enhancement suggestion, please [include as many details as possible](#how-do-i-submit-a-good-enhancement-suggestion). Fill in [the template](https://github.com/OWASP/OpenCRE/blob/main/docs/ISSUE_TEMPLATE.md), including the steps that you imagine you would take if the feature you're requesting existed.
+When you are creating an enhancement suggestion, please [include as many details as possible](#how-do-i-submit-a-good-enhancement-suggestion). Fill in [the template](https://github.com/OWASP/OpenCRE/blob/main/.github/ISSUE_TEMPLATE.md), including the steps that you imagine you would take if the feature you're requesting existed.
 
 #### How Do I Submit A (Good) Enhancement Suggestion?
 

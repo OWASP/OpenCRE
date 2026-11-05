@@ -4,6 +4,10 @@ Phase 3 (v3) — impact summary from staged change sets (read-only).
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from typing import Any, Dict
 
 from application.database import db

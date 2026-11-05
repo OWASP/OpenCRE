@@ -1,3 +1,7 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import argparse
 import os
 import sys
@@ -13,7 +17,6 @@ except ImportError:
     pass
 
 import click  # type: ignore
-import coverage  # type: ignore
 from flask_migrate import Migrate  # type: ignore
 
 from application import create_app, sqla  # type: ignore
@@ -33,6 +36,8 @@ migrate = Migrate(app, sqla, render_as_batch=True)
 def test(cover: bool, test_names: List[str]) -> None:
     COV = None
     if cover or os.environ.get("FLASK_COVERAGE"):
+        import coverage  # type: ignore  # lazy: not needed for web/worker boot
+
         COV = coverage.coverage(
             branch=True,
             include="application/*",
@@ -168,6 +173,36 @@ def main() -> None:
         help="import owasp secure headers",
     )
     parser.add_argument(
+        "--owasp_kubernetes_top10_2022_in",
+        action="store_true",
+        help="load OWASP Kubernetes Top Ten 2022 mapping fixture (eval gold, not import-all)",
+    )
+    parser.add_argument(
+        "--owasp_kubernetes_top10_2025_in",
+        action="store_true",
+        help="load OWASP Kubernetes Top Ten 2025 mapping fixture (eval gold, not import-all)",
+    )
+    parser.add_argument(
+        "--owasp_top10_2025_in",
+        action="store_true",
+        help="load OWASP Top 10 2025 mapping fixture (eval gold, not import-all)",
+    )
+    parser.add_argument(
+        "--owasp_api_top10_2023_in",
+        action="store_true",
+        help="load OWASP API Security Top 10 2023 mapping fixture (eval gold, not import-all)",
+    )
+    parser.add_argument(
+        "--owasp_llm_top10_2025_in",
+        action="store_true",
+        help="load OWASP LLM Top 10 2025 mapping fixture (eval gold, not import-all)",
+    )
+    parser.add_argument(
+        "--owasp_aisvs_in",
+        action="store_true",
+        help="load OWASP AISVS mapping fixture (eval gold, not import-all)",
+    )
+    parser.add_argument(
         "--pci_dss_3_2_in",
         action="store_true",
         help="import pci dss from https://www.compliancequickstart.com/",
@@ -210,6 +245,32 @@ def main() -> None:
         help="delete all embedding rows then rebuild embeddings for every CRE and node (use after smart-extract or model changes)",
     )
     parser.add_argument(
+        "--run_librarian",
+        action="store_true",
+        help="run Module C (the Librarian). With --run_id, drains Module B's "
+        "knowledge_queue for that run through C.0-C.4 and marks the rows "
+        "consumed; without it, walks a JSONL fixture and logs candidates",
+    )
+    parser.add_argument(
+        "--librarian_dry_run",
+        action="store_true",
+        help="run the Librarian without persisting anything: no links (never "
+        "written pre-W8b) and no consumed_at stamp on the queue",
+    )
+    parser.add_argument(
+        "--librarian_source",
+        default=None,
+        help="path to a knowledge_queue JSONL for --run_librarian "
+        "(defaults to the bundled sample fixture; not valid with --run_id)",
+    )
+    parser.add_argument(
+        "--librarian_envelopes_out",
+        default=None,
+        help="Optional JSONL mirror of the Librarian's LinkProposal / ReviewItem "
+        "envelopes. A real --run_id run always writes decision_queue, the durable "
+        "handoff; this flag only adds a file copy of the same batch for eyeballing",
+    )
+    parser.add_argument(
         "--populate_neo4j_db",
         action="store_true",
         help="populate the neo4j db",
@@ -223,6 +284,11 @@ def main() -> None:
         "--preload_map_analysis_target_url",
         default="",
         help="preload map analysis for all possible 2 standards combinations, use target url as an OpenCRE base",
+    )
+    parser.add_argument(
+        "--ga_backfill_opencre_direct",
+        action="store_true",
+        help="refresh OpenCRE map-analysis cache rows (manual + automatic CRE links)",
     )
     parser.add_argument(
         "--ga_backfill_missing",
@@ -277,10 +343,53 @@ def main() -> None:
         default="",
         help="output CSV path for --export",
     )
+    parser.add_argument(
+        "--run_noise_filter",
+        action="store_true",
+        help="run Module B noise/relevance filter over a harvest run's chunks",
+    )
+    parser.add_argument(
+        "--run_harvester",
+        action="store_true",
+        help="run Module A harvester; writes ChangeRecords into harvest_input",
+    )
+    parser.add_argument(
+        "--run_id",
+        default="",
+        help="pipeline_run_id to process (required with --run_harvester / "
+        "--run_noise_filter; with --run_librarian, selects the live "
+        "knowledge_queue path)",
+    )
+    parser.add_argument(
+        "--noise_filter_dry_run",
+        action="store_true",
+        help="classify without writing to knowledge_queue or marking rows processed",
+    )
+    parser.add_argument(
+        "--harvester_dry_run",
+        action="store_true",
+        help="run Module A without writing harvest_input rows",
+    )
+    parser.add_argument(
+        "--harvester_repos_yaml",
+        default="",
+        help="optional path to repos.yaml for --run_harvester",
+    )
 
     args = parser.parse_args()
     if args.export and not args.csv:
         parser.error("--export requires --csv <path>")
+    if args.run_noise_filter and not args.run_id.strip():
+        parser.error("--run_noise_filter requires --run_id <pipeline_run_id>")
+    if args.run_harvester and not args.run_id.strip():
+        parser.error("--run_harvester requires --run_id <pipeline_run_id>")
+    # The live queue path takes its rows from the DB, so a fixture path would be
+    # silently ignored rather than doing what the caller plainly asked for.
+    if args.librarian_source and args.run_id.strip():
+        parser.error(
+            "--librarian_source reads a fixture and cannot be combined "
+            "with --run_id (which drains the live knowledge_queue)"
+        )
 
     from application.cmd import cre_main
 

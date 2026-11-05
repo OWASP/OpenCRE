@@ -76,8 +76,7 @@ npm install --global yarn
 
 ## Database installation
 
-openCRE uses [sqlite3](https://www.sqlite.org/index.html) for local development and [postgres](https://www.postgresql.org/) for production.
-Bothh are needed in order to run the project.
+OpenCRE uses [SQLite](https://www.sqlite.org/index.html) for the default local development database and [PostgreSQL](https://www.postgresql.org/) for production. You do not need to install both databases for the standard contributor path; install PostgreSQL locally only when you are explicitly testing the PostgreSQL-backed workflow.
 
 ### Linux
 
@@ -104,12 +103,65 @@ You can install the project by running `make install`.
 
 ### Testing that everything works
 
-If the tests pass, the project should be operational. You can run tests with
-`make test` and `make e2e` which runs both [unit tests](https://en.wikipedia.org/wiki/Unit_testing) and [end to end tests](https://www.browserstack.com/guide/end-to-end-testing).
+Before running the end-to-end checks, start the local services and seed the fixture database. Then run both [unit tests](https://en.wikipedia.org/wiki/Unit_testing) and [end to end tests](https://www.browserstack.com/guide/end-to-end-testing):
+
+```bash
+make start-containers
+make e2e-db
+make test
+make e2e
+```
+
+A working setup should finish without a test failure and should make the local application available at `http://localhost:5000`.
 
 ### Import the database
 
-You can run `make migrate-upgrade` first and then `make upstream-sync`
+For local development, you do **not** need access to the OpenCRE Google Sheet.
+That spreadsheet is part of the maintainer workflow for bulk standards imports.
+
+The supported contributor workflow is:
+
+1. create the local database schema
+2. sync the public OpenCRE graph from upstream
+3. import your own mappings locally through MyOpenCRE if needed
+
+Run:
+
+```bash
+make migrate-upgrade
+make upstream-sync
+```
+
+`make upstream-sync` downloads the OpenCRE graph from the public API into your
+local `standards_cache.sqlite`.
+
+If you want to map your own standard locally, enable imports and use MyOpenCRE
+or the CSV import endpoint:
+
+```bash
+export CRE_ALLOW_IMPORT=true
+make dev-flask
+```
+
+Then you can:
+
+- open the local MyOpenCRE UI
+- download a CSV template from `GET /rest/v1/cre_csv`
+- upload your CSV to `POST /rest/v1/cre_csv_import` after starting the local API
+- send the multipart file field as `cre_csv`
+
+Example, once `make dev-flask` is running:
+
+```bash
+curl -X POST http://localhost:5000/rest/v1/cre_csv_import \
+  -F cre_csv=@my_mappings.csv
+```
+
+Maintainer-only spreadsheet import example:
+
+```bash
+python cre.py --add --from_spreadsheet <google sheets url>
+```
 
 ## Running locally
 
@@ -120,6 +172,14 @@ First, start the required services (Redis and Neo4j) with:
 You can run the backend with `make dev-flask`. At the time of writing the backend URL is `http://localhost:5000` by default.
 
 You can run the frontend with `yarn start`. This should open a browser tab at the application's front page and also automatically reload the page whenever changes are detected. At the time of writing the frontend URL is `http://localhost:9001` by default.
+
+## Troubleshooting
+
+- **`virtualenv: command not found`:** install the `virtualenv` prerequisite, then rerun `make install`. Do not create a separate `venv` with a different tool.
+- **`make e2e` fails before the tests start:** make sure the local services are running and run `make e2e-db` first to seed the fixture database.
+- **Docker command not found:** use the Docker alternative from the main [README](../README.md), or install Docker before following that path.
+- **Database confusion:** the default local contributor path uses SQLite. Only add local PostgreSQL when you are testing the production-style database path.
+- **Frontend dependency failures:** the repository uses a Yarn v1 lockfile. Use Yarn Classic and keep the Node.js version consistent across contributors until the project adds an explicit Node.js engine constraint.
 
 ### Regenerating all embeddings (smart extract / new model)
 
@@ -137,4 +197,4 @@ This deletes every row in the `embeddings` table, then runs the same full pass a
 
 The chatbot matches your question to a **standard node embedding**, then answers using that node’s `embeddings_content`. When **`embeddings_url`** is set (e.g. OWASP AI Exchange with a `#fragment`), the API adds it as **`embeddingsUrl`** on the reference row alongside the unchanged catalog **`hyperlink`**; the UI shows a separate “Scoped source (embedding URL)” link. The LLM context includes an `Embeddings_URL` line for citations.
 
-This is it, please follow the [CONTRIBUTING](../CONTRIBUTING.md) guidlines while contributing and thank you for your interest in OpenCRE.
+This is it, please follow the [CONTRIBUTING](./CONTRIBUTING.md) guidelines while contributing and thank you for your interest in OpenCRE.

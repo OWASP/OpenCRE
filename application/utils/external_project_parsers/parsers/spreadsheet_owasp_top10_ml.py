@@ -1,5 +1,9 @@
 """OWASP Top10 for ML mappings from AI exchange CSV/master-shaped rows."""
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from typing import Dict, List, Tuple
 
 from application.defs import cre_defs as defs

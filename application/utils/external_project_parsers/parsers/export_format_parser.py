@@ -1,11 +1,10 @@
-import logging
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from typing import Any, Dict, List, Optional
 
 from application.defs import cre_defs as defs
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def is_empty(value: Optional[str]) -> bool:
@@ -85,7 +84,7 @@ def parse_export_format(lfile: List[Dict[str, Any]]) -> Dict[str, List[defs.Docu
                         logger.warning(
                             f"Link between {highest_cre.name} and {working_cre.name} already exists"
                         )
-                elif highest_cre == None:
+                elif highest_cre is None:
                     highest_cre = working_cre
                     highest_index = i
 

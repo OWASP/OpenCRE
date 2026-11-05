@@ -4,7 +4,10 @@ Phase 3 (v3) — incremental embeddings + GA after a successful apply.
 
 from __future__ import annotations
 
-import logging
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import os
 from typing import List
 
@@ -12,8 +15,6 @@ from application.cmd import cre_main
 from application.database import db
 from application.prompt_client import prompt_client as prompt_client
 from application.utils import db_backend, gap_analysis, redis
-
-logger = logging.getLogger(__name__)
 
 
 def run_post_apply(

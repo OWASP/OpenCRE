@@ -1,5 +1,9 @@
 """Integration tests for ``CRE_EMBED_SMART_EXTRACT`` in ``generate_embeddings``."""
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import os
 import unittest
 from types import SimpleNamespace

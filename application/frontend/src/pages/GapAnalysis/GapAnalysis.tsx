@@ -63,9 +63,10 @@ const GetResultLine = (path, gapAnalysis, key) => {
         <Popup
           wide="very"
           size="large"
-          style={{ textAlign: 'center' }}
+          style={{ textAlign: 'center', maxWidth: 'min(550px, calc(100vw - 40px))' }}
           hoverable
           position="right center"
+          popperModifiers={[{ name: 'preventOverflow', enabled: true, options: { padding: 8 } }]}
           trigger={<span>{getDocumentDisplayName(path.end, true)} </span>}
         >
           <Popup.Content>
@@ -127,7 +128,7 @@ export const GapAnalysis = () => {
   const [loadingGA, setLoadingGA] = useState<boolean>(false);
   const [error, setError] = useState<string | null | object>(null);
   const { apiUrl } = useEnvironment();
-  const timerIdRef = useRef<NodeJS.Timer>();
+  const timerIdRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -173,7 +174,9 @@ export const GapAnalysis = () => {
       timerIdRef.current = setInterval(pollingCallback, 10000);
     };
     const stopPolling = () => {
-      clearInterval(timerIdRef.current);
+      if (timerIdRef.current !== undefined) {
+        clearInterval(timerIdRef.current);
+      }
     };
 
     if (gaJob) {

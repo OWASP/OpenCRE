@@ -1,11 +1,12 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import os
 import time
 import json
-import logging
 import requests
 from typing import Dict, Any, Optional
-
-logger = logging.getLogger(__name__)
 
 
 def emit_import_event(

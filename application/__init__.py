@@ -1,4 +1,8 @@
 # type:ignore
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import string
 from typing import Any
 from sqlalchemy import MetaData
@@ -7,7 +11,7 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_caching import Cache
 from flask_compress import Compress
-from application.config import CMDConfig, config
+from application.config import CMDConfig, _sqlalchemy_uri, config
 import os
 import random
 
@@ -36,8 +40,8 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
     # prior shell export) must not override it — that produced sqlite errors
     # against a Heroku ``DATABASE_URL`` session.
     if os.environ.get("SQLALCHEMY_DATABASE_URI") and not isinstance(conf, CMDConfig):
-        app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
-            "SQLALCHEMY_DATABASE_URI"
+        app.config["SQLALCHEMY_DATABASE_URI"] = _sqlalchemy_uri(
+            os.environ.get("SQLALCHEMY_DATABASE_URI") or ""
         )
     GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
     app.secret_key = GOOGLE_CLIENT_SECRET
@@ -50,6 +54,10 @@ def create_app(mode: str = "production", conf: any = None) -> Any:
     from application.web.web_main import app as app_blueprint
 
     app.register_blueprint(app_blueprint)
+
+    from application.web.openapi_registry import init_openapi
+
+    init_openapi(app)
 
     CORS(app)
     app.config["CORS_HEADERS"] = "Content-Type"

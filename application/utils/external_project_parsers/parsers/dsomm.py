@@ -1,6 +1,9 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import re
 import yaml
-import logging
 from application.database import db
 from application.defs import cre_defs as defs
 from application.prompt_client import prompt_client as prompt_client
@@ -10,10 +13,6 @@ from application.utils.external_project_parsers.base_parser_defs import (
     ParserInterface,
     ParseResult,
 )
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class DSOMM(ParserInterface):

@@ -1,5 +1,9 @@
 """Unit tests for smart embedding excerpt alignment (no network, no LLM)."""
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import unittest
 
 from application.defs import cre_defs

@@ -1,4 +1,7 @@
-import logging
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import re
 from dataclasses import dataclass
 from typing import Any, Dict, List, Tuple
@@ -16,10 +19,6 @@ from application.utils.external_project_parsers.parsers.spreadsheet_standard_fam
     parse_standards_for_family,
 )
 
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 _CRE_ID_TOKEN = re.compile(r"^\d{3}-\d{3}$")
 # Legacy DB exports sometimes stored display names with a redundant " (123-456)" suffix.

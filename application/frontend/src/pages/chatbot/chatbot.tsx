@@ -1,6 +1,6 @@
 import './chatbot.scss';
 
-import DOMPurify, { sanitize } from 'dompurify';
+import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 import React, { useEffect, useRef, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -10,6 +10,12 @@ import { Grid } from 'semantic-ui-react';
 
 import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
+
+/** Render chatbot markdown safely for dangerouslySetInnerHTML. */
+export function renderChatMarkdown(markdown: string): string {
+  const parsed = marked.parse(markdown, { async: false });
+  return DOMPurify.sanitize(String(parsed), { USE_PROFILES: { html: true } });
+}
 
 export const Chatbot = () => {
   type chatMessage = {
@@ -82,12 +88,12 @@ export const Chatbot = () => {
   }, [chatMessages]);
 
   function login() {
-    fetch(`${apiUrl}/user`, { method: 'GET' })
+    fetch(`${apiUrl}/auth/user`, { method: 'GET', headers: { Accept: 'application/json' } })
       .then((response) => {
         if (response.status === 200) {
           response.text().then((user) => setUser(user));
         } else {
-          window.location.href = `${apiUrl}/login`;
+          window.location.href = `${apiUrl}/auth/login`;
         }
       })
       .catch((error) => {
@@ -105,7 +111,7 @@ export const Chatbot = () => {
 
   function processResponse(response: string) {
     const responses = response.split('```');
-    const res: JSX.Element[] = [];
+    const res: React.ReactElement[] = [];
 
     responses.forEach((txt, i) => {
       if (i % 2 === 0) {
@@ -113,7 +119,7 @@ export const Chatbot = () => {
           <p
             key={i}
             dangerouslySetInnerHTML={{
-              __html: sanitize(marked(txt), { USE_PROFILES: { html: true } }),
+              __html: renderChatMarkdown(txt),
             }}
           />
         );
@@ -150,7 +156,7 @@ export const Chatbot = () => {
 
     fetch(`${apiUrl}/completion`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ prompt: currentTerm }),
     })
       .then(async (response) => {

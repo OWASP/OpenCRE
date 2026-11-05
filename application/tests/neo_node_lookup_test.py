@@ -1,5 +1,9 @@
 """Tests for NeoNode-by-document_id lookup (avoids Neo4j 5 unknown-label warnings)."""
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import unittest
 from unittest.mock import MagicMock, patch
 

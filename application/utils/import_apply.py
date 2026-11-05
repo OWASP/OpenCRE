@@ -4,6 +4,10 @@ Phase 3 (v3) apply engine for staged change sets.
 
 from __future__ import annotations
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from dataclasses import dataclass
 from typing import Any, Dict, List, Tuple
 

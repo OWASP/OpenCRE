@@ -1,5 +1,9 @@
 """Regression tests for GA Postgres vs Neo materiality helpers."""
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import unittest
 
 from application.utils import gap_analysis
@@ -34,6 +38,16 @@ class TestGapAnalysisNoEmptyPrimaryRegression(unittest.TestCase):
 
     def test_whitespace_only_tags_not_material(self):
         self.assertFalse(gap_analysis.primary_gap_analysis_payload_is_material("  "))
+
+    def test_primary_cache_key_ignores_arrow_in_importing_name(self):
+        self.assertTrue(
+            gap_analysis.gap_analysis_cache_key_is_primary("A->B >> Compare")
+        )
+        self.assertFalse(
+            gap_analysis.gap_analysis_cache_key_is_primary(
+                "A >> Compare->node-section-id"
+            )
+        )
 
 
 if __name__ == "__main__":

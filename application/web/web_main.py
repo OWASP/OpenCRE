@@ -1,38 +1,44 @@
 # type: ignore
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 # silence mypy for the routes file
 import csv
 from functools import wraps
 import json
-import logging
 import os
 import io
 import pathlib
 import re
 import urllib.parse
-from alive_progress import alive_bar
 from typing import Any
-from application.utils import oscal_utils, redis
 
 from rq import job, exceptions
 from rq import Queue
 
-from application.utils import oscal_utils, redis
+from application.utils import redis
 from application.database import db
-from application.cmd import cre_main
 from application.defs import cre_defs as defs
 from application.defs import cre_exceptions
-from application.feature_flags import is_cre_import_allowed
-
+from application.feature_flags import (
+    is_cre_import_allowed,
+    is_health_endpoint_enabled,
+    is_login_enabled,
+    is_myopencre_enabled,
+)
+from application.web import identity
 from application.utils import spreadsheet as sheet_utils
 from application.utils import mdutils, redirectors, gap_analysis
-from application.utils.external_project_parsers.parsers import myopencre_parser
+from application.web.openapi_registry import openapi_documented
 from enum import Enum
 from flask import json as flask_json
 from flask import (
     Blueprint,
     abort,
     jsonify,
+    make_response,
     redirect,
     request,
     send_from_directory,
@@ -42,13 +48,38 @@ from flask import (
 )
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
+from sqlalchemy.exc import SQLAlchemyError
 from application.utils.spreadsheet import write_csv
 import oauthlib
 import google.auth.transport.requests
 
-
 ITEMS_PER_PAGE = 20
-OPENCRE_STANDARD_NAME = "OpenCRE"
+MAX_ITEMS_PER_PAGE = 100
+OPENCRE_STANDARD_NAME = gap_analysis.OPENCRE_STANDARD_NAME
+
+
+def _llm_error_status_code(err: BaseException) -> int | None:
+    """Best-effort extraction of an HTTP-like status code from provider errors."""
+    for attr in ("status", "status_code", "http_status", "code"):
+        value = getattr(err, attr, None)
+        if isinstance(value, int) and 400 <= value <= 599:
+            return value
+
+    if isinstance(getattr(err, "args", None), tuple) and err.args:
+        nested = err.args[0]
+        if isinstance(nested, dict):
+            for key in ("code", "status_code"):
+                value = nested.get(key)
+                if isinstance(value, int) and 400 <= value <= 599:
+                    return value
+            nested_error = nested.get("error")
+            if isinstance(nested_error, dict):
+                for key in ("code", "status_code"):
+                    value = nested_error.get(key)
+                    if isinstance(value, int) and 400 <= value <= 599:
+                        return value
+    return None
+
 
 app = Blueprint(
     "web",
@@ -58,10 +89,6 @@ app = Blueprint(
     ),
 )
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
 
 def _ga_timeout_seconds() -> int:
     raw = str(gap_analysis.GAP_ANALYSIS_TIMEOUT or "129600s")
@@ -69,6 +96,11 @@ def _ga_timeout_seconds() -> int:
     if m:
         return int(m.group(1))
     return 129600
+
+
+def _is_heroku_deploy() -> bool:
+    """True on Heroku/read-only web dynos where GA must be served from SQL cache only."""
+    return os.environ.get("DYNO") is not None or bool(os.environ.get("HEROKU"))
 
 
 def _compute_ga_without_redis(
@@ -129,8 +161,10 @@ if os.environ.get("POSTHOG_API_KEY") and os.environ.get("POSTHOG_HOST"):
     )
 
 
+@openapi_documented("find_cre")
 @app.route("/rest/v1/id/<creid>", methods=["GET"])
-@app.route("/rest/v1/name/<crename>", methods=["GET"])
+# path: converter — many CRE names contain "/" (e.g. "MFA/OTP", "Deploy/build").
+@app.route("/rest/v1/name/<path:crename>", methods=["GET"])
 def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
     if posthog:
         source = request.args.get("source")
@@ -166,12 +200,22 @@ def find_cre(creid: str = None, crename: str = None) -> Any:  # refer
             return write_csv(docs=docs).getvalue().encode("utf-8")
 
         elif opt_format == SupportedFormats.OSCAL.value:
+            try:
+                from application.utils import oscal_utils
+            except ImportError:
+                abort(
+                    503,
+                    "OSCAL export is unavailable on this deployment "
+                    "(compliance-trestle not installed).",
+                )
+
             result = {"data": json.loads(oscal_utils.document_to_oscal(cre))}
 
         return jsonify(result)
     abort(404, "CRE does not exist")
 
 
+@openapi_documented("find_node_by_name")
 @app.route("/rest/v1/<ntype>/<name>", methods=["GET"])
 @app.route("/rest/v1/standard/<name>", methods=["GET"])
 @app.route("/rest/v1/<ntype>/<name>/sectionid/<sectionID>", methods=["GET"])
@@ -191,7 +235,7 @@ def find_node_by_name(
     sectionID: str = "",
 ) -> Any:
     if posthog:
-        posthog.capture(f"find_node_by_name", f"name:{name};nodeType{ntype}")
+        posthog.capture("find_node_by_name", f"name:{name};nodeType{ntype}")
 
     database = db.Node_collection()
     opt_section = section or request.args.get("section")
@@ -256,6 +300,15 @@ def find_node_by_name(
             return write_csv(docs=docs).getvalue().encode("utf-8")
 
         elif opt_format == SupportedFormats.OSCAL.value:
+            try:
+                from application.utils import oscal_utils
+            except ImportError:
+                abort(
+                    503,
+                    "OSCAL export is unavailable on this deployment "
+                    "(compliance-trestle not installed).",
+                )
+
             return jsonify(json.loads(oscal_utils.list_to_oscal(nodes)))
 
         # if opt_osib:
@@ -269,11 +322,12 @@ def find_node_by_name(
 
 
 # TODO: (spyros) paginate
+@openapi_documented("find_document_by_tag")
 @app.route("/rest/v1/tags", methods=["GET"])
 def find_document_by_tag() -> Any:
     tags = request.args.getlist("tag")
     if posthog:
-        posthog.capture(f"find_document_by_tag", f"tags:{tags}")
+        posthog.capture("find_document_by_tag", f"tags:{tags}")
 
     database = db.Node_collection()
     # opt_osib = request.args.get("osib")
@@ -292,127 +346,27 @@ def find_document_by_tag() -> Any:
             )
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
+            try:
+                from application.utils import oscal_utils
+            except ImportError:
+                abort(
+                    503,
+                    "OSCAL export is unavailable on this deployment "
+                    "(compliance-trestle not installed).",
+                )
+
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
         return jsonify(result)
     abort(404, "Tag does not exist")
 
 
-def _get_opencre_documents(collection: db.Node_collection) -> list[defs.CRE]:
-    return [
-        collection.get_CREs(internal_id=cre.id)[0]
-        for cre in collection.session.query(db.CRE).all()
-    ]
-
-
-def _get_map_analysis_documents(
-    standard: str, collection: db.Node_collection
-) -> list[defs.Document]:
-    if standard == OPENCRE_STANDARD_NAME:
-        return _get_opencre_documents(collection)
-    return collection.get_nodes(name=standard)
-
-
-def _build_direct_link_path(
-    start_document: defs.Document, end_document: defs.Document
-) -> dict[str, Any]:
-    segment_start = start_document.shallow_copy()
-    # The current gap-analysis popup mutates non-CRE row ids during display
-    # before it resolves the one-step direct path. Keep this direct-link fast
-    # path compatible by mirroring that display-only shape in the segment start.
-    if segment_start.doctype != defs.Credoctypes.CRE.value:
-        segment_start.id = ""
-    return {
-        "end": end_document.shallow_copy(),
-        "path": [
-            {
-                "start": segment_start,
-                "end": end_document.shallow_copy(),
-                "relationship": "LINKED_TO",
-                "score": 0,
-            }
-        ],
-        "score": 0,
-    }
-
-
-def _make_direct_link_path_key(end_document: defs.Document) -> str:
-    return end_document.id
-
-
-def _add_direct_link_result(
-    grouped_paths: dict[str, dict[str, Any]],
-    start_document: defs.Document,
-    end_document: defs.Document,
-) -> None:
-    shared_paths = grouped_paths.setdefault(
-        start_document.id,
-        {
-            "start": start_document.shallow_copy(),
-            "paths": {},
-            "extra": 0,
-        },
-    )["paths"]
-    shared_paths.setdefault(
-        _make_direct_link_path_key(end_document),
-        _build_direct_link_path(start_document, end_document),
-    )
-
-
-def _build_direct_cre_overlap_map_analysis(
-    standards: list[str],
-    standards_hash: str,
-    collection: db.Node_collection,
-) -> dict[str, Any] | None:
-    if len(standards) < 2:
-        return None
-
-    base_standard = standards[0]
-    compare_standard = standards[1]
-    base_nodes = _get_map_analysis_documents(base_standard, collection)
-    compare_nodes = _get_map_analysis_documents(compare_standard, collection)
-    if not base_nodes or not compare_nodes:
-        return None
-
-    base_is_opencre = base_standard == OPENCRE_STANDARD_NAME
-    opencre_nodes = base_nodes if base_is_opencre else compare_nodes
-    standard_nodes = compare_nodes if base_is_opencre else base_nodes
-
-    standard_nodes_by_id = {
-        standard_node.id: standard_node for standard_node in standard_nodes
-    }
-    direct_pairs: list[tuple[defs.CRE, defs.Document]] = []
-    for opencre_node in opencre_nodes:
-        for link in opencre_node.links:
-            if link.ltype != defs.LinkTypes.LinkedTo:
-                continue
-            standard_node = standard_nodes_by_id.get(link.document.id)
-            if not standard_node:
-                continue
-            direct_pairs.append((opencre_node, standard_node))
-
-    grouped_paths: dict[str, dict[str, Any]] = {}
-    for opencre_node, standard_node in direct_pairs:
-        if base_is_opencre:
-            _add_direct_link_result(grouped_paths, opencre_node, standard_node)
-        else:
-            _add_direct_link_result(grouped_paths, standard_node, opencre_node)
-
-    if not grouped_paths:
-        return None
-
-    result = {"result": grouped_paths}
-    collection.add_gap_analysis_result(
-        cache_key=standards_hash, ga_object=flask_json.dumps(result)
-    )
-    return result
-
-
+@openapi_documented("map_analysis")
 @app.route("/rest/v1/map_analysis", methods=["GET"])
 def map_analysis() -> Any:
     standards = request.args.getlist("standard")
     if posthog:
-        posthog.capture(f"map_analysis", f"standards:{standards}")
+        posthog.capture("map_analysis", f"standards:{standards}")
 
     database = db.Node_collection()
     if len(standards) < 2:
@@ -420,9 +374,17 @@ def map_analysis() -> Any:
     standards = standards[:2]
     standards_hash = gap_analysis.make_resources_key(standards)
 
-    # ----- PR #825: OpenCRE fast path -----
+    # ----- PR #825: OpenCRE fast path (SQL cache only on Heroku) -----
     if OPENCRE_STANDARD_NAME in standards:
-        direct_gap_analysis = _build_direct_cre_overlap_map_analysis(
+        if database.gap_analysis_exists(standards_hash):
+            cached = database.get_gap_analysis_result(cache_key=standards_hash)
+            if cached:
+                parsed = json.loads(cached)
+                if "result" in parsed:
+                    return jsonify({"result": parsed.get("result")})
+        if _is_heroku_deploy():
+            abort(404, "No such Cache")
+        direct_gap_analysis = gap_analysis.build_direct_cre_overlap_map_analysis(
             standards, standards_hash, database
         )
         if direct_gap_analysis:
@@ -438,9 +400,20 @@ def map_analysis() -> Any:
             if "result" in parsed:
                 return jsonify({"result": parsed.get("result")})
 
-    # ----- upstream: Heroku guard -----
-    if os.environ.get("HEROKU"):
+    # Heroku serves precomputed GA from Postgres only — never Redis, RQ, or Neo4j.
+    if _is_heroku_deploy():
+        logger.info(
+            "On Heroku: gap analysis cache miss for %s, returning 404",
+            standards_hash,
+        )
         abort(404, "No such Cache")
+
+    if os.environ.get("CRE_NO_CALCULATE_GAP_ANALYSIS"):
+        logger.info(
+            f"Gap analysis calculations are disabled by CRE_NO_CALCULATE_GAP_ANALYSIS; "
+            f"refusing to schedule new job for {standards_hash}"
+        )
+        abort(404, "Gap analysis calculations are disabled")
 
     # ----- upstream: Redis / RQ path with synchronous fallback -----
     db_url = os.environ.get("CRE_CACHE_FILE") or os.environ.get("PROD_DATABASE_URL")
@@ -470,7 +443,7 @@ def map_analysis() -> Any:
 
         j = q.enqueue_call(
             description=f"{standards[0]}->{standards[1]}",
-            func=cre_main.run_gap_pair_job,
+            func="application.cmd.cre_main.run_gap_pair_job",
             kwargs={
                 "importing_name": standards[0],
                 "peer_name": standards[1],
@@ -494,11 +467,12 @@ def map_analysis() -> Any:
             abort(503, f"Gap analysis unavailable: {fallback_exc}")
 
 
+@openapi_documented("map_analysis_weak_links")
 @app.route("/rest/v1/map_analysis_weak_links", methods=["GET"])
 def map_analysis_weak_links() -> Any:
     standards = request.args.getlist("standard")
     if posthog:
-        posthog.capture(f"map_analysis_weak_links", f"standards:{standards}")
+        posthog.capture("map_analysis_weak_links", f"standards:{standards}")
 
     key = request.args.get("key")
     cache_key = gap_analysis.make_subresources_key(standards=standards, key=key)
@@ -519,6 +493,7 @@ def map_analysis_weak_links() -> Any:
     abort(404, "No such Cache")
 
 
+@openapi_documented("fetch_job")
 @app.route("/rest/v1/ma_job_results", methods=["GET"])
 def fetch_job() -> Any:
     logger.debug("fetching job results")
@@ -581,18 +556,21 @@ def fetch_job() -> Any:
         abort(500)
 
 
+@openapi_documented("standards")
 @app.route("/rest/v1/standards", methods=["GET"])
 def standards() -> Any:
     if posthog:
-        posthog.capture(f"standards", "")
+        posthog.capture("standards", "")
 
     database = db.Node_collection()
     standards = list(database.standards())
     if OPENCRE_STANDARD_NAME not in standards:
         standards.append(OPENCRE_STANDARD_NAME)
+    standards = apply_user_resource_filter(database, standards)
     return standards
 
 
+@openapi_documented("ga_standards")
 @app.route("/rest/v1/ga_standards", methods=["GET"])
 def ga_standards() -> Any:
     """
@@ -603,9 +581,16 @@ def ga_standards() -> Any:
         posthog.capture("ga_standards", "")
 
     database = db.Node_collection()
-    standards = database.standards()
+    standards = list(database.standards())
+    if OPENCRE_STANDARD_NAME not in standards:
+        standards.append(OPENCRE_STANDARD_NAME)
+    from application.cmd import cre_main
+
     eligible = [
-        s for s in standards if cre_main.resource_name_ga_eligible_in_db(database, s)
+        s
+        for s in standards
+        if s == OPENCRE_STANDARD_NAME
+        or cre_main.resource_name_ga_eligible_in_db(database, s)
     ]
     return sorted(eligible)
 
@@ -625,6 +610,7 @@ def openapi_spec() -> Any:
     )
 
 
+@openapi_documented("text_search")
 @app.route("/rest/v1/text_search", methods=["GET"])
 def text_search() -> Any:
     r"""
@@ -640,8 +626,10 @@ def text_search() -> Any:
     """
     database = db.Node_collection()
     text = request.args.get("text")
+    if not text:
+        return jsonify({"error": "text parameter is required"}), 400
     if posthog:
-        posthog.capture(f"text_search", f"text:{text}")
+        posthog.capture("text_search", f"text:{text}")
 
     opt_format = request.args.get("format")
     documents = database.text_search(text)
@@ -654,6 +642,15 @@ def text_search() -> Any:
             )
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
+            try:
+                from application.utils import oscal_utils
+            except ImportError:
+                abort(
+                    503,
+                    "OSCAL export is unavailable on this deployment "
+                    "(compliance-trestle not installed).",
+                )
+
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
         res = [doc.todict() for doc in documents]
@@ -662,6 +659,29 @@ def text_search() -> Any:
         abort(404, "No object matches the given search terms")
 
 
+@openapi_documented("health")
+@app.route("/rest/v1/health", methods=["GET"])
+def health() -> Any:
+    """Deploy/uptime health probe (feature-flagged, off by default).
+
+    Enable with CRE_ENABLE_HEALTH=1. Scope is intentionally narrow and fast so
+    it can gate deploys without failing for the wrong reason:
+      - 200: app up, serving DB reachable, dataset non-empty (CREs and
+        standards present).
+      - 503: DB unreachable or dataset empty/broken.
+    Deeper checks (gap-analysis completeness, mapping coverage, Neo4j/Redis)
+    are deliberately excluded and live in ops tooling instead.
+    """
+    if not is_health_endpoint_enabled():
+        abort(404)
+
+    database = db.Node_collection()
+    result = database.health_check()
+    status_code = 200 if result.get("ok") else 503
+    return jsonify(result), status_code
+
+
+@openapi_documented("find_root_cres")
 @app.route("/rest/v1/root_cres", methods=["GET"])
 def find_root_cres() -> Any:
     """
@@ -669,7 +689,7 @@ def find_root_cres() -> Any:
 
     """
     if posthog:
-        posthog.capture(f"find_root_cres", "")
+        posthog.capture("find_root_cres", "")
 
     database = db.Node_collection()
     # opt_osib = request.args.get("osib")
@@ -688,6 +708,15 @@ def find_root_cres() -> Any:
             )
             return write_csv(docs=docs).getvalue().encode("utf-8")
         elif opt_format == SupportedFormats.OSCAL.value:
+            try:
+                from application.utils import oscal_utils
+            except ImportError:
+                abort(
+                    503,
+                    "OSCAL export is unavailable on this deployment "
+                    "(compliance-trestle not installed).",
+                )
+
             return jsonify(json.loads(oscal_utils.list_to_oscal(documents)))
 
         return jsonify(result)
@@ -697,6 +726,22 @@ def find_root_cres() -> Any:
 @app.errorhandler(404)
 def page_not_found(e) -> Any:
     return "Resource Not found", 404
+
+
+_REPO_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..")
+)
+_DOCS_DIR = os.path.join(_REPO_ROOT, "docs")
+
+
+@app.route("/docs/faq.md", methods=["GET"])
+def faq_markdown() -> Any:
+    """Serve FAQ markdown for the in-app docs page."""
+    return send_from_directory(
+        directory=_DOCS_DIR,
+        path="faq.md",
+        mimetype="text/markdown; charset=utf-8",
+    )
 
 
 # If no other routes are matched, serve the react app, or any other static files (like bundle.js)
@@ -713,11 +758,19 @@ def index(path: str) -> Any:
 def smartlink(
     name: str, ntype: str = defs.Credoctypes.Standard.value, section: str = ""
 ) -> Any:
-    """if node is found, show node, else redirect"""
+    """If a standard section node is found, redirect to it.
+
+    If the node has exactly one linked CRE, redirect directly to that CRE
+    page instead of the intermediate standard-section page, so the user
+    immediately sees the full wealth of CRE information.
+    If the node has multiple CRE links, redirect to the standard-section
+    node page as before.  If the node is not found in the database, fall
+    back to any known external redirect (e.g. the Mitre CWE catalogue).
+    """
     # ATTENTION: DO NOT MESS WITH THIS FUNCTIONALITY WITHOUT A TICKET AND CORE CONTRIBUTORS APPROVAL!
     # CRITICAL FUNCTIONALITY DEPENDS ON THIS!
     if posthog:
-        posthog.capture(f"smartlink", f"name:{name}")
+        posthog.capture("smartlink", f"name:{name}")
 
     database = db.Node_collection()
     opt_version = request.args.get("version")
@@ -751,21 +804,40 @@ def smartlink(
         logger.info(
             f"found node of type {ntype}, name {name} and section {section}, redirecting to opencre"
         )
+        cre_links = [
+            lnk
+            for lnk in nodes[0].links
+            if lnk.document.doctype == defs.Credoctypes.CRE
+        ]
+        if len(cre_links) == 1:
+            logger.info(
+                f"exactly one CRE linked to {ntype}/{name}/{section},"
+                f" redirecting directly to CRE {cre_links[0].document.id}"
+            )
+            return redirect(f"/cre/{cre_links[0].document.id}")
         if found_section_id:
             return redirect(f"/node/{ntype}/{name}/sectionid/{section}")
         return redirect(f"/node/{ntype}/{name}/section/{section}")
-    elif doctype == defs.Credoctypes.Standard.value and redirectors.redirect(
-        name, section
-    ):
-        logger.info(
-            f"did not find node of type {ntype}, name {name} and section {section}, redirecting to external resource"
-        )
-        return redirect(redirectors.redirect(name, section))
-    else:
-        logger.warning(f"not sure what happened, 404")
-        return abort(404, "Document does not exist")
+    elif doctype == defs.Credoctypes.Standard.value:
+        url = redirectors.redirect(name, section)
+        if (
+            url
+            and isinstance(url, str)
+            and (
+                url.startswith("https://cwe.mitre.org/")
+                or url.startswith("https://capec.mitre.org/")
+            )
+        ):
+            logger.info(
+                f"did not find node of type {ntype}, name {name} and section {section}, redirecting to external resource"
+            )
+            return redirect(url)
+
+    logger.warning("not sure what happened, 404")
+    return abort(404, "Document does not exist")
 
 
+@openapi_documented("deeplink")
 @app.route("/rest/v1/deeplink/<ntype>/<name>", methods=["GET"])
 @app.route("/rest/v1/deeplink/<name>", methods=["GET"])
 @app.route("/deeplink/<ntype>/<name>", methods=["GET"])
@@ -785,7 +857,7 @@ def deeplink(
     opt_version = request.args.get("version")
     opt_subsection = request.args.get("subsection")
     if posthog:
-        posthog.capture(f"deeplink", f"name:{name}")
+        posthog.capture("deeplink", f"name:{name}")
 
     if opt_section:
         opt_section = urllib.parse.unquote(opt_section)
@@ -826,8 +898,60 @@ def before_request():
 
 @app.after_request
 def add_header(response):
+    # Per-user endpoints must never be shared-cached; no-store wins over the
+    # default max-age for them (this hook runs after the view). Covers the
+    # resource selection AND the identity endpoint (returns the user's email)
+    # plus its deprecated alias, and MCP grant management.
+    if request.path in (
+        "/rest/v1/user/resources",
+        "/rest/v1/user/mcp_grants",
+        "/rest/v1/auth/user",
+        "/rest/v1/user",
+    ):
+        response.cache_control.no_store = True
+        return response
     response.cache_control.max_age = 300
     return response
+
+
+def _is_logged_in() -> bool:
+    """Single source of truth for browser-session presence.
+
+    Keyed on ``session['user_id']`` (recorded by the login flow since #980) — not
+    ``google_id``/``name``. Both ``login_required`` and its content-negotiation
+    branch route through here, so the predicate lives in exactly one place.
+
+    An MCP bearer token is deliberately *not* logged-in here: ``login_required``
+    stays session-only so a leaked MCP token cannot unlock chat, admin, or other
+    general authenticated routes. MyOpenCRE resources use
+    ``login_or_mcp_required`` instead.
+    """
+    return identity.is_session_authenticated()
+
+
+def _auth_challenge():
+    """Response for an unauthenticated request, negotiated by Accept.
+
+    Default is a clean 401 so tooling (curl/requests/scripts, a bare ``*/*`` or
+    a missing Accept header) and ``/admin/*`` tooling get a machine-readable
+    challenge instead of being 302'd into login HTML. Only real browsers -- which
+    advertise ``text/html`` in Accept (e.g.
+    ``text/html,application/xhtml+xml,...;q=0.9,*/*;q=0.8``) -- get the 302 to the
+    login flow. Matched as a substring, so a bare ``*/*`` does not qualify.
+
+    The redirect target is the constant login route with no ``?next`` param:
+    ``auth_login`` does not consume a return target and ``auth_callback`` always
+    lands on ``/chatbot``, so forwarding the request path here would be a dead
+    (and taint-flagged) value. Return-to-page is a separate, future feature that
+    would store a validated target in the session at login time.
+    """
+    if "text/html" in request.headers.get("Accept", ""):
+        return redirect("/rest/v1/auth/login")
+    allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
+    abort(
+        401,
+        description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
+    )
 
 
 def login_required(f):
@@ -835,16 +959,94 @@ def login_required(f):
     def login_r(*args, **kwargs):
         if os.environ.get("NO_LOGIN") == "1":
             return f(*args, **kwargs)
-        if "google_id" not in session or "name" not in session:
-            allowed_domains = os.environ.get("LOGIN_ALLOWED_DOMAINS")
-            abort(
-                401,
-                description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
-            )
-        else:
-            return f(*args, **kwargs)
+        if not _is_logged_in():
+            return _auth_challenge()
+        return f(*args, **kwargs)
 
     return login_r
+
+
+def login_or_mcp_required(f):
+    """Admit a browser session or a verified MCP bearer (not general login)."""
+
+    @wraps(f)
+    def login_or_mcp_r(*args, **kwargs):
+        if os.environ.get("NO_LOGIN") == "1":
+            return f(*args, **kwargs)
+        if identity.current_identity() is None:
+            return _auth_challenge()
+        return f(*args, **kwargs)
+
+    return login_or_mcp_r
+
+
+def feature_enabled_or_default(is_enabled: Any, default_factory: Any) -> Any:
+    """Gate a view on a feature predicate.
+
+    When ``is_enabled()`` is false the wrapped view is skipped and
+    ``default_factory()`` is returned, so callers receive a safe default instead
+    of an auth error. When true the view runs (typically behind ``login_required``).
+    """
+
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            if not is_enabled():
+                return default_factory()
+            return f(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def _resolve_current_user(database):
+    """Return the persisted User for the current session, creating it if absent.
+
+    Prefers ``session['user_id']`` (recorded by the login flow) and only falls
+    back to resolving/creating by the OIDC subject when it is absent — e.g. a
+    session established before the id was recorded. Returns None when there is no
+    authenticated subject.
+    """
+    user_id = session.get("user_id")
+    if user_id:
+        user = database.session.query(db.User).filter(db.User.id == user_id).first()
+        if user is not None:
+            return user
+    google_sub = session.get("google_id")
+    if not google_sub:
+        return None
+    user = database.get_user_by_sub(google_sub)
+    if user is None:
+        user = database.upsert_user(
+            google_sub=google_sub,
+            email=session.get("email") or "",
+            display_name=session.get("name"),
+        )
+    return user
+
+
+def apply_user_resource_filter(database, names):
+    """Restrict ``names`` to the current user's saved resource selection.
+
+    No-op (returns ``names`` unchanged) unless login AND MyOpenCRE are enabled, a
+    user is resolved, and that user has a non-empty selection — same discipline
+    as the resource-selection API. ``?all=true`` bypasses the filter for a single
+    request. ``OPENCRE_STANDARD_NAME`` is always kept (it is the core graph and is
+    already special-cased). Part of #586.
+    """
+    if request.args.get("all") == "true":
+        return names
+    if not (is_login_enabled() and is_myopencre_enabled()):
+        return names
+    user = _resolve_current_user(database)
+    if user is None:
+        return names
+    selection = database.get_user_resource_selection(user.id)
+    if not selection:
+        return names
+    keep = set(selection) | {OPENCRE_STANDARD_NAME}
+    return [name for name in names if name in keep]
 
 
 def admin_imports_enabled_required(f):
@@ -1038,13 +1240,28 @@ def admin_import_run_apply(run_id: str) -> Any:
 def chat_cre() -> Any:
     message = request.get_json(force=True)
     if posthog:
-        posthog.capture(f"chat_cre", "")
+        posthog.capture("chat_cre", "")
 
     database = db.Node_collection()
     # Lazy import to avoid loading heavy prompt/ML dependencies at web boot.
-    from application.prompt_client import llm_error_utils, prompt_client
+    try:
+        from application.prompt_client import llm_error_utils, prompt_client
 
-    prompt = prompt_client.PromptHandler(database)
+        prompt = prompt_client.PromptHandler(database)
+    except ImportError:
+        abort(
+            503,
+            "Chat is unavailable on this deployment (ML/LLM dependencies not installed).",
+        )
+    except RuntimeError as exc:
+        # PromptHandler raises RuntimeError when litellm is missing.
+        if "litellm" not in str(exc).lower():
+            raise
+        abort(
+            503,
+            "Chat is unavailable on this deployment (ML/LLM dependencies not installed).",
+        )
+
     try:
         response = prompt.generate_text(message.get("prompt"))
     except Exception as e:
@@ -1060,9 +1277,10 @@ def chat_cre() -> Any:
                 ),
                 503,
             )
+        status_code = _llm_error_status_code(e) or 500
         return (
             jsonify({"error": f"AI Service Error: {str(e)}"}),
-            500,
+            status_code,
         )
     return jsonify(response)
 
@@ -1096,7 +1314,7 @@ class CREFlow:
                     "openid",
                 ],
                 redirect_uri=(
-                    request.root_url.rstrip("/") + url_for("web.callback")
+                    request.root_url.rstrip("/") + url_for("web.auth_callback")
                 ).replace("http://", "https://"),
             )
         return cls.__instance
@@ -1105,12 +1323,27 @@ class CREFlow:
         raise ValueError("class is a singleton, please call instance() instead")
 
 
-@app.route("/rest/v1/login")
-def login():
+@app.route("/rest/v1/auth/login")
+def auth_login():
     if os.environ.get("NO_LOGIN") == "1":
         session["state"] = {"state": True}
         session["google_id"] = "some dev id"
         session["name"] = "dev user"
+        # Persist the dev account as well, so local/dev sessions carry a real
+        # user_id for user-scoped endpoints to hang data on. Without this the
+        # dev session looks logged in but has no User row. Mirrors the callback.
+        if is_login_enabled():
+            try:
+                user = db.Node_collection().upsert_user(
+                    google_sub=session["google_id"],
+                    email="",
+                    display_name=session["name"],
+                )
+                session["user_id"] = user.id
+            except SQLAlchemyError as e:
+                logger.error(
+                    "failed to persist dev user on login: %s", type(e).__name__
+                )
         return redirect("/chatbot")
     flow_instance = CREFlow.instance()
     authorization_url, state = flow_instance.flow.authorization_url()
@@ -1118,16 +1351,16 @@ def login():
     return redirect(authorization_url)
 
 
-@app.route("/rest/v1/user")
+@app.route("/rest/v1/auth/user")
 @login_required
-def logged_in_user():
+def auth_user():
     if os.environ.get("NO_LOGIN") == "1":
         return "foobar"
     return session.get("email")
 
 
-@app.route("/rest/v1/callback")
-def callback():
+@app.route("/rest/v1/auth/callback")
+def auth_callback():
     flow_instance = CREFlow.instance()
     try:
         flow_instance.flow.fetch_token(
@@ -1136,7 +1369,7 @@ def callback():
     except oauthlib.oauth2.rfc6749.errors.MismatchingStateError as mse:
         return redirect("/chatbot")
     if not session.get("state") or session.get("state") != request.args["state"]:
-        redirect(url_for("web.login"))  # State does not match!
+        return redirect(url_for("web.auth_login"))  # State does not match!
     credentials = flow_instance.flow.credentials
     token_request = google.auth.transport.requests.Request()
     id_info = id_token.verify_oauth2_token(
@@ -1165,20 +1398,132 @@ def callback():
             401,
             description=f"You need an account with one of the following providers to access this functionality {allowed_domains}",
         )
+
+    # Persist the account when login is enabled. ``session['user_id']`` is what
+    # ``_is_logged_in`` checks, so if persistence cannot establish it we must NOT
+    # redirect as if login succeeded: that would leave a "logged-in-looking"
+    # session that fails every ``login_required`` call and bounces the user back
+    # into the login flow. Fail explicitly (retryable) instead.
+    if is_login_enabled():
+        google_sub = id_info.get("sub")
+        if not google_sub:
+            logger.error(
+                "OIDC callback returned no 'sub' claim; cannot establish session"
+            )
+            abort(
+                401, description="Login failed: identity provider returned no subject"
+            )
+        try:
+            user = db.Node_collection().upsert_user(
+                google_sub=google_sub,
+                email=id_info.get("email") or "",
+                display_name=id_info.get("name"),
+            )
+            session["user_id"] = user.id
+        except SQLAlchemyError as e:
+            # Log only the exception class: the message can carry SQL parameters
+            # such as the user's email or OIDC subject. Surface a retryable 503
+            # rather than a silently broken session.
+            logger.error("failed to persist user on login: %s", type(e).__name__)
+            abort(
+                503,
+                description="Login temporarily unavailable, please try again",
+            )
     return redirect("/chatbot")
 
 
-@app.route("/rest/v1/logout")
-def logout():
+@app.route("/rest/v1/auth/logout")
+def auth_logout():
     session.clear()
     return redirect("/")
 
 
+# --- Deprecated auth aliases (RFC #876 TODO 1 migration) --------------------
+# Keep the old paths working during the migration but signal deprecation. These
+# are header-only (no redirect to the canonical path), so /callback's OAuth
+# code/state flow is left untouched.
+def _deprecated_auth(response, canonical):
+    resp = make_response(response)
+    resp.headers["Deprecation"] = "true"
+    resp.headers["Link"] = f'<{canonical}>; rel="successor-version"'
+    return resp
+
+
+@app.route("/rest/v1/login")
+def login():
+    return _deprecated_auth(auth_login(), "/rest/v1/auth/login")
+
+
+@app.route("/rest/v1/user")
+def logged_in_user():
+    return _deprecated_auth(auth_user(), "/rest/v1/auth/user")
+
+
+@app.route("/rest/v1/callback")
+def callback():
+    return _deprecated_auth(auth_callback(), "/rest/v1/auth/callback")
+
+
+@app.route("/rest/v1/logout")
+def logout():
+    return _deprecated_auth(auth_logout(), "/rest/v1/auth/logout")
+
+
+@openapi_documented("get_user_resources")
+@app.route("/rest/v1/user/resources", methods=["GET"])
+@feature_enabled_or_default(
+    lambda: is_login_enabled() and is_myopencre_enabled(),
+    lambda: jsonify({"selected": []}),
+)
+@login_or_mcp_required
+@identity.require_scopes(identity.SCOPE_MYOPENCRE_READ)
+def get_user_resources() -> Any:
+    """Return the standard names the current user has selected."""
+    database = db.Node_collection()
+    user = identity.current_user() or _resolve_current_user(database)
+    if user is None:
+        abort(401, description="Not authenticated")
+    return jsonify({"selected": database.get_user_resource_selection(user.id)})
+
+
+@openapi_documented("put_user_resources")
+@app.route("/rest/v1/user/resources", methods=["PUT"])
+@feature_enabled_or_default(
+    lambda: is_login_enabled() and is_myopencre_enabled(),
+    lambda: jsonify({"selected": []}),
+)
+@login_or_mcp_required
+@identity.require_scopes(identity.SCOPE_MYOPENCRE_WRITE)
+def put_user_resources() -> Any:
+    """Replace the current user's selected standards."""
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or not isinstance(body.get("selected"), list):
+        abort(400, description="Body must be a JSON object with a 'selected' list")
+    raw_selected = body["selected"]
+    if not all(isinstance(name, str) and name.strip() for name in raw_selected):
+        abort(400, description="'selected' must be a list of non-empty strings")
+    # Normalize before storing: otherwise " ASVS " and "ASVS" both validate but
+    # persist as distinct rows, defeating the dedupe.
+    selected = [name.strip() for name in raw_selected]
+    # OpenCRE is always part of a non-empty selection (matches the read filter and
+    # the "OpenCRE is always included" UI copy). An empty selection stays empty —
+    # [] means "show everything", so injecting OpenCRE would wrongly narrow it.
+    if selected and OPENCRE_STANDARD_NAME not in selected:
+        selected.append(OPENCRE_STANDARD_NAME)
+    database = db.Node_collection()
+    user = identity.current_user() or _resolve_current_user(database)
+    if user is None:
+        abort(401, description="Not authenticated")
+    stored = database.set_user_resource_selection(user.id, selected)
+    return jsonify({"selected": stored})
+
+
+@openapi_documented("all_cres")
 @app.route("/rest/v1/all_cres", methods=["GET"])
 def all_cres() -> Any:
     database = db.Node_collection()
     if posthog:
-        posthog.capture(f"all_cres", "")
+        posthog.capture("all_cres", "")
 
     page = 1
     per_page = ITEMS_PER_PAGE
@@ -1190,6 +1535,7 @@ def all_cres() -> Any:
         and int(request.args.get("per_page")) > 0
     ):
         per_page = int(request.args.get("per_page"))
+    per_page = min(per_page, MAX_ITEMS_PER_PAGE)
 
     documents, page, total_pages = database.all_cres_with_pagination(page, per_page)
     if documents:
@@ -1201,10 +1547,11 @@ def all_cres() -> Any:
 # Importing Handlers
 
 
+@openapi_documented("get_cre_csv")
 @app.route("/rest/v1/cre_csv", methods=["GET"])
 def get_cre_csv() -> Any:
     if posthog:
-        posthog.capture(f"get_cre_csv", "")
+        posthog.capture("get_cre_csv", "")
 
     database = db.Node_collection()
     root_cres = database.get_root_cres()
@@ -1228,9 +1575,21 @@ def get_cre_csv() -> Any:
     abort(404)
 
 
+@openapi_documented("get_config")
 @app.route("/rest/v1/config", methods=["GET"])
 def get_config() -> Any:
     return jsonify({"CRE_ALLOW_IMPORT": is_cre_import_allowed()})
+
+
+@app.route("/api/capabilities", methods=["GET"])
+def get_capabilities() -> Any:
+    """Expose frontend feature capabilities (MyOpenCRE, login UI)."""
+    return jsonify(
+        {
+            "myopencre": is_myopencre_enabled(),
+            "login": is_login_enabled(),
+        }
+    )
 
 
 @app.route("/admin/imports/rerun", methods=["POST"])
@@ -1281,9 +1640,29 @@ def import_from_cre_csv() -> Any:
     if file is None:
         abort(400, "No file provided")
     contents = file.read()
-    csv_read = csv.DictReader(contents.decode("utf-8").splitlines())
     try:
-        parse_result = myopencre_parser.parse_rows_to_documents(list(csv_read))
+        contents_text = contents.decode("utf-8")
+    except UnicodeDecodeError:
+        abort(400, "Invalid CSV encoding. Expected UTF-8.")
+
+    # Triple-quoted blobs were previously mis-parsed into bogus root CREs (#554).
+    if '"""' in contents_text:
+        abort(
+            400,
+            "Invalid CSV content: triple-quoted text detected. "
+            "Use standard CSV quoting (double quotes) instead.",
+        )
+
+    try:
+        csv_read = csv.DictReader(contents_text.splitlines())
+        rows = list(csv_read)
+    except csv.Error as exc:
+        abort(400, f"Invalid CSV content: {exc}")
+
+    try:
+        from application.utils.external_project_parsers.parsers import myopencre_parser
+
+        parse_result = myopencre_parser.parse_rows_to_documents(rows)
     except cre_exceptions.DuplicateLinkException as dle:
         abort(500, f"error during parsing of the incoming CSV, err:{dle}")
     except ValueError as ve:
@@ -1339,6 +1718,60 @@ def import_from_cre_csv() -> Any:
             "new_standards": len(standards_only),
         }
     )
+
+
+def _requested_scope() -> str:
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or "scope" not in body:
+        abort(400, description="Body must be a JSON object with a 'scope' field")
+    scope = body["scope"]
+    if not isinstance(scope, str) or scope.strip() not in identity.ALL_SCOPES:
+        abort(
+            400,
+            description=f"'scope' must be one of: {', '.join(identity.ALL_SCOPES)}",
+        )
+    return scope.strip()
+
+
+@openapi_documented("get_user_mcp_grants")
+@app.route("/rest/v1/user/mcp_grants", methods=["GET"])
+@login_required
+@identity.session_only
+def get_user_mcp_grants() -> Any:
+    """Return the scopes granted to the current user's MCP client."""
+    database = db.Node_collection()
+    user = identity.current_user()
+    if user is None:
+        abort(401, description="Not authenticated")
+    return jsonify({"granted": database.get_mcp_grants(user.id)})
+
+
+@openapi_documented("put_user_mcp_grant")
+@app.route("/rest/v1/user/mcp_grants", methods=["PUT"])
+@login_required
+@identity.session_only
+def put_user_mcp_grant() -> Any:
+    """Grant one scope to the current user's MCP client."""
+    scope = _requested_scope()
+    database = db.Node_collection()
+    user = identity.current_user()
+    if user is None:
+        abort(401, description="Not authenticated")
+    return jsonify({"granted": database.add_mcp_grant(user.id, scope)})
+
+
+@openapi_documented("delete_user_mcp_grant")
+@app.route("/rest/v1/user/mcp_grants", methods=["DELETE"])
+@login_required
+@identity.session_only
+def delete_user_mcp_grant() -> Any:
+    """Revoke one scope from the current user's MCP client."""
+    scope = _requested_scope()
+    database = db.Node_collection()
+    user = identity.current_user()
+    if user is None:
+        abort(401, description="Not authenticated")
+    return jsonify({"granted": database.revoke_mcp_grant(user.id, scope)})
 
 
 # /End Importing Handlers

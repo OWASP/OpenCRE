@@ -1,6 +1,9 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import yaml
 import urllib
-import logging
 import os
 from typing import Dict, Any
 from application.database import db
@@ -13,10 +16,6 @@ from application.utils.external_project_parsers.base_parser_defs import (
     ParseResult,
 )
 import requests
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class JuiceShop(ParserInterface):
@@ -68,7 +67,7 @@ class JuiceShop(ParserInterface):
             )
             if existing:
                 embeddings = cache.get_embeddings_for_doc(existing[0])
-                if embeddings:
+                if embeddings and getattr(embeddings, "embedding_vec", None):
                     logger.info(
                         f"Node {chal.todict()} already exists and has embeddings, skipping"
                     )

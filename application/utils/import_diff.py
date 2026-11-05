@@ -6,6 +6,10 @@ Provides helpers to compare two standard snapshots and produce a structured diff
 plus a change-set vocabulary for add/remove/modify operations.
 """
 
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import json
 import hashlib
 from dataclasses import asdict, dataclass, field

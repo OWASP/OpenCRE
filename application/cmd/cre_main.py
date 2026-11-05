@@ -1,22 +1,22 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import re
 import time
 import argparse
 import json
-import logging
 import os
 import shutil
 import tempfile
 import requests
 
 from collections import deque
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, TYPE_CHECKING
 import hashlib
-import json as _json
 from rq import Queue, job, exceptions
 from sqlalchemy import not_
 
-from application.utils.external_project_parsers.base_parser import BaseParser
-from application.utils.external_project_parsers.parsers import master_spreadsheet_parser
 from application import create_app  # type: ignore
 from application.config import CMDConfig
 from application.database import db
@@ -26,16 +26,68 @@ from application.defs import osib_defs as odefs
 from application.utils import spreadsheet as sheet_utils
 from application.utils import redis
 from application.utils import db_backend
-from alive_progress import alive_bar
-from application.prompt_client import prompt_client as prompt_client
 from application.utils import gap_analysis
 from application.utils import cres_csv_export
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+if TYPE_CHECKING:
+    from application.prompt_client import prompt_client as prompt_client
+
 
 app = None
+
+
+def fetch_upstream_json(
+    path: str,
+    timeout: Optional[float] = None,
+    max_attempts: Optional[int] = None,
+    backoff_seconds: Optional[float] = None,
+) -> Dict[str, Any]:
+    base_url = os.environ.get("CRE_UPSTREAM_API_URL", "https://opencre.org/rest/v1")
+    timeout = timeout or float(os.environ.get("CRE_UPSTREAM_TIMEOUT_SECONDS", "30"))
+    max_attempts = max_attempts or int(os.environ.get("CRE_UPSTREAM_MAX_ATTEMPTS", "4"))
+    backoff_seconds = backoff_seconds or float(
+        os.environ.get("CRE_UPSTREAM_RETRY_BACKOFF_SECONDS", "2")
+    )
+    url = f"{base_url}{path}"
+    last_error: Optional[Exception] = None
+
+    for attempt in range(1, max_attempts + 1):
+        response = None
+        try:
+            response = requests.get(url, timeout=timeout)
+            if response.status_code == 200:
+                return response.json()
+
+            status_error = RuntimeError(
+                f"cannot connect to upstream status code {response.status_code}"
+            )
+            if response.status_code < 500 and response.status_code != 429:
+                raise status_error
+            last_error = status_error
+        except requests.exceptions.RequestException as exc:
+            last_error = exc
+
+        if attempt < max_attempts:
+            retry_after_header = None
+            sleep_seconds = backoff_seconds * attempt
+            if response is not None and response.status_code == 429:
+                retry_after_header = response.headers.get("Retry-After")
+                try:
+                    if retry_after_header is not None:
+                        sleep_seconds = float(retry_after_header)
+                except (TypeError, ValueError):
+                    sleep_seconds = backoff_seconds * attempt
+            logger.warning(
+                "upstream fetch failed for %s on attempt %s/%s, retrying",
+                url,
+                attempt,
+                max_attempts,
+            )
+            time.sleep(sleep_seconds)
+
+    if last_error:
+        raise RuntimeError(f"upstream fetch failed for {url}") from last_error
+    raise RuntimeError(f"upstream fetch failed for {url}")
 
 
 def register_node(node: defs.Node, collection: db.Node_collection) -> db.Node:
@@ -409,12 +461,14 @@ def register_standard(
                     tuple(sorted(links)),
                 )
             )
-        payload = _json.dumps(
+        payload = json.dumps(
             sorted(rows), sort_keys=True, separators=(",", ":"), ensure_ascii=False
         )
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
     conn = redis.connect()
+    from application.prompt_client import prompt_client as prompt_client
+
     ph = prompt_client.PromptHandler(database=collection)
     importing_name = standard_entries[0].name
     effective_calculate_gap_analysis = (
@@ -487,7 +541,7 @@ def register_standard(
 def parse_standards_from_spreadsheeet(
     cre_file: List[Dict[str, Any]],
     cache_location: str,
-    prompt_handler: prompt_client.PromptHandler,
+    prompt_handler: "prompt_client.PromptHandler",
 ) -> None:
     """given a csv with standards, build a list of standards in the db"""
     if not cre_file:
@@ -514,6 +568,10 @@ def parse_standards_from_spreadsheeet(
         from application.utils import import_pipeline
 
         collection = db_connect(cache_location)
+        from application.utils.external_project_parsers.parsers import (
+            master_spreadsheet_parser,
+        )
+
         parse_result = master_spreadsheet_parser.MasterSpreadsheetParser.parse_rows(
             cre_file
         )
@@ -591,19 +649,11 @@ def download_graph_from_upstream(cache: str) -> None:
     collection = db_connect(path=cache).with_graph()
 
     def download_cre_from_upstream(creid: str):
-        cre_response = requests.get(
-            os.environ.get("CRE_UPSTREAM_API_URL", "https://opencre.org/rest/v1")
-            + f"/id/{creid}"
-        )
-        if cre_response.status_code != 200:
-            raise RuntimeError(
-                f"cannot connect to upstream status code {cre_response.status_code}"
-            )
-        data = cre_response.json()
+        if creid in imported_cres:
+            return
+        data = fetch_upstream_json(f"/id/{creid}")
         credict = data["data"]
         cre = defs.Document.from_dict(credict)
-        if cre.id in imported_cres:
-            return
 
         register_cre(cre, collection)
         imported_cres[cre.id] = ""
@@ -611,15 +661,7 @@ def download_graph_from_upstream(cache: str) -> None:
             if link.document.doctype == defs.Credoctypes.CRE:
                 download_cre_from_upstream(link.document.id)
 
-    root_cres_response = requests.get(
-        os.environ.get("CRE_UPSTREAM_API_URL", "https://opencre.org/rest/v1")
-        + "/root_cres"
-    )
-    if root_cres_response.status_code != 200:
-        raise RuntimeError(
-            f"cannot connect to upstream status code {root_cres_response.status_code}"
-        )
-    data = root_cres_response.json()
+    data = fetch_upstream_json("/root_cres")
     for root_cre in data["data"]:
         cre = defs.Document.from_dict(root_cre)
         register_cre(cre, collection)
@@ -644,6 +686,8 @@ def download_gap_analysis_from_upstream(cache: str) -> None:
         pairs = [(sa, sb) for sa in standards for sb in standards if sa != sb]
 
         if os.environ.get("BENCHMARK_MODE") == "1":
+            from alive_progress import alive_bar
+
             with alive_bar(len(pairs), title="Fetching upstream Gap Analysis") as bar:
                 for sa, sb in pairs:
                     res = requests.get(
@@ -653,7 +697,7 @@ def download_gap_analysis_from_upstream(cache: str) -> None:
                         tojson = res.json()
                         if "result" not in tojson:
                             continue
-                        payload = _json.dumps({"result": tojson.get("result")})
+                        payload = json.dumps({"result": tojson.get("result")})
                         if not gap_analysis.primary_gap_analysis_payload_is_material(
                             payload
                         ):
@@ -670,7 +714,7 @@ def download_gap_analysis_from_upstream(cache: str) -> None:
                     tojson = res.json()
                     if "result" not in tojson:
                         continue
-                    payload = _json.dumps({"result": tojson.get("result")})
+                    payload = json.dumps({"result": tojson.get("result")})
                     if not gap_analysis.primary_gap_analysis_payload_is_material(
                         payload
                     ):
@@ -730,12 +774,14 @@ def backfill_gap_analysis_only(
     if os.environ.get("CRE_NO_NEO4J") != "1":
         populate_neo4j_db(db_connection_str)
 
+    gap_analysis.backfill_opencre_direct_pairs(collection, refresh=True)
+
     missing = _missing_ga_pairs(collection)
     if max_pairs > 0:
         missing = missing[:max_pairs]
     total = len(missing)
     if total == 0:
-        logger.info("GA backfill: no missing pairs")
+        logger.info("GA backfill: no missing neo4j pairs")
         return
 
     logger.info(
@@ -806,11 +852,15 @@ def backfill_gap_analysis_only(
                 jobs.append(j)
 
             if jobs:
+                from alive_progress import alive_bar
+
                 with alive_bar(
                     len(jobs), title=f"GA batch {i // batch_size + 1}"
                 ) as bar:
                     redis.wait_for_jobs(jobs, bar)
         else:
+            from alive_progress import alive_bar
+
             with alive_bar(len(batch), title=f"GA batch {i // batch_size + 1}") as bar:
                 for sa, sb in batch:
                     _compute_pair_direct(collection, sa, sb)
@@ -842,6 +892,48 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         logger.info("Exported %s rows to %s", rows, csv_out)
         return
 
+    if getattr(args, "run_harvester", False):
+        import sys
+
+        from application import sqla
+        from application.utils.harvester.pipeline import run_harvester
+
+        db_connect(args.cache_file)
+        repos_yaml = getattr(args, "harvester_repos_yaml", "") or None
+        summary = run_harvester(
+            sqla.session,
+            args.run_id.strip(),
+            repos_yaml=repos_yaml,
+            dry_run=getattr(args, "harvester_dry_run", False),
+        )
+        print(summary.to_json())
+        if summary.status == "degraded":
+            sys.exit(1)
+        return
+
+    if getattr(args, "run_noise_filter", False):
+        import sys
+
+        from application import sqla
+        from application.utils.noise_filter.pipeline import run_noise_filter
+
+        # --run_id presence is validated in cre.py via parser.error().
+        db_connect(args.cache_file)
+        summary = run_noise_filter(
+            sqla.session,
+            args.run_id.strip(),
+            dry_run=getattr(args, "noise_filter_dry_run", False),
+        )
+        print(summary.to_json())
+        if summary.status == "degraded":
+            # The infra-failure ratio reached CRE_NOISE_FILTER_FAILURE_THRESHOLD
+            # (default 1.0 = the whole classified batch failed). The classified
+            # rows are already committed (idempotent) and the failed ones stay
+            # `pending`, so exit non-zero to have the orchestrator retry -- a
+            # retry then re-processes only the pending rows.
+            sys.exit(1)
+        return
+
     if args.add and getattr(args, "from_ai_exchange_csv", None):
         add_from_ai_exchange_csv(
             csv_path=args.from_ai_exchange_csv,
@@ -861,6 +953,8 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         cache.delete_nodes(args.delete_resource)
 
     # individual resource importing
+    from application.utils.external_project_parsers.base_parser import BaseParser
+
     if args.zap_in:
         from application.utils.external_project_parsers.parsers import zap_alerts_parser
 
@@ -909,6 +1003,54 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         BaseParser().register_resource(
             secure_headers.SecureHeaders, db_connection_str=args.cache_file
         )
+    if args.owasp_kubernetes_top10_2022_in:
+        from application.utils.external_project_parsers.parsers import (
+            owasp_kubernetes_top10_2022,
+        )
+
+        BaseParser().register_resource(
+            owasp_kubernetes_top10_2022.OwaspKubernetesTop10_2022,
+            db_connection_str=args.cache_file,
+        )
+    if args.owasp_kubernetes_top10_2025_in:
+        from application.utils.external_project_parsers.parsers import (
+            owasp_kubernetes_top10_2025,
+        )
+
+        BaseParser().register_resource(
+            owasp_kubernetes_top10_2025.OwaspKubernetesTop10_2025,
+            db_connection_str=args.cache_file,
+        )
+    if args.owasp_top10_2025_in:
+        from application.utils.external_project_parsers.parsers import owasp_top10_2025
+
+        BaseParser().register_resource(
+            owasp_top10_2025.OwaspTop10_2025, db_connection_str=args.cache_file
+        )
+    if args.owasp_api_top10_2023_in:
+        from application.utils.external_project_parsers.parsers import (
+            owasp_api_top10_2023,
+        )
+
+        BaseParser().register_resource(
+            owasp_api_top10_2023.OwaspApiTop10_2023,
+            db_connection_str=args.cache_file,
+        )
+    if args.owasp_llm_top10_2025_in:
+        from application.utils.external_project_parsers.parsers import (
+            owasp_llm_top10_2025,
+        )
+
+        BaseParser().register_resource(
+            owasp_llm_top10_2025.OwaspLlmTop10_2025,
+            db_connection_str=args.cache_file,
+        )
+    if args.owasp_aisvs_in:
+        from application.utils.external_project_parsers.parsers import owasp_aisvs
+
+        BaseParser().register_resource(
+            owasp_aisvs.OwaspAisvs, db_connection_str=args.cache_file
+        )
     if args.pci_dss_4_in:
         from application.utils.external_project_parsers.parsers import pci_dss
 
@@ -952,6 +1094,9 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
 
     if args.preload_map_analysis_target_url:
         gap_analysis.preload(target_url=args.preload_map_analysis_target_url)
+    if getattr(args, "ga_backfill_opencre_direct", False):
+        collection = db_connect(path=args.cache_file)
+        gap_analysis.backfill_opencre_direct_pairs(collection, refresh=True)
     if getattr(args, "ga_backfill_missing", False):
         backfill_gap_analysis_only(
             args.cache_file,
@@ -962,9 +1107,29 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         )
     if args.upstream_sync:
         download_graph_from_upstream(args.cache_file)
+    if args.run_librarian or args.librarian_dry_run:
+        # --run_id selects the live path: drain Module B's knowledge_queue for
+        # that run. Without it, the fixture walk-through stays the default so
+        # the pre-W8 command keeps behaving the way it always has.
+        run_id = (getattr(args, "run_id", "") or "").strip()
+        if run_id:
+            run_librarian_live(
+                cache_file=args.cache_file,
+                pipeline_run_id=run_id,
+                dry_run=args.librarian_dry_run,
+                envelopes_out=args.librarian_envelopes_out,
+            )
+        else:
+            run_librarian(
+                cache_file=args.cache_file,
+                dry_run=args.librarian_dry_run or not args.run_librarian,
+                source_jsonl=args.librarian_source,
+            )
 
 
 def ai_client_init(database: db.Node_collection):
+    from application.prompt_client import prompt_client as prompt_client
+
     return prompt_client.PromptHandler(database=database)
 
 
@@ -1004,12 +1169,252 @@ def prepare_for_review(cache: str) -> Tuple[str, str]:
 
 
 def generate_embeddings(db_url: str) -> None:
+    from application.prompt_client import prompt_client as prompt_client
+
     database = db_connect(path=db_url)
     prompt_client.PromptHandler(database, load_all_embeddings=True)
 
 
+_DEFAULT_LIBRARIAN_SOURCE = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)),
+    "tests",
+    "librarian",
+    "fixtures",
+    "sample_knowledge_queue.jsonl",
+)
+
+
+def run_librarian(
+    cache_file: str, dry_run: bool = True, source_jsonl: Optional[str] = None
+) -> None:
+    """Module C entrypoint — the pipeline switch (W3).
+
+    For each knowledge-queue section: try the deterministic explicit-CRE fast
+    path (C.0.5); on no/ambiguous reference, run the semantic retriever (C.1)
+    and rerank its top-K shortlist with the cross-encoder (C.2, W4), then log
+    the reranked candidates. Decision/threshold routing (C.3-C.4, W5) and graph
+    writes (W8) are not built yet, so this is dry-run only: it never writes a
+    link. ``--run_librarian`` without writes behaves identically and warns.
+
+    Ops note: this is opt-in CLI only — it is not on the ``Procfile`` and is
+    wired into neither the web app nor the background worker (that lands W8).
+    It calls the paid embedding API, so cost is incurred only when someone runs
+    the command manually; the running deployment never triggers it on its own.
+    """
+    from application.utils.librarian.candidate_retriever import (
+        CandidatePool,
+        RetrieverBackend,
+        build_retriever,
+    )
+    from application.utils.librarian.config_loader import load_config
+    from application.utils.librarian.cross_encoder import (
+        CrossEncoderReranker,
+        build_cross_encoder_score_fn,
+    )
+    from application.utils.librarian.explicit_link_resolver import (
+        ResolutionOutcome,
+        resolve,
+    )
+    from application.utils.librarian.knowledge_source import FixtureKnowledgeSource
+    from application.utils.librarian.section_validator import (
+        SectionValidationError,
+        section_from_queue_row,
+    )
+
+    if not dry_run:
+        logger.warning(
+            "the Librarian cannot write links yet (DecisionEngine + graph write "
+            "land W8); running in dry-run mode"
+        )
+
+    from application.prompt_client import prompt_client as prompt_client
+
+    cfg = load_config()
+    database = db_connect(path=cache_file)
+    ph = prompt_client.PromptHandler(database=database)
+
+    backend = RetrieverBackend(cfg.retriever_backend)
+    if backend is RetrieverBackend.pgvector:
+        # Hard-fail: do not silently fall back to in_memory / sklearn CSV paths.
+        from application.database.pgvector_utils import fail_pgvector_unavailable
+
+        if not database.can_use_pgvector_similarity():
+            fail_pgvector_unavailable(
+                context="CRE_LIBRARIAN_RETRIEVER_BACKEND=pgvector"
+            )
+    # The CRE ids present in the hub are exactly the known ids the explicit
+    # resolver may auto-link to (W2 seeded this from the golden set; here it is
+    # the real DB-backed registry).
+    cre_embeddings = database.get_embeddings_by_doc_type(defs.Credoctypes.CRE.value)
+    known_ids = {cre.external_id for cre in database.get_CREs()}
+    # in_memory loads the hub matrix; pgvector ranks in the DB over the
+    # embedding_vec column (no in-RAM pool). Both honor the same retrieve().
+    pool = (
+        CandidatePool.from_mapping(cre_embeddings)
+        if backend is RetrieverBackend.in_memory
+        else None
+    )
+    pg_connection = None
+    if backend is RetrieverBackend.pgvector:
+        pg_connection = database.session.connection()
+    retriever = build_retriever(
+        backend,
+        embed_fn=ph.get_text_embeddings,
+        top_k=cfg.top_k_retrieval,
+        threshold=cfg.link_threshold,
+        pool=pool,
+        connection=pg_connection,
+    )
+
+    # C.2 reranker: reads each (section, candidate-CRE) pair together and
+    # re-sorts C.1's shortlist. Scored against the CRE's embeddings_content —
+    # the same text the hub vectors were built from.
+    cre_texts = database.get_embedding_contents_by_doc_type(defs.Credoctypes.CRE.value)
+    reranker = CrossEncoderReranker(
+        score_fn=build_cross_encoder_score_fn(cfg.crossencoder_model),
+        top_n=cfg.top_k_rerank,
+        cre_texts=cre_texts,
+    )
+
+    source = FixtureKnowledgeSource(source_jsonl or _DEFAULT_LIBRARIAN_SOURCE)
+    sections = explicit = semantic = rejected = 0
+    for item in source.items():
+        try:
+            section = section_from_queue_row(item)
+        except SectionValidationError as exc:
+            rejected += 1
+            logger.warning("section rejected at C.0 boundary: %s", exc)
+            continue
+        sections += 1
+
+        resolution = resolve(section.text, known_ids)
+        if resolution.outcome == ResolutionOutcome.resolved:
+            explicit += 1
+            logger.info("[explicit] %s -> %s", section.chunk_id, resolution.cre_ids[0])
+            continue
+        if resolution.outcome == ResolutionOutcome.no_reference:
+            # Continue to semantic retrieval below
+            pass
+        elif resolution.outcome in (
+            ResolutionOutcome.unknown_reference,
+            ResolutionOutcome.conflicting_references,
+        ):
+            logger.info("[review] %s -> %s", section.chunk_id, resolution.outcome)
+            continue
+        else:
+            rejected += 1
+            logger.warning(
+                "[review] %s skipped: unexpected resolution outcome %s",
+                section.chunk_id,
+                resolution.outcome,
+            )
+            continue
+
+        try:
+            audit = retriever.retrieve(section.text)
+            audit = reranker.rerank(section.text, audit)
+        # one bad section must not abort the batch
+        except Exception as exc:  # noqa: BLE001
+            rejected += 1
+            logger.warning(
+                "[semantic] %s skipped: retrieval/rerank failed: %s",
+                section.chunk_id,
+                exc,
+            )
+            continue
+
+        semantic += 1
+        top = ", ".join(f"{c.cre_id}:{c.score_rerank:.3f}" for c in audit.reranked)
+        logger.info(
+            "[semantic] %s -> %d candidates, reranked top%d: %s",
+            section.chunk_id,
+            len(audit.candidates),
+            len(audit.reranked),
+            top or "<none>",
+        )
+
+    logger.info(
+        "librarian dry-run complete: %d sections (%d explicit, %d semantic), "
+        "%d rejected at boundary",
+        sections,
+        explicit,
+        semantic,
+        rejected,
+    )
+
+
+def run_librarian_live(
+    cache_file: str,
+    pipeline_run_id: str,
+    dry_run: bool = False,
+    envelopes_out: Optional[str] = None,
+) -> None:
+    """Module C entrypoint against Module B's live queue (W8).
+
+    The counterpart to ``--run_noise_filter``: where ``run_librarian`` walks a
+    JSONL fixture and logs shortlists, this drains the ``knowledge_queue`` rows
+    Module B wrote for ``pipeline_run_id`` through C.0->C.4 and stamps
+    ``consumed_at`` on the ones it finished. Prints the ``RunSummary`` as JSON
+    on stdout so the OIE orchestrator can read it, exactly as Module B does.
+
+    Still writes no links: the graph/review writers are W8b. What a real run
+    does write is the envelopes (as JSONL, to ``envelopes_out``) and one column
+    on B's queue. Those two go together — retiring a row whose envelope was
+    discarded would lose the chunk — so a non-dry run requires an output path.
+    ``dry_run`` writes neither.
+
+    Ops note: unchanged from ``run_librarian`` — opt-in CLI only, not on the
+    Procfile, not wired into the web app or the worker. It calls the paid
+    embedding API, so a deployment never triggers it on its own.
+    """
+    from datetime import datetime, timezone
+
+    from application.utils.librarian.config_loader import load_config
+    from application.utils.librarian.envelope_sink import (
+        DbEnvelopeSink,
+        JsonlEnvelopeSink,
+        NullEnvelopeSink,
+        TeeEnvelopeSink,
+    )
+    from application.utils.librarian.factory import build_components
+    from application.utils.librarian.queue_runner import run_librarian_queue
+
+    cfg = load_config()
+    database = db_connect(path=cache_file)
+    components = build_components(database, config=cfg)
+
+    # `decision_queue` is where Module D reads from, so a real run writes there
+    # by default — the same handoff B makes to C through `knowledge_queue`.
+    # `--librarian_envelopes_out` additionally mirrors the batch to JSONL, which
+    # is useful for eyeballing a run but is not the contract.
+    if dry_run:
+        sink = JsonlEnvelopeSink(envelopes_out) if envelopes_out else NullEnvelopeSink()
+    elif envelopes_out:
+        sink = TeeEnvelopeSink(
+            DbEnvelopeSink(database.session, pipeline_run_id),
+            JsonlEnvelopeSink(envelopes_out),
+        )
+    else:
+        sink = DbEnvelopeSink(database.session, pipeline_run_id)
+
+    # The CLI boundary is the one place a clock read belongs; everything below
+    # takes `at` as an argument so a run stays reproducible.
+    summary = run_librarian_queue(
+        database.session,
+        pipeline_run_id,
+        components,
+        cfg,
+        at=datetime.now(timezone.utc),
+        sink=sink,
+        dry_run=dry_run,
+    )
+    print(summary.to_json())
+
+
 def regenerate_embeddings(db_url: str) -> None:
     """Wipe all embedding rows, then rebuild (CRE + every node type) like ``--generate_embeddings``."""
+    from application.prompt_client import prompt_client as prompt_client
+
     database = db_connect(path=db_url)
     removed = database.delete_all_embeddings()
     logger.info("Removed %s embedding rows; rebuilding embeddings", removed)
@@ -1023,13 +1428,13 @@ def populate_neo4j_db(cache: str):
     ):
         logger.info("Skipping Neo4j population as per environment variables")
         return
-    logger.info(f"Populating neo4j DB: Connecting to SQL DB")
+    logger.info("Populating neo4j DB: Connecting to SQL DB")
     database = db_connect(path=cache)
     if database.neo_db:
-        logger.info(f"Populating neo4j DB: Populating")
+        logger.info("Populating neo4j DB: Populating")
         database.neo_db.populate_DB(database.session)
-        logger.info(f"Populating neo4j DB: Complete")
+        logger.info("Populating neo4j DB: Complete")
     else:
         logger.warning(
-            f"Populating neo4j DB: database.neo_db is None, skipping population"
+            "Populating neo4j DB: database.neo_db is None, skipping population"
         )
