@@ -480,15 +480,19 @@ class GenerateTextTopKTest(unittest.TestCase):
     def test_no_knowledge_marker_is_stripped_and_drops_the_accuracy_claim(self) -> None:
         self.assertEqual(
             ("general essay", False),
-            prompt_client_mod._split_no_knowledge_marker("general essay&\n"),
+            prompt_client_mod._split_no_knowledge_marker(
+                "general essay [NO_PASSAGE_USED]\n"
+            ),
         )
-        self.assertEqual(
-            ("a & b", True), prompt_client_mod._split_no_knowledge_marker("a & b")
-        )
+        for legitimate in ("run it with: sleep 100 &", "always escape &"):
+            self.assertEqual(
+                (legitimate, True),
+                prompt_client_mod._split_no_knowledge_marker(legitimate),
+            )
 
     def test_answer_that_used_no_passage_claims_nothing(self) -> None:
         handler, ai = _handler_with([_passage(1, "a", "SAMM", "samm text")])
-        ai.create_chat_completion = lambda **_: "general essay&"
+        ai.create_chat_completion = lambda **_: "general essay[NO_PASSAGE_USED]"
         out = handler.generate_text("q")
         self.assertEqual("Answer: general essay", out["response"])
         self.assertFalse(out["accurate"])

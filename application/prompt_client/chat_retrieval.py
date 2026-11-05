@@ -16,7 +16,9 @@ anything within ``delta`` of that lane's best score and above the existing
 ``CHATBOT_SIMILARITY_THRESHOLD`` floor), because a CRE embedding is mostly a name
 and its score says nothing about how good a Standard's text is. Standards then
 go first, one passage per document, and CREs fill what is left. The Standards
-lane over-fetches, since one document can own every top row. Passages share a
+lane over-fetches, since one document can own the top rows, though past
+``LANE_OVERFETCH`` times the lane size that still hides the next document until
+#1076 gives section-level rows. Passages share a
 character budget, and a result with no real text counts as no result.
 
 Rerank is a one-function hook (``rerank_fn``) so the cross-encoder (dev) and
@@ -145,7 +147,8 @@ def rendered_overhead(passages: Sequence[ChatPassage]) -> int:
 
 
 def fit_to_budget(total_chars: int, passages: Sequence[ChatPassage]) -> None:
-    """Trim passage content so the rendered block fits ``total_chars``.
+    """Trim passage content so the rendered block fits ``total_chars``, as far as
+    it can: headers are never cut, so a budget below them is overrun.
 
     Short passages keep all their text and hand what they do not use to the
     long ones, so a page of real text is not cut down to the size of a CRE stub.

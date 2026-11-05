@@ -29,6 +29,7 @@ import requests
 
 
 SIMILARITY_THRESHOLD = float(os.environ.get("CHATBOT_SIMILARITY_THRESHOLD", "0.7"))
+NO_PASSAGE_MARKER = "[NO_PASSAGE_USED]"
 PROMPT_TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
 PROMPT_TEMPLATE_ENV = Environment(
     loader=FileSystemLoader(PROMPT_TEMPLATES_DIR),
@@ -64,11 +65,11 @@ def _render_chat_prompt(*, question: str, retrieved_knowledge: Optional[str]) ->
 
 
 def _split_no_knowledge_marker(answer: str) -> Tuple[str, bool]:
-    """Returns the answer without chat_prompt.j2's ``&`` marker, and whether the
-    model used the retrieved knowledge, which is when the marker is absent."""
+    """Returns the answer without chat_prompt.j2's no-passage marker, and whether
+    the model used the retrieved knowledge, which is when the marker is absent."""
     stripped = answer.rstrip()
-    if stripped.endswith("&"):
-        return stripped[:-1].rstrip(), False
+    if stripped.endswith(NO_PASSAGE_MARKER):
+        return stripped[: -len(NO_PASSAGE_MARKER)].rstrip(), False
     return answer, True
 
 
@@ -1289,7 +1290,7 @@ class PromptHandler:
                 prompt=prompt,
                 closest_object_str=knowledge,
             )
-            # chat_prompt.j2 rule 5: a trailing '&' means no passage was used.
+            # chat_prompt.j2 rule 5: the marker means no passage was used.
             answer, used_passages = _split_no_knowledge_marker(answer)
             if used_passages:
                 accurate = True

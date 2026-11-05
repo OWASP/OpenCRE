@@ -209,7 +209,7 @@ export const Chatbot = () => {
         <div className="reference-card">
           <a href={`/cre/${d.id}`}>
             {citation}
-            <strong>{d.name}</strong> — CRE {d.id}
+            <strong>{d.name}</strong> - CRE {d.id}
           </a>
         </div>
       );
