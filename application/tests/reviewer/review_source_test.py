@@ -12,10 +12,13 @@ from cre_logging import get_logger
 logger = get_logger(__name__)
 
 import unittest
+from datetime import datetime
+from unittest.mock import patch
 
 from application import create_app, sqla
 from application.database.db import DecisionQueueItem
 from application.utils.librarian.envelope_sink import DbEnvelopeSink
+from application.utils.reviewer.queue_consumer import mark_reviewed
 from application.utils.reviewer.review_source import DbReviewSource
 from application.tests.reviewer._envelopes import RUN, linked, review
 
@@ -120,6 +123,51 @@ class DbReviewSourceTest(unittest.TestCase):
         self.assertEqual(len(source.unreadable_row_ids), 1)
         bad = sqla.session.get(DecisionQueueItem, source.unreadable_row_ids[0])
         self.assertIsNone(bad.consumed_at)
+
+    def _spoil_first(self, *chunk_ids: str) -> None:
+        """Make rows unreadable and oldest, so they head every page."""
+        for chunk_id in chunk_ids:
+            row = sqla.session.query(DecisionQueueItem).filter_by(chunk_id=chunk_id)
+            row.update({"envelope": {"bad": True}, "created_at": datetime(2000, 1, 1)})
+        sqla.session.commit()
+
+    def test_unreadable_rows_cannot_starve_a_limited_page(self) -> None:
+        _seed(*[review(f"chk:{i}") for i in range(5)])
+        self._spoil_first("chk:0", "chk:1")
+
+        source = DbReviewSource(sqla.session, limit=2)
+        items = list(source.items())
+
+        self.assertEqual(2, len(items))
+        self.assertEqual(2, len(source.unreadable_row_ids))
+
+    def test_walks_past_a_batch_boundary(self) -> None:
+        _seed(*[review(f"chk:{i}") for i in range(7)])
+        with patch("application.utils.reviewer.review_source._BATCH_SIZE", 3):
+            items = list(DbReviewSource(sqla.session).items())
+        self.assertEqual(7, len({i.row_id for i in items}))
+
+    def test_a_row_stamped_during_the_walk_is_not_yielded(self) -> None:
+        _seed(*[review(f"chk:{i}") for i in range(4)])
+        with patch("application.utils.reviewer.review_source._BATCH_SIZE", 2):
+            source = DbReviewSource(sqla.session).items()
+            first = next(source)
+            pending = sqla.session.query(DecisionQueueItem).filter(
+                DecisionQueueItem.id != first.row_id
+            )
+            last_id = sorted(r.id for r in pending)[-1]
+            mark_reviewed(sqla.session, [last_id], at=datetime(2026, 1, 1))
+            rest = [i.row_id for i in source]
+        self.assertEqual(2, len(rest))
+        self.assertNotIn(last_id, rest)
+
+    def test_reading_twice_does_not_double_count_unreadable_rows(self) -> None:
+        _seed(review("chk:0"), review("chk:1"))
+        self._spoil_first("chk:0")
+        source = DbReviewSource(sqla.session)
+        list(source.items())
+        list(source.items())
+        self.assertEqual(1, len(source.unreadable_row_ids))
 
 
 if __name__ == "__main__":

@@ -55,7 +55,7 @@ Fast maintainer UI (approve / reject / correct link). Append-only correction log
 | `GET` | `/internal/oie/v0/review/items` | Next `ReviewItem` for UI |
 | `POST` | `/internal/oie/v0/review/items/{review_id}/decisions` | Submit `HumanDecision` |
 
-MVP: UI reads review JSONL from blob store; appends one line per decision to `corrections.jsonl`.
+MVP: the reviewer reads `review_required` rows from `decision_queue` (see [the C to D contract](../../gsoc_2026_module_c/module_d_contract.md)) and appends one line per decision to `corrections.jsonl`. A replayed review appends a second line for the same `review_id`; readers take the last one.
 
 ## Downstream use of corrections
 

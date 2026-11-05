@@ -11,11 +11,13 @@ logger = get_logger(__name__)
 
 import unittest
 from datetime import datetime, timezone
+from unittest.mock import MagicMock
 
 from application import create_app, sqla
 from application.database.db import DecisionQueueItem
 from application.utils.librarian.envelope_sink import DbEnvelopeSink
-from application.utils.reviewer.queue_consumer import mark_reviewed
+from application.utils.reviewer.corrections_log import HumanDecision, RejectionDetail
+from application.utils.reviewer.queue_consumer import mark_reviewed, record_and_retire
 from application.tests.reviewer._envelopes import RUN, linked, review
 
 AT = datetime(2026, 9, 17, 12, 0, 0, tzinfo=timezone.utc)
@@ -76,6 +78,49 @@ class MarkReviewedTest(unittest.TestCase):
     def test_empty_and_falsy_ids_are_a_no_op(self) -> None:
         self.assertEqual(mark_reviewed(sqla.session, [], at=AT), 0)
         self.assertEqual(mark_reviewed(sqla.session, ["", None], at=AT), 0)
+
+
+class RecordAndRetireTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.app = create_app(mode="test")
+        self.ctx = self.app.app_context()
+        self.ctx.push()
+        sqla.create_all()
+        sink = DbEnvelopeSink(sqla.session, RUN)
+        sink.write([review("chk:1")])
+        sqla.session.commit()
+        self.row = sqla.session.query(DecisionQueueItem).one()
+        self.log = MagicMock()
+        self.decision = HumanDecision(
+            review_id="review:chk:1",
+            chunk_id="chk:1",
+            pipeline_run_id=RUN,
+            decided_at=AT,
+            decided_by="prateek",
+            action="reject",
+            rejection=RejectionDetail(reason_code="NOT_SECURITY"),
+        )
+
+    def tearDown(self) -> None:
+        sqla.session.remove()
+        sqla.drop_all()
+        self.ctx.pop()
+
+    def test_records_then_stamps(self) -> None:
+        stamped = record_and_retire(
+            sqla.session, self.log, self.decision, self.row.id, at=AT
+        )
+        self.assertEqual(1, stamped)
+        self.log.record.assert_called_once_with(self.decision)
+        sqla.session.refresh(self.row)
+        self.assertIsNotNone(self.row.consumed_at)
+
+    def test_a_failed_record_leaves_the_row_unretired(self) -> None:
+        self.log.record.side_effect = OSError("disk full")
+        with self.assertRaises(OSError):
+            record_and_retire(sqla.session, self.log, self.decision, self.row.id, at=AT)
+        sqla.session.refresh(self.row)
+        self.assertIsNone(self.row.consumed_at)
 
 
 if __name__ == "__main__":

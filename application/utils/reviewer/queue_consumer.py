@@ -11,10 +11,12 @@ structurally unable to retire one, even by bug or by being handed the wrong id.
 Passing a linked row's id here is therefore a silent no-op, counted in the gap
 between ids passed and rows stamped, exactly like an id that no longer exists.
 
-Call order is fixed by the package rule: record the verdict in the corrections
-log first, stamp here second. A crash between the two leaves the row unconsumed
-and the verdict re-recordable — never the other way round, where the row is
-retired and the verdict lost.
+Call order is fixed by the package rule: record the decision in the corrections
+log first, stamp here second. ``record_and_retire`` is that order as code, and is
+what a review flow should call. A crash between the two leaves the row unconsumed
+and the decision re-recordable, never the other way round, where the row is
+retired and the decision lost. A re-record appends a second line for the same
+``review_id``, and readers take the last one.
 """
 
 from cre_logging import get_logger
@@ -24,6 +26,10 @@ logger = get_logger(__name__)
 from datetime import datetime, timezone
 from typing import Any, Iterable, List, Sequence
 
+from application.utils.reviewer.corrections_log import (
+    HumanDecision,
+    JsonlCorrectionsLog,
+)
 from application.utils.reviewer.review_source import REVIEWABLE_STATUS
 
 # Same bind-parameter ceiling reasoning as Module C's write-back.
@@ -76,4 +82,20 @@ def mark_reviewed(session: Any, row_ids: Iterable[str], *, at: datetime) -> int:
     return stamped
 
 
-__all__ = ["mark_reviewed"]
+def record_and_retire(
+    session: Any,
+    log: JsonlCorrectionsLog,
+    decision: HumanDecision,
+    row_id: str,
+    *,
+    at: datetime,
+) -> int:
+    """Persist ``decision``, then stamp its row; return rows stamped.
+
+    The caller owns the session and commits, as with ``mark_reviewed``.
+    """
+    log.record(decision)
+    return mark_reviewed(session, [row_id], at=at)
+
+
+__all__ = ["mark_reviewed", "record_and_retire"]

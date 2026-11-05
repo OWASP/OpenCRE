@@ -28,68 +28,103 @@
 <main>
   <div class="meta"><span id="progress"></span><span id="timer"></span></div>
   <div class="card" id="card"></div>
-  <p class="keys"><kbd>y</kbd> approve &nbsp; <kbd>n</kbd> reject &nbsp;
-     <kbd>u</kbd> undo last &nbsp; (target: under 3s per item)</p>
+  <p class="keys"><kbd>y</kbd> approve top suggestion &nbsp; <kbd>n</kbd> reject &nbsp;
+     <kbd>c</kbd> correct (type a CRE id, Enter) &nbsp; <kbd>u</kbd> undo last<br>
+     target: under 3s on every item</p>
 </main>
 <script>
-// The founding RFC's pre-code experiment for Module D: can a reviewer
-// approve/reject in under 3 seconds per item? Fake but realistically shaped
-// items; keybinds only; measures per-item seconds and the running average.
+// The founding RFC's pre-code experiment for Module D: can a reviewer review,
+// approve, reject or correct in under 3 seconds per item? Items are fake but use
+// real reason codes, several candidates and an empty shortlist. `want` is the
+// right answer, so mashing one key does not pass. Time spent on an item stays
+// on it across undo, so undoing a slow item does not erase it.
+const BAR_SECONDS = 3, MIN_RIGHT = 8;
 const ITEMS = [
-  {text:"Verify that passwords are at least 12 characters in length.", reason:"BELOW_THRESHOLD", cre:"616-305 Password length", conf:0.42},
-  {text:"Do NOT use MD5 or SHA-1 for password hashing.", reason:"BELOW_THRESHOLD", cre:"186-121 Approved hash functions", conf:0.55},
-  {text:"Session tokens must be regenerated after privilege change.", reason:"AMBIGUOUS", cre:"065-782 Session fixation", conf:0.38},
-  {text:"Log all authentication decisions without storing credentials.", reason:"BELOW_THRESHOLD", cre:"542-113 Security logging", conf:0.61},
-  {text:"Rate-limit password reset requests per account and per IP.", reason:"AMBIGUOUS", cre:"731-004 Anti-automation", conf:0.34},
-  {text:"TLS 1.2 or higher is required for all connections.", reason:"BELOW_THRESHOLD", cre:"330-207 Transport security", conf:0.58},
-  {text:"Validate file uploads against an allowlist of types.", reason:"BELOW_THRESHOLD", cre:"434-119 Unrestricted upload", conf:0.47},
-  {text:"Escape output according to the HTML context it lands in.", reason:"AMBIGUOUS", cre:"079-338 Output encoding", conf:0.41},
-  {text:"Secrets must never appear in URLs or query strings.", reason:"BELOW_THRESHOLD", cre:"598-020 Info exposure via query", conf:0.52},
-  {text:"Use per-user salts and a memory-hard KDF for stored passwords.", reason:"BELOW_THRESHOLD", cre:"916-115 Password storage", conf:0.63},
+  {text:"Verify that passwords are at least 12 characters in length.", reason:"BELOW_THRESHOLD", conf:0.42, want:"y",
+   cands:["616-305 Password length", "186-121 Approved hash functions"]},
+  {text:"Do NOT use MD5 or SHA-1 for password hashing.", reason:"BELOW_THRESHOLD", conf:0.55, want:"y",
+   cands:["186-121 Approved hash functions"]},
+  {text:"Session tokens must be regenerated after privilege change.", reason:"BELOW_THRESHOLD", conf:0.38, want:"c",
+   cands:["330-207 Transport security", "065-782 Session fixation"]},
+  {text:"Log all authentication decisions without storing credentials.", reason:"BELOW_THRESHOLD", conf:0.61, want:"y",
+   cands:["542-113 Security logging", "598-020 Info exposure via query", "616-305 Password length"]},
+  {text:"Thanks to everyone who contributed to this release!", reason:"NO_CANDIDATES", conf:0, want:"n", cands:[]},
+  {text:"TLS 1.2 or higher is required for all connections.", reason:"BELOW_THRESHOLD", conf:0.58, want:"y",
+   cands:["330-207 Transport security"]},
+  {text:"Rate-limit password reset requests per account and per IP.", reason:"NO_CANDIDATES", conf:0, want:"c", cands:[]},
+  {text:"Escape output according to the HTML context it lands in.", reason:"BELOW_THRESHOLD", conf:0.41, want:"y",
+   cands:["079-338 Output encoding", "434-119 Unrestricted upload"]},
+  {text:"See the contributing guide for the release schedule.", reason:"BELOW_THRESHOLD", conf:0.22, want:"n",
+   cands:["731-004 Anti-automation"]},
+  {text:"Use per-user salts and a memory-hard KDF for stored passwords.", reason:"BELOW_THRESHOLD", conf:0.63, want:"y",
+   cands:["916-115 Password storage", "186-121 Approved hash functions"]},
 ];
-let i = 0, t0 = performance.now(), times = [], verdicts = [];
+let i = 0, t0 = performance.now(), verdicts = [], typing = null;
+const spent = ITEMS.map(() => 0);
 const card = document.getElementById("card"),
       progress = document.getElementById("progress"),
       timer = document.getElementById("timer");
-function show() {
-  if (i >= ITEMS.length) return finish();
+function stopClock() {
+  spent[i] += (performance.now() - t0) / 1000;
+}
+function render() {
   const it = ITEMS[i];
   progress.textContent = `item ${i+1} of ${ITEMS.length}`;
+  const rows = it.cands.map(c => `<div class="cand"><span>${c}</span></div>`).join("")
+    || `<div class="cand"><span>no candidates</span></div>`;
+  const entry = typing === null ? "" : `<div class="cand"><span>correct to: ${typing}_</span></div>`;
   card.innerHTML = `
     <div class="reason">${it.reason} · confidence ${it.conf}</div>
-    <p class="chunk">${it.text}</p>
-    <div class="cand"><span>suggested: ${it.cre}</span><span>${it.conf}</span></div>`;
+    <p class="chunk">${it.text}</p>${rows}${entry}`;
+}
+function show() {
+  if (i >= ITEMS.length) return finish();
+  typing = null;
   t0 = performance.now();
+  render();
 }
 function decide(v) {
   if (i >= ITEMS.length) return;
-  times.push((performance.now() - t0) / 1000);
+  if (v === "y" && ITEMS[i].cands.length === 0) return;   // nothing to approve
+  stopClock();
   verdicts.push(v);
   i++; show();
 }
 function undo() {
-  if (times.length === 0) return;   // nothing to take back
-  i--; times.pop(); verdicts.pop(); show();   // works from the done screen too
+  if (verdicts.length === 0) return;   // nothing to take back
+  if (i < ITEMS.length) stopClock();
+  i--; verdicts.pop(); show();   // works from the done screen too
 }
 function finish() {
-  const avg = times.reduce((a,b)=>a+b,0) / times.length;
-  const worst = Math.max(...times);
-  const ok = avg < 3;
+  const avg = spent.reduce((a,b)=>a+b,0) / spent.length;
+  const worst = Math.max(...spent);
+  const over = spent.filter(s => s >= BAR_SECONDS).length;
+  const right = verdicts.filter((v,n) => v === ITEMS[n].want).length;
+  const ok = avg < BAR_SECONDS && over === 0 && right >= MIN_RIGHT;
+  const count = k => verdicts.filter(v => v === k).length;
   progress.textContent = "done"; timer.textContent = "";
   card.innerHTML = `<div class="done">
     <div class="big ${ok ? "pass" : "fail"}">${avg.toFixed(2)}s avg</div>
-    <p>worst item ${worst.toFixed(2)}s · ${verdicts.filter(v=>v==="y").length} approved,
-       ${verdicts.filter(v=>v==="n").length} rejected</p>
-    <p>${ok ? "PASS: under the RFC's 3-second bar." :
-              "FAIL: over 3s per item; the UI needs fewer things to read."}</p>
+    <p>worst item ${worst.toFixed(2)}s · ${over} over ${BAR_SECONDS}s · ${right} of ${ITEMS.length} right</p>
+    <p>${count("y")} approved, ${count("n")} rejected, ${count("c")} corrected</p>
+    <p>${ok ? "PASS: every item under the RFC's 3-second bar." :
+              "FAIL: too slow on some item, or too many wrong answers."}</p>
     <p class="keys">refresh to run again</p></div>`;
 }
 setInterval(() => { if (i < ITEMS.length)
-  timer.textContent = ((performance.now()-t0)/1000).toFixed(1) + "s"; }, 100);
+  timer.textContent = (spent[i] + (performance.now()-t0)/1000).toFixed(1) + "s"; }, 100);
 document.addEventListener("keydown", e => {
   if (e.repeat) return;   // held key must not auto-verdict a run of items
+  if (typing !== null) {
+    if (e.key === "Enter") { if (typing) decide("c"); }
+    else if (e.key === "Escape") { typing = null; render(); }
+    else if (e.key === "Backspace") { typing = typing.slice(0, -1); render(); }
+    else if (/^[0-9-]$/.test(e.key)) { typing += e.key; render(); }
+    return;
+  }
   if (e.key === "y") decide("y");
   else if (e.key === "n") decide("n");
+  else if (e.key === "c" && i < ITEMS.length) { typing = ""; render(); }
   else if (e.key === "u") undo();
 });
 show();
