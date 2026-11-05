@@ -164,6 +164,98 @@ class TestDB(unittest.TestCase):
                 % (dbstandard.name, dbstandard.section, dbstandard.section_id)
             )
 
+    def test_get_by_tags_with_pagination(self) -> None:
+        """
+        Given 5 CREs and 3 Standards all tagged "pgtag", paginated with
+        items_per_page=2:
+            CREs:      page 1 -> 2 items, page 2 -> 2 items, page 3 -> 1 item (last)
+            Standards: page 1 -> 2 items, page 2 -> 1 item (last)
+        page 4 (out of range for both) and an unknown tag return no documents.
+        get_by_tags() (unpaginated) must still return every matching document.
+        """
+        cres = []
+        for i in range(5):
+            dbcre = db.CRE(
+                description=f"pgcre{i}",
+                name=f"pgcre{i}",
+                tags="pgtag",
+                external_id=f"9{i}9-9{i}9",
+            )
+            self.collection.session.add(dbcre)
+            cres.append(db.CREfromDB(dbcre))
+
+        standards = []
+        for i in range(3):
+            dbstandard = db.Node(
+                section=f"pgsection{i}",
+                name=f"pgstandard{i}",
+                tags="pgtag",
+                link="",
+                ntype=defs.Standard.__name__,
+            )
+            self.collection.session.add(dbstandard)
+            standards.append(db.nodeFromDB(dbstandard))
+        self.collection.session.commit()
+
+        # first page
+        nodes, nodes_pages, got_cres, cres_pages = (
+            self.collection.get_by_tags_with_pagination(
+                ["pgtag"], page=1, items_per_page=2
+            )
+        )
+        self.assertEqual(2, len(nodes))
+        self.assertEqual(2, nodes_pages)
+        self.assertEqual(2, len(got_cres))
+        self.assertEqual(3, cres_pages)
+
+        # middle page (cres only have a middle page at items_per_page=2)
+        nodes, nodes_pages, got_cres, cres_pages = (
+            self.collection.get_by_tags_with_pagination(
+                ["pgtag"], page=2, items_per_page=2
+            )
+        )
+        self.assertEqual(1, len(nodes))  # last page for the 3-item Standards set
+        self.assertEqual(2, nodes_pages)
+        self.assertEqual(2, len(got_cres))  # middle page of the 5-item CRE set
+        self.assertEqual(3, cres_pages)
+
+        # last page (CREs only)
+        nodes, nodes_pages, got_cres, cres_pages = (
+            self.collection.get_by_tags_with_pagination(
+                ["pgtag"], page=3, items_per_page=2
+            )
+        )
+        self.assertEqual(0, len(nodes))
+        self.assertEqual(1, len(got_cres))
+        self.assertEqual(3, cres_pages)
+
+        # out-of-range page
+        nodes, nodes_pages, got_cres, cres_pages = (
+            self.collection.get_by_tags_with_pagination(
+                ["pgtag"], page=4, items_per_page=2
+            )
+        )
+        self.assertEqual([], nodes)
+        self.assertEqual([], got_cres)
+
+        # no results for an unknown tag
+        nodes, nodes_pages, got_cres, cres_pages = (
+            self.collection.get_by_tags_with_pagination(
+                ["this should not be a tag"], page=1, items_per_page=2
+            )
+        )
+        self.assertEqual([], nodes)
+        self.assertEqual([], got_cres)
+
+        # empty tag list short-circuits without querying
+        self.assertEqual(
+            ([], 0, [], 0),
+            self.collection.get_by_tags_with_pagination([], page=1, items_per_page=2),
+        )
+
+        # unpaginated get_by_tags() must be unaffected and still return everything
+        self.assertCountEqual(cres + standards, self.collection.get_by_tags(["pgtag"]))
+
     def test_get_standards_names(self) -> None:
         result = self.collection.get_node_names()
         expected = [("Standard", "BarStand"), ("Standard", "Unlinked")]
