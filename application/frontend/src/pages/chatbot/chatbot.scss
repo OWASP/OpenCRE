@@ -12,8 +12,7 @@
   min-height: 100vh;
   min-height: 100dvh;
   padding: 2rem 1rem 3rem;
-  background:
-    radial-gradient(circle at 6% 10%, rgba(15, 95, 168, 0.1) 0%, transparent 34%),
+  background: radial-gradient(circle at 6% 10%, rgba(15, 95, 168, 0.1) 0%, transparent 34%),
     radial-gradient(circle at 95% 4%, rgba(22, 163, 74, 0.1) 0%, transparent 38%),
     linear-gradient(180deg, #f7fafc 0%, var(--chat-bg) 100%);
   position: relative;

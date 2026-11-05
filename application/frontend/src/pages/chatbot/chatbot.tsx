@@ -191,7 +191,9 @@ export const Chatbot = () => {
           } catch (parseError) {
             const trimmed = text.trim();
             const looksLikeHtml =
-              contentType.includes('text/html') || /^<!doctype html>/i.test(trimmed) || /<html[\s>]/i.test(trimmed);
+              contentType.includes('text/html') ||
+              /^<!doctype html>/i.test(trimmed) ||
+              /<html[\s>]/i.test(trimmed);
             if (looksLikeHtml) {
               errorMessage = `Server error (${response.status}). Please check backend logs.`;
             } else if (trimmed) {
@@ -329,7 +331,8 @@ export const Chatbot = () => {
 
                       {!m.accurate && (
                         <div className="accuracy-warning">
-                          This answer could not be fully verified against OpenCRE sources. Please validate independently.
+                          This answer could not be fully verified against OpenCRE sources. Please validate
+                          independently.
                         </div>
                       )}
                     </div>
@@ -427,9 +430,9 @@ export const Chatbot = () => {
               <a href="https://www.softwareimprovementgroup.com">Software Improvement Group</a>.
               <br />
               <br />
-              Privacy & Security: Your question is sent to Heroku, the hosting provider for OpenCRE, and
-              then to GCP, all via protected connections. Your data isn't stored on OpenCRE servers. The
-              OpenCRE team employed extensive measures to ensure privacy and security. To review the code:
+              Privacy & Security: Your question is sent to Heroku, the hosting provider for OpenCRE, and then
+              to GCP, all via protected connections. Your data isn't stored on OpenCRE servers. The OpenCRE
+              team employed extensive measures to ensure privacy and security. To review the code:
               https://github.com/owasp/OpenCRE
             </i>
           </div>
