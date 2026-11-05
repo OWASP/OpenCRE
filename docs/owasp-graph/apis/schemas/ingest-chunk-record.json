@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opencre.org/schemas/oie/ingest-chunk-record.json",
+  "title": "IngestChunkRecord",
+  "description": "One JSONL line for Module B consumption (flattened chunk + artifact context).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "chunk_id",
+    "event_id",
+    "artifact_id",
+    "pipeline_run_id",
+    "harvest_mode",
+    "event_type",
+    "source",
+    "locator",
+    "artifact",
+    "chunk"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "pattern": "^0\\.\\d+\\.\\d+$" },
+    "chunk_id": { "type": "string" },
+    "event_id": { "type": "string" },
+    "artifact_id": { "type": "string" },
+    "pipeline_run_id": { "type": "string" },
+    "harvest_mode": {
+      "type": "string",
+      "enum": ["backfill", "incremental"]
+    },
+    "event_type": {
+      "type": "string",
+      "enum": ["discovered", "modified", "deleted"]
+    },
+    "source": { "$ref": "source-ref.json" },
+    "locator": { "$ref": "locator.json" },
+    "artifact": { "$ref": "artifact-ingest-event.json#/properties/artifact" },
+    "chunk": { "$ref": "ingest-chunk.json" }
+  }
+}

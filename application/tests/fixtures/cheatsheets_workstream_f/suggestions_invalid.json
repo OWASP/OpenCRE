@@ -1,0 +1,17 @@
+[
+  {
+    "source": "owasp_cheatsheets",
+    "cheatsheet_id": "Authentication_Cheat_Sheet",
+    "hyperlink": "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html",
+    "category": "authentication",
+    "status": "approved",
+    "candidate_cres": [
+      {
+        "cre_id": "764-507",
+        "score": 0.91,
+        "confidence": "high",
+        "reason": "Missing the required 'title' field on the item above."
+      }
+    ]
+  }
+]

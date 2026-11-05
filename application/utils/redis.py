@@ -1,14 +1,13 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 import redis
 import os
 from urllib.parse import urlparse
-import logging
 from typing import Callable, List
 import rq
 import time
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def empty_queues(redis: redis.Redis):

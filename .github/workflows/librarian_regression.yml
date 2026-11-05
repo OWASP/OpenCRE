@@ -1,0 +1,70 @@
+name: Librarian Regression Gate
+# Module C's accuracy gate. The unit suite proves the code runs; this proves the
+# pipeline still *decides* correctly over the golden set.
+#
+# Deliberately hermetic: no DB, no API key, no model download. The semantic
+# reports (C.1 recall, C.2 top-1, the C.3 ECE gate, C.4 decision accuracy) need
+# live CRE vectors and are measured locally — seeding a candidate pool from
+# golden text offline is the leakage the hub firewall exists to strip, so a CI
+# job that "measured" them would be measuring nothing.
+#
+# What this gate does catch is the failure that actually bit us: a Module B
+# schema change silently rejecting every row at the C.0 boundary, which used to
+# leave the explicit gate with nothing to count and still exit 0.
+
+on:
+  pull_request:
+    paths:
+      - 'application/utils/librarian/**'
+      - 'application/tests/librarian/**'
+      - 'scripts/evaluate_librarian.py'
+      - '.github/workflows/librarian_regression.yml'
+      - 'requirements-dev.txt'
+  push:
+    branches: [main]
+    paths:
+      - 'application/utils/librarian/**'
+      - 'application/tests/librarian/**'
+      - 'scripts/evaluate_librarian.py'
+      - '.github/workflows/librarian_regression.yml'
+      - 'requirements-dev.txt'
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    name: Librarian Regression Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          # This job only reads the tree; leaving the token in .git/config would
+          # expose it to anything the test run executes.
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.3'
+
+      - name: Install python dependencies
+        # Installed straight into the runner's interpreter rather than through
+        # `make install-python`: that target builds a venv (needing an apt
+        # `virtualenv` the other workflows install first) and then runs
+        # `playwright install`, neither of which a hermetic librarian run uses.
+        # The steps below call `python` directly, so a venv the job never
+        # activates would leave them running against a bare interpreter.
+        run: |
+          pip install --upgrade pip setuptools
+          pip install -r requirements-dev.txt
+
+      - name: Librarian unit suite
+        run: python -m unittest discover -s application/tests/librarian -p '*_test.py' -t .
+
+      - name: Golden-set decision gate
+        # Non-zero on: a failed explicit-slice gate (C.0.5 must be 100%), or a
+        # C.0 boundary that rejected the whole dataset.
+        run: |
+          python scripts/evaluate_librarian.py \
+            --dataset application/tests/librarian/fixtures/golden_dataset.json

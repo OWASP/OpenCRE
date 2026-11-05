@@ -1,6 +1,6 @@
 import './chatbot.scss';
 
-import DOMPurify, { sanitize } from 'dompurify';
+import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 import React, { useEffect, useRef, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -8,9 +8,14 @@ import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Button, Container, Form, GridRow, Header, Icon } from 'semantic-ui-react';
 import { Grid } from 'semantic-ui-react';
 
-
 import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
+
+/** Render chatbot markdown safely for dangerouslySetInnerHTML. */
+export function renderChatMarkdown(markdown: string): string {
+  const parsed = marked.parse(markdown, { async: false });
+  return DOMPurify.sanitize(String(parsed), { USE_PROFILES: { html: true } });
+}
 
 export const Chatbot = () => {
   type chatMessage = {
@@ -23,12 +28,10 @@ export const Chatbot = () => {
 
   interface ChatState {
     term: string;
-    instructions: string;
     error: string;
   }
 
-  const DEFAULT_CHAT_INSTRUCTIONS = 'Answer in English';
-  const DEFAULT_CHAT_STATE: ChatState = { term: '', instructions: DEFAULT_CHAT_INSTRUCTIONS, error: '' };
+  const DEFAULT_CHAT_STATE: ChatState = { term: '', error: '' };
 
   const { apiUrl } = useEnvironment();
   const [loading, setLoading] = useState<boolean>(false);
@@ -85,12 +88,12 @@ export const Chatbot = () => {
   }, [chatMessages]);
 
   function login() {
-    fetch(`${apiUrl}/user`, { method: 'GET' })
+    fetch(`${apiUrl}/auth/user`, { method: 'GET', headers: { Accept: 'application/json' } })
       .then((response) => {
         if (response.status === 200) {
           response.text().then((user) => setUser(user));
         } else {
-          window.location.href = `${apiUrl}/login`;
+          window.location.href = `${apiUrl}/auth/login`;
         }
       })
       .catch((error) => {
@@ -108,7 +111,7 @@ export const Chatbot = () => {
 
   function processResponse(response: string) {
     const responses = response.split('```');
-    const res: JSX.Element[] = [];
+    const res: React.ReactElement[] = [];
 
     responses.forEach((txt, i) => {
       if (i % 2 === 0) {
@@ -116,7 +119,7 @@ export const Chatbot = () => {
           <p
             key={i}
             dangerouslySetInnerHTML={{
-              __html: sanitize(marked(txt), { USE_PROFILES: { html: true } }),
+              __html: renderChatMarkdown(txt),
             }}
           />
         );
@@ -137,8 +140,7 @@ export const Chatbot = () => {
     shouldForceScrollRef.current = true;
 
     const currentTerm = chat.term;
-    const currentInstructions = chat.instructions.trim() || DEFAULT_CHAT_INSTRUCTIONS;
-    setChat({ ...chat, term: '', instructions: currentInstructions });
+    setChat({ ...chat, term: '' });
     setLoading(true);
 
     setChatMessages((prev) => [
@@ -154,8 +156,8 @@ export const Chatbot = () => {
 
     fetch(`${apiUrl}/completion`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: currentTerm, instructions: currentInstructions }),
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ prompt: currentTerm }),
     })
       .then(async (response) => {
         if (!response.ok) {
@@ -208,6 +210,13 @@ export const Chatbot = () => {
         <a href={d.hyperlink} target="_blank" rel="noopener noreferrer">
           <strong>{d.name}</strong> — section {d.section ?? d.sectionID}
         </a>
+        {d.embeddingsUrl ? (
+          <div className="reference-link">
+            <a href={d.embeddingsUrl} target="_blank" rel="noopener noreferrer">
+              Scoped source (embedding URL)
+            </a>
+          </div>
+        ) : null}
         <div className="reference-link">
           <a href={link}>View in OpenCRE</a>
         </div>
@@ -292,22 +301,12 @@ export const Chatbot = () => {
                   </button>
                 )}
                 <Form className="chat-input" size="large" onSubmit={onSubmit}>
-                  <Form.Group widths="equal">
-                    <Form.Input
-                      fluid
-                      label="Question"
-                      value={chat.term}
-                      onChange={(e) => setChat({ ...chat, term: e.target.value })}
-                      placeholder="Type your infosec question here..."
-                    />
-                    <Form.Input
-                      fluid
-                      label="Instructions"
-                      value={chat.instructions}
-                      onChange={(e) => setChat({ ...chat, instructions: e.target.value })}
-                      placeholder={DEFAULT_CHAT_INSTRUCTIONS}
-                    />
-                  </Form.Group>
+                  <Form.Input
+                    fluid
+                    value={chat.term}
+                    onChange={(e) => setChat({ ...chat, term: e.target.value })}
+                    placeholder="Type your infosec question here…"
+                  />
                   <Button primary fluid size="small">
                     <Icon name="send" /> Ask
                   </Button>

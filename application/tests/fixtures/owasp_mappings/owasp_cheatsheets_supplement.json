@@ -1,0 +1,47 @@
+[
+  {
+    "section": "Authorization Cheat Sheet",
+    "hyperlink": "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html",
+    "cre_ids": ["128-128", "117-371"]
+  },
+  {
+    "section": "REST Security Cheat Sheet",
+    "hyperlink": "https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html",
+    "cre_ids": ["118-110", "724-770", "623-550"]
+  },
+  {
+    "section": "Server Side Request Forgery Prevention Cheat Sheet",
+    "hyperlink": "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html",
+    "cre_ids": ["028-728", "657-084"]
+  },
+  {
+    "section": "Docker Security Cheat Sheet",
+    "hyperlink": "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html",
+    "cre_ids": ["233-748", "486-813"]
+  },
+  {
+    "section": "Kubernetes Security Cheat Sheet",
+    "hyperlink": "https://cheatsheetseries.owasp.org/cheatsheets/Kubernetes_Security_Cheat_Sheet.html",
+    "cre_ids": ["467-784", "233-748", "486-813"]
+  },
+  {
+    "section": "Secure Cloud Architecture Cheat Sheet",
+    "hyperlink": "https://cheatsheetseries.owasp.org/cheatsheets/Secure_Cloud_Architecture_Cheat_Sheet.html",
+    "cre_ids": ["155-155", "467-784"]
+  },
+  {
+    "section": "LLM Prompt Injection Prevention Cheat Sheet",
+    "hyperlink": "https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html",
+    "cre_ids": ["161-451", "760-764"]
+  },
+  {
+    "section": "AI Agent Security Cheat Sheet",
+    "hyperlink": "https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html",
+    "cre_ids": ["117-371", "650-560", "126-668"]
+  },
+  {
+    "section": "Secure AI Model Ops Cheat Sheet",
+    "hyperlink": "https://cheatsheetseries.owasp.org/cheatsheets/Secure_AI_Model_Ops_Cheat_Sheet.html",
+    "cre_ids": ["148-853", "613-285", "613-287"]
+  }
+]

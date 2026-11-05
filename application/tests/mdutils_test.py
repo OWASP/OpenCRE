@@ -1,6 +1,9 @@
+from cre_logging import get_logger
+
+logger = get_logger(__name__)
+
 from application.utils import mdutils
 from application.defs import cre_defs as defs
-from pprint import pprint
 import unittest
 from application import create_app, sqla  # type: ignore
 

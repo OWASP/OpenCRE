@@ -1,4 +1,5 @@
 export const TWO_DAYS_MILLISECONDS = 1.728e8;
+export const EXPLORER_CRE_PAGE_SIZE = 20;
 
 export const TYPE_IS_PART_OF = 'Is Part Of';
 export const TYPE_LINKED_TO = 'Linked To';
@@ -9,11 +10,11 @@ export const TYPE_AUTOLINKED_TO = 'Automatically linked to';
 
 export const DOCUMENT_TYPE_NAMES = {
   [TYPE_AUTOLINKED_TO]: ' has been automatically mapped to',
-  [TYPE_LINKED_TO]: ' is linked to sources',
-  [TYPE_IS_PART_OF]: ' is part of CREs',
-  [TYPE_LINKED_FROM]: 'is linked from CREs',
-  [TYPE_CONTAINS]: ' contains CREs',
-  [TYPE_RELATED]: ' is related to CREs',
+  [TYPE_LINKED_TO]: ' refers to sources',
+  [TYPE_IS_PART_OF]: ' is child of Requirements',
+  [TYPE_LINKED_FROM]: ' is referenced by Requirements',
+  [TYPE_CONTAINS]: ' contains Requirements',
+  [TYPE_RELATED]: ' is related to Requirements',
 };
 
 export const DOCUMENT_TYPES = {
@@ -37,5 +38,6 @@ export const GRAPH = '/graph';
 export const BROWSEROOT = '/root_cres';
 export const GAP_ANALYSIS = '/map_analysis';
 export const EXPLORER = '/explorer';
+export const DOCS = '/docs';
 
 export const GA_STRONG_UPPER_LIMIT = 2; // remember to change this in the Python code too

@@ -8,17 +8,18 @@ import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndica
 import { TYPE_CONTAINS, TYPE_LINKED_TO } from '../../const';
 import { useDataStore } from '../../providers/DataProvider';
 import { LinkedTreeDocument, TreeDocument } from '../../types';
-import { getDocumentDisplayName } from '../../utils';
-import { getInternalUrl } from '../../utils/document';
+import { getInternalUrl, getTopicDisplayName } from '../../utils/document';
 import { GraphDebugPanel } from './GraphDebugPanel';
 import { LinkedStandards } from './LinkedStandards';
 
 export const Explorer = () => {
-  const { dataLoading, dataTree, dataStore } = useDataStore();
+  const { dataLoading, dataTree, dataStore, hasMore, isLoadingMore, loadNextPage, dataLoadError } =
+    useDataStore();
   const [loading, setLoading] = useState<boolean>(false);
   const [filter, setFilter] = useState('');
   const [filteredTree, setFilteredTree] = useState<TreeDocument[]>();
   const [debugMode, setDebugMode] = useState<boolean>(false);
+  const loadMoreRef = React.useRef<HTMLDivElement | null>(null);
 
   const applyHighlight = (text, term) => {
     if (!term) return text;
@@ -85,18 +86,37 @@ export const Explorer = () => {
     setLoading(dataLoading);
   }, [dataLoading]);
 
+  useEffect(() => {
+    const sentinel = loadMoreRef.current;
+    if (!sentinel || !hasMore) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          loadNextPage();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loadNextPage, filteredTree]);
+
   function processNode(item) {
     if (!item) {
       return <></>;
     }
-    item.displayName = item.displayName ?? getDocumentDisplayName(item);
+    item.displayName = item.displayName ?? getTopicDisplayName(item);
     item.url = item.url ?? getInternalUrl(item);
     item.links = item.links ?? [];
 
     const contains = item.links.filter((x) => x.ltype === TYPE_CONTAINS);
     const linkedTo = item.links.filter((x) => x.ltype === TYPE_LINKED_TO);
     const creCode = item.id;
-    const creName = item.displayName.split(' : ').pop();
+    const creName = getTopicDisplayName(item);
     return (
       <List.Item key={Math.random()}>
         <List.Content>
@@ -110,7 +130,6 @@ export const Explorer = () => {
               </div>
             )}
             <Link to={item.url}>
-              <span className="cre-code">{applyHighlight(creCode, filter)}:</span>
               <span className="cre-name">{applyHighlight(creName, filter)}</span>
             </Link>
           </List.Header>
@@ -138,7 +157,11 @@ export const Explorer = () => {
         <h1>Open CRE Explorer</h1>
         <p>
           A visual explorer of Open Common Requirement Enumerations (CREs). Originally created by:{' '}
-          <a target="_blank" rel="noopener noreferrer" href="https://zeljkoobrenovic.github.io/opencre-explorer/">
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href="https://zeljkoobrenovic.github.io/opencre-explorer/"
+          >
             Zeljko Obrenovic
           </a>
           .
@@ -168,11 +191,21 @@ export const Explorer = () => {
               onChange={() => setDebugMode(!debugMode)}
             />
             <Popup
-               content="Debug mode shows graph connectivity stats and link type details for each CRE node."
-            trigger={
-               <span style={{ cursor: 'help', color: '#666', fontSize: '14px', border: '1px solid #666', borderRadius: '50%', padding: '0 4px', fontWeight: 'bold' }}>
-                ?
-               </span>
+              content="Debug mode shows graph connectivity stats and link type details for each CRE node."
+              trigger={
+                <span
+                  style={{
+                    cursor: 'help',
+                    color: '#666',
+                    fontSize: '14px',
+                    border: '1px solid #666',
+                    borderRadius: '50%',
+                    padding: '0 4px',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  ?
+                </span>
               }
             />
           </div>
@@ -180,12 +213,14 @@ export const Explorer = () => {
 
         {debugMode && <GraphDebugPanel dataStore={dataStore} />}
 
-        <LoadingAndErrorIndicator loading={loading} error={null} />
+        <LoadingAndErrorIndicator loading={loading || dataLoading} error={dataLoadError} />
         <List>
           {filteredTree?.map((item) => {
             return processNode(item);
           })}
         </List>
+        <div ref={loadMoreRef} style={{ height: 1 }} />
+        {isLoadingMore && hasMore && <p className="explorer-load-more">Loading more requirements…</p>}
       </main>
     </>
   );

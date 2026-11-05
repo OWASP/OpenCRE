@@ -9,6 +9,7 @@ import { DocumentNode } from '../../components/DocumentNode';
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
 import { useEnvironment } from '../../hooks';
 import { Document, PaginatedResponse } from '../../types';
+import { scrollMountToTop } from '../../utils';
 import { getDocumentDisplayName } from '../../utils/document';
 
 export const Standard = () => {
@@ -24,7 +25,7 @@ export const Standard = () => {
   }
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    scrollMountToTop();
     setLoading(true);
     axios
       .get(`${apiUrl}/${type}/${id}?page=${page}`)

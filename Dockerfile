@@ -1,6 +1,7 @@
 FROM node:lts as build
 LABEL org.opencontainers.image.source = "https://github.com/OWASP/OpenCRE"
 WORKDIR /code
+RUN apt-get update && apt-get install -y chromium
 COPY . /code
 RUN yarn install && yarn build
 

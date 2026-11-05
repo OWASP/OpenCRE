@@ -1,0 +1,56 @@
+.markdown-from-repo {
+  color: var(--muted-foreground);
+  line-height: 1.7;
+  font-size: 1.05rem;
+
+  h1,
+  h2,
+  h3 {
+    color: var(--foreground);
+  }
+
+  h2 {
+    font-size: 1.35rem;
+    margin: 2rem 0 0.75rem;
+  }
+
+  h2:first-child {
+    margin-top: 0;
+  }
+
+  p {
+    margin: 0 0 1rem;
+  }
+
+  a {
+    color: #60a5fa;
+    text-decoration: none;
+
+    &:hover {
+      color: #93c5fd;
+      text-decoration: underline;
+    }
+  }
+
+  ul,
+  ol {
+    margin: 0 0 1rem 1.25rem;
+  }
+
+  code {
+    background: var(--secondary);
+    color: var(--foreground);
+    padding: 0.1rem 0.35rem;
+    border-radius: 0.25rem;
+    font-size: 0.95em;
+  }
+}
+
+.markdown-from-repo__status,
+.markdown-from-repo__error {
+  color: var(--muted-foreground);
+}
+
+.markdown-from-repo__error a {
+  color: #60a5fa;
+}
