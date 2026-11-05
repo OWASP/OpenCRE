@@ -40,7 +40,8 @@ class CheckpointStore:
             branch=record.branch,
         )
 
-    def save(self, checkpoint: RepositoryCheckpoint) -> None:
+    def save(self, checkpoint: RepositoryCheckpoint, *, commit: bool = True) -> None:
+        """Save progress, optionally leaving commit to the caller's transaction."""
         session = self.session
         existing = (
             session.query(HarvesterCheckpoint)
@@ -75,7 +76,10 @@ class CheckpointStore:
             )
             session.add(new_record)
             try:
-                session.commit()
+                if commit:
+                    session.commit()
+                else:
+                    session.flush()
             except IntegrityError:
                 session.rollback()
                 raise ValueError("duplicate canonical source identity")
@@ -96,7 +100,10 @@ class CheckpointStore:
         existing.last_processed_commit = checkpoint.last_processed_commit
         existing.updated_at = checkpoint.updated_at
         try:
-            session.commit()
+            if commit:
+                session.commit()
+            else:
+                session.flush()
         except Exception:
             session.rollback()
             raise
