@@ -18,13 +18,33 @@ class LiMultiQueryFilterTest(unittest.TestCase):
         self.assertIn("_li_metadata_filter_hits", src)
         self.assertIn("OWASP_CX_LI_URL_SUBSTR", src)
 
+    def test_expand_gated_by_li_expand_flag(self) -> None:
+        from pathlib import Path
+
+        src = Path("application/utils/comprehension/retrieve.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('flags.on("LI_EXPAND")', src)
+        from application.utils.comprehension import flags
+
+        self.assertIn("LI_EXPAND", flags.NAMES)
+        self.assertNotIn("LI_EXPAND", flags.DEFAULT_ON)
+
     def test_metadata_filter_by_url_substr(self) -> None:
         from application.utils.comprehension.retrieve import _li_metadata_filter_hits
         from application.utils.owasp_agent.lane_similarity import LaneHit
 
         hits = [
-            LaneHit(channel="c", score=1.0, url="owasp-agent://evidence/comprehension-a-raw-1"),
-            LaneHit(channel="c", score=0.9, url="owasp-agent://evidence/comprehension-b-overview"),
+            LaneHit(
+                channel="c",
+                score=1.0,
+                url="owasp-agent://evidence/comprehension-a-raw-1",
+            ),
+            LaneHit(
+                channel="c",
+                score=0.9,
+                url="owasp-agent://evidence/comprehension-b-overview",
+            ),
         ]
         with mock.patch.dict(os.environ, {"OWASP_CX_LI_URL_SUBSTR": "-raw-"}):
             out = _li_metadata_filter_hits(hits)

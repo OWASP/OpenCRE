@@ -35,6 +35,7 @@ NAMES = (
     # RAG/OIE framework-native cutover
     "LI_RETRIEVE",  # public QueryFusionRetriever RRF (num_queries=1) over dense lists
     "LI_VSTORE",  # VectorStoreIndex over OpenCRE pgvector (read-only; no second SoT)
+    "LI_EXPAND",  # LI multi-query expand (trailing-punct variant) — off until A/B (TASK-17.4)
     "LC_ROUTER",  # LangChain tool-calling intent router (owasp_agent)
     "LC_EXTRACT",  # LC structured extract for project slugs + answer plan
     "CITATIONS",  # strip uncited sentences after synthesize

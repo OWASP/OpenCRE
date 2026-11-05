@@ -365,7 +365,7 @@ def fetch_comprehension_hits(
         _authority.reset_featured()
         texts = [question] + [q for q in (queries or []) if q and q != question]
         # TASK-14.12: LI multi-query expand when only the raw question is present.
-        if flags.on("LI_RETRIEVE") and len(texts) == 1:
+        if flags.on("LI_RETRIEVE") and flags.on("LI_EXPAND") and len(texts) == 1:
             from application.utils.rag_parity.phase3_retrieve import expand_queries
 
             def _light_expand(q: str) -> List[str]:
