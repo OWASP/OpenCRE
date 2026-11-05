@@ -74,7 +74,7 @@ make install-python   # or: pip install -r requirements.txt -r requirements-dev.
 
 | Variable | Required for | Notes |
 | --- | --- | --- |
-| `OWASP_AGENT_ENABLED=1` | Agent + MCP meta tools | Off by default |
+| `OWASP_AGENT_ENABLED=0` | Disables agent + MCP meta tools | On by default |
 | `OWASP_AGENT_SIM_ROUTER` | Multi-lane embedding gate (cre_graph / corpus / owasp_agent_meta) before structural intents | `1` default |
 | `OWASP_AGENT_EMBED_META=1` | Embed meta (+ evidence notes) into shared `embeddings` (`source_channel=owasp_agent_meta`) | Off. Applied by callers via `embed_sync.embed_meta_if_enabled(store, report)` after `sync_all` (`scripts/owasp_agent_sync.py`; any other caller of `sync_all` must call it too); `sync_all` itself never writes shared embeddings. Refuses vectors whose length differs from `CRE_EMBED_EXPECTED_DIM` or the dimension of existing rows |
 | `OWASP_AGENT_DB` | Index location override (SQLAlchemy URL or SQLite path) | Default: the main app DB (`DATABASE_URL` / `DEV_DATABASE_URL`) |

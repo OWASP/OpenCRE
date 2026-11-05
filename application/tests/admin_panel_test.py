@@ -421,11 +421,17 @@ class TestAdminPanel(unittest.TestCase):
 
     @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
     def test_agent_status_disabled_when_flag_off(self) -> None:
-        os.environ.pop("OWASP_AGENT_ENABLED", None)
+        os.environ["OWASP_AGENT_ENABLED"] = "0"
         with self.app.test_client() as c:
             r = c.get("/admin/agent/status")
             self.assertEqual(r.status_code, 200)
             self.assertFalse(r.get_json()["enabled"])
+
+    @patch.dict(os.environ, {"NO_LOGIN": "1", "CRE_ALLOW_IMPORT": "1"})
+    def test_agent_status_enabled_by_default(self) -> None:
+        os.environ.pop("OWASP_AGENT_ENABLED", None)
+        with self.app.test_client() as c:
+            self.assertTrue(c.get("/admin/agent/status").get_json()["enabled"])
 
     @patch.dict(
         os.environ,

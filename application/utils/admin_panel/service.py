@@ -408,7 +408,12 @@ def _agent_db_stats(db_url: Optional[str]) -> Dict[str, Any]:
 
 
 def agent_status() -> Dict[str, Any]:
-    enabled = os.getenv("OWASP_AGENT_ENABLED", "").strip().lower() in TRUE_VALUES
+    enabled = os.getenv("OWASP_AGENT_ENABLED", "").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
     raw_db, db_env_key = _main_db_url()
     db_url = raw_db if raw_db and is_postgres_url(raw_db) else None
     if raw_db and not db_url:

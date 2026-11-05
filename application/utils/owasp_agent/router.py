@@ -14,12 +14,9 @@ from application.utils.owasp_agent.queries import MetaQueries
 
 
 def is_owasp_agent_enabled() -> bool:
-    return os.environ.get("OWASP_AGENT_ENABLED", "").strip().lower() in (
-        "1",
-        "true",
-        "yes",
-        "on",
-    )
+    """On unless ``OWASP_AGENT_ENABLED`` is explicitly set to a false value."""
+    raw = os.environ.get("OWASP_AGENT_ENABLED", "").strip().lower()
+    return raw not in ("0", "false", "no", "off")
 
 
 # Intents with structured slots — do not let a mismatched sim meta card win.
