@@ -404,6 +404,7 @@ def report_decision_accuracy(
     itself is the Week 7 experiment, so hard-gating it now would be premature.
     """
     from application.utils.librarian.decision_engine import decide
+    from application.utils.librarian.pipeline import shortlist_confidence
     from application.utils.librarian.schemas import Decision
 
     graded = [r for r in rows if r.expected.decision is not None and r.id in audits]
@@ -418,7 +419,7 @@ def report_decision_accuracy(
         reranked = [c for c in audit.reranked if c.score_rerank is not None]
         logits = [float(c.score_rerank) for c in reranked]
         cre_ids = [c.cre_id for c in reranked]
-        confidence = scaler.confidence(logits) if logits else 0.0
+        confidence = shortlist_confidence(scaler, logits)
         result = decide(confidence, cre_ids, threshold=threshold)
         matched = result.decision == row.expected.decision
         if matched:

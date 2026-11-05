@@ -105,6 +105,21 @@ class Scaler(Protocol):
     def confidence(self, logits: Sequence[float]) -> float: ...
 
 
+def shortlist_confidence(scaler: Scaler, logits: Sequence[float]) -> float:
+    """The confidence C.4 thresholds on for one reranked shortlist.
+
+    C.3's confidence is the top-1 mass of ``softmax(logits / T)``, which only
+    means something relative to rival candidates: over a one-candidate shortlist
+    it is 1.0 by construction, however poor that match is, and would clear any
+    threshold. With fewer than two candidates there is nothing to calibrate
+    against, so the confidence is 0.0 and the chunk goes to human review (an
+    empty shortlist is still reported as NO_CANDIDATES by ``decide``).
+    """
+    if len(logits) < 2:
+        return 0.0
+    return scaler.confidence(logits)
+
+
 @dataclass(frozen=True)
 class RunStats:
     """Counts for one pipeline run.
@@ -236,7 +251,7 @@ class LibrarianPipeline:
                 reranked = [c for c in audit.reranked if c.score_rerank is not None]
                 logits = [float(c.score_rerank) for c in reranked]
                 cre_ids = [c.cre_id for c in reranked]
-                confidence = self._scaler.confidence(logits) if logits else 0.0
+                confidence = shortlist_confidence(self._scaler, logits)
 
                 verdict = self._safety_guard.evaluate(section)
                 result = decide(
