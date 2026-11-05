@@ -54,6 +54,7 @@ class ChangeDetector:
                     str(self.repository_client.get_local_path()),
                     "diff",
                     "--name-only",
+                    "--diff-filter=d",
                     base,
                     target,
                 ],

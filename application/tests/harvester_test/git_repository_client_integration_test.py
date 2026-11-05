@@ -247,6 +247,37 @@ class GitRepositoryClientIntegrationTests(unittest.TestCase):
         self.assertEqual(files, ["file.txt"])
         self.assertEqual(commits, [target])
 
+    def test_change_detector_skips_files_deleted_since_base(self):
+        client = self.create_client()
+        client.clone()
+
+        detector = ChangeDetector(client)
+
+        (self.work / "kept.md").write_text("A")
+        (self.work / "removed.md").write_text("A")
+        (self.work / "old_name.md").write_text("A")
+        git("add", ".", cwd=self.work)
+        git("commit", "-m", "add docs", cwd=self.work)
+        git("push", "origin", "main", cwd=self.work)
+        client.fetch()
+        base = client.get_current_commit_sha()
+
+        (self.work / "kept.md").write_text("B")
+        git("rm", "-q", "removed.md", cwd=self.work)
+        git("mv", "old_name.md", "new_name.md", cwd=self.work)
+        git("commit", "-am", "edit, delete and rename", cwd=self.work)
+        git("push", "origin", "main", cwd=self.work)
+        client.fetch()
+        head = client.get_current_commit_sha()
+
+        files = detector.get_modified_files_since(base, head)
+
+        self.assertEqual(files, ["kept.md", "new_name.md"])
+        # Every reported path must be readable at head; a deleted path would
+        # raise here and block the harvester for this repository.
+        for path in files:
+            client.get_file_at_commit(head, path)
+
     def test_change_detector_returns_commits_oldest_first(self):
         client = self.create_client()
         client.clone()
