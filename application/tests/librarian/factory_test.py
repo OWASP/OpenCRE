@@ -17,7 +17,11 @@ import unittest
 from unittest import mock
 
 from application.utils.librarian.config_loader import load_config
-from application.utils.librarian.factory import build_components, build_scaler
+from application.utils.librarian.factory import (
+    build_components,
+    build_retriever_for,
+    build_scaler,
+)
 
 
 class BuildScalerTest(unittest.TestCase):
@@ -111,6 +115,21 @@ class BuildComponentsTest(unittest.TestCase):
             )
         components.retriever.retrieve("verify passwords")
         self.assertEqual(calls, ["verify passwords"])
+
+
+class BuildRetrieverForTest(unittest.TestCase):
+    def test_pgvector_gets_the_session_so_it_survives_a_commit(self) -> None:
+        database = mock.Mock()
+        database.can_use_pgvector_similarity.return_value = True
+        database.get_embeddings_by_doc_type.return_value = {}
+        with mock.patch.dict(
+            os.environ, {"CRE_LIBRARIAN_RETRIEVER_BACKEND": "pgvector"}, clear=True
+        ), mock.patch(
+            "application.utils.librarian.candidate_retriever.build_retriever"
+        ) as build_retriever:
+            build_retriever_for(database, embed_fn=lambda _t: [0.1])
+        self.assertIs(database.session, build_retriever.call_args.kwargs["connection"])
+        database.session.connection.assert_not_called()
 
 
 if __name__ == "__main__":
