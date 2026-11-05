@@ -304,70 +304,33 @@ class TestOSCALUtils(unittest.TestCase):
         self.assertDictEqual(remove_empty_elements(result), expected)
 
     def test_list_to_oscal(self) -> None:
+        # Keep section and sectionID distinct to catch field mix-ups
         standards = []
         for i in range(0, 4):
-            standard = defs.Standard(
-                name=f"s-{i}",
-                id=f"{i}{i}{i}-{i}{i}{i}",
-                version="v0.1.2",
-                section="s-section",
-                hyperlink=f"https://example.com/s-{i}/s-section",
-            )
-            for j in range(0, 5):
-                standard.add_link(
-                    defs.Link(
-                        document=defs.CRE(name=f"cre-{j}", id=f"{j}{j}{j}-{j}{j}{j}"),
-                        ltype=defs.LinkTypes.LinkedTo,
-                    )
+            standards.append(
+                defs.Standard(
+                    name=f"s-{i}",
+                    id=f"{i}{i}{i}-{i}{i}{i}",
+                    version="v0.1.2",
+                    section=f"s-section-{i}",
+                    sectionID=f"s-sectionid-{i}",
+                    hyperlink=f"https://example.com/s-{i}/s-section",
                 )
-            standards.append(standard)
-
-        expected = {
-            "controls": [
-                {
-                    "id": "_000-000",
-                    "links": [{"href": "https://opencre.org/cre/000-000"}],
-                    "title": "cre-0",
-                },
-                {
-                    "id": "_111-111",
-                    "links": [{"href": "https://opencre.org/cre/111-111"}],
-                    "title": "cre-1",
-                },
-                {
-                    "id": "_222-222",
-                    "links": [{"href": "https://opencre.org/cre/222-222"}],
-                    "title": "cre-2",
-                },
-                {
-                    "id": "_333-333",
-                    "links": [{"href": "https://opencre.org/cre/333-333"}],
-                    "title": "cre-3",
-                },
-                {
-                    "id": "_444-444",
-                    "links": [{"href": "https://opencre.org/cre/444-444"}],
-                    "title": "cre-4",
-                },
-            ],
-            "metadata": {
-                "last_modified": "2023-02-03T16:17:31.695+00:00",
-                "links": [{"href": "https://example.com/s-3/s-section"}],
-                "oscal_version": "1.0.0",
-                "title": "s-3",
-                "version": "v0.1.2",
-            },
-            "uuid": "46c335c9-b9b7-4043-a722-2e5fdc3ccf67",
-        }
-        self.maxDiff = None
-        result = json.loads(
-            oscal_utils.document_to_oscal(
-                standard,
-                "46c335c9-b9b7-4043-a722-2e5fdc3ccf67",
-                "2023-02-03T16:17:31.695+00:00",
             )
-        )
-        self.assertDictEqual(remove_empty_elements(result), expected)
+
+        result = json.loads(oscal_utils.list_to_oscal(standards))
+
+        self.assertEqual(result["metadata"]["title"], "s-0")
+        self.assertEqual(len(result["controls"]), 4)
+
+        controls_by_title = {c["title"]: c for c in result["controls"]}
+        for i in range(0, 4):
+            props = {
+                p["name"]: p["value"]
+                for p in controls_by_title[f"s-{i}"]["props"]
+            }
+            self.assertEqual(props["section"], f"s-section-{i}")
+            self.assertEqual(props["sectionID"], f"s-sectionid-{i}")
 
     def test_tool_document_to_oscal(self) -> None:
         tool = defs.Tool(
