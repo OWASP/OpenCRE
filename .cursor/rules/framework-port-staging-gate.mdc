@@ -59,6 +59,14 @@ SQL/sample evidence required in the handoff (e.g. ≥20 CRE rows where content i
 
 Enable framework flags / cut over default paths on staging only if **accuracy and runtime are the same or better** than the recorded baseline for that eval set. Otherwise keep flags off and leave hand-rolled paths. Reference baselines from the active cre-backlog epic / latest staging ablate (e.g. ask ~67.1% / ~12.1s avg on 246 Q when that was the measured baseline).
 
+### Measurement rules (2026-11 lessons: single-pass batched judging swung scores ~13/246 on identical answers)
+
+- Grade **each answer in its own judge call** at temperature 0; do not grade batches of answers together.
+- Judge the baseline and candidate with the **same judge setup in the same session**; never compare to a number from an older run or judge.
+- A flag ships only if the candidate is **at least +3pp** over baseline **and** the paired McNemar exact test gives **p < 0.05** **and** average latency is within **+0.5s**. Otherwise keep it off.
+- Discard any run with embedding/retrieval failures or provider quota errors (check logs); a billing-cap or rate-limit run is not evidence.
+- Run experiments on a side instance, not on the staging container serving other sessions.
+
 ## Handoff evidence
 
 Report paths, commands, and numbers — not assertions alone:
