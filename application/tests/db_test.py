@@ -2127,6 +2127,41 @@ class TestDB(unittest.TestCase):
         )
         self.assertEqual(db.NEO_DB.parse_node(graph_node).todict(), expected.todict())
 
+    def test_neo_db_create_dbnode_copies_hyperlink(self) -> None:
+        link = "https://example.com/standard#section"
+        for ntype, neo_class in (
+            ("Standard", "NeoStandard"),
+            ("Code", "NeoCode"),
+            ("Tool", "NeoTool"),
+        ):
+            with self.subTest(ntype=ntype), patch.object(
+                getattr(db, neo_class), "save", lambda self: self
+            ):
+                dbnode = db.Node(
+                    name="name",
+                    ntype=ntype,
+                    tags="",
+                    section="section",
+                    description="description",
+                    link=link,
+                )
+                neo_node = db.NEO_DB._NEO_DB__create_dbnode(dbnode)
+                self.assertEqual(
+                    db.NEO_DB.parse_node_no_links(neo_node).hyperlink, link
+                )
+
+    def test_neo_db_update_dbnode_copies_hyperlink(self) -> None:
+        link = "https://example.com/standard#section"
+        for ntype in ("Standard", "Code", "Tool"):
+            existing = mock.MagicMock()
+            with self.subTest(ntype=ntype), patch(
+                "application.database.db._neo_node_first_or_none_by_document_id",
+                return_value=existing,
+            ):
+                dbnode = db.Node(name="name", ntype=ntype, tags="", link=link)
+                db.NEO_DB._NEO_DB__update_dbnode(dbnode)
+                self.assertEqual(existing.hyperlink, link)
+
     def test_neo_db_parse_node_cre(self):
         name = "name"
         description = "description"
