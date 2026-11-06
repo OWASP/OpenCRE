@@ -1045,6 +1045,7 @@ class NEO_DB:
                 section=dbnode.section,
                 section_id=dbnode.section_id,  # dbnode.sectionID,
                 subsection=dbnode.subsection or "",
+                hyperlink=dbnode.link or "",
                 tooltype="",  # dbnode.tooltype,
             ).save()
         elif dbnode.ntype == "Code":
@@ -1056,7 +1057,7 @@ class NEO_DB:
                 links=[],  # dbnode.links,
                 tags=([dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags),
                 metadata="{}",  # dbnode.metadata,
-                hyperlink="",  # dbnode.hyperlink or "",
+                hyperlink=dbnode.link or "",
                 version=dbnode.version or "",
             ).save()
         elif dbnode.ntype == "Tool":
@@ -1074,7 +1075,7 @@ class NEO_DB:
                 links=[],  # dbnode.links,
                 tags=([dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags),
                 metadata="{}",  # dbnode.metadata,
-                hyperlink="",  # dbnode.hyperlink or "",
+                hyperlink=dbnode.link or "",
                 version=dbnode.version or "",
             ).save()
 
@@ -1093,6 +1094,7 @@ class NEO_DB:
             existing.section = dbnode.section
             existing.section_id = dbnode.section_id  # dbnode.sectionID
             existing.subsection = dbnode.subsection or ""
+            existing.hyperlink = dbnode.link or ""
             existing.tooltype = ""  # dbnode.tooltype
             return existing.save()
         elif dbnode.ntype == "Code":
@@ -1105,7 +1107,7 @@ class NEO_DB:
                 [dbnode.tags] if isinstance(dbnode.tags, str) else dbnode.tags
             )
             existing.metadata = "{}"  # dbnode.metadata,
-            existing.hyperlink = ""  # dbnode.hyperlink or "",
+            existing.hyperlink = dbnode.link or ""
             existing.version = dbnode.version or ""
             return existing.save()
         elif dbnode.ntype == "Tool":
@@ -1124,7 +1126,7 @@ class NEO_DB:
                 ttype = cre_defs.ToolTypes.Unknown
             existing.tooltype = ttype
             existing.metadata = "{}"  # dbnode.metadata,
-            existing.hyperlink = ""  # dbnode.hyperlink or "",
+            existing.hyperlink = dbnode.link or ""
             existing.version = dbnode.version or ""
             return existing.save()
         else:
