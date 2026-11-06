@@ -401,17 +401,22 @@ def _answer_decomposed(
     question: str, complete: CompletionFn
 ) -> Optional[Tuple[str, List[str]]]:
     """Answer each part of a multi-part question on its own, then combine (None = not multi-part)."""
-    if not looks_multipart(question):
-        return None
     from application.utils.comprehension import flags
     from application.utils.comprehension.extras import understand_query
 
     helper = flags.helper_llm()
     if helper is None:
         return None
-    try:
-        parts = understand_query(question, helper).get("parts") or []
-    except Exception:
+    # The model decides whether there are several parts (including implied ones);
+    # the regex only matters when query understanding is off.
+    if flags.on("QUERY"):
+        parts = _plan(question).get("parts") or []
+    elif looks_multipart(question):
+        try:
+            parts = understand_query(question, helper).get("parts") or []
+        except Exception:
+            return None
+    else:
         return None
     if len(parts) < 2:
         return None
