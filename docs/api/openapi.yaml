@@ -196,8 +196,12 @@ paths:
                 $ref: '#/components/schemas/JobStatusResponseSchema'
         '404':
           description: Not found
+        '400':
+          description: Missing id parameter
         '500':
           description: Job failed
+        '503':
+          description: Job queue unavailable
   /rest/v1/map_analysis:
     get:
       tags:
