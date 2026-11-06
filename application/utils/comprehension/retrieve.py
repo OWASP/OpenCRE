@@ -338,6 +338,17 @@ def _li_metadata_filter_hits(hits: List[LaneHit]) -> List[LaneHit]:
     return [h for h in hits if any(n in (h.url or "") for n in needles)]
 
 
+def _li_rerank(question: str, hits: List[LaneHit]) -> List[LaneHit]:
+    """TASK-17.6: LlamaIndex LLMRerank over the head of the hit list (flag LI_RERANK)."""
+    from application.utils.comprehension import flags
+
+    if not flags.on("LI_RERANK"):
+        return hits
+    from application.utils.comprehension import li_extras
+
+    return li_extras.rerank_hits(question, hits)
+
+
 def fetch_comprehension_hits(
     question: str, queries: List[str] | None = None
 ) -> List[LaneHit]:
@@ -373,6 +384,15 @@ def fetch_comprehension_hits(
                 return [stripped] if stripped and stripped != q else []
 
             texts = expand_queries(texts[0], expander=_light_expand) or texts
+        if flags.on("LI_HYDE") or flags.on("LI_REWRITE"):
+            from application.utils.comprehension import li_extras
+
+            extra: List[str] = []
+            if flags.on("LI_HYDE"):
+                extra += li_extras.hyde_queries(question)
+            if flags.on("LI_REWRITE"):
+                extra += li_extras.rewrite_queries(question)
+            texts = texts + [t for t in extra if t not in texts]
         k = retrieval_k()
         wide = k * 2 if flags.on("RERANK") else k
         with sqla.session.get_bind().connect() as conn:
@@ -410,6 +430,7 @@ def fetch_comprehension_hits(
                     vhits = _li_metadata_filter_hits(vhits)
                     hits = _with_talk_lane(conn, question, vhits)
                     hits = _apply_authority(hits)
+                    hits = _li_rerank(question, hits)
                     if flags.on("EXPAND"):
                         _expand(conn, hits[: max(k, 12)])
                     return hits
@@ -471,6 +492,7 @@ def fetch_comprehension_hits(
                     hits = rrf(fuse_lists, key=lambda h: h.url)
             hits = _with_talk_lane(conn, question, hits)
             hits = _apply_authority(hits)
+            hits = _li_rerank(question, hits)
             if flags.on("EXPAND"):
                 _expand(conn, hits[: max(k, 12)])
         return hits

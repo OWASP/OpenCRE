@@ -35,6 +35,9 @@ NAMES = (
     # RAG/OIE framework-native cutover
     "LI_RETRIEVE",  # public QueryFusionRetriever RRF (num_queries=1) over dense lists
     "LI_VSTORE",  # VectorStoreIndex over OpenCRE pgvector (read-only; no second SoT)
+    "LI_HYDE",  # LI HyDEQueryTransform hypothetical answer as extra query (TASK-17.8)
+    "LI_REWRITE",  # one LLM query rewrite as extra query (TASK-17.8)
+    "LI_RERANK",  # LI LLMRerank over top hits (TASK-17.6)
     "LI_EXPAND",  # LI multi-query expand (trailing-punct variant) — off until A/B (TASK-17.4)
     "LC_ROUTER",  # LangChain tool-calling intent router (owasp_agent)
     "LC_EXTRACT",  # LC structured extract for project slugs + answer plan
