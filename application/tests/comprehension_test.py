@@ -657,6 +657,40 @@ class FastAndDecomposeTest(unittest.TestCase):
         self.assertIn("2. answer to Who leads SAMM?", out[0])
         self.assertEqual(out[1], ["https://x/1", "https://x/2"])
 
+    def test_decompose_follows_the_model_for_implied_parts(self):
+        """No regex cue ('and', two '?'): with QUERY on, the model's parts decide."""
+        from application.utils.comprehension import answer, flags
+
+        question = "how do I start a chapter in Pune, India?"
+        self.assertFalse(answer.looks_multipart(question))
+        parts = [
+            "Is there already an OWASP chapter in Pune?",
+            "How do I start a chapter?",
+        ]
+        helper = lambda s, u: json.dumps({"query": question, "parts": parts})
+        calls = []
+
+        def fake_answer(part, cands, complete):
+            calls.append(part)
+            return (f"answer to {part} [1]", [f"https://x/{len(calls)}"])
+
+        answer._PLAN.clear()
+        os.environ["OWASP_CX_DECOMPOSE"] = "1"
+        os.environ["OWASP_CX_QUERY"] = "1"
+        flags._HELPER = helper
+        try:
+            with mock.patch.object(answer, "_answer", fake_answer), mock.patch.object(
+                answer, "merge_with_dedicated", lambda q, c: []
+            ):
+                out = answer.answer_from_candidates(question, [], lambda m: "UNUSED")
+        finally:
+            del os.environ["OWASP_CX_DECOMPOSE"]
+            del os.environ["OWASP_CX_QUERY"]
+            flags._HELPER = None
+            answer._PLAN.clear()
+        self.assertEqual(calls, parts)
+        self.assertEqual(out[1], ["https://x/1", "https://x/2"])
+
 
 class ThinkEffortTest(unittest.TestCase):
     def test_effort_env_selects_a_reasoning_budget(self):
