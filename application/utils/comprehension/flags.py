@@ -59,7 +59,12 @@ _PARITY_ALIASES = {
 # ablates (TASK-14.1/14.2); rollback = git revert (TASK-14.8).
 # CITATIONS / LC_ROUTER / LC_EXTRACT: off by default until ask ≥ LI_VSTORE SoT
 # (69.1%/8.25s); force on with =1 for gated ablates.
-DEFAULT_ON = frozenset({"TOPPROJECTS", "LI_RETRIEVE", "LI_VSTORE"})
+# QUERY + DECOMPOSE: the model splits implied sub-questions ("start a chapter in Pune" =
+# does one exist + current process). 246-Q: neutral (53.7% vs 54.5%), ~+22% latency;
+# rollback = OWASP_CX_QUERY=0 / OWASP_CX_DECOMPOSE=0.
+DEFAULT_ON = frozenset(
+    {"TOPPROJECTS", "LI_RETRIEVE", "LI_VSTORE", "QUERY", "DECOMPOSE"}
+)
 
 
 def _truthy(raw: str) -> bool:

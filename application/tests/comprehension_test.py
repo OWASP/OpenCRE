@@ -174,7 +174,7 @@ class RawDocsTest(unittest.TestCase):
 
 
 class ExtrasTest(unittest.TestCase):
-    def test_flags_default_off_except_topprojects_and_toggle(self):
+    def test_flags_default_off_except_defaults_and_toggle(self):
         import os
         from unittest import mock
 
@@ -187,11 +187,15 @@ class ExtrasTest(unittest.TestCase):
             self.assertEqual(
                 flags.active(),
                 [
+                    "QUERY",
                     "TOPPROJECTS",
+                    "DECOMPOSE",
                     "LI_RETRIEVE",
                     "LI_VSTORE",
                 ],
             )
+            self.assertTrue(flags.on("QUERY"))
+            self.assertTrue(flags.on("DECOMPOSE"))
             self.assertTrue(flags.on("TOPPROJECTS"))
             self.assertTrue(flags.on("LI_RETRIEVE"))
             self.assertTrue(flags.on("LI_VSTORE"))
@@ -204,7 +208,9 @@ class ExtrasTest(unittest.TestCase):
                 flags.active(),
                 [
                     "EXPAND",
+                    "QUERY",
                     "TOPPROJECTS",
+                    "DECOMPOSE",
                     "LI_RETRIEVE",
                     "LI_VSTORE",
                 ],
