@@ -3,6 +3,8 @@ from cre_logging import get_logger
 logger = get_logger(__name__)
 
 import json
+from datetime import datetime
+from uuid import UUID
 from typing import Any, Dict, List, Tuple
 import unittest
 
@@ -458,6 +460,83 @@ class TestOSCALUtils(unittest.TestCase):
             )
         )
         self.assertDictEqual(remove_empty_elements(result), expected)
+
+    def test_cre_document_to_oscal_without_uuid_and_last_modified(self) -> None:
+        cre = defs.CRE(name="cre-1", id="001-001", description="cre-desc")
+        cre.add_link(
+            defs.Link(
+                document=defs.Standard(
+                    name="standard-1",
+                    section="s1",
+                    hyperlink="https://example.com/1",
+                ),
+                ltype=defs.LinkTypes.LinkedTo,
+            )
+        )
+
+        result = json.loads(oscal_utils.document_to_oscal(cre))
+
+        self.assertEqual(str(UUID(result["uuid"])), result["uuid"])
+        last_modified = datetime.fromisoformat(result["metadata"]["last_modified"])
+        self.assertIsNotNone(last_modified.tzinfo)
+        self.assertEqual(
+            [c["id"] for c in result["controls"]],
+            ["_s1"],
+        )
+
+    def test_cre_document_to_oscal_without_links(self) -> None:
+        cre = defs.CRE(name="cre-1", id="001-001", description="cre-desc")
+
+        result = json.loads(oscal_utils.document_to_oscal(cre))
+
+        self.assertEqual(result["metadata"]["title"], "cre-1")
+        self.assertFalse(result.get("controls"))
+
+    def test_cre_document_to_oscal_skips_unsupported_link_types(self) -> None:
+        cre = defs.CRE(name="cre-1", id="001-001")
+        cre.add_link(
+            defs.Link(
+                document=defs.Code(name="code-1", hyperlink="https://example.com/c"),
+                ltype=defs.LinkTypes.LinkedTo,
+            )
+        )
+        cre.add_link(
+            defs.Link(
+                document=defs.CRE(name="cre-2", id="002-002"),
+                ltype=defs.LinkTypes.LinkedTo,
+            )
+        )
+
+        result = json.loads(oscal_utils.document_to_oscal(cre))
+
+        self.assertEqual([c["id"] for c in result["controls"]], ["_002-002"])
+
+    def test_list_of_cres_to_oscal(self) -> None:
+        cres = [
+            defs.CRE(name=f"cre-{i}", id=f"{i}{i}{i}-{i}{i}{i}", description="d")
+            for i in range(0, 3)
+        ]
+
+        result = json.loads(oscal_utils.list_to_oscal(cres))  # type: ignore[arg-type]
+
+        self.assertEqual(result["metadata"]["title"], "cre-0")
+        self.assertIsNotNone(
+            datetime.fromisoformat(result["metadata"]["last_modified"]).tzinfo
+        )
+        self.assertEqual(
+            [
+                (c["id"], c["title"], [link["href"] for link in c["links"]])
+                for c in result["controls"]
+            ],
+            [
+                (
+                    f"_{i}{i}{i}-{i}{i}{i}",
+                    f"cre-{i}",
+                    [f"https://opencre.org/cre/{i}{i}{i}-{i}{i}{i}"],
+                )
+                for i in range(0, 3)
+            ],
+        )
 
 
 if __name__ == "__main__":
