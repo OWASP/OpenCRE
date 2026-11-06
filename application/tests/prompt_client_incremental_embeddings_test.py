@@ -157,6 +157,52 @@ class TestIncrementalEmbeddings(unittest.TestCase):
         args = fake_db.add_embedding.call_args[0]
         self.assertEqual(args[0].id, "db-4")
 
+    def test_prompt_handler_cre_metadata_cache(self):
+        for metadata in (
+            {},
+            {"domain": "authentication", "details": {"levels": [1, 2]}},
+        ):
+            with self.subTest(metadata=metadata):
+                fake_db = _FakeDB()
+                cre = cre_defs.CRE(
+                    id="333-333", name="CRE-3", description="desc-3", metadata=metadata
+                )
+                fake_db._cre_by_id = {"db-3": cre}
+
+                def store(db_obj, _doc_type, _emb, text):
+                    fake_db._emb_by_id[db_obj.id] = SimpleNamespace(
+                        embeddings_content=text
+                    )
+
+                fake_db.add_embedding.side_effect = store
+                ph = prompt_client.PromptHandler.__new__(prompt_client.PromptHandler)
+                ph.database = fake_db
+                ph.ai_client = Mock(spec=["get_max_batch_size", "get_text_embeddings"])
+                ph.ai_client.get_max_batch_size.return_value = 16
+                ph.ai_client.get_text_embeddings.return_value = [[0.1, 0.2]]
+
+                ph.generate_embeddings_for(cre_defs.Credoctypes.CRE.value)
+                text = ph.ai_client.get_text_embeddings.call_args[0][0][0]
+                self.assertEqual(fake_db._emb_by_id["db-3"].embeddings_content, text)
+                if metadata:
+                    self.assertIn(
+                        "metadata:" + prompt_client.stable_json(metadata), text
+                    )
+
+                ph.generate_embeddings_for(cre_defs.Credoctypes.CRE.value)
+                self.assertEqual(ph.ai_client.get_text_embeddings.call_count, 1)
+
+                cre.metadata = {"domain": "cryptography"}
+                ph.generate_embeddings_for(cre_defs.Credoctypes.CRE.value)
+                self.assertEqual(ph.ai_client.get_text_embeddings.call_count, 2)
+                updated_text = ph.ai_client.get_text_embeddings.call_args[0][0][0]
+                self.assertIn('metadata:{"domain":"cryptography"}', updated_text)
+                self.assertEqual(
+                    fake_db._emb_by_id["db-3"].embeddings_content, updated_text
+                )
+                ph.generate_embeddings_for(cre_defs.Credoctypes.CRE.value)
+                self.assertEqual(ph.ai_client.get_text_embeddings.call_count, 2)
+
     def test_generate_embeddings_url_without_remote_text_uses_stored_fields(self):
         """If ``get_content`` returns nothing, embed from DB-backed node fields (no skip)."""
         fake_db = _FakeDB()
