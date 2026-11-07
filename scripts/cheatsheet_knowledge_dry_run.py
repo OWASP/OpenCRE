@@ -11,10 +11,8 @@ import os
 import sys
 from datetime import datetime, timezone
 
-
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, REPO_ROOT)
-
 
 from application.utils.external_project_parsers.parsers.cheatsheet_extractor import (
     extract_cheatsheet_record,
@@ -22,11 +20,6 @@ from application.utils.external_project_parsers.parsers.cheatsheet_extractor imp
 from application.utils.external_project_parsers.parsers.cheatsheet_knowledge_queue_item import (
     write_knowledge_queue_jsonl,
 )
-from application.utils.librarian.candidate_retriever import (
-    CandidatePool,
-    CandidateRetriever,
-)
-from application.utils.librarian.cross_encoder import CrossEncoderReranker
 from application.utils.librarian.knowledge_source import FixtureKnowledgeSource
 from application.utils.librarian.pipeline import LibrarianPipeline
 from application.utils.librarian.safety_guard import NullSafetyGuard
@@ -36,8 +29,6 @@ from scripts.cheatsheet_dry_run import (
     load_fixtures,
 )
 
-TOP_K_RETRIEVAL = 5
-TOP_K_RERANK = 3
 DECISION_THRESHOLD = 0.80
 
 PIPELINE_RUN_ID = "run-cheatsheet-knowledge-queue-dryrun"
@@ -78,17 +69,12 @@ def build_knowledge_queue():
     extraction_failures = 0
 
     for markdown, source_path in load_fixtures(FIXTURES_DIR):
-        filename = os.path.basename(source_path)
-
-        print("=" * 72)
-        print(f"CHEAT SHEET: {filename}")
 
         try:
             record = extract_cheatsheet_record(
                 markdown,
                 source_path,
             )
-
             # Local fixture files may not have a committed_at value.
             # Keep the same fallback used by cheatsheet_dry_run.py
             if not record.metadata.get("committed_at"):
@@ -96,13 +82,9 @@ def build_knowledge_queue():
 
             records.append(record)
 
-            print(f"Record title : {record.title}")
-            print("Record       : extracted successfully")
-
         except Exception as exc:
             extraction_failures += 1
-            print(f"❌ extraction failed, skipping this fixture: {exc}")
-            continue
+            print(f"extraction failed, skipping this fixture: {exc}")
 
     if not records:
         raise RuntimeError(f"No Cheat Sheet fixtures found in {FIXTURES_DIR}")
@@ -130,10 +112,10 @@ def main():
     print("=" * 72)
 
     print("\nUsing:")
-    print("  • real CheatSheetRecord extraction")
-    print("  • real CheatsheetRecord -> knowledge_queue mapping")
-    print("  • real JSONL -> FixtureKnowledgeSource boundary")
-    print("  • real Librarian C.0 -> C.4 pipeline")
+    print("  • actual CheatSheetRecord extraction")
+    print("  • CheatsheetRecord -> knowledge_queue mapping")
+    print("  • actual JSONL -> FixtureKnowledgeSource boundary")
+    print("  • Librarian C.0 -> C.4 pipeline")
     print("  • controlled local embeddings")
     print("  • existing CrossEncoder reranking")
     print("  • deterministic C.3 confidence")
@@ -179,7 +161,7 @@ def main():
         print("  locator.kind:", envelope.knowledge.locator.kind)
         print("  locator.url :", envelope.knowledge.locator.url)
 
-    # FixtureKnowledgeSource silently drops a line it can't parse as
+    # FixtureKnowledgeSource drops a line it can't parse as
     # KnowledgeQueueItem (logs a warning, keeps going) -- result.stats.total
     # only counts rows the pipeline actually saw, so a dropped-at-read row
     # would otherwise vanish uncounted by every check above.
@@ -191,13 +173,13 @@ def main():
 
     print("\n" + "=" * 72)
     if had_failures:
-        print("⚠️  DRY-RUN COMPLETED WITH FAILURES")
+        print(" DRY-RUN COMPLETED WITH FAILURES")
         print(f"   extraction failures      : {extraction_failures}")
         print(f"   dropped before pipeline  : {dropped_before_pipeline}")
         print(f"   skipped at C.0           : {result.stats.skipped}")
         print(f"   errored mid-pipeline     : {result.stats.errored}")
     else:
-        print("✅ DRY-RUN COMPLETED")
+        print("DRY-RUN COMPLETED")
     print("=" * 72)
 
     return 1 if had_failures else 0
