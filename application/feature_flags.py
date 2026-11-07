@@ -30,3 +30,8 @@ def is_myopencre_enabled() -> bool:
 def is_login_enabled() -> bool:
     """Return True when auth UI / login is enabled via CRE_ENABLE_LOGIN."""
     return os.getenv("CRE_ENABLE_LOGIN", "").strip().lower() in TRUE_VALUES
+
+
+def is_ga_upstream_disabled() -> bool:
+    """Return True when CRE_GA_NO_UPSTREAM turns off the upstream gap analysis fetch."""
+    return os.getenv("CRE_GA_NO_UPSTREAM", "").strip().lower() in TRUE_VALUES
