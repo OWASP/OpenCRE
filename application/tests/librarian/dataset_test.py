@@ -26,7 +26,6 @@ _REPO_ROOT = os.path.abspath(os.path.join(_HERE, "..", "..", ".."))
 _DATASET = os.path.join(_HERE, "fixtures", "golden_dataset.json")
 _JSON_SCHEMA = os.path.join(_HERE, "fixtures", "golden_dataset.schema.json")
 _BUILD_SCRIPT = os.path.join(_REPO_ROOT, "scripts", "build_golden_dataset.py")
-_DB = os.path.join(_REPO_ROOT, "standards_cache.sqlite")
 
 
 def _load(path):
@@ -156,11 +155,9 @@ class TestLoadDatasetRejectsDuplicateIds(unittest.TestCase):
 
 
 class TestDatasetDeterminism(unittest.TestCase):
-    """The committed JSON must re-derive identically from the DB."""
+    """The committed JSON must re-derive from fixture inputs."""
 
     def test_build_check_matches_committed_dataset(self):
-        if not os.path.exists(_DB):
-            self.skipTest("standards_cache.sqlite not present")
         result = subprocess.run(
             [sys.executable, _BUILD_SCRIPT, "--check"],
             capture_output=True,

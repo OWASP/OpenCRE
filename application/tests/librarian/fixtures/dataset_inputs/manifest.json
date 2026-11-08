@@ -1,0 +1,15 @@
+{
+  "schema_version": "0.1.0",
+  "refreshed_at": "2026-11-07T21:05:14.996826+00:00",
+  "source": "Bootstrapped from the local ASVS database snapshot and the committed golden dataset's pinned CWE multi-link records. The committed golden dataset was not modified.",
+  "record_counts": {
+    "source_nodes": 292,
+    "asvs": 277,
+    "cwe_multilink": 15,
+    "explicit": 5,
+    "update": 5,
+    "ambiguous": 5,
+    "cheatsheet_fixtures": 3,
+    "multilink_pins": 15
+  }
+}
