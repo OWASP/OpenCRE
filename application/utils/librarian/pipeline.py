@@ -234,6 +234,11 @@ class LibrarianPipeline:
         pipeline_run_id: str,
         safety_guard: Optional[SafetyGuard] = None,
     ) -> None:
+        """Wire the stages; ``safety_guard`` defaults to ``NullSafetyGuard``.
+
+        ``threshold`` is the C.4 auto-link bar and ``pipeline_run_id`` is stamped
+        on every envelope this pipeline emits.
+        """
         self._source = source
         self._retriever = retriever
         self._reranker = reranker
@@ -246,6 +251,14 @@ class LibrarianPipeline:
         self._safety_guard: SafetyGuard = safety_guard or NullSafetyGuard()
 
     def run(self, *, at: datetime) -> RunResult:
+        """Run every source row through C.0 -> C.4 and collect the envelopes.
+
+        Each valid row is retrieved, reranked, safety-checked and decided by
+        :func:`decide_shortlist`, so a shortlist with fewer than two candidates
+        goes to review rather than auto-linking. ``at`` is the timestamp written
+        on every envelope. Returns the envelopes with per-row outcomes, run
+        counts and the source label of each emitted chunk.
+        """
         envelopes: List[Envelope] = []
         outcomes: List[RowOutcome] = []
         source_labels: Dict[str, str] = {}
