@@ -1,313 +1,111 @@
 #!/usr/bin/env python
-"""Build the Module C golden dataset from standards_cache.sqlite.
+"""Build the Module C golden dataset from committed JSON fixture inputs.
 
-Derives ground-truth CRE labels by joining ``node`` -> ``cre_node_links`` -> ``cre``
-in OpenCRE's own cache. The 5 slices are populated as follows:
+The builder derives the dataset from
+``application/tests/librarian/fixtures/dataset_inputs/`` and does not require
+a database at build time.
 
-  positive       : all 277 ASVS requirements (1:1 mapping)
-                 + multi-link rows from OWASP Top 10 and CWE (2-4 CREs)
+The fixture inputs contain source-node mappings and curated examples for the
+five dataset slices:
+
+  positive       : ASVS requirements and multi-link rows from OWASP Top 10
+                   and CWE, plus OWASP Cheat Sheet examples
+
   hard_negative  : ASVS requirements whose text contains a negation phrase
-                   ("do not", "does not", "shall not", "should not"), with
-                   their real DB CRE mapping (cross-encoder must beat cosine
-                   on these without losing the right CRE)
-  explicit       : synthesized text that literally cites a real cre.external_id
-  update         : synthesized before/after pairs of real ASVS requirements,
-                   ground-truth CRE pulled from DB at build time
+                   ("do not", "does not", "shall not", "should not")
+
+  explicit       : synthesized text that literally cites a real CRE external ID
+
+  update         : synthesized before/after pairs of ASVS requirements
+
   ambiguous      : broad ASVS V1.x SDLC/governance requirements, decision=review
 
-Output is deterministic (every query has an explicit ORDER BY and stable
-formatting), so ``--check`` can verify the committed JSON has not drifted from
-the DB-derived form.
+Use ``scripts/refresh_golden_dataset_inputs.py`` to refresh the fixture inputs
+from ``standards_cache.sqlite``. The refresh utility preserves historical
+multi-link pins by default.
+
+Output is deterministic, so ``--check`` verifies that the committed JSON
+matches the fixture derivation while ignoring whitespace differences only.
 """
 
 import argparse
 import json
-import sqlite3
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_DB = REPO_ROOT / "standards_cache.sqlite"
+DEFAULT_INPUTS = REPO_ROOT / "application/tests/librarian/fixtures/dataset_inputs"
 DEFAULT_OUT = REPO_ROOT / "application/tests/librarian/fixtures/golden_dataset.json"
-
 SCHEMA_VERSION = "0.1.0"
 
 
-# ---- Curated rows that need a real CRE id resolved at build time ----------
-# Each entry pins a real ASVS section_id; the build script pulls that section's
-# ground-truth CRE from the DB. Text is synthesised; ground truth stays real.
+# ---- Fixture inputs --------------------------------------------------------
 
-CURATED_EXPLICIT = [
-    {
-        "id": "gold:explicit:V2.1.1",
-        "asvs_section_id": "V2.1.1",
-        "text_template": (
-            "Per CRE {cre}, verify that user-set passwords are at least 12 "
-            "characters in length after removing leading and trailing whitespace."
-        ),
-        "title_hint": "Password length policy",
-    },
-    {
-        "id": "gold:explicit:V3.4.1",
-        "asvs_section_id": "V3.4.1",
-        "text_template": (
-            "Refer to CRE {cre}. Verify that cookie-based session tokens have "
-            "the Secure attribute set."
-        ),
-        "title_hint": "Session cookie security",
-    },
-    {
-        "id": "gold:explicit:V2.4.1",
-        "asvs_section_id": "V2.4.1",
-        "text_template": (
-            "This control corresponds to CRE {cre}: passwords shall be stored "
-            "using an approved key derivation function."
-        ),
-        "title_hint": "Credential storage",
-    },
-    {
-        "id": "gold:explicit:V4.1.1",
-        "asvs_section_id": "V4.1.1",
-        "text_template": (
-            "See CRE {cre} for the canonical guidance on enforcing access "
-            "control rules at a trusted service layer."
-        ),
-        "title_hint": "Access control enforcement",
-    },
-    {
-        "id": "gold:explicit:V8.3.1",
-        "asvs_section_id": "V8.3.1",
-        "text_template": (
-            "Per CRE {cre}, sensitive data shall be sent to the server in the "
-            "HTTP message body or headers, never in the URL query string."
-        ),
-        "title_hint": "Sensitive data in transit",
-    },
-]
-
-CURATED_UPDATE = [
-    {
-        "id": "gold:update:V2.1.1",
-        "asvs_section_id": "V2.1.1",
-        "text": (
-            "Verify that user-set passwords are at least 12 characters in "
-            "length after removing leading and trailing spaces."
-        ),
-        "prior_text": (
-            "Verify that user-set passwords are at least 12 characters in length."
-        ),
-    },
-    {
-        "id": "gold:update:V3.4.1",
-        "asvs_section_id": "V3.4.1",
-        "text": (
-            "Verify that cookie-based session tokens have the Secure and "
-            "SameSite attributes set."
-        ),
-        "prior_text": (
-            "Verify that cookie-based session tokens have the Secure attribute set."
-        ),
-    },
-    {
-        "id": "gold:update:V2.2.1",
-        "asvs_section_id": "V2.2.1",
-        "text": (
-            "Verify that anti-automation controls are effective at mitigating "
-            "breached credential testing, brute force, account lockout, and "
-            "credential stuffing attacks."
-        ),
-        "prior_text": (
-            "Verify that anti-automation controls are effective at mitigating "
-            "breached credential testing, brute force, and account lockout attacks."
-        ),
-    },
-    {
-        "id": "gold:update:V4.1.1",
-        "asvs_section_id": "V4.1.1",
-        "text": (
-            "Verify that the application enforces access control rules on a "
-            "trusted service layer, with mandatory denials on missing context."
-        ),
-        "prior_text": (
-            "Verify that the application enforces access control rules on a "
-            "trusted service layer."
-        ),
-    },
-    {
-        "id": "gold:update:V8.3.1",
-        "asvs_section_id": "V8.3.1",
-        "text": (
-            "Verify that sensitive data is sent to the server in the HTTP "
-            "message body or headers, and that any URL-borne parameters do "
-            "not contain sensitive data."
-        ),
-        "prior_text": (
-            "Verify that sensitive data is sent to the server in the HTTP "
-            "message body or headers."
-        ),
-    },
-]
-
-CURATED_AMBIGUOUS = [
-    {
-        "id": "gold:ambiguous:sdlc",
-        "text": (
-            "Verify the use of a secure software development lifecycle that "
-            "addresses security in all stages of development."
-        ),
-        "title_hint": "Secure SDLC",
-        "reason_code": "BELOW_THRESHOLD",
-    },
-    {
-        "id": "gold:ambiguous:culture",
-        "text": (
-            "Security is everyone's responsibility and should be considered "
-            "throughout the organization."
-        ),
-        "reason_code": "NO_CANDIDATES",
-    },
-    {
-        "id": "gold:ambiguous:governance",
-        "text": (
-            "Verify that the organization has a documented information "
-            "security policy approved by senior management."
-        ),
-        "title_hint": "Governance",
-        "reason_code": "BELOW_THRESHOLD",
-    },
-    {
-        "id": "gold:ambiguous:training",
-        "text": (
-            "Verify that developers receive security training appropriate to "
-            "their role and responsibilities."
-        ),
-        "reason_code": "BELOW_THRESHOLD",
-    },
-    {
-        "id": "gold:ambiguous:risk",
-        "text": (
-            "Risk assessment processes are followed at every major design " "decision."
-        ),
-        "reason_code": "BELOW_THRESHOLD",
-    },
-]
+SOURCE_NODES = []
+CURATED_EXPLICIT = []
+CURATED_UPDATE = []
+CURATED_AMBIGUOUS = []
+CHEATSHEET_FIXTURES = []
+MULTILINK_PINS = []
 
 
-# Text mirrors the Cheat Sheet excerpts added to the fixture in #1036 (intro snippet + section headings).
-CHEATSHEET_FIXTURES = [
-    {
-        "id": "gold:cheatsheet:authorization:positive",
-        "section": "Authorization Cheat Sheet",
-        "section_path": "Authorization_Cheat_Sheet",
-        "title_hint": "Authorization Cheat Sheet",
-        "text": 'Authorization may be defined as "the process of verifying that a requested '
-        'action or service is approved for a specific entity" '
-        "([NIST](https://csrc.nist.gov/glossary/term/authorization)). Authorization "
-        "is distinct from authentication which is the process of verifying an "
-        "entity's identity. When designing and developing a software solution, it is "
-        "important to keep these distinctions in mind. A user who has been "
-        "authenticated (perhaps by providing a username and password) is often not "
-        "authorized t\n"
-        "Introduction\n"
-        "Recommendations\n"
-        "References",
-    },
-    {
-        "id": "gold:cheatsheet:rest-security:positive",
-        "section": "REST Security Cheat Sheet",
-        "section_path": "REST_Security_Cheat_Sheet",
-        "title_hint": "REST Security Cheat Sheet",
-        "text": "[REST](https://en.wikipedia.org/wiki/REST) (or **RE**presentational "
-        "**S**tate **T**ransfer) is an architectural style first described in [Roy "
-        "Fielding](https://en.wikipedia.org/wiki/Roy_Fielding)'s Ph.D. dissertation "
-        "on [Architectural Styles and the Design of Network-based Software "
-        "Architectures](https://www.ics.uci.edu/~fielding/pubs/dissertation/top.htm).\n"
-        "\n"
-        "It evolved as Fielding wrote the HTTP/1.1 and URI specs and has been proven "
-        "to be well-suited for developing distributed hypermedia applica\n"
-        "Introduction\n"
-        "HTTPS\n"
-        "Access Control\n"
-        "JWT\n"
-        "API Keys\n"
-        "Restrict HTTP methods\n"
-        "Preventing Out-of-Order API Execution\n"
-        "Input validation\n"
-        "Validate content types\n"
-        "Management endpoints\n"
-        "Error handling\n"
-        "Audit logs\n"
-        "Security Headers\n"
-        "CORS\n"
-        "Sensitive information in HTTP requests\n"
-        "HTTP Return Code",
-    },
-    {
-        "id": "gold:cheatsheet:ssrf-prevention:positive",
-        "section": "Server Side Request Forgery Prevention Cheat Sheet",
-        "section_path": "Server_Side_Request_Forgery_Prevention_Cheat_Sheet",
-        "title_hint": "Server-Side Request Forgery Prevention Cheat Sheet",
-        "text": "The objective of the cheat sheet is to provide advice regarding the "
-        "protection against [Server Side Request "
-        "Forgery](https://www.acunetix.com/blog/articles/server-side-request-forgery-vulnerability/) "
-        "(SSRF) attack.\n"
-        "\n"
-        "This cheat sheet will focus on the defensive point of view and will not "
-        "explain how to perform this attack. This "
-        "[talk](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_Orange_Tsai_Talk.pdf) "
-        "from the security researcher [Orange Tsai](https://twitter.com/orange_8361) "
-        "as we\n"
-        "Introduction\n"
-        "Context\n"
-        "Overview of a SSRF common flow\n"
-        "Cases\n"
-        "IMDSv2 in AWS\n"
-        "Deny-list (Last Resort)\n"
-        "Semgrep Rules\n"
-        "References\n"
-        "Tools and code used for schemas",
-    },
-]
+def load_fixture_inputs() -> None:
+    global SOURCE_NODES
+    global CURATED_EXPLICIT
+    global CURATED_UPDATE
+    global CURATED_AMBIGUOUS
+    global CHEATSHEET_FIXTURES
+    global MULTILINK_PINS
+
+    curated_data = json.loads(
+        (DEFAULT_INPUTS / "curated.json").read_text(encoding="utf-8")
+    )
+    SOURCE_NODES = json.loads(
+        (DEFAULT_INPUTS / "source_nodes.json").read_text(encoding="utf-8")
+    )
+
+    CURATED_EXPLICIT = curated_data["explicit"]
+    CURATED_UPDATE = curated_data["update"]
+    CURATED_AMBIGUOUS = curated_data["ambiguous"]
+    CHEATSHEET_FIXTURES = curated_data["cheatsheet_fixtures"]
+    MULTILINK_PINS = curated_data["multilink_pins"]
 
 
-def _fetch_asvs_cre(conn: sqlite3.Connection, section_id: str) -> Optional[str]:
-    rows = conn.execute(
-        """
-        SELECT DISTINCT c.external_id
-        FROM node n
-        JOIN cre_node_links l ON l.node = n.id
-        JOIN cre c ON c.id = l.cre
-        WHERE n.name LIKE '%ASVS%' AND n.section_id = ?
-        ORDER BY c.external_id
-        """,
-        (section_id,),
-    ).fetchall()
-    if not rows:
+def _fetch_asvs_cre(section_id: str) -> str | None:
+    matches = [
+        node
+        for node in SOURCE_NODES
+        if node["standard"] == "ASVS" and node["section_id"] == section_id
+    ]
+
+    if not matches:
         return None
-    if len(rows) > 1:
-        # Fail loud rather than silently pick one — an ambiguous section would
-        # bake a wrong CRE into the golden set (matches build_explicit/build_update).
+
+    cre_ids = sorted({cre_id for node in matches for cre_id in node["cre_ids"]})
+
+    if len(cre_ids) > 1:
         raise ValueError(
             f"ASVS section {section_id!r} maps to multiple CREs "
-            f"({', '.join(r[0] for r in rows)}); cannot pick a golden CRE"
+            f"({', '.join(cre_ids)}); cannot pick a golden CRE"
         )
-    return rows[0][0]
+
+    return cre_ids[0]
 
 
-def build_positive_asvs(conn: sqlite3.Connection) -> List[Dict]:
-    rows = conn.execute(
-        """
-        SELECT n.section_id, n.section, c.external_id
-        FROM node n
-        JOIN cre_node_links l ON l.node = n.id
-        JOIN cre c ON c.id = l.cre
-        WHERE n.name LIKE '%ASVS%'
-        ORDER BY n.section_id, c.external_id
-        """
-    ).fetchall()
+def build_positive_asvs() -> List[Dict]:
+    pairs = sorted(
+        {
+            (node["section_id"], cre_id, node["section"])
+            for node in SOURCE_NODES
+            if node["standard"] == "ASVS"
+            for cre_id in node["cre_ids"]
+        },
+        key=lambda item: (item[0], item[1]),
+    )
+
     out = []
-    for section_id, text, ext_id in rows:
+    for section_id, ext_id, text in pairs:
         out.append(
             {
                 "id": f"gold:asvs:{section_id}:positive",
@@ -322,33 +120,46 @@ def build_positive_asvs(conn: sqlite3.Connection) -> List[Dict]:
                 },
             }
         )
+
     return out
 
 
-def build_positive_multilink(conn: sqlite3.Connection) -> List[Dict]:
-    # OWASP Top 10 2021 + CWE rows with 2-4 CRE mappings and real text.
-    rows = conn.execute(
-        """
-        SELECT n.id, n.name, n.section_id, n.section,
-               GROUP_CONCAT(c.external_id, '|')
-        FROM node n
-        JOIN cre_node_links l ON l.node = n.id
-        JOIN cre c ON c.id = l.cre
-        WHERE n.section IS NOT NULL AND length(n.section) > 20
-          AND (n.name LIKE '%Top 10 2021%' OR n.name LIKE '%CWE%')
-        GROUP BY n.id
-        HAVING COUNT(DISTINCT c.external_id) BETWEEN 2 AND 4
-        ORDER BY n.name, n.section_id
-        LIMIT 15
-        """
-    ).fetchall()
+def build_positive_multilink() -> List[Dict]:
+    nodes_by_key = {(node["name"], node["section_id"]): node for node in SOURCE_NODES}
+
+    pins = sorted(
+        MULTILINK_PINS,
+        key=lambda pin: (pin["name"], pin["section_id"]),
+    )
+
     out = []
-    for _node_id, name, section_id, text, cre_concat in rows:
-        cre_ids = sorted(set(cre_concat.split("|")))
+    for pin in pins:
+        key = (pin["name"], pin["section_id"])
+        node = nodes_by_key.get(key)
+
+        if node is None:
+            raise ValueError(f"Pinned multi-link node not found: {key!r}")
+
+        name = node["name"]
+        section_id = node["section_id"]
+        text = node["section"]
+        cre_ids = sorted(set(node["cre_ids"]))
+
+        if text is None or len(text) <= 20:
+            raise ValueError(f"Pinned multi-link node {key!r} has invalid section text")
+
+        if not 2 <= len(cre_ids) <= 4:
+            raise ValueError(
+                f"Pinned multi-link node {key!r} must have 2-4 CRE IDs; "
+                f"found {len(cre_ids)}"
+            )
+
         std = "OTHER"
         if "Top 10" in name:
-            std = "OTHER"  # closest enum; not strictly ASVS/WSTG/NIST
+            std = "OTHER"
+
         prefix = "top10" if "Top 10" in name else "cwe"
+
         out.append(
             {
                 "id": f"gold:{prefix}:{section_id}:positive_multi",
@@ -364,6 +175,7 @@ def build_positive_multilink(conn: sqlite3.Connection) -> List[Dict]:
                 },
             }
         )
+
     return out
 
 
@@ -409,22 +221,34 @@ def build_positive_cheatsheets() -> List[Dict]:
     return out
 
 
-def build_hard_negative(conn: sqlite3.Connection) -> List[Dict]:
-    rows = conn.execute(
-        """
-        SELECT n.section_id, n.section, c.external_id
-        FROM node n
-        JOIN cre_node_links l ON l.node = n.id
-        JOIN cre c ON c.id = l.cre
-        WHERE n.name LIKE '%ASVS%'
-          AND (LOWER(n.section) LIKE '%do not%'
-            OR LOWER(n.section) LIKE '%does not%'
-            OR LOWER(n.section) LIKE '%shall not%'
-            OR LOWER(n.section) LIKE '%should not%')
-        ORDER BY n.section_id, c.external_id
-        LIMIT 12
-        """
-    ).fetchall()
+def build_hard_negative() -> List[Dict]:
+    rows = []
+
+    negation_phrases = (
+        "do not",
+        "does not",
+        "shall not",
+        "should not",
+    )
+
+    for node in SOURCE_NODES:
+        if node["standard"] != "ASVS":
+            continue
+
+        text = node["section"]
+        if text is None:
+            continue
+
+        lowered = text.lower()
+        if not any(phrase in lowered for phrase in negation_phrases):
+            continue
+
+        for cre_id in node["cre_ids"]:
+            rows.append((node["section_id"], text, cre_id))
+
+    rows.sort(key=lambda row: (row[0], row[2]))
+    rows = rows[:12]
+
     out = []
     for section_id, text, ext_id in rows:
         out.append(
@@ -446,15 +270,16 @@ def build_hard_negative(conn: sqlite3.Connection) -> List[Dict]:
     return out
 
 
-def build_explicit(conn: sqlite3.Connection) -> List[Dict]:
+def build_explicit() -> List[Dict]:
     out = []
     for entry in CURATED_EXPLICIT:
-        cre = _fetch_asvs_cre(conn, entry["asvs_section_id"])
+        cre = _fetch_asvs_cre(entry["asvs_section_id"])
         if cre is None:
             raise ValueError(
                 f"no CRE mapping found for explicit row {entry['id']} "
                 f"(ASVS section {entry['asvs_section_id']})"
             )
+
         text = entry["text_template"].format(cre=cre)
         out.append(
             {
@@ -480,15 +305,16 @@ def build_explicit(conn: sqlite3.Connection) -> List[Dict]:
     return out
 
 
-def build_update(conn: sqlite3.Connection) -> List[Dict]:
+def build_update() -> List[Dict]:
     out = []
     for entry in CURATED_UPDATE:
-        cre = _fetch_asvs_cre(conn, entry["asvs_section_id"])
+        cre = _fetch_asvs_cre(entry["asvs_section_id"])
         if cre is None:
             raise ValueError(
                 f"no CRE mapping found for update row {entry['id']} "
                 f"(ASVS section {entry['asvs_section_id']})"
             )
+
         out.append(
             {
                 "id": entry["id"],
@@ -541,54 +367,59 @@ def build_ambiguous() -> List[Dict]:
     return out
 
 
-def build(conn: sqlite3.Connection) -> List[Dict]:
+def build() -> List[Dict]:
+    load_fixture_inputs()
     rows: List[Dict] = []
-    rows.extend(build_explicit(conn))
-    rows.extend(build_positive_asvs(conn))
-    rows.extend(build_positive_multilink(conn))
-    rows.extend(build_hard_negative(conn))
-    rows.extend(build_update(conn))
+
+    rows.extend(build_explicit())
+    rows.extend(build_positive_asvs())
+    rows.extend(build_positive_multilink())
+    rows.extend(build_hard_negative())
+    rows.extend(build_update())
     rows.extend(build_ambiguous())
     rows.extend(build_positive_cheatsheets())
+
     return rows
 
 
 def main(argv: List[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--db", default=str(DEFAULT_DB))
     parser.add_argument("--out", default=str(DEFAULT_OUT))
     parser.add_argument(
         "--check",
         action="store_true",
-        help="re-derive and verify --out matches; exit non-zero on drift",
+        help="re-derive and verify --out matches (ignoring whitespace only); exit non-zero on drift",
     )
     args = parser.parse_args(argv)
 
-    if not Path(args.db).exists():
-        print(f"db not found: {args.db}", file=sys.stderr)
-        return 2
-
-    conn = sqlite3.connect(args.db)
-    try:
-        rows = build(conn)
-    finally:
-        conn.close()
-
+    rows = build()
     text = json.dumps(rows, indent=2, ensure_ascii=False) + "\n"
 
     if args.check:
         if not Path(args.out).exists():
             print(f"--check: output file not found: {args.out}", file=sys.stderr)
             return 1
-        existing = Path(args.out).read_text(encoding="utf-8")
-        if existing != text:
+
+        existing_text = Path(args.out).read_text(encoding="utf-8")
+        canonical = (
+            json.dumps(
+                json.loads(existing_text),
+                indent=2,
+                ensure_ascii=False,
+            )
+            + "\n"
+        )
+
+        if canonical != text:
             print(
-                "DRIFT: golden dataset is out of sync with the DB derivation. "
+                "DRIFT: golden dataset content or record order differs from fixture "
+                "derivation (comparison ignores whitespace only). "
                 "Re-run without --check.",
                 file=sys.stderr,
             )
             return 1
-        print(f"OK: golden dataset matches derivation ({len(rows)} rows)")
+
+        print(f"OK: golden dataset matches fixture derivation ({len(rows)} rows)")
         return 0
 
     Path(args.out).write_text(text, encoding="utf-8")
@@ -597,4 +428,4 @@ def main(argv: List[str]) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    raise SystemExit(main(sys.argv[1:]))
