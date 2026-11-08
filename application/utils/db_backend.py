@@ -20,7 +20,7 @@ class BackendCapabilities:
 def detect_backend(db_connection_str: str) -> BackendCapabilities:
     """Best-effort backend detection from SQLAlchemy connection string."""
     conn = (db_connection_str or "").strip().lower()
-    if conn.startswith("postgresql://") or conn.startswith("postgres://"):
+    if conn.startswith(("postgresql://", "postgres://", "postgresql+")):
         return BackendCapabilities(
             backend="postgres",
             is_postgres=True,
