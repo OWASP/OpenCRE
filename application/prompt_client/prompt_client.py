@@ -30,6 +30,9 @@ import requests
 
 SIMILARITY_THRESHOLD = float(os.environ.get("CHATBOT_SIMILARITY_THRESHOLD", "0.7"))
 NO_PASSAGE_MARKER = "[NO_PASSAGE_USED]"
+# The marker plus any markdown the model wraps it in (**, _, `) and a trailing
+# period or exclamation mark, so "**[NO_PASSAGE_USED]**." is caught too.
+_NO_PASSAGE_RE = re.compile(r"[*_`]*" + re.escape(NO_PASSAGE_MARKER) + r"[*_`]*[.!]?")
 PROMPT_TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
 PROMPT_TEMPLATE_ENV = Environment(
     loader=FileSystemLoader(PROMPT_TEMPLATES_DIR),
@@ -67,10 +70,9 @@ def _render_chat_prompt(*, question: str, retrieved_knowledge: Optional[str]) ->
 def _split_no_knowledge_marker(answer: str) -> Tuple[str, bool]:
     """Returns the answer without chat_prompt.j2's no-passage marker, and whether
     the model used the retrieved knowledge, which is when the marker is absent."""
-    stripped = answer.rstrip()
-    if stripped.endswith(NO_PASSAGE_MARKER):
-        return stripped[: -len(NO_PASSAGE_MARKER)].rstrip(), False
-    return answer, True
+    if NO_PASSAGE_MARKER not in answer:
+        return answer, True
+    return _NO_PASSAGE_RE.sub("", answer).rstrip(), False
 
 
 def is_valid_url(url):

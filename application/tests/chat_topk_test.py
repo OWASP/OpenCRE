@@ -484,6 +484,18 @@ class GenerateTextTopKTest(unittest.TestCase):
                 "general essay [NO_PASSAGE_USED]\n"
             ),
         )
+        # CodeRabbit on #1161: the model does not always put the marker last or bare.
+        for wrapped in (
+            "general essay [NO_PASSAGE_USED].",
+            "general essay **[NO_PASSAGE_USED]**",
+            "general essay `[NO_PASSAGE_USED]`\n\n",
+            "general essay [NO_PASSAGE_USED]\n(no sources)",
+        ):
+            text, used = prompt_client_mod._split_no_knowledge_marker(wrapped)
+            self.assertFalse(used, wrapped)
+            self.assertNotIn("NO_PASSAGE_USED", text, wrapped)
+            self.assertNotIn("*", text, wrapped)
+            self.assertTrue(text.startswith("general essay"), wrapped)
         for legitimate in ("run it with: sleep 100 &", "always escape &"):
             self.assertEqual(
                 (legitimate, True),
@@ -606,10 +618,6 @@ class SharedTopKHelperTest(unittest.TestCase):
         self.assertAlmostEqual(ranked[0][1], 1.0, places=6)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class ReviewFollowUpsTest(unittest.TestCase):
     """CodeRabbit follow-ups on #1161: rollback after a failed pgvector query,
     and budget the rendered block rather than only passage content."""
@@ -658,9 +666,6 @@ class ReviewFollowUpsTest(unittest.TestCase):
 
     def test_rendered_block_fits_the_budget_including_headers(self) -> None:
         long_title = "ASVS §" + "Verify something very specific about sessions " * 6
-        retriever, _ = ChatRetrieverPgvectorTest()._retriever(char_budget=3000)
-        for p in retriever.retrieve("q", [0.1, 0.2]):
-            pass
         # rebuild passages with long titles and long content, then re-budget
         passages = [
             _passage(1, "a", long_title, "x" * 5000, "https://example.test/one"),
@@ -687,3 +692,7 @@ class ReviewFollowUpsTest(unittest.TestCase):
         # No second truncation in the handler: knowledge == full rendered block
         self.assertEqual(ai.knowledge[0], render_passages(passages))
         self.assertTrue(ai.knowledge[0].endswith("a" * 3000))
+
+
+if __name__ == "__main__":
+    unittest.main()
