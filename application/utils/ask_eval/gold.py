@@ -27,6 +27,8 @@ from application.utils.rag_parity.phase6_eval import GoldCase
 CRE_ID_RE = re.compile(r"\b\d{3}-\d{3}\b")
 MARKER_RE = re.compile(r"\[(\d{1,2})\]")
 ABSTAIN_PREFIX = "I couldn't find that in the indexed OWASP sources"
+# Staging's agent starts every reply with this label, refusals included.
+ANSWER_LABEL_RE = re.compile(r"^\s*answer\s*:\s*", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -125,12 +127,16 @@ def normalize_completion(payload: Mapping[str, Any]) -> ChatResponse:
         for cid in CRE_ID_RE.findall(text):
             if cid not in cre_ids:
                 cre_ids.append(cid)
-    abstained = not payload.get("accurate") or answer.strip().startswith(ABSTAIN_PREFIX)
+    body = ANSWER_LABEL_RE.sub("", answer, count=1)
+    abstained = not payload.get("accurate") or body.startswith(ABSTAIN_PREFIX)
+    # [n] points into the agent's citation list when there is one (staging),
+    # otherwise into the passages in ``table`` (generate_text path).
+    n_passages = len(agent_cites) if agent_cites else len(table)
     return ChatResponse(
         answer=answer,
         cre_ids=cre_ids,
         cites=cites,
-        n_passages=len(table),
+        n_passages=n_passages,
         abstained=abstained,
     )
 

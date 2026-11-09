@@ -28,6 +28,8 @@ from application.utils.ask_eval.gold import (
 )
 
 Record = Dict[str, Any]
+# Cloudflare in front of opencre.org rejects urllib's default agent (error 1010).
+USER_AGENT = "opencre-chat-eval/1078"
 PostFn = Callable[[str, Mapping[str, Any], Mapping[str, str], int], Tuple[int, Any]]
 
 
@@ -37,7 +39,11 @@ def _urllib_post(
     req = urllib.request.Request(
         url,
         data=json.dumps(body).encode("utf-8"),
-        headers={"Content-Type": "application/json", **headers},
+        headers={
+            "Content-Type": "application/json",
+            "User-Agent": USER_AGENT,
+            **headers,
+        },
         method="POST",
     )
     try:

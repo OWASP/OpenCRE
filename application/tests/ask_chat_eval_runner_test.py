@@ -37,6 +37,25 @@ def _ok(answer, table, accurate=True):
     }
 
 
+class UrllibPostTest(unittest.TestCase):
+    def test_sends_named_user_agent(self) -> None:
+        # Cloudflare answers urllib's default agent with 403 / error 1010.
+        from unittest import mock
+
+        from application.utils.ask_eval import runner
+
+        resp = mock.MagicMock()
+        resp.__enter__.return_value = resp
+        resp.status = 200
+        resp.read.return_value = b"{}"
+        with mock.patch.object(
+            runner.urllib.request, "urlopen", return_value=resp
+        ) as op:
+            runner._urllib_post("http://h/x", {"prompt": "q"}, {}, 5)
+        req = op.call_args[0][0]
+        self.assertEqual(req.get_header("User-agent"), runner.USER_AGENT)
+
+
 class RunnerTest(unittest.TestCase):
     def setUp(self) -> None:
         rows = load_gold(GOLD)

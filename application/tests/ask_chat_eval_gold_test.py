@@ -135,6 +135,22 @@ class ScorerTest(unittest.TestCase):
         self.assertFalse(s.abstain_ok)
         self.assertFalse(s.passed)
 
+    def test_staging_answer_label_refusal_counts_as_abstain(self) -> None:
+        # Staging prefixes "Answer: " and keeps accurate=true on refusals.
+        resp = normalize_completion(
+            _completion("Answer: " + ABSTAIN_PREFIX + ", so I won't guess.", [])
+        )
+        self.assertTrue(resp.abstained)
+
+    def test_markers_index_agent_citations_when_present(self) -> None:
+        # Staging: [n] points into owasp_agent.citations, not the 1-2 table rows.
+        cites = [f"https://example.org/{i}" for i in range(4)]
+        ok = normalize_completion(_completion("A [1] B [4].", [CRE_ROW], cites=cites))
+        bad = normalize_completion(_completion("A [5].", [CRE_ROW], cites=cites))
+        row = _row(self.rows, "tm_people")
+        self.assertEqual(list(score_case(row, ok).bad_markers), [])
+        self.assertEqual(list(score_case(row, bad).bad_markers), [5])
+
     def test_must_contain_any(self) -> None:
         row = _row(self.rows, "sqli")
         ok = normalize_completion(
