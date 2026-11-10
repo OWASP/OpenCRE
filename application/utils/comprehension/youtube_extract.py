@@ -218,7 +218,7 @@ def default_llm() -> LlmFn:
     from application.prompt_client import litellm_router
 
     return litellm_router.system_user_fn(
-        "gemini/gemini-2.5-flash-lite",
+        "gemini/gemini-3.5-flash-lite",
         temperature=0.0,
         extra_try_kwargs={"reasoning_effort": "disable"},
     )
