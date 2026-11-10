@@ -85,6 +85,8 @@ class KnowledgeQueueItem(BaseModel):  # SQLAlchemy model (db.py); BaseModel = sq
 
 **Provenance invariant (queue boundary).** Module B is the **only** writer of `knowledge_queue`, and it inserts only rows built from a validated Module A `ChangeRecord` (Pydantic, discriminated on `source_type`, which rejects unknown source types). So B guarantees the branch-specific columns are populated per `source_type`: a `github` row always carries `source_repo` / `source_commit_sha` / `source_committed_at`; an `rss` row always carries `feed_url` / `post_guid`. The **database does not enforce this** — the branch columns are nullable and there are no CHECK constraints — so any *out-of-band* writer must uphold it. A row that violated it (e.g. an `rss` row with `post_guid` NULL) would make the read query's `source` synthesis below evaluate to `NULL`. (C's read validator currently enforces `github → source_repo + source_commit_sha` and `rss → feed_url`, but not `rss → post_guid`; tightening that, or adding DB CHECK constraints, is optional hardening — B never emits such a row.)
 
+> **Note: rows from non-OIE producers.** The columns above describe rows produced by the OIE pipeline (Module B), whose `source_type` is `github` or `rss`, with `feed_url` used for RSS only. C.0 also accepts `source_type = "url"` / `locator_kind = "url"` for rows from external producers outside Module B, such as the Cheat Sheet knowledge-queue adapter (PR#1134). For these rows, `feed_url` carries the page URL; C.0's validation does not prohibit this.
+
 ## Canonical read query
 
 Module C reads the **full row** (all columns) — `DbKnowledgeSource` runs, in effect:
