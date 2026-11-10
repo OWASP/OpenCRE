@@ -541,6 +541,71 @@ class TestMain(unittest.TestCase):
             self.assertEqual(json.loads(response.data.decode()), expected)
             self.assertEqual(200, response.status_code)
 
+    def _add_cre_linked_to_standards(self) -> defs.CRE:
+        collection = self.collection
+        cre = defs.CRE(id="111-111", name="Root CRE", description="root")
+        dbcre = collection.add_cre(cre)
+        for section in ("V1", "V2"):
+            node = collection.add_node(
+                defs.Standard(
+                    name="ASVS",
+                    section=section,
+                    sectionID=section,
+                    hyperlink=f"https://example.com/{section}",
+                )
+            )
+            collection.add_link(dbcre, node, defs.LinkTypes.LinkedTo)
+        return cre
+
+    def test_cre_endpoints_oscal_format(self) -> None:
+        cre = self._add_cre_linked_to_standards()
+
+        with self.app.test_client() as client:
+            # single CRE endpoints wrap the catalog in "data"
+            for path in (
+                f"/rest/v1/id/{cre.id}?format=oscal",
+                "/rest/v1/name/Root%20CRE?format=oscal",
+            ):
+                response = client.get(path)
+                self.assertEqual(200, response.status_code, path)
+                catalog = json.loads(response.data.decode())["data"]
+                self.assertEqual("Root CRE", catalog["metadata"]["title"], path)
+                self.assertEqual(
+                    ["_V1", "_V2"],
+                    sorted(c["id"] for c in catalog["controls"]),
+                    path,
+                )
+
+            # list endpoints return the catalog directly
+            for path in (
+                "/rest/v1/root_cres?format=oscal",
+                f"/rest/v1/text_search?text=CRE:{cre.id}&format=oscal",
+            ):
+                response = client.get(path)
+                self.assertEqual(200, response.status_code, path)
+                catalog = json.loads(response.data.decode())
+                self.assertEqual("Root CRE", catalog["metadata"]["title"], path)
+                self.assertEqual(
+                    [{"id": "_111-111", "title": "Root CRE"}],
+                    [{"id": c["id"], "title": c["title"]} for c in catalog["controls"]],
+                    path,
+                )
+                self.assertEqual(
+                    ["https://opencre.org/cre/111-111"],
+                    [link["href"] for link in catalog["controls"][0]["links"]],
+                    path,
+                )
+
+    def test_cre_without_links_oscal_format(self) -> None:
+        cre = defs.CRE(id="222-222", name="Lonely CRE", description="no links")
+        self.collection.add_cre(cre)
+
+        with self.app.test_client() as client:
+            response = client.get(f"/rest/v1/id/{cre.id}?format=oscal")
+            self.assertEqual(200, response.status_code)
+            catalog = json.loads(response.data.decode())["data"]
+            self.assertEqual("Lonely CRE", catalog["metadata"]["title"])
+
     def test_smartlink(self) -> None:
         self.maxDiff = None
         collection = db.Node_collection().with_graph()
