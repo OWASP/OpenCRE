@@ -104,6 +104,14 @@ Two things worth knowing before writing a validator against it:
    the candidates, the reranked shortlist and the threshold, so a reviewer can see
    *why* a chunk landed where it did rather than being asked to trust a number.
 
+## What D does with a row
+
+D records the human's `HumanDecision` in `corrections.jsonl` before it stamps
+`consumed_at`, so a retired row always has its decision on record (see
+[module-d-hitl.md](../owasp-graph/apis/module-d-hitl.md)). A row whose envelope D
+cannot validate is skipped, logged by id, and left unconsumed, because it is the
+audit record of a C-side contract breach. It does not count against a page limit.
+
 ## Reason codes
 
 Review rows carry one, in this precedence order:
