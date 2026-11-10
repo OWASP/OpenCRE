@@ -3158,6 +3158,19 @@ class Node_collection:
         self._pgvector_similarity_ready = ready
         return ready
 
+    def _rollback_quietly(self) -> None:
+        """Best-effort ``session.rollback()`` after a failed pgvector statement.
+
+        On Postgres a failed statement aborts the open transaction; without a
+        rollback the next query on the shared session raises
+        ``InFailedSqlTransaction``. Never raises: the caller is already on the
+        degrade-to-no-match path.
+        """
+        try:
+            self.session.rollback()
+        except Exception:  # noqa: BLE001 - best effort only
+            pass
+
     def find_most_similar_embedding_id(
         self,
         query_embedding: List[float],
@@ -3208,11 +3221,75 @@ class Node_collection:
         except Exception as exc:
             # Match prior sklearn-path resilience: chat/import should degrade
             # to "no match" rather than 500 on a transient driver/query error.
+            # A failed statement leaves the Postgres transaction aborted, so
+            # roll back or every later query on this session fails too.
+            self._rollback_quietly()
             logger.warning(
                 "pgvector similarity query failed (%s); returning no match",
                 exc,
             )
             return None, None
+
+    def find_top_k_similar_embedding_ids(
+        self,
+        query_embedding: List[float],
+        *,
+        doc_type: str,
+        id_column: str,
+        k: int,
+        similarity_threshold: float,
+    ) -> List[Tuple[str, float]]:
+        """Top-K cosine matches via pgvector ``<=>`` (Postgres only). #1075.
+
+        Returns ``[(object_id, score), ...]`` rank-ordered (best first), only
+        rows with ``score >= similarity_threshold``; ``[]`` when nothing
+        clears it or on a transient query error. Refuses SQLite / missing
+        ``embedding_vec`` with ``SystemExit`` exactly like
+        :meth:`find_most_similar_embedding_id`; callers gate on
+        ``can_use_pgvector_similarity()`` and fall back to sklearn otherwise.
+        """
+        from application.database.pgvector_utils import (
+            fail_pgvector_unavailable,
+            to_pgvector_literal,
+            top_k_similar_ids_sql,
+        )
+        from sqlalchemy import text as sql_text
+
+        if k <= 0:
+            raise ValueError(f"k must be > 0, got {k}")
+        if not self.can_use_pgvector_similarity():
+            fail_pgvector_unavailable(context="find_top_k_similar_embedding_ids")
+
+        sql = top_k_similar_ids_sql(id_column)
+        bind = self.session.get_bind()
+        params = {
+            "q": to_pgvector_literal(query_embedding),
+            "doc_type": doc_type,
+            "k": int(k),
+        }
+        try:
+            if hasattr(self.session, "execute"):
+                rows = self.session.execute(sql_text(sql), params).fetchall()
+            else:
+                with bind.connect() as conn:
+                    rows = conn.execute(sql_text(sql), params).fetchall()
+            out: List[Tuple[str, float]] = []
+            for row in rows or []:
+                score = float(row.score)
+                if score < similarity_threshold:
+                    # rows are rank-ordered, so everything after is lower too
+                    break
+                out.append((str(row.object_id), score))
+            return out
+        except SystemExit:
+            raise
+        except Exception as exc:
+            self._rollback_quietly()
+            logger.warning(
+                "pgvector top-k similarity query failed (%s); returning no matches",
+                exc,
+            )
+            return []
 
     def assert_embedding_contract(
         self,

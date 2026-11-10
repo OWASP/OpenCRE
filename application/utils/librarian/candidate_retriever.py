@@ -120,6 +120,30 @@ class CandidatePool:
         return cls(cre_ids=cre_ids, matrix=np.asarray(rows, dtype=float), dim=dim)
 
 
+def top_k_cosine(
+    query: np.ndarray,
+    matrix: np.ndarray,
+    ids: Sequence[str],
+    top_k: int,
+) -> List[Tuple[str, float]]:
+    """Rank ``ids`` by cosine similarity of their ``matrix`` rows to ``query``.
+
+    The one ranking primitive shared by Module C's in-memory retriever and
+    OpenCRE Chat's non-pgvector path (#1075), so both order candidates the
+    same way. Stable descending sort: tied scores keep input order, so results
+    are deterministic across runs. Returns ``[(id, score), ...]`` best first,
+    capped at ``min(top_k, len(ids))``.
+    """
+    if top_k <= 0:
+        raise RetrieverError(f"top_k must be > 0, got {top_k}")
+    if len(ids) == 0:
+        return []
+    scores = cosine_similarity(np.asarray(query, dtype=float).reshape(1, -1), matrix)[0]
+    k = min(top_k, len(ids))
+    top_idx = np.argsort(-scores, kind="stable")[:k]
+    return [(ids[i], float(scores[i])) for i in top_idx]
+
+
 class CandidateRetriever:
     """Embed a section, cosine-rank the CRE hub, return the top-K shortlist.
 
@@ -159,21 +183,14 @@ class CandidateRetriever:
                 f"{self._pool.dim}; check the embedding model matches the hub"
             )
 
-        scores = cosine_similarity(query.reshape(1, -1), self._pool.matrix)[0]
-        # Top-K by descending score. argsort is ascending, so take the tail
-        # and reverse; cap at pool size when the hub is smaller than K.
-        k = min(self._top_k, len(self._pool.cre_ids))
-        # Stable descending sort so tied cosine scores keep hub (index) order —
-        # deterministic across runs. argsort(-scores) descends; kind="stable".
-        top_idx = np.argsort(-scores, kind="stable")[:k]
-
+        ranked = top_k_cosine(query, self._pool.matrix, self._pool.cre_ids, self._top_k)
         candidates: List[CreCandidate] = [
             CreCandidate(
-                cre_id=self._pool.cre_ids[i],
-                cre_name=self._cre_names.get(self._pool.cre_ids[i]),
-                score_vector=float(scores[i]),
+                cre_id=cre_id,
+                cre_name=self._cre_names.get(cre_id),
+                score_vector=score,
             )
-            for i in top_idx
+            for cre_id, score in ranked
         ]
         return RetrievalAudit(
             retriever=RETRIEVER_NAME,
