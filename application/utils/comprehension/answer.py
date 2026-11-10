@@ -533,13 +533,13 @@ def _answer(
         from application.prompt_client import litellm_router
 
         call = litellm_router.system_user_fn(
-            model or os.environ.get("CRE_LLM_CHAT_MODEL", "gemini/gemini-2.5-flash"),
+            model or os.environ.get("CRE_LLM_CHAT_MODEL", "gemini/gemini-3.5-flash"),
             temperature=0.0,
             # Thinking tokens bill as output and add seconds: off, or a small budget.
             extra_try_kwargs={"reasoning_effort": effort} if effort else None,
             interactive=True,
             fallback_model=os.environ.get(
-                "OWASP_ANSWER_FALLBACK_MODEL", "gemini/gemini-2.5-flash-lite"
+                "OWASP_ANSWER_FALLBACK_MODEL", "gemini/gemini-3.5-flash-lite"
             ),
         )
         complete = lambda msgs: call(

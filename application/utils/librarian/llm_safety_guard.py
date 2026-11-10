@@ -105,7 +105,7 @@ def default_safety_litellm_fn(model: Optional[str] = None) -> LlmFn:
         os.environ.get(
             "CRE_LIBRARIAN_SHORTLIST_JUDGE_MODEL",
             os.environ.get(
-                "CRE_NOISE_FILTER_LLM_MODEL", "gemini/gemini-2.5-flash-lite"
+                "CRE_NOISE_FILTER_LLM_MODEL", "gemini/gemini-3.5-flash-lite"
             ),
         ),
     )

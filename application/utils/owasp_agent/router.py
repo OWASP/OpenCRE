@@ -2497,7 +2497,7 @@ def standalone_question(
             from application.prompt_client import litellm_router
 
             llm = litellm_router.system_user_fn(
-                os.environ.get("OWASP_REWRITE_MODEL", "gemini/gemini-2.5-flash-lite"),
+                os.environ.get("OWASP_REWRITE_MODEL", "gemini/gemini-3.5-flash-lite"),
                 temperature=0.0,
                 extra_try_kwargs={"reasoning_effort": "disable"},
                 interactive=True,

@@ -434,7 +434,7 @@ def pdf_llm_seconds() -> float:
 
 
 def pdf_llm_model() -> str:
-    return os.environ.get("OWASP_CRAWL_PDF_MODEL", "gemini/gemini-2.5-flash")
+    return os.environ.get("OWASP_CRAWL_PDF_MODEL", "gemini/gemini-3.5-flash")
 
 
 def _pdf_via_llm(data: bytes) -> str:

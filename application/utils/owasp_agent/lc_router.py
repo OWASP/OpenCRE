@@ -133,7 +133,7 @@ def classify_intent_langchain(
     openai_tools = [convert_to_openai_tool(t) for t in tools]
     model = os.environ.get(
         "OWASP_CX_LC_ROUTER_MODEL",
-        os.environ.get("OWASP_CX_HELPER_MODEL", "gemini/gemini-2.5-flash-lite"),
+        os.environ.get("OWASP_CX_HELPER_MODEL", "gemini/gemini-3.5-flash-lite"),
     )
     messages = [
         {
