@@ -143,7 +143,10 @@ class PipelineTest(unittest.TestCase):
             pipeline_run_id=RUN,
         )
         result = pipeline.run(at=AT)
-        self.assertIsInstance(result.envelopes[0], ReviewItem)
+        env = result.envelopes[0]
+        self.assertIsInstance(env, ReviewItem)
+        self.assertEqual(env.reason_code, ReasonCode.below_threshold)
+        self.assertEqual(result.stats.linked, 0)
 
     def test_single_candidate_reviews_even_at_a_zero_threshold(self):
         # At tau = 0 a confidence of 0.0 would still clear the bar, so the
