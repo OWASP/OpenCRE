@@ -171,6 +171,20 @@ class ScorerTest(unittest.TestCase):
         self.assertEqual(out["cre_recall"], 1.0)
         self.assertEqual(out["failed"], ["tm_people_samm"])
 
+    def test_cre_precision_is_reported_not_gated(self) -> None:
+        # One expected CRE plus one extra: precision 0.5, still a pass.
+        row = _row(self.rows, "tm_people")
+        resp = normalize_completion(
+            _completion("[1]", [CRE_ROW, {"doctype": "CRE", "id": "155-155"}])
+        )
+        s = score_case(row, resp)
+        self.assertEqual(s.cre_precision, 0.5)
+        self.assertTrue(s.passed, s)
+        none = normalize_completion(_completion("[1]", [CS_ROW]))
+        self.assertIsNone(score_case(row, none).cre_precision)
+        out = summarize([s, score_case(row, none)])
+        self.assertEqual(out["cre_precision"], 0.5)
+
     def test_bridges_to_phase6_hit_at_k(self) -> None:
         cases = to_phase6_cases(self.rows)
         self.assertEqual(len(cases), sum(1 for r in self.rows if r.expect == "answer"))

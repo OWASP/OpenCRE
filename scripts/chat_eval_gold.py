@@ -55,6 +55,7 @@ def _print_report(label: str, report: dict) -> None:
         "n",
         "passed",
         "cre_recall",
+        "cre_precision",
         "cite_group_recall",
         "abstain_correct",
         "false_abstain",

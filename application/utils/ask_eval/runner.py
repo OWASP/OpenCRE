@@ -125,7 +125,13 @@ def compare_reports(
     before = {c["id"]: c["passed"] for c in baseline.get("cases", [])}
     after = {c["id"]: c["passed"] for c in candidate.get("cases", [])}
     both = sorted(set(before) & set(after))
-    metrics = ("passed", "cre_recall", "cite_group_recall", "abstain_correct")
+    metrics = (
+        "passed",
+        "cre_recall",
+        "cre_precision",
+        "cite_group_recall",
+        "abstain_correct",
+    )
     return {
         "fixed": [i for i in both if after[i] and not before[i]],
         "broken": [i for i in both if before[i] and not after[i]],

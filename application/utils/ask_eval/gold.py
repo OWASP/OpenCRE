@@ -64,6 +64,9 @@ class CaseScore:
     n_groups: int
     bad_markers: Sequence[int]
     contains_ok: bool
+    # Share of returned CREs that the gold row lists. Reported, not part of
+    # `passed`: gold rows list accepted CREs, not every correct sibling.
+    cre_precision: Optional[float] = None
 
     @property
     def passed(self) -> bool:
@@ -154,8 +157,13 @@ def score_case(row: GoldRow, resp: ChatResponse) -> CaseScore:
             contains_ok=True,
         )
     cre_hit: Optional[bool] = None
+    cre_precision: Optional[float] = None
     if row.expected_cre_ids:
-        cre_hit = bool(set(row.expected_cre_ids) & set(resp.cre_ids))
+        got = set(resp.cre_ids)
+        found = set(row.expected_cre_ids) & got
+        cre_hit = bool(found)
+        if got:
+            cre_precision = len(found) / len(got)
     markers = sorted({int(m) for m in MARKER_RE.findall(resp.answer)})
     bad = [m for m in markers if m < 1 or m > resp.n_passages]
     low = resp.answer.lower()
@@ -171,6 +179,7 @@ def score_case(row: GoldRow, resp: ChatResponse) -> CaseScore:
         n_groups=len(row.required_cite_groups),
         bad_markers=bad,
         contains_ok=contains_ok,
+        cre_precision=cre_precision,
     )
 
 
@@ -179,6 +188,7 @@ def summarize(scores: Sequence[CaseScore]) -> Dict[str, Any]:
     abstain = [s for s in scores if s.expect == "abstain"]
     with_cre = [s for s in answer if s.cre_hit is not None]
     grouped = [s for s in answer if s.n_groups]
+    precisions = [s.cre_precision for s in answer if s.cre_precision is not None]
 
     def rate(hits: int, n: int) -> Optional[float]:
         return round(hits / n, 3) if n else None
@@ -187,6 +197,9 @@ def summarize(scores: Sequence[CaseScore]) -> Dict[str, Any]:
         "n": len(scores),
         "passed": sum(s.passed for s in scores),
         "cre_recall": rate(sum(bool(s.cre_hit) for s in with_cre), len(with_cre)),
+        "cre_precision": (
+            round(sum(precisions) / len(precisions), 3) if precisions else None
+        ),
         "cite_group_recall": rate(
             sum(not s.missing_groups for s in grouped), len(grouped)
         ),
