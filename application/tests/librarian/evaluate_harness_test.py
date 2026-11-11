@@ -164,11 +164,12 @@ class CalibrationSetTest(unittest.TestCase):
         )
         audits = harness.live_audits(rows, pipe, pipe)
 
-        logit_sets, labels = harness.calibration_set(rows, audits)
+        logit_sets, labels, one_candidate = harness.calibration_set(rows, audits)
 
         # ambiguous/explicit rows are audited but must not enter the fit.
         self.assertEqual(len(logit_sets), 2)
         self.assertEqual(sorted(labels), [0.0, 1.0])
+        self.assertEqual(one_candidate, 0)
 
     def test_skips_rows_with_no_audit_and_empty_shortlists(self) -> None:
         rows = [
@@ -185,9 +186,11 @@ class CalibrationSetTest(unittest.TestCase):
         # "empty" yields no candidates; p3 is never audited at all.
         audits = harness.live_audits(rows, pipe, pipe)
 
-        logit_sets, labels = harness.calibration_set(rows, audits)
+        logit_sets, labels, one_candidate = harness.calibration_set(rows, audits)
         self.assertEqual(len(logit_sets), 2)
         self.assertEqual(len(labels), 2)
+        # An empty shortlist is a NO_CANDIDATES case, not a one-candidate row.
+        self.assertEqual(one_candidate, 0)
 
     def test_skips_single_candidate_shortlists(self) -> None:
         # A one-candidate softmax is 1.0 whatever T is, and C.4 never links such
@@ -206,10 +209,11 @@ class CalibrationSetTest(unittest.TestCase):
         )
         audits = harness.live_audits(rows, pipe, pipe)
 
-        logit_sets, labels = harness.calibration_set(rows, audits)
+        logit_sets, labels, one_candidate = harness.calibration_set(rows, audits)
 
         self.assertEqual(logit_sets, [[4.0, 0.1], [3.0, 2.9]])
         self.assertEqual(labels, [1.0, 0.0])
+        self.assertEqual(one_candidate, 1)
 
 
 class ReportCalibrationTest(unittest.TestCase):

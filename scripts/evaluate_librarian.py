@@ -327,9 +327,12 @@ def calibration_set(
             continue
         reranked = [c for c in audit.reranked if c.score_rerank is not None]
         # A one-candidate softmax is 1.0 whatever T is, and C.4 never links such
-        # a row, so it carries no signal for fitting T or measuring ECE.
+        # a row, so it carries no signal for fitting T or measuring ECE. An
+        # empty shortlist is a separate case (C.4 reports NO_CANDIDATES), so it
+        # is dropped here too but is not counted as a one-candidate row.
         if len(reranked) < 2:
-            one_candidate += 1
+            if len(reranked) == 1:
+                one_candidate += 1
             continue
         expected = set(row.expected.cre_ids or [])
         logit_sets.append([float(c.score_rerank) for c in reranked])
