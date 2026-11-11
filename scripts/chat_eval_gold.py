@@ -14,7 +14,7 @@ re-scored later without calling the LLM again:
 ``--baseline other.jsonl`` scores a second recording and prints which cases
 flipped, e.g. current single-passage chat vs #1161 top-k.
 
-Live mode costs one LLM call per gold row (24 today). Use NO_LOGIN=1 on a local
+Live mode costs one LLM call per gold row (29 today). Use NO_LOGIN=1 on a local
 server, or an API key in OPENCRE_API_KEY for a deployed one.
 """
 
