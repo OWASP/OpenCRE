@@ -147,6 +147,10 @@ class PipelineTest(unittest.TestCase):
         self.assertIsInstance(env, ReviewItem)
         self.assertEqual(env.reason_code, ReasonCode.below_threshold)
         self.assertEqual(result.stats.linked, 0)
+        # The confidence the envelope records must be the 0.0 the contract names
+        # for a one-candidate shortlist, not softmax's by-construction 1.0.
+        self.assertIsNotNone(env.suggested_links)
+        self.assertEqual(env.suggested_links[0].confidence, 0.0)
 
     def test_single_candidate_reviews_even_at_a_zero_threshold(self):
         # At tau = 0 a confidence of 0.0 would still clear the bar, so the
