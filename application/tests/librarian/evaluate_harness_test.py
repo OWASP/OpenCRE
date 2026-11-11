@@ -125,7 +125,10 @@ class LiveAuditsTest(unittest.TestCase):
             _golden_row("n1", "hard_negative", "beta", []),
         ]
         pipe = CountingPipeline(
-            {"alpha": [("616-305", 4.0)], "beta": [("111-111", 3.0)]}
+            {
+                "alpha": [("616-305", 4.0), ("999-999", 0.1)],
+                "beta": [("111-111", 3.0), ("222-222", 2.9)],
+            }
         )
 
         audits = harness.live_audits(rows, pipe, pipe)
@@ -153,19 +156,20 @@ class CalibrationSetTest(unittest.TestCase):
         ]
         pipe = CountingPipeline(
             {
-                "alpha": [("616-305", 4.0)],
-                "beta": [("111-111", 3.0)],
-                "gamma": [("616-305", 2.0)],
-                "delta": [("616-305", 1.0)],
+                "alpha": [("616-305", 4.0), ("999-999", 0.1)],
+                "beta": [("111-111", 3.0), ("222-222", 2.9)],
+                "gamma": [("616-305", 2.0), ("999-999", 0.1)],
+                "delta": [("616-305", 1.0), ("999-999", 0.1)],
             }
         )
         audits = harness.live_audits(rows, pipe, pipe)
 
-        logit_sets, labels = harness.calibration_set(rows, audits)
+        logit_sets, labels, one_candidate = harness.calibration_set(rows, audits)
 
         # ambiguous/explicit rows are audited but must not enter the fit.
         self.assertEqual(len(logit_sets), 2)
         self.assertEqual(sorted(labels), [0.0, 1.0])
+        self.assertEqual(one_candidate, 0)
 
     def test_skips_rows_with_no_audit_and_empty_shortlists(self) -> None:
         rows = [
@@ -174,14 +178,42 @@ class CalibrationSetTest(unittest.TestCase):
             _golden_row("n1", "hard_negative", "beta", []),
         ]
         pipe = CountingPipeline(
-            {"alpha": [("616-305", 4.0)], "beta": [("111-111", 3.0)]}
+            {
+                "alpha": [("616-305", 4.0), ("999-999", 0.1)],
+                "beta": [("111-111", 3.0), ("222-222", 2.9)],
+            }
         )
         # "empty" yields no candidates; p3 is never audited at all.
         audits = harness.live_audits(rows, pipe, pipe)
 
-        logit_sets, labels = harness.calibration_set(rows, audits)
+        logit_sets, labels, one_candidate = harness.calibration_set(rows, audits)
         self.assertEqual(len(logit_sets), 2)
         self.assertEqual(len(labels), 2)
+        # An empty shortlist is a NO_CANDIDATES case, not a one-candidate row.
+        self.assertEqual(one_candidate, 0)
+
+    def test_skips_single_candidate_shortlists(self) -> None:
+        # A one-candidate softmax is 1.0 whatever T is, and C.4 never links such
+        # a row, so it must not enter the fit or the ECE.
+        rows = [
+            _golden_row("p1", "positive", "alpha", ["616-305"]),
+            _golden_row("p2", "positive", "lone", ["616-305"]),
+            _golden_row("n1", "hard_negative", "beta", []),
+        ]
+        pipe = CountingPipeline(
+            {
+                "alpha": [("616-305", 4.0), ("999-999", 0.1)],
+                "lone": [("616-305", 4.0)],
+                "beta": [("111-111", 3.0), ("222-222", 2.9)],
+            }
+        )
+        audits = harness.live_audits(rows, pipe, pipe)
+
+        logit_sets, labels, one_candidate = harness.calibration_set(rows, audits)
+
+        self.assertEqual(logit_sets, [[4.0, 0.1], [3.0, 2.9]])
+        self.assertEqual(labels, [1.0, 0.0])
+        self.assertEqual(one_candidate, 1)
 
 
 class ReportCalibrationTest(unittest.TestCase):
@@ -215,7 +247,10 @@ class ReportCalibrationTest(unittest.TestCase):
             _golden_row("p2", "positive", "alpha2", ["616-305"]),
         ]
         pipe = CountingPipeline(
-            {"alpha": [("616-305", 5.0)], "alpha2": [("616-305", 4.0)]}
+            {
+                "alpha": [("616-305", 5.0), ("999-999", 0.1)],
+                "alpha2": [("616-305", 4.0), ("999-999", 0.2)],
+            }
         )
         audits = harness.live_audits(rows, pipe, pipe)
 
