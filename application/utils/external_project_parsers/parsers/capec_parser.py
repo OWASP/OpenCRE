@@ -18,13 +18,15 @@ from application.utils.external_project_parsers.base_parser_defs import (
 )
 from application.prompt_client import prompt_client as prompt_client
 
+DEFAULT_HTTP_TIMEOUT: int = 60
+
 
 class Capec(ParserInterface):
     name = "CAPEC"
     capec_xml = "https://capec.mitre.org/data/xml/capec_latest.xml"
 
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
-        xml = requests.get(self.capec_xml)
+        xml = requests.get(self.capec_xml, timeout=DEFAULT_HTTP_TIMEOUT)
         if xml.status_code == 200:
             docs = self.register_capec(xml_contents=xml.text, cache=cache)
             results = {self.name: docs}
