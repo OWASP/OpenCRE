@@ -166,6 +166,13 @@ class McpPublicToolsTest(unittest.TestCase):
         with self.assertRaises(RestRequestError):
             client.call_tool("text_search", {"text": "x", "format": "md"})
 
+    def test_analytics_source_param_rejected(self) -> None:
+        client = self._rest()
+        with self.assertRaises(RestRequestError):
+            client.call_tool("get_cre_by_id", {"creid": "111-111", "source": "wstg"})
+        with self.assertRaises(RestRequestError):
+            client.call_tool("get_cre_by_name", {"crename": "x", "source": "wstg"})
+
     # --- B. OpenAPI source of truth ---
 
     def test_every_catalog_entry_resolves_openapi_operation(self) -> None:
@@ -182,9 +189,12 @@ class McpPublicToolsTest(unittest.TestCase):
         cre_schema = input_schema_for_tool("get_cre_by_id")
         self.assertIn("creid", cre_schema["required"])
         self.assertIn("creid", cre_schema["properties"])
-        self.assertIn("source", cre_schema["properties"])
         self.assertIn("include_only", cre_schema["properties"])
         self.assertNotIn("format", cre_schema["properties"])
+        self.assertNotIn("source", cre_schema["properties"])
+        self.assertNotIn(
+            "source", input_schema_for_tool("get_cre_by_name")["properties"]
+        )
 
         tag_schema = input_schema_for_tool("get_documents_by_tag")
         self.assertIn("tag", tag_schema["required"])
