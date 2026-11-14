@@ -15,6 +15,7 @@ import re
 import urllib.parse
 from typing import Any
 
+from redis.exceptions import RedisError
 from rq import job, exceptions
 from rq import Queue
 
@@ -498,13 +499,12 @@ def map_analysis_weak_links() -> Any:
 def fetch_job() -> Any:
     logger.debug("fetching job results")
     jobid = request.args.get("id")
-    try:
-        conn = redis.connect()
-    except Exception as exc:
-        abort(503, f"Job queue unavailable: {exc}")
+    if not jobid:
+        abort(400, "id parameter is required")
+    conn = redis.connect()
     try:
         res = job.Job.fetch(id=jobid, connection=conn)
-    except exceptions.NoSuchJobError as nje:
+    except exceptions.NoSuchJobError:
         abort(404, "No such job")
 
     logger.debug("job exists")
@@ -726,6 +726,12 @@ def find_root_cres() -> Any:
 @app.errorhandler(404)
 def page_not_found(e) -> Any:
     return "Resource Not found", 404
+
+
+@app.errorhandler(RedisError)
+def job_queue_unavailable(e) -> Any:
+    logger.warning("Job queue unavailable: %s", e)
+    return "Job queue unavailable", 503
 
 
 _REPO_ROOT = os.path.abspath(
