@@ -4,7 +4,7 @@ logger = get_logger(__name__)
 
 import unittest
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from application.defs import cre_defs
 from application.prompt_client import prompt_client
@@ -156,6 +156,138 @@ class TestIncrementalEmbeddings(unittest.TestCase):
         self.assertEqual(fake_db.add_embedding.call_count, 1)
         args = fake_db.add_embedding.call_args[0]
         self.assertEqual(args[0].id, "db-4")
+
+    def test_prompt_handler_cre_metadata_cache(self):
+        """Reuse CRE embeddings until the metadata sent to the provider changes."""
+        for metadata in (
+            {},
+            {"domain": "authentication", "details": {"levels": [1, 2]}},
+        ):
+            with self.subTest(metadata=metadata):
+                fake_db = _FakeDB()
+                cre = cre_defs.CRE(
+                    id="333-333", name="CRE-3", description="desc-3", metadata=metadata
+                )
+                fake_db._cre_by_id = {"db-3": cre}
+
+                def store(db_obj, _doc_type, _emb, text, fake_db=fake_db):
+                    fake_db._emb_by_id[db_obj.id] = SimpleNamespace(
+                        embeddings_content=text
+                    )
+
+                fake_db.add_embedding.side_effect = store
+                ph = prompt_client.PromptHandler.__new__(prompt_client.PromptHandler)
+                ph.database = fake_db
+                ph.ai_client = Mock(spec=["get_max_batch_size", "get_text_embeddings"])
+                ph.ai_client.get_max_batch_size.return_value = 16
+                ph.ai_client.get_text_embeddings.return_value = [[0.1, 0.2]]
+
+                ph.generate_embeddings_for(cre_defs.Credoctypes.CRE.value)
+                text = ph.ai_client.get_text_embeddings.call_args[0][0][0]
+                self.assertEqual(fake_db._emb_by_id["db-3"].embeddings_content, text)
+                if metadata:
+                    self.assertIn(
+                        "metadata:" + prompt_client.stable_json(metadata), text
+                    )
+
+                ph.generate_embeddings_for(cre_defs.Credoctypes.CRE.value)
+                self.assertEqual(ph.ai_client.get_text_embeddings.call_count, 1)
+
+                cre.metadata = {"domain": "cryptography"}
+                ph.generate_embeddings_for(cre_defs.Credoctypes.CRE.value)
+                self.assertEqual(ph.ai_client.get_text_embeddings.call_count, 2)
+                updated_text = ph.ai_client.get_text_embeddings.call_args[0][0][0]
+                self.assertIn('metadata:{"domain":"cryptography"}', updated_text)
+                self.assertEqual(
+                    fake_db._emb_by_id["db-3"].embeddings_content, updated_text
+                )
+                ph.generate_embeddings_for(cre_defs.Credoctypes.CRE.value)
+                self.assertEqual(ph.ai_client.get_text_embeddings.call_count, 2)
+
+    def test_prompt_handler_cre_provider_limit(self):
+        """Cache and provider text stay identical at the 8,000-character limit."""
+        for length in (7999, 8000, 8001, 8200):
+            with self.subTest(length=length):
+                cre = cre_defs.CRE(id="333-333", name="CRE-3", description="")
+                prefix = prompt_client.normalize_embeddings_content(
+                    f"{cre.doctype} name:{cre.name} description: id:{cre.id}"
+                )
+                cre.description = "x" * (length - len(prefix))
+                if length == 8200:
+                    # Put a space at the cutoff to check normalized cache hits.
+                    index = 7999 - len(f"{cre.doctype} name:{cre.name} description:")
+                    cre.description = (
+                        cre.description[:index] + " " + cre.description[index + 1 :]
+                    )
+                fake_db = _FakeDB()
+                fake_db._cre_by_id = {"db-3": cre}
+
+                def store(db_obj, _doc_type, _emb, text, fake_db=fake_db):
+                    fake_db._emb_by_id[db_obj.id] = SimpleNamespace(
+                        embeddings_content=text
+                    )
+
+                fake_db.add_embedding.side_effect = store
+                ph = prompt_client.PromptHandler.__new__(prompt_client.PromptHandler)
+                ph.database = fake_db
+                ph.ai_client = ph
+                ph._litellm = Mock()
+                ph.embed_model = "test-model"
+                ph._llm_max_retries = 0
+                ph._llm_retry_sleep_seconds = 0
+                ph._expected_embed_dim = None
+                with patch.object(
+                    prompt_client.litellm_router,
+                    "embedding",
+                    return_value={"data": [{"embedding": [0.1, 0.2]}]},
+                ) as provider:
+                    ph.generate_embeddings_for(cre_defs.Credoctypes.CRE.value)
+                    stored = fake_db._emb_by_id["db-3"].embeddings_content
+                    expected_length = 7999 if length == 8200 else min(length, 8000)
+                    self.assertEqual(len(stored), expected_length)
+                    self.assertEqual(provider.call_args.kwargs["input"], [stored])
+                    ph.generate_embeddings_for(cre_defs.Credoctypes.CRE.value)
+                    self.assertEqual(provider.call_count, 1)
+
+    def test_prompt_handler_cre_metadata_beyond_provider_limit(self):
+        """Changes outside the provider text do not invalidate a cached vector."""
+        fake_db = _FakeDB()
+        cre = cre_defs.CRE(
+            id="333-333",
+            name="CRE-3",
+            description="x" * 8100,
+            metadata={"value": "before"},
+        )
+        fake_db._cre_by_id = {"db-3": cre}
+
+        def store(db_obj, _doc_type, _emb, text):
+            fake_db._emb_by_id[db_obj.id] = SimpleNamespace(embeddings_content=text)
+
+        fake_db.add_embedding.side_effect = store
+        ph = prompt_client.PromptHandler.__new__(prompt_client.PromptHandler)
+        ph.database = fake_db
+        ph.ai_client = ph
+        ph._litellm = Mock()
+        ph.embed_model = "test-model"
+        ph._llm_max_retries = 0
+        ph._llm_retry_sleep_seconds = 0
+        ph._expected_embed_dim = None
+        with patch.object(
+            prompt_client.litellm_router,
+            "embedding",
+            return_value={"data": [{"embedding": [0.1, 0.2]}]},
+        ) as provider:
+            ph.generate_embeddings_for(cre_defs.Credoctypes.CRE.value)
+            cre.metadata = {"value": "after"}
+            ph.generate_embeddings_for(cre_defs.Credoctypes.CRE.value)
+            self.assertEqual(provider.call_count, 1)
+            self.assertEqual(fake_db.add_embedding.call_count, 1)
+
+            cre.description = "changed" + cre.description
+            ph.generate_embeddings_for(cre_defs.Credoctypes.CRE.value)
+            self.assertEqual(provider.call_count, 2)
+            stored = fake_db._emb_by_id["db-3"].embeddings_content
+            self.assertEqual(provider.call_args.kwargs["input"], [stored])
 
     def test_generate_embeddings_url_without_remote_text_uses_stored_fields(self):
         """If ``get_content`` returns nothing, embed from DB-backed node fields (no skip)."""
