@@ -165,7 +165,8 @@ export const GapAnalysis = () => {
       if (!gaJob) return;
       fetchData().catch((e) => {
         setLoadingGA(false);
-        setError(e.response.data.message ?? e.message);
+        setError(e.response?.data?.message ?? e.message);
+        setgaJob('');
       });
     };
 
