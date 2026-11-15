@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from application.mcp import auth, catalog, token_store
+from application.mcp import auth, catalog, cli, token_store
 from application.mcp.openapi_loader import input_schemas_for
 from application.mcp.rest_client import (
     RestClient,
@@ -191,12 +191,43 @@ class McpAuthToolsTest(unittest.TestCase):
         self.assertIsInstance(claims, dict)
 
     def test_token_file_is_created_mode_0600(self) -> None:
+        if os.name == "nt":
+            self.skipTest("POSIX file modes do not apply on Windows")
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "tokens.json"
             with patch.dict(os.environ, {"OPENCRE_MCP_TOKEN_FILE": str(path)}):
                 token_store.save("refresh-secret")
             mode = path.stat().st_mode & 0o777
             self.assertEqual(mode, 0o600)
+
+    def test_token_file_save_on_windows_skips_fchmod(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "tokens.json"
+            with patch.dict(os.environ, {"OPENCRE_MCP_TOKEN_FILE": str(path)}):
+                with patch.object(token_store.sys, "platform", "win32"):
+                    with patch.object(
+                        token_store.os, "fchmod", side_effect=AssertionError, create=True
+                    ):
+                        token_store.save("refresh-secret")
+                self.assertEqual(token_store.load(), "refresh-secret")
+
+    def test_token_file_save_fails_closed_on_posix_chmod_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "tokens.json"
+            with patch.dict(os.environ, {"OPENCRE_MCP_TOKEN_FILE": str(path)}):
+                with patch.object(token_store.sys, "platform", "linux"):
+                    with patch.object(
+                        token_store.os, "fchmod", side_effect=OSError("denied"), create=True
+                    ):
+                        with self.assertRaisesRegex(OSError, "cannot set confidential mode"):
+                            token_store.save("refresh-secret")
+            self.assertEqual(path.read_text(), "")
+
+    def test_login_reports_token_file_error_without_traceback(self) -> None:
+        with patch.object(auth, "login", side_effect=OSError("cannot store token")):
+            with patch.object(cli, "_say") as say:
+                self.assertEqual(cli._login(), 1)
+        say.assert_called_once_with("Login failed: cannot store token")
 
 
 if __name__ == "__main__":

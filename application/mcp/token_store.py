@@ -13,6 +13,7 @@ logger = get_logger(__name__)
 import json
 import os
 import pathlib
+import sys
 import time
 from typing import Any, Optional
 
@@ -58,8 +59,8 @@ def save(refresh_token: str) -> None:
     path = token_file()
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = json.dumps({"refresh_token": refresh_token, "saved_at": time.time()})
-    # Create/truncate with mode 0600 up front — never write under a looser umask
-    # and chmod afterwards. Fail closed if confidentiality cannot be guaranteed.
+    # Create/truncate with mode 0600 up front on POSIX. Windows protects files
+    # with ACLs and does not provide fchmod on supported Python versions.
     try:
         fd = os.open(
             path,
@@ -68,11 +69,12 @@ def save(refresh_token: str) -> None:
         )
     except OSError as exc:
         raise OSError(f"cannot create confidential token file {path}") from exc
-    try:
-        os.fchmod(fd, 0o600)
-    except (AttributeError, OSError) as exc:
-        os.close(fd)
-        raise OSError(f"cannot set confidential mode on token file {path}") from exc
+    if sys.platform != "win32":
+        try:
+            os.fchmod(fd, 0o600)
+        except (AttributeError, OSError) as exc:
+            os.close(fd)
+            raise OSError(f"cannot set confidential mode on token file {path}") from exc
     with os.fdopen(fd, "w") as handle:
         handle.write(payload)
 
