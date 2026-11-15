@@ -43,6 +43,18 @@ class NotAuthenticated(AuthError):
     """No usable credential. The caller should run the login command."""
 
 
+def _post_google(url: str, data: Dict[str, str], operation: str) -> requests.Response:
+    """Turn transport failures into safe, human-readable authentication errors."""
+    try:
+        return requests.post(url, data=data, timeout=REQUEST_TIMEOUT_SECONDS)
+    except requests.Timeout as exc:
+        raise AuthError(
+            f"{operation} timed out after {REQUEST_TIMEOUT_SECONDS:g}s"
+        ) from exc
+    except requests.RequestException as exc:
+        raise AuthError(f"{operation} could not reach Google") from exc
+
+
 def _client_credentials() -> Tuple[str, str]:
     """Read client config lazily so importing this module never fails."""
     client_id = os.environ.get("GOOGLE_MCP_CLIENT_ID")
@@ -72,15 +84,15 @@ def _is_fresh(id_token: str) -> bool:
 def _refresh(refresh_token: str) -> Optional[Dict[str, Any]]:
     """Trade a refresh token for fresh tokens. None if it is no longer valid."""
     client_id, client_secret = _client_credentials()
-    response = requests.post(
+    response = _post_google(
         TOKEN_URL,
-        data={
+        {
             "client_id": client_id,
             "client_secret": client_secret,
             "refresh_token": refresh_token,
             "grant_type": "refresh_token",
         },
-        timeout=REQUEST_TIMEOUT_SECONDS,
+        "token refresh",
     )
     if response.status_code == 200:
         return response.json()
@@ -93,10 +105,10 @@ def login(on_code: Callable[[str, str], None]) -> Dict[str, Any]:
     prompt before polling begins. Returns the id_token claims on success."""
     client_id, client_secret = _client_credentials()
 
-    response = requests.post(
+    response = _post_google(
         DEVICE_CODE_URL,
-        data={"client_id": client_id, "scope": SCOPES},
-        timeout=REQUEST_TIMEOUT_SECONDS,
+        {"client_id": client_id, "scope": SCOPES},
+        "device authorization",
     )
     if response.status_code != 200:
         raise AuthError(f"device/code failed [{response.status_code}]: {response.text}")
@@ -110,15 +122,15 @@ def login(on_code: Callable[[str, str], None]) -> Dict[str, Any]:
     deadline = time.time() + device["expires_in"]
     while time.time() < deadline:
         time.sleep(interval)
-        polled = requests.post(
+        polled = _post_google(
             TOKEN_URL,
-            data={
+            {
                 "client_id": client_id,
                 "client_secret": client_secret,
                 "device_code": device["device_code"],
                 "grant_type": DEVICE_GRANT,
             },
-            timeout=REQUEST_TIMEOUT_SECONDS,
+            "device authorization polling",
         )
         try:
             body = polled.json()
