@@ -79,11 +79,27 @@ class GitRepositoryClient(RepositoryClient):
             if not self.is_valid_repository(temp_path):
                 raise RuntimeError("Temporary clone failed integrity verification")
 
-            if self.local_path.exists():
-                shutil.rmtree(temp_path)
-                return
+            if self.local_path.exists() or self.local_path.is_symlink():
+                if self.is_valid_repository(self.local_path):
+                    return
 
-            os.replace(temp_path, self.local_path)
+                # Keep the invalid cache for inspection instead of deleting it.
+                backup_path = Path(
+                    tempfile.mkdtemp(
+                        prefix=f"{self.local_path.name}-invalid-",
+                        dir=self.local_path.parent,
+                    )
+                )
+                backup_path.rmdir()
+                os.replace(self.local_path, backup_path)
+                try:
+                    os.replace(temp_path, self.local_path)
+                except Exception:
+                    os.replace(backup_path, self.local_path)
+                    raise
+                logger.warning("Preserved invalid repository cache at %s", backup_path)
+            else:
+                os.replace(temp_path, self.local_path)
 
         except subprocess.CalledProcessError as exc:
             logger.error(

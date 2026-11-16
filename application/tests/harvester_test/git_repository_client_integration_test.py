@@ -7,6 +7,8 @@ import tempfile
 import unittest
 from pathlib import Path
 import threading
+import os
+from unittest.mock import patch
 
 from application.utils.harvester.git_repository_client import (
     GitRepositoryClient,
@@ -146,6 +148,47 @@ class GitRepositoryClientIntegrationTests(unittest.TestCase):
         self.assertFalse(
             client.verify_repository_integrity(),
         )
+
+    def test_sync_replaces_invalid_cache_without_discarding_it(self):
+        self.cache.mkdir()
+        (self.cache / "incomplete-clone.txt").write_text("keep for inspection")
+        client = self.create_client()
+
+        client.sync()
+
+        self.assertTrue(client.verify_repository_integrity())
+        self.assertEqual((self.cache / "test.txt").read_text(), "v1")
+        backups = list(self.root.glob("cache-invalid-*"))
+        self.assertEqual(len(backups), 1)
+        self.assertEqual(
+            (backups[0] / "incomplete-clone.txt").read_text(),
+            "keep for inspection",
+        )
+
+    def test_sync_restores_invalid_cache_if_clone_install_fails(self):
+        self.cache.mkdir()
+        marker = self.cache / "incomplete-clone.txt"
+        marker.write_text("keep for inspection")
+        client = self.create_client()
+        real_replace = os.replace
+        replace_count = 0
+
+        def fail_install(source, destination):
+            nonlocal replace_count
+            replace_count += 1
+            if replace_count == 2:
+                raise OSError("staged clone install failed")
+            return real_replace(source, destination)
+
+        with patch(
+            "application.utils.harvester.git_repository_client.os.replace",
+            side_effect=fail_install,
+        ):
+            with self.assertRaisesRegex(OSError, "staged clone install failed"):
+                client.sync()
+
+        self.assertEqual(marker.read_text(), "keep for inspection")
+        self.assertEqual(list(self.root.glob("cache-invalid-*")), [])
 
     def test_verify_repository_integrity_rejects_wrong_origin(self):
         other_remote = self.root / "other.git"
