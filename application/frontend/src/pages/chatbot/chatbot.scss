@@ -115,6 +115,7 @@ h1.ui.header.chatbot-title {
    ========================= */
 
 .message-card {
+  min-width: 120px;
   max-width: 65%;
   background: #ffffff;
   border-radius: 16px;
@@ -163,6 +164,8 @@ h1.ui.header.chatbot-title {
 .message-header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
   font-size: 0.7rem;
   margin-bottom: 0.4rem;
   color: #666;
