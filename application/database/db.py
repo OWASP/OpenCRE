@@ -2735,6 +2735,8 @@ class Node_collection:
                all entries of <name> and optionally, section/subsection
            '\d\d\d-\d\d\d' (two sets of 3 digits) will first try to match
                 CRE ids before it performs a free text search
+           '<name> <sectionID>', e.g. 'CWE-79', 'CWE 79' or 'ASVS V2.1.1', will
+                search for that section of the node called <name>
            Anything else will be a case insensitive LIKE query in the database
         """
         search_terms = self._expand_text_search_aliases(text)
@@ -2745,6 +2747,10 @@ class Node_collection:
         cre_id_search = r"CRE(:| )(?P<id>\d+-\d+)"
         cre_naked_id_search = r"\d\d\d-\d\d\d"
         cre_name_search = r"CRE(:| )(?P<name>\w+)"
+        name_section_id_search = (
+            r"(?P<name>[A-Za-z][\w.()&+/]*(?: [A-Za-z][\w.()&+/]*)*?)"
+            r"(?: *[:-] *| +)(?P<id>[A-Za-z]{0,3}\d[\w.-]*)"
+        )
         types = "|".join([v.value for v in cre_defs.Credoctypes])
         node_search = (
             r"(Node|(?P<ntype>"
@@ -2791,6 +2797,18 @@ class Node_collection:
                     results.extend(nodes)
             if results:
                 return list(set(results))
+        # "<name> <sectionID>", the way people write e.g. "CWE-79" or "ASVS V2.1.1".
+        # The length check keeps the pattern cheap on long free text.
+        if len(text) <= 100:
+            match = re.fullmatch(name_section_id_search, text)
+            if match:
+                nodes = self.get_nodes(
+                    name=match.group("name"),
+                    sectionID=match.group("id"),
+                    ntype=None,  # type: ignore
+                )
+                if nodes:
+                    return nodes
         # fuzzy matches second
         results = {}
         for search_term in search_terms:
