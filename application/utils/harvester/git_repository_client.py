@@ -95,7 +95,15 @@ class GitRepositoryClient(RepositoryClient):
                 try:
                     os.replace(temp_path, self.local_path)
                 except Exception:
-                    os.replace(backup_path, self.local_path)
+                    try:
+                        os.replace(backup_path, self.local_path)
+                    except Exception:
+                        logger.exception(
+                            "Could not restore repository cache; move %s to %s "
+                            "after resolving the filesystem error",
+                            backup_path,
+                            self.local_path,
+                        )
                     raise
                 logger.warning("Preserved invalid repository cache at %s", backup_path)
             else:

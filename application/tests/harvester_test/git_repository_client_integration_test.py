@@ -190,6 +190,36 @@ class GitRepositoryClientIntegrationTests(unittest.TestCase):
         self.assertEqual(marker.read_text(), "keep for inspection")
         self.assertEqual(list(self.root.glob("cache-invalid-*")), [])
 
+    def test_sync_preserves_install_error_if_restore_also_fails(self):
+        self.cache.mkdir()
+        (self.cache / "incomplete-clone.txt").write_text("keep for inspection")
+        client = self.create_client()
+        real_replace = os.replace
+        replace_count = 0
+
+        def fail_install_and_restore(source, destination):
+            nonlocal replace_count
+            replace_count += 1
+            if replace_count == 2:
+                raise OSError("staged clone install failed")
+            if replace_count == 3:
+                raise OSError("cache restoration failed")
+            return real_replace(source, destination)
+
+        with patch(
+            "application.utils.harvester.git_repository_client.os.replace",
+            side_effect=fail_install_and_restore,
+        ):
+            with self.assertRaisesRegex(OSError, "staged clone install failed"):
+                client.sync()
+
+        backups = list(self.root.glob("cache-invalid-*"))
+        self.assertEqual(len(backups), 1)
+        self.assertEqual(
+            (backups[0] / "incomplete-clone.txt").read_text(),
+            "keep for inspection",
+        )
+
     def test_verify_repository_integrity_rejects_wrong_origin(self):
         other_remote = self.root / "other.git"
 
