@@ -170,7 +170,7 @@ class TestIncrementalEmbeddings(unittest.TestCase):
                 )
                 fake_db._cre_by_id = {"db-3": cre}
 
-                def store(db_obj, _doc_type, _emb, text):
+                def store(db_obj, _doc_type, _emb, text, fake_db=fake_db):
                     fake_db._emb_by_id[db_obj.id] = SimpleNamespace(
                         embeddings_content=text
                     )
@@ -222,7 +222,7 @@ class TestIncrementalEmbeddings(unittest.TestCase):
                 fake_db = _FakeDB()
                 fake_db._cre_by_id = {"db-3": cre}
 
-                def store(db_obj, _doc_type, _emb, text):
+                def store(db_obj, _doc_type, _emb, text, fake_db=fake_db):
                     fake_db._emb_by_id[db_obj.id] = SimpleNamespace(
                         embeddings_content=text
                     )
