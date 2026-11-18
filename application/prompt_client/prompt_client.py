@@ -885,6 +885,7 @@ class PromptHandler:
         return _extract_content_text(resp)
 
     def generate_embeddings_for(self, item_name: str):
+        """Generate missing or changed embeddings using provider-ready CRE text."""
         # CRE fields and metadata do not need remote content, so skip
         # Playwright and batch embedding requests to avoid provider rate limits.
         if item_name == cre_defs.Credoctypes.CRE.value:
@@ -902,7 +903,9 @@ class PromptHandler:
                 if getattr(cre, "metadata", None):
                     metadata_json = stable_json(getattr(cre, "metadata", None))
                     embedding_text = f"{embedding_text}\nmetadata:{metadata_json}"
-                embedding_text = normalize_embeddings_content(embedding_text)
+                embedding_text = self._truncate_one(
+                    normalize_embeddings_content(embedding_text)
+                ).rstrip()
                 existing = self.database.get_embedding(cid)
                 if (
                     existing

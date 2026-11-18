@@ -77,6 +77,7 @@ class TestDB(unittest.TestCase):
         self.collection = collection
 
     def test_add_cre_preserves_metadata(self) -> None:
+        """Round-trip nested metadata when adding a new CRE."""
         metadata = {"domain": "authentication", "details": {"levels": [1, 2]}}
         row = self.collection.add_cre(
             defs.CRE(id="123-456", name="Metadata round trip", metadata=metadata)
@@ -87,12 +88,14 @@ class TestDB(unittest.TestCase):
         self.assertEqual(self.collection.get_cre_by_db_id(row.id).metadata, metadata)
 
     def test_add_cre_without_metadata(self) -> None:
+        """Persist an empty metadata object when none is supplied."""
         row = self.collection.add_cre(defs.CRE(id="123-457", name="No metadata"))
         self.collection.session.expire_all()
 
         self.assertEqual(self.collection.get_cre_by_db_id(row.id).metadata, {})
 
     def test_add_cre_keeps_existing_metadata(self) -> None:
+        """Keep stored metadata unchanged when an existing CRE is added again."""
         row = self.collection.add_cre(defs.CRE(id="123-458", name="Existing metadata"))
         row.metadata_json = {"source": "original"}
         self.collection.session.commit()
