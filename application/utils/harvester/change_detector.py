@@ -2,6 +2,7 @@ from cre_logging import get_logger
 
 logger = get_logger(__name__)
 
+import os
 import subprocess
 
 from .git_repository_client import GitRepositoryClient
@@ -33,6 +34,27 @@ class ChangeDetector:
             raise
 
         return result.stdout.strip()
+
+    def get_tracked_files(self, commit_sha: str) -> list[str]:
+        """List the tracked paths at a verified commit for an initial harvest."""
+        commit = self._resolve_commit(commit_sha)
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(self.repository_client.get_local_path()),
+                "ls-tree",
+                "-r",
+                "--name-only",
+                "-z",
+                commit,
+            ],
+            capture_output=True,
+            check=True,
+            timeout=60,
+        )
+        # NUL-delimited bytes preserve quoted/non-ASCII paths and line breaks.
+        return sorted(os.fsdecode(path) for path in result.stdout.split(b"\0") if path)
 
     def get_modified_files_since(
         self, base_commit: str, target_commit: str

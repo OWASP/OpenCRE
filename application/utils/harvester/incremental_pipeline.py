@@ -54,7 +54,9 @@ class IncrementalPipeline:
         documents: list[Document],
         *,
         last_processed_commit: str | None = None,
+        persist_checkpoint: bool = True,
     ) -> list[Document]:
+        """Emit validated changes; defer progress when a caller owns persistence."""
         emitted: list[Document] = []
         metrics = DeduplicationMetrics()
 
@@ -80,7 +82,7 @@ class IncrementalPipeline:
         commit_sha = last_processed_commit
         if commit_sha is None and documents:
             commit_sha = documents[-1].source.commit_sha
-        if commit_sha:
+        if commit_sha and persist_checkpoint:
             self._persist_checkpoint(pipeline_run_id, commit_sha)
 
         self.metrics = metrics
