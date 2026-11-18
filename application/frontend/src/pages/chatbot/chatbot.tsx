@@ -12,8 +12,8 @@ import { useEnvironment } from '../../hooks';
 import { Document } from '../../types';
 
 /** Render chatbot markdown safely for dangerouslySetInnerHTML. */
-export function renderChatMarkdown(markdown: string): string {
-  const parsed = marked.parse(markdown, { async: false });
+export function renderChatMarkdown(markdown: string, options?: { breaks?: boolean }): string {
+  const parsed = marked.parse(markdown, { async: false, breaks: options?.breaks ?? false });
   return DOMPurify.sanitize(String(parsed), { USE_PROFILES: { html: true } });
 }
 
@@ -45,8 +45,34 @@ export const Chatbot = () => {
   function growTextarea() {
     const el = textareaRef.current;
     if (!el) return;
+    const container = messagesContainerRef.current;
+    const wasNearBottom = container
+      ? container.scrollHeight - container.scrollTop - container.clientHeight < 64
+      : false;
+
     el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+    const newHeight = Math.min(el.scrollHeight, 200);
+    el.style.height = `${newHeight}px`;
+
+    const inputContainer = el.closest('.chat-input') as HTMLElement | null;
+    if (inputContainer) {
+      const surface = inputContainer.closest('.chat-surface') as HTMLElement | null;
+      if (surface) {
+        surface.style.setProperty('--composer-height', `${inputContainer.offsetHeight}px`);
+      }
+    }
+
+    if (container) {
+      if (wasNearBottom) {
+        container.scrollTop = container.scrollHeight;
+        setShowScrollToBottom(false);
+      } else {
+        const threshold = 64;
+        const isNearBottom =
+          container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+        setShowScrollToBottom(!isNearBottom);
+      }
+    }
   }
 
   function getModelDisplayName(modelName: string): string {
@@ -107,7 +133,6 @@ export const Chatbot = () => {
       .catch((error) => {
         console.error('Error checking if user is logged in:', error);
         setError(error instanceof Error ? error.message : 'Network error checking login status');
-        setLoading(false);
       });
   }
 
@@ -117,7 +142,7 @@ export const Chatbot = () => {
     }
   }, []);
 
-  function processResponse(response: string) {
+  function processResponse(response: string, isUser = false) {
     const responses = response.split('```');
     const res: React.ReactElement[] = [];
 
@@ -127,7 +152,7 @@ export const Chatbot = () => {
           <p
             key={i}
             dangerouslySetInnerHTML={{
-              __html: renderChatMarkdown(txt),
+              __html: renderChatMarkdown(txt, { breaks: isUser }),
             }}
           />
         );
@@ -144,7 +169,7 @@ export const Chatbot = () => {
   }
 
   async function onSubmit() {
-    if (!chat.term.trim()) return;
+    if (loading || !chat.term.trim()) return;
     shouldForceScrollRef.current = true;
 
     const currentTerm = chat.term;
@@ -152,6 +177,13 @@ export const Chatbot = () => {
     setLoading(true);
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
+      const inputContainer = textareaRef.current.closest('.chat-input') as HTMLElement | null;
+      if (inputContainer) {
+        const surface = inputContainer.closest('.chat-surface') as HTMLElement | null;
+        if (surface) {
+          surface.style.setProperty('--composer-height', `${inputContainer.offsetHeight}px`);
+        }
+      }
       textareaRef.current.focus();
     }
 
@@ -203,13 +235,11 @@ export const Chatbot = () => {
             accurate: data.accurate,
           },
         ]);
-        textareaRef.current?.focus();
       })
       .catch((error) => {
         console.error('Error fetching answer:', error);
         setError(error instanceof Error ? error.message : 'An unexpected network error occurred');
         setLoading(false);
-        textareaRef.current?.focus();
       });
   }
 
@@ -267,7 +297,7 @@ export const Chatbot = () => {
                           <span className="message-timestamp">{m.timestamp}</span>
                         </div>
 
-                        <div className="message-body">{processResponse(m.message)}</div>
+                        <div className="message-body">{processResponse(m.message, m.role === 'user')}</div>
 
                         {m.data && m.data.length > 0 && (
                           <div className="references">
@@ -326,9 +356,14 @@ export const Chatbot = () => {
                       growTextarea();
                     }}
                     onKeyDown={(e) => {
+                      if (e.nativeEvent.isComposing || e.keyCode === 229) {
+                        return;
+                      }
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
-                        onSubmit();
+                        if (!loading) {
+                          onSubmit();
+                        }
                       }
                     }}
                   />
