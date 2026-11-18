@@ -885,14 +885,13 @@ class PromptHandler:
         return _extract_content_text(resp)
 
     def generate_embeddings_for(self, item_name: str):
-        # CRE embeddings are generated from the CRE's textual fields only
-        # (name/description/id). That path does not require fetching remote
-        # content via Playwright, so we can skip browser launch entirely and
-        # batch requests to avoid provider rate limits.
+        # CRE fields and metadata do not need remote content, so skip
+        # Playwright and batch embedding requests to avoid provider rate limits.
         if item_name == cre_defs.Credoctypes.CRE.value:
             # list_cre_ids() returns plain CRE database ids (strings).
             cre_ids = self.database.list_cre_ids()
             pending: List[str] = []
+            content_by_id: Dict[str, str] = {}
             cre_by_id: Dict[str, cre_defs.CRE] = {}
 
             for cid in cre_ids:
@@ -914,6 +913,7 @@ class PromptHandler:
                 ):
                     continue
                 pending.append(cid)
+                content_by_id[cid] = embedding_text
                 cre_by_id[cid] = cre
 
             if not pending:
@@ -928,13 +928,7 @@ class PromptHandler:
             for i in range(0, len(pending), batch_size):
                 batch_ids = pending[i : i + batch_size]
 
-                contents: List[str] = []
-                for cid in batch_ids:
-                    cre = cre_by_id[cid]
-                    contents.append(
-                        f"{cre.doctype}\n name:{cre.name}\n description:{cre.description}\n id:{cre.id}\n "
-                    )
-                contents = [normalize_embeddings_content(c) for c in contents]
+                contents = [content_by_id[cid] for cid in batch_ids]
 
                 embeddings = self.ai_client.get_text_embeddings(contents)  # type: ignore[arg-type]
                 if not embeddings:

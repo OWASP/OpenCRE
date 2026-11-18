@@ -2412,6 +2412,7 @@ class Node_collection:
                 name=cre.name,
                 external_id=cre.id,
                 tags=",".join([str(t) for t in cre.tags]),
+                metadata_json=cre.metadata or {},
             )
             self.session.add(entry)
             self.session.commit()
