@@ -5,7 +5,7 @@ import { marked } from 'marked';
 import React, { useEffect, useRef, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Button, Container, Form, GridRow, Header, Icon } from 'semantic-ui-react';
+import { Container, Header, Icon } from 'semantic-ui-react';
 import { Grid } from 'semantic-ui-react';
 
 import { useEnvironment } from '../../hooks';
@@ -40,6 +40,14 @@ export const Chatbot = () => {
   const [chat, setChat] = useState<ChatState>(DEFAULT_CHAT_STATE);
   const [user, setUser] = useState('');
   const [modelName, setModelName] = useState<string>('');
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  function growTextarea() {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+  }
 
   function getModelDisplayName(modelName: string): string {
     if (!modelName) {
@@ -142,6 +150,10 @@ export const Chatbot = () => {
     const currentTerm = chat.term;
     setChat({ ...chat, term: '' });
     setLoading(true);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.focus();
+    }
 
     setChatMessages((prev) => [
       ...prev,
@@ -191,11 +203,13 @@ export const Chatbot = () => {
             accurate: data.accurate,
           },
         ]);
+        textareaRef.current?.focus();
       })
       .catch((error) => {
         console.error('Error fetching answer:', error);
         setError(error instanceof Error ? error.message : 'An unexpected network error occurred');
         setLoading(false);
+        textareaRef.current?.focus();
       });
   }
 
@@ -300,17 +314,43 @@ export const Chatbot = () => {
                     <Icon name="arrow down" className="scroll-icon" />
                   </button>
                 )}
-                <Form className="chat-input" size="large" onSubmit={onSubmit}>
-                  <Form.Input
-                    fluid
+                <div className="chat-input">
+                  <textarea
+                    ref={textareaRef}
+                    className="chat-textarea"
+                    rows={1}
                     value={chat.term}
-                    onChange={(e) => setChat({ ...chat, term: e.target.value })}
-                    placeholder="Type your infosec question here…"
+                    placeholder="Ask anything about infosec standards…"
+                    onChange={(e) => {
+                      setChat({ ...chat, term: e.target.value });
+                      growTextarea();
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        onSubmit();
+                      }
+                    }}
                   />
-                  <Button primary fluid size="small">
-                    <Icon name="send" /> Ask
-                  </Button>
-                </Form>
+                  <button
+                    className="chat-send-btn"
+                    onClick={onSubmit}
+                    disabled={loading || !chat.term.trim()}
+                    aria-label="Send message"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <line x1="22" y1="2" x2="11" y2="13" />
+                      <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
 

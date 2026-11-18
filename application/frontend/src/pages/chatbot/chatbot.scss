@@ -5,7 +5,7 @@
 .chat-container {
   margin: 3rem auto;
   margin-top: 1.5rem;
-  max-width: 960px;
+  max-width: 700px;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -13,6 +13,8 @@
 
 .chat-container.chat-active {
   height: calc(100vh - 179px);
+  max-width: 900px;
+  border-radius:18px;
   overflow: hidden;
 }
 
@@ -178,7 +180,7 @@ h1.ui.header.chatbot-title {
 }
 
 .message-body {
-  font-size: 0.95rem;
+  font-size: 0.98rem;
   text-align: left;
 
   /* NEW: prevent horizontal overflow */
@@ -259,28 +261,113 @@ h1.ui.header.chatbot-title {
   color: #b71c1c;
 }
 
-/* =========================
-   Chat input
-   ========================= */
+/* ===========
+   Chat input 
+   ===========*/
 
 .chat-input {
   position: sticky;
   bottom: 0;
   z-index: 5;
-
   margin-top: 1rem;
-  background-color: #daebdb;
-/* background: transparent; */
-  border: 1px solid rgb(190, 214, 232);
-  padding: 0.75rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  padding: 0.55rem 0.55rem 0.55rem 1rem;
+  box-shadow: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:focus-within {
+    border-color: rgba(0, 0, 0, 0.15);
+  }
 }
 
-.chat-input .ui.input input {
-  height: 40px;
-  line-height: 40px;
-  border-radius: 10px !important;
+.chat-container.chat-active .chat-input {
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.02),
+    0 8px 24px rgba(0, 0, 0, 0.06);
+
+  &:focus-within {
+    border-color: rgba(0, 0, 0, 0.16);
+    box-shadow:
+      0 2px 6px rgba(0, 0, 0, 0.03),
+      0 12px 28px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.chat-textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: inherit;
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: #111;
+  min-height: 28px;
+  max-height: 200px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding: 2px 0;
+
+  &::placeholder {
+    color: #9ca3af;
+    transition: color 0.2s ease;
+  }
+
+  &:focus::placeholder {
+    color: #6b7280;
+  }
+}
+
+.chat-send-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  background: #2185d0;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s ease, transform 0.12s ease;
+
+  svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  &:hover:not(:disabled) {
+    background: #1a6fad;
+    transform: translateY(-1px);
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible:not(:disabled) {
+    outline: 2px solid rgba(33, 133, 208, 0.4);
+    outline-offset: 2px;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    background: #2185d0;
+    color: #fff;
+    cursor: not-allowed;
+  }
 }
 
 /* =========================
@@ -398,15 +485,11 @@ h1.ui.header.chatbot-title {
   display: flex;
   flex-direction: column;
   height: 100%;
-
- background: #fcfcfa; /* same palette as input */
+  background: #fcfcfa; /* same palette as input */
   backdrop-filter: blur(6px);
-
   border-radius: 18px;
   border: 1px solid rgba(0, 0, 0, 0.05);
-
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.4);
-
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.4);
   padding: 1.25rem;
 }
 
