@@ -43,7 +43,7 @@ export function parseChatbotErrorMessage(status: number, statusText: string, tex
 
   let errorMessage = parsedMessage;
   if (status === 401 && (!errorMessage || errorMessage.includes('None'))) {
-    errorMessage = 'Your session has expired. Reload the page to sign in again.';
+    errorMessage = 'Authentication required. Please log in to access this functionality.';
   }
   return errorMessage || statusText || `Error ${status}`;
 }
