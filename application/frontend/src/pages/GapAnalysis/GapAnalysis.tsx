@@ -195,7 +195,9 @@ export const GapAnalysis = () => {
   useEffect(() => {
     const fetchData = async () => {
       const result = await axios.get(
-        `${apiUrl}/map_analysis?standard=${BaseStandard}&standard=${CompareStandard}`
+        `${apiUrl}/map_analysis?standard=${encodeURIComponent(
+          BaseStandard || ''
+        )}&standard=${encodeURIComponent(CompareStandard || '')}`
       );
       if (result.data.result) {
         setLoadingGA(false);
@@ -218,7 +220,9 @@ export const GapAnalysis = () => {
     async (key) => {
       if (!gapAnalysis) return;
       const result = await axios.get(
-        `${apiUrl}/map_analysis_weak_links?standard=${BaseStandard}&standard=${CompareStandard}&key=${key}`
+        `${apiUrl}/map_analysis_weak_links?standard=${encodeURIComponent(
+          BaseStandard || ''
+        )}&standard=${encodeURIComponent(CompareStandard || '')}&key=${encodeURIComponent(key)}`
       );
       if (result.data.result) {
         setGapAnalysis((prev) => {
