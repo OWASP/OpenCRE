@@ -1067,6 +1067,15 @@ def run(args: argparse.Namespace) -> None:  # pragma: no cover
         from application.utils.external_project_parsers.parsers import dsomm
 
         BaseParser().register_resource(dsomm.DSOMM, db_connection_str=args.cache_file)
+    if getattr(args, "agent_evidence_vocabulary_in", False):
+        from application.utils.external_project_parsers.parsers import (
+            agent_evidence_vocabulary,
+        )
+
+        BaseParser().register_resource(
+            agent_evidence_vocabulary.AgentEvidenceVocabulary,
+            db_connection_str=args.cache_file,
+        )
     if args.cloud_native_security_controls_in:
         from application.utils.external_project_parsers.parsers import (
             cloud_native_security_controls,
