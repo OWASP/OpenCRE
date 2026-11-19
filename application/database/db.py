@@ -2382,6 +2382,7 @@ class Node_collection:
         return res
 
     def add_cre(self, cre: cre_defs.CRE) -> CRE:
+        """Add a CRE with metadata, or fill missing fields on an existing CRE."""
         entry: CRE = None
         query = self.session.query(CRE).filter(func.lower(CRE.name) == cre.name.lower())
         if cre.id:
@@ -2412,6 +2413,7 @@ class Node_collection:
                 name=cre.name,
                 external_id=cre.id,
                 tags=",".join([str(t) for t in cre.tags]),
+                metadata_json=cre.metadata or {},
             )
             self.session.add(entry)
             self.session.commit()
