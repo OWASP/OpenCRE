@@ -44,6 +44,10 @@ class TestCapecParser(unittest.TestCase):
             cache=self.collection,
             ph=prompt_client.PromptHandler(database=self.collection),
         )
+        mock_requests.assert_called_once_with(
+            capec_parser.Capec.capec_xml,
+            timeout=capec_parser.DEFAULT_HTTP_TIMEOUT,
+        )
         expected = [
             defs.Standard(
                 name="CAPEC",

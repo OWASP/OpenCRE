@@ -17,6 +17,8 @@ from application.utils.external_project_parsers.base_parser_defs import (
 )
 import requests
 
+DEFAULT_HTTP_TIMEOUT: int = 60
+
 
 class JuiceShop(ParserInterface):
     name = "OWASP Juice Shop"
@@ -33,7 +35,7 @@ class JuiceShop(ParserInterface):
             raise ValueError(
                 "Juiceshop importer parse method called with Null prompt handler(ph) argument"
             )
-        resp = requests.get(self.url)
+        resp = requests.get(self.url, timeout=DEFAULT_HTTP_TIMEOUT)
 
         if resp.status_code != 200:
             err_str = (
