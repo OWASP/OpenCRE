@@ -298,7 +298,7 @@ def report_retrieval_recall(
 def calibration_set(
     rows: List[GoldenDatasetRow],
     audits: Dict[str, Any],
-) -> Tuple[List[List[float]], List[float]]:
+) -> Tuple[List[List[float]], List[float], int]:
     """The (shortlist, is-top1-correct) pairs temperature is fit on.
 
     Drawn from the positive + hard_negative slices: each row contributes its
@@ -309,9 +309,16 @@ def calibration_set(
     Split out so the C.3 gate and the C.4 decision report derive the calibration
     set exactly once from the same shared audits, rather than each rebuilding it
     and fitting its own ``T`` off a separate rerank pass.
+
+    Returns ``(logit_sets, labels, one_candidate_rows)``; the count is the number
+    of rows the retriever+reranker returned a fewer-than-two shortlist for, which
+    the calibration set drops because their softmax is 1.0 whatever ``T`` is and
+    C.4 never links such a row. The number is reported so a live run can tell
+    whether the lone-candidate case shows up on the benchmark at all.
     """
     logit_sets: List[List[float]] = []
     labels: List[float] = []
+    one_candidate = 0
     for row in rows:
         if row.slice.value not in ("positive", "hard_negative"):
             continue
@@ -319,12 +326,18 @@ def calibration_set(
         if audit is None:
             continue
         reranked = [c for c in audit.reranked if c.score_rerank is not None]
-        if not reranked:
+        # A one-candidate softmax is 1.0 whatever T is, and C.4 never links such
+        # a row, so it carries no signal for fitting T or measuring ECE. An
+        # empty shortlist is a separate case (C.4 reports NO_CANDIDATES), so it
+        # is dropped here too but is not counted as a one-candidate row.
+        if len(reranked) < 2:
+            if len(reranked) == 1:
+                one_candidate += 1
             continue
         expected = set(row.expected.cre_ids or [])
         logit_sets.append([float(c.score_rerank) for c in reranked])
         labels.append(1.0 if reranked[0].cre_id in expected else 0.0)
-    return logit_sets, labels
+    return logit_sets, labels, one_candidate
 
 
 def report_calibration(
@@ -351,7 +364,15 @@ def report_calibration(
         fit_temperature,
     )
 
-    logit_sets, labels = calibration_set(rows, audits)
+    logit_sets, labels, one_candidate = calibration_set(rows, audits)
+    if one_candidate:
+        # Reported because such rows never fit T, never move ECE and never
+        # auto-link under C.4 (their softmax is 1.0 whatever T is), so their
+        # count is a live-data check on the lone-candidate rule in decide_shortlist.
+        print(
+            f"calibration (C.3): dropped {one_candidate} row(s) with a "
+            "one-candidate reranked shortlist (no signal for T or ECE)"
+        )
 
     if len(set(labels)) < 2:
         # Degenerate calibration set: single-class labels, or nothing left after
@@ -403,7 +424,7 @@ def report_decision_accuracy(
     reason codes that depend on them lag until that lands; and tuning the threshold
     itself is the Week 7 experiment, so hard-gating it now would be premature.
     """
-    from application.utils.librarian.decision_engine import decide
+    from application.utils.librarian.pipeline import decide_shortlist
     from application.utils.librarian.schemas import Decision
 
     graded = [r for r in rows if r.expected.decision is not None and r.id in audits]
@@ -418,8 +439,7 @@ def report_decision_accuracy(
         reranked = [c for c in audit.reranked if c.score_rerank is not None]
         logits = [float(c.score_rerank) for c in reranked]
         cre_ids = [c.cre_id for c in reranked]
-        confidence = scaler.confidence(logits) if logits else 0.0
-        result = decide(confidence, cre_ids, threshold=threshold)
+        result = decide_shortlist(scaler, logits, cre_ids, threshold=threshold)
         matched = result.decision == row.expected.decision
         if matched:
             dec_match += 1
