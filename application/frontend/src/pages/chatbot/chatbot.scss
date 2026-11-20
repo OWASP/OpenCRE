@@ -306,9 +306,12 @@ h1.ui.header.chatbot-title {
 
 .typing-indicator {
   display: flex;
-  gap: 0.4rem;
+  justify-content: center;
   align-items: center;
+  gap: 0.4rem;
   min-height: 32px;
+  min-width: unset;
+  width: fit-content;
   padding: 0.75rem 1rem;
   margin-top: 0.5rem;
 }
