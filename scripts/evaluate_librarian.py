@@ -558,10 +558,12 @@ def main(argv: List[str]) -> int:
         )
         return 1
     if explicit_total:
-        gate_ok = explicit_correct == explicit_total
+        # Boundary-rejected explicit rows still count toward the 100% gate.
+        gate_ok = explicit_correct == explicit_expected
         print(
-            f"explicit slice (C.0.5 resolver): {explicit_correct}/{explicit_total} "
-            f"— gate 100%: {'PASS' if gate_ok else 'FAIL'}"
+            f"explicit slice (C.0.5 resolver): {explicit_correct}/{explicit_expected} "
+            f"— gate 100%: {'PASS' if gate_ok else 'FAIL'}; "
+            f"reached resolver: {explicit_total}/{explicit_expected}"
         )
         if not gate_ok:
             return 1
