@@ -67,6 +67,9 @@ standards_cache.sqlite
 ### Docs
 *.md
 !AGENTS.md
+!**/AGENTS.md
+!docs/continuity/**/*.md
+!docs/continuity/README.md
 !docs/faq.md
 !docs/api/mcp.md
 !docs/Mid_eval_blog_gsoc2026/module_B_mideval_blog.md
