@@ -17,6 +17,37 @@ export function renderChatMarkdown(markdown: string): string {
   return DOMPurify.sanitize(String(parsed), { USE_PROFILES: { html: true } });
 }
 
+/** Parse chatbot error responses into a human-readable error message. */
+export function parseChatbotErrorMessage(status: number, statusText: string, text: string): string {
+  let parsedMessage = '';
+  try {
+    const json = JSON.parse(text);
+    if (json.error) parsedMessage = json.error;
+    else if (json.message) parsedMessage = json.message;
+  } catch (e) {
+    if (text) {
+      if (text.trimStart().startsWith('<')) {
+        try {
+          const doc = new DOMParser().parseFromString(text, 'text/html');
+          const p = doc.querySelector('p')?.textContent?.trim();
+          const h1 = doc.querySelector('h1')?.textContent?.trim();
+          parsedMessage = p || h1 || doc.title || '';
+        } catch {
+          // Keep fallback empty parsedMessage
+        }
+      } else {
+        parsedMessage = text.trim();
+      }
+    }
+  }
+
+  let errorMessage = parsedMessage;
+  if (status === 401 && (!errorMessage || errorMessage.includes('None'))) {
+    errorMessage = 'Authentication required. Please log in to access this functionality.';
+  }
+  return errorMessage || statusText || `Error ${status}`;
+}
+
 export const Chatbot = () => {
   type chatMessage = {
     timestamp: string;
@@ -83,6 +114,7 @@ export const Chatbot = () => {
 
     if (shouldForceScrollRef.current || isNearBottom) {
       container.scrollTop = container.scrollHeight;
+      setShowScrollToBottom(false);
       shouldForceScrollRef.current = false; // reset after use
     }
   }, [chatMessages]);
@@ -162,16 +194,7 @@ export const Chatbot = () => {
       .then(async (response) => {
         if (!response.ok) {
           const text = await response.text();
-          let errorMessage = response.statusText;
-          try {
-            const json = JSON.parse(text);
-            if (json.error) errorMessage = json.error;
-            else if (json.message) errorMessage = json.message;
-          } catch (e) {
-            // not json, use text if available
-            if (text) errorMessage = text;
-          }
-          throw new Error(errorMessage || `Error ${response.status}`);
+          throw new Error(parseChatbotErrorMessage(response.status, response.statusText, text));
         }
         return response.json();
       })
@@ -193,7 +216,7 @@ export const Chatbot = () => {
         ]);
       })
       .catch((error) => {
-        console.error('Error fetching answer:', error);
+        console.error('Error fetching answer:', error.message);
         setError(error instanceof Error ? error.message : 'An unexpected network error occurred');
         setLoading(false);
       });
