@@ -29,7 +29,7 @@ def _login() -> int:
 
     try:
         claims = auth.login(show)
-    except auth.AuthError as exc:
+    except (auth.AuthError, OSError) as exc:
         _say(f"Login failed: {exc}")
         return 1
     _say(f"Logged in as {claims.get('email') or claims.get('sub')}")
