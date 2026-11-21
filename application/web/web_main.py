@@ -1274,6 +1274,7 @@ def chat_cre() -> Any:
         response = prompt.generate_text(prompt_text)
     except Exception as e:
         if llm_error_utils.is_rate_limit_error(e):
+            logger.exception("Chat completion rate-limited")
             return (
                 jsonify(
                     {
