@@ -1189,6 +1189,12 @@ class TestMain(unittest.TestCase):
             self.assertEqual(503, response.status_code)
             self.assertNotIn("127.0.0.1", response.get_data(as_text=True))
 
+    @patch.object(app_redis, "connect", return_value=None)
+    def test_ma_job_results_without_redis(self, redis_conn_mock) -> None:
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/ma_job_results?id=ABC")
+            self.assertEqual(503, response.status_code)
+
     @patch.object(rq.job.Job, "fetch")
     @patch.object(app_redis, "connect")
     def test_ma_job_results_redis_fails_after_fetch(

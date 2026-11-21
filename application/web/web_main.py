@@ -502,6 +502,8 @@ def fetch_job() -> Any:
     if not jobid:
         abort(400, "id parameter is required")
     conn = redis.connect()
+    if conn is None:
+        return "Job queue unavailable", 503
     try:
         res = job.Job.fetch(id=jobid, connection=conn)
     except exceptions.NoSuchJobError:
