@@ -185,7 +185,7 @@ class LLMClassifier:
             text = self._call_llm(messages)
         except Exception as e:  # noqa: BLE001 -- a bad batch must not kill the run
             logger.warning(
-                "LLM classification failed for batch of %s: %s; marking UNCERTAIN",
+                "LLM call failed for batch of %s: %s; leaving pending for retry",
                 len(batch),
                 e,
             )
