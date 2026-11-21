@@ -54,10 +54,7 @@ class TestDatasetInputs(unittest.TestCase):
 
     def test_source_node_keys_are_unique(self):
         """Verify that source node keys are unique."""
-        keys = [
-            (node["standard"], node["name"], node["section_id"])
-            for node in self.source_nodes
-        ]
+        keys = [(node["name"], node["section_id"]) for node in self.source_nodes]
         self.assertEqual(len(keys), len(set(keys)))
 
     def test_cre_ids_are_sorted_and_deduplicated(self):
@@ -117,14 +114,24 @@ class TestDatasetInputs(unittest.TestCase):
                 self.assertLessEqual(len(cre_ids), 4)
 
     def test_cheatsheet_fixtures_have_supplement_mappings(self):
-        """Verify that Cheat Sheet fixtures have supplement mappings."""
-        mapped_sections = {
-            entry["section"] for entry in self.supplement if entry.get("cre_ids")
-        }
+        """Verify that Cheat Sheet fixtures have unique, non-empty supplement mappings."""
+        supplement_sections = [entry["section"] for entry in self.supplement]
+        self.assertEqual(
+            len(supplement_sections),
+            len(set(supplement_sections)),
+            "Supplement entries must not contain duplicate sections.",
+        )
+
+        supplement_by_section = {entry["section"]: entry for entry in self.supplement}
 
         for fixture in self.curated["cheatsheet_fixtures"]:
-            with self.subTest(section=fixture["section"]):
-                self.assertIn(fixture["section"], mapped_sections)
+            section = fixture["section"]
+            with self.subTest(section=section):
+                self.assertIn(section, supplement_by_section)
+                self.assertTrue(
+                    supplement_by_section[section].get("cre_ids"),
+                    f"Section {section} must have non-empty cre_ids.",
+                )
 
     def test_manifest_counts_match_fixture_contents(self):
         """Verify that manifest counts match the fixture contents."""

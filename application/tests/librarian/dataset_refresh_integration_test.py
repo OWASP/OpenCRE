@@ -3,6 +3,7 @@
 import importlib.util
 import json
 import subprocess
+import shutil
 import sys
 import tempfile
 import unittest
@@ -54,29 +55,6 @@ class TestDatasetRefreshIntegration(unittest.TestCase):
             )
 
             output_dir = Path(temp_dir)
-
-            generated_golden = output_dir / "golden_dataset.generated.json"
-            subprocess.run(
-                [
-                    sys.executable,
-                    str(BUILDER_SCRIPT),
-                    "--inputs",
-                    str(output_dir),
-                    "--out",
-                    str(generated_golden),
-                ],
-                cwd=REPO_ROOT,
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            committed_golden = (
-                REPO_ROOT / "application/tests/librarian/fixtures/golden_dataset.json"
-            )
-            self.assertEqual(
-                generated_golden.read_bytes(),
-                committed_golden.read_bytes(),
-            )
 
             refreshed_nodes = json.loads(
                 (output_dir / "source_nodes.json").read_text(encoding="utf-8")
@@ -130,6 +108,38 @@ class TestDatasetRefreshIntegration(unittest.TestCase):
 
 
 class TestDatasetRefreshWithSyntheticDatabase(unittest.TestCase):
+
+    def test_builder_with_copied_inputs_matches_committed_golden(self):
+        """Verify committed inputs reproduce the committed golden dataset."""
+        committed_golden = (
+            REPO_ROOT / "application/tests/librarian/fixtures/golden_dataset.json"
+        )
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            copied_inputs = temp_path / "dataset_inputs"
+            shutil.copytree(INPUTS_DIR, copied_inputs)
+
+            generated_golden = temp_path / "golden.json"
+            subprocess.run(
+                [
+                    sys.executable,
+                    str(BUILDER_SCRIPT),
+                    "--inputs",
+                    str(copied_inputs),
+                    "--out",
+                    str(generated_golden),
+                ],
+                cwd=REPO_ROOT,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(
+                generated_golden.read_bytes(),
+                committed_golden.read_bytes(),
+            )
 
     def test_refresh_help_displays_options(self):
         """Verify refresh help documents the available command-line options."""
