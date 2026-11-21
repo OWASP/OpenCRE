@@ -25,10 +25,11 @@ from ``standards_cache.sqlite``. The refresh utility preserves historical
 multi-link pins by default.
 
 Output is deterministic, so ``--check`` verifies that the committed JSON
-matches the fixture derivation while ignoring whitespace differences only.
+matches the fixture derivation byte-for-byte.
 """
 
 import argparse
+from dataclasses import dataclass
 import json
 import sys
 from pathlib import Path
@@ -42,40 +43,37 @@ SCHEMA_VERSION = "0.1.0"
 
 # ---- Fixture inputs --------------------------------------------------------
 
-SOURCE_NODES = []
-CURATED_EXPLICIT = []
-CURATED_UPDATE = []
-CURATED_AMBIGUOUS = []
-CHEATSHEET_FIXTURES = []
-MULTILINK_PINS = []
+
+@dataclass
+class FixtureInputs:
+    source_nodes: List[Dict]
+    explicit: List[Dict]
+    update: List[Dict]
+    ambiguous: List[Dict]
+    cheatsheet_fixtures: List[Dict]
+    multilink_pins: List[Dict]
 
 
-def load_fixture_inputs() -> None:
-    global SOURCE_NODES
-    global CURATED_EXPLICIT
-    global CURATED_UPDATE
-    global CURATED_AMBIGUOUS
-    global CHEATSHEET_FIXTURES
-    global MULTILINK_PINS
+def load_fixture_inputs(path: Path) -> FixtureInputs:
+    """Load all committed dataset inputs from the specified directory."""
+    curated_data = json.loads((path / "curated.json").read_text(encoding="utf-8"))
+    source_nodes = json.loads((path / "source_nodes.json").read_text(encoding="utf-8"))
 
-    curated_data = json.loads(
-        (DEFAULT_INPUTS / "curated.json").read_text(encoding="utf-8")
+    return FixtureInputs(
+        source_nodes=source_nodes,
+        explicit=curated_data["explicit"],
+        update=curated_data["update"],
+        ambiguous=curated_data["ambiguous"],
+        cheatsheet_fixtures=curated_data["cheatsheet_fixtures"],
+        multilink_pins=curated_data["multilink_pins"],
     )
-    SOURCE_NODES = json.loads(
-        (DEFAULT_INPUTS / "source_nodes.json").read_text(encoding="utf-8")
-    )
-
-    CURATED_EXPLICIT = curated_data["explicit"]
-    CURATED_UPDATE = curated_data["update"]
-    CURATED_AMBIGUOUS = curated_data["ambiguous"]
-    CHEATSHEET_FIXTURES = curated_data["cheatsheet_fixtures"]
-    MULTILINK_PINS = curated_data["multilink_pins"]
 
 
-def _fetch_asvs_cre(section_id: str) -> str | None:
+def _fetch_asvs_cre(inputs: FixtureInputs, section_id: str) -> str | None:
+    """Return the CRE ID mapped to an ASVS section, if one exists."""
     matches = [
         node
-        for node in SOURCE_NODES
+        for node in inputs.source_nodes
         if node["standard"] == "ASVS" and node["section_id"] == section_id
     ]
 
@@ -93,11 +91,12 @@ def _fetch_asvs_cre(section_id: str) -> str | None:
     return cre_ids[0]
 
 
-def build_positive_asvs() -> List[Dict]:
+def build_positive_asvs(inputs: FixtureInputs) -> List[Dict]:
+    """Build positive dataset rows from the ASVS source fixtures."""
     pairs = sorted(
         {
             (node["section_id"], cre_id, node["section"])
-            for node in SOURCE_NODES
+            for node in inputs.source_nodes
             if node["standard"] == "ASVS"
             for cre_id in node["cre_ids"]
         },
@@ -124,11 +123,14 @@ def build_positive_asvs() -> List[Dict]:
     return out
 
 
-def build_positive_multilink() -> List[Dict]:
-    nodes_by_key = {(node["name"], node["section_id"]): node for node in SOURCE_NODES}
+def build_positive_multilink(inputs: FixtureInputs) -> List[Dict]:
+    """Build positive rows for curated multi-CRE mappings."""
+    nodes_by_key = {
+        (node["name"], node["section_id"]): node for node in inputs.source_nodes
+    }
 
     pins = sorted(
-        MULTILINK_PINS,
+        inputs.multilink_pins,
         key=lambda pin: (pin["name"], pin["section_id"]),
     )
 
@@ -155,8 +157,6 @@ def build_positive_multilink() -> List[Dict]:
             )
 
         std = "OTHER"
-        if "Top 10" in name:
-            std = "OTHER"
 
         prefix = "top10" if "Top 10" in name else "cwe"
 
@@ -179,7 +179,7 @@ def build_positive_multilink() -> List[Dict]:
     return out
 
 
-def build_positive_cheatsheets() -> List[Dict]:
+def build_positive_cheatsheets(inputs: FixtureInputs) -> List[Dict]:
     """Build positive golden rows from the OWASP Cheat Sheet supplement."""
     supplement_path = (
         REPO_ROOT
@@ -190,7 +190,7 @@ def build_positive_cheatsheets() -> List[Dict]:
     mappings = {entry["section"]: entry["cre_ids"] for entry in supplement}
 
     out = []
-    for entry in CHEATSHEET_FIXTURES:
+    for entry in inputs.cheatsheet_fixtures:
         cre_ids = mappings.get(entry["section"])
         if not cre_ids:
             raise ValueError(
@@ -221,7 +221,8 @@ def build_positive_cheatsheets() -> List[Dict]:
     return out
 
 
-def build_hard_negative() -> List[Dict]:
+def build_hard_negative(inputs: FixtureInputs) -> List[Dict]:
+    """Build hard-negative rows from the configured fixture inputs."""
     rows = []
 
     negation_phrases = (
@@ -231,7 +232,7 @@ def build_hard_negative() -> List[Dict]:
         "should not",
     )
 
-    for node in SOURCE_NODES:
+    for node in inputs.source_nodes:
         if node["standard"] != "ASVS":
             continue
 
@@ -270,10 +271,11 @@ def build_hard_negative() -> List[Dict]:
     return out
 
 
-def build_explicit() -> List[Dict]:
+def build_explicit(inputs: FixtureInputs) -> List[Dict]:
+    """Build dataset rows for explicitly curated mappings."""
     out = []
-    for entry in CURATED_EXPLICIT:
-        cre = _fetch_asvs_cre(entry["asvs_section_id"])
+    for entry in inputs.explicit:
+        cre = _fetch_asvs_cre(inputs, entry["asvs_section_id"])
         if cre is None:
             raise ValueError(
                 f"no CRE mapping found for explicit row {entry['id']} "
@@ -305,10 +307,11 @@ def build_explicit() -> List[Dict]:
     return out
 
 
-def build_update() -> List[Dict]:
+def build_update(inputs: FixtureInputs) -> List[Dict]:
+    """Build dataset rows for curated update mappings."""
     out = []
-    for entry in CURATED_UPDATE:
-        cre = _fetch_asvs_cre(entry["asvs_section_id"])
+    for entry in inputs.update:
+        cre = _fetch_asvs_cre(inputs, entry["asvs_section_id"])
         if cre is None:
             raise ValueError(
                 f"no CRE mapping found for update row {entry['id']} "
@@ -342,9 +345,10 @@ def build_update() -> List[Dict]:
     return out
 
 
-def build_ambiguous() -> List[Dict]:
+def build_ambiguous(inputs: FixtureInputs) -> List[Dict]:
+    """Build dataset rows for ambiguous mappings."""
     out = []
-    for entry in CURATED_AMBIGUOUS:
+    for entry in inputs.ambiguous:
         row = {
             "id": entry["id"],
             "schema_version": SCHEMA_VERSION,
@@ -367,32 +371,39 @@ def build_ambiguous() -> List[Dict]:
     return out
 
 
-def build() -> List[Dict]:
-    load_fixture_inputs()
+def build(inputs: FixtureInputs) -> List[Dict]:
+    """Combine all fixture-derived slices into the golden dataset."""
     rows: List[Dict] = []
 
-    rows.extend(build_explicit())
-    rows.extend(build_positive_asvs())
-    rows.extend(build_positive_multilink())
-    rows.extend(build_hard_negative())
-    rows.extend(build_update())
-    rows.extend(build_ambiguous())
-    rows.extend(build_positive_cheatsheets())
+    rows.extend(build_explicit(inputs))
+    rows.extend(build_positive_asvs(inputs))
+    rows.extend(build_positive_multilink(inputs))
+    rows.extend(build_hard_negative(inputs))
+    rows.extend(build_update(inputs))
+    rows.extend(build_ambiguous(inputs))
+    rows.extend(build_positive_cheatsheets(inputs))
 
     return rows
 
 
 def main(argv: List[str]) -> int:
+    """Parse CLI arguments and build or verify the golden dataset."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--out", default=str(DEFAULT_OUT))
     parser.add_argument(
+        "--inputs",
+        default=str(DEFAULT_INPUTS),
+        help="directory containing source_nodes.json and curated.json",
+    )
+    parser.add_argument(
         "--check",
         action="store_true",
-        help="re-derive and verify --out matches (ignoring whitespace only); exit non-zero on drift",
+        help="re-derive and verify --out matches byte-for-byte; exit non-zero on drift",
     )
     args = parser.parse_args(argv)
 
-    rows = build()
+    inputs = load_fixture_inputs(Path(args.inputs))
+    rows = build(inputs)
     text = json.dumps(rows, indent=2, ensure_ascii=False) + "\n"
 
     if args.check:
@@ -401,19 +412,11 @@ def main(argv: List[str]) -> int:
             return 1
 
         existing_text = Path(args.out).read_text(encoding="utf-8")
-        canonical = (
-            json.dumps(
-                json.loads(existing_text),
-                indent=2,
-                ensure_ascii=False,
-            )
-            + "\n"
-        )
 
-        if canonical != text:
+        if existing_text != text:
             print(
-                "DRIFT: golden dataset content or record order differs from fixture "
-                "derivation (comparison ignores whitespace only). "
+                "DRIFT: golden dataset differs from fixture derivation "
+                "(byte-for-byte comparison). "
                 "Re-run without --check.",
                 file=sys.stderr,
             )

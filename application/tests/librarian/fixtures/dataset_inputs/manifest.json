@@ -1,7 +1,9 @@
 {
   "schema_version": "0.1.0",
-  "refreshed_at": "2026-11-07T21:05:14.996826+00:00",
-  "source": "Bootstrapped from the local ASVS database snapshot and the committed golden dataset's pinned CWE multi-link records. The committed golden dataset was not modified.",
+  "refreshed_at": "2026-11-21T16:55:13.260562+00:00",
+  "source": "ASVS facts refreshed from the configured SQLite database. 10 missing or changed pinned-node snapshots were preserved from the existing fixtures. Curated examples and Cheat Sheet mappings were preserved.",
+  "refresh_mode": "preserve_existing_pins",
+  "preserved_multilink_pins": 10,
   "record_counts": {
     "source_nodes": 292,
     "asvs": 277,

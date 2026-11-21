@@ -25,10 +25,12 @@ CURATED_FIELDS = {
 
 
 def load_json(path):
+    """Load and return JSON data from the specified file."""
     return json.loads(path.read_text(encoding="utf-8"))
 
 
 def standard_for(name):
+    """Determine the security standard associated with a node name."""
     if "ASVS" in name:
         return "ASVS"
     if "CWE" in name:
@@ -37,6 +39,7 @@ def standard_for(name):
 
 
 def node_from_rows(rows, identity):
+    """Construct a source node from database rows and its identity."""
     if not rows:
         return None
 
@@ -57,6 +60,7 @@ def node_from_rows(rows, identity):
 
 
 def fetch_node(conn, name, section_id):
+    """Fetch a database node using its name and section ID."""
     rows = conn.execute(
         """
         SELECT n.id, n.name, n.section_id, n.section, c.external_id
@@ -72,6 +76,8 @@ def fetch_node(conn, name, section_id):
 
 
 def fetch_node_by_id(conn, node_id):
+    """Fetch a database node using its unique node ID."""
+
     rows = conn.execute(
         """
         SELECT n.id, n.name, n.section_id, n.section, c.external_id
@@ -87,6 +93,7 @@ def fetch_node_by_id(conn, node_id):
 
 
 def fetch_asvs_nodes(conn):
+    """Fetch all ASVS source nodes from the database."""
     rows = conn.execute(
         """
         SELECT n.id, n.name, n.section_id, n.section, c.external_id
@@ -125,6 +132,7 @@ def fetch_asvs_nodes(conn):
 
 
 def fetch_repin_candidates(conn):
+    """Fetch eligible database nodes for replacing historical pins."""
     rows = conn.execute(
         """
         SELECT n.id, n.name, n.section_id,
@@ -151,7 +159,22 @@ def fetch_repin_candidates(conn):
     ]
 
 
+def validate_asvs_count(asvs_nodes, old_nodes, allow_shrink=False):
+    """Reject refreshes that shrink the ASVS source below the allowed threshold."""
+    previous_asvs_count = sum(node["standard"] == "ASVS" for node in old_nodes)
+    minimum_asvs_count = (previous_asvs_count * 90 + 99) // 100
+
+    if len(asvs_nodes) < minimum_asvs_count and not allow_shrink:
+        raise ValueError(
+            f"Refusing ASVS shrink: database has {len(asvs_nodes)} nodes, "
+            f"but the committed snapshot has {previous_asvs_count}; "
+            f"at least {minimum_asvs_count} required (90%). "
+            "Use --allow-shrink to override."
+        )
+
+
 def validate_outputs(source_nodes, curated):
+    """Validate refreshed source nodes and curated ASVS references."""
     required_node_fields = {"standard", "name", "section_id", "section", "cre_ids"}
     nodes_by_key = {}
 
@@ -211,6 +234,28 @@ def validate_outputs(source_nodes, curated):
                     f"{sorted(missing)}"
                 )
 
+    asvs_cres = {}
+    for node in source_nodes:
+        if node["standard"] == "ASVS":
+            asvs_cres.setdefault(node["section_id"], set()).update(node["cre_ids"])
+
+    if not asvs_cres:
+        raise ValueError("Refreshed output contains no ASVS source nodes.")
+
+    invalid_asvs = []
+    for section in ("explicit", "update"):
+        for record in curated[section]:
+            section_id = record["asvs_section_id"]
+            cre_ids = asvs_cres.get(section_id, set())
+            if len(cre_ids) != 1:
+                invalid_asvs.append(f"{record['id']} ({section_id}): {sorted(cre_ids)}")
+
+    if invalid_asvs:
+        raise ValueError(
+            "Curated explicit/update records must resolve to exactly one ASVS "
+            "CRE ID:\n" + "\n".join(invalid_asvs)
+        )
+
     pins = curated["multilink_pins"]
     pin_keys = [(pin["name"], pin["section_id"]) for pin in pins]
     if len(pin_keys) != len(set(pin_keys)):
@@ -241,7 +286,7 @@ def write_outputs_atomically(output_dir, files):
         for filename, data in files.items():
             staged_path = staging_dir / filename
             staged_path.write_text(
-                json.dumps(data, indent=2, ensure_ascii=False) + "\n",
+                json.dumps(data, indent=2, ensure_ascii=True) + "\n",
                 encoding="utf-8",
             )
             # Verify that every staged file can be parsed before replacement.
@@ -281,6 +326,7 @@ def write_outputs_atomically(output_dir, files):
 
 
 def refresh(args):
+    """Refresh version-controlled dataset inputs from the local database."""
     output_dir = Path(args.out_dir)
 
     current_curated = load_json(DEFAULT_INPUTS / "curated.json")
@@ -289,9 +335,11 @@ def refresh(args):
 
     preserved_pins = []
 
-    conn = sqlite3.connect(args.db)
+    db_uri = Path(args.db).resolve().as_uri() + "?mode=ro"
+    conn = sqlite3.connect(db_uri, uri=True)
     try:
         asvs_nodes = fetch_asvs_nodes(conn)
+        validate_asvs_count(asvs_nodes, old_nodes, args.allow_shrink)
 
         if args.repin:
             candidates = fetch_repin_candidates(conn)
@@ -322,7 +370,13 @@ def refresh(args):
 
                 if database_node != snapshot_node:
                     pin_nodes.append(snapshot_node)
-                    preserved_pins.append(key)
+                    preserved_pins.append(
+                        (
+                            key,
+                            snapshot_node["cre_ids"],
+                            None if database_node is None else database_node["cre_ids"],
+                        )
+                    )
                 else:
                     pin_nodes.append(database_node)
     finally:
@@ -398,9 +452,13 @@ def refresh(args):
     print(f"ASVS nodes: {counts['asvs']}")
     print(f"Refresh mode: {mode}")
     print(f"Historical pins preserved: {len(preserved_pins)}")
+    for (name, section_id), old_cre_ids, new_cre_ids in preserved_pins:
+        new_value = "missing in DB" if new_cre_ids is None else str(new_cre_ids)
+        print(f"{name}/{section_id}: {old_cre_ids} -> {new_value}")
 
 
 def main():
+    """Parse refresh options and execute the input refresh."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--db", default=str(DEFAULT_DB))
     parser.add_argument(
@@ -411,6 +469,11 @@ def main():
         "--repin",
         action="store_true",
         help="reselect the 15 multi-link nodes using the original query",
+    )
+    parser.add_argument(
+        "--allow-shrink",
+        action="store_true",
+        help="allow refreshing with fewer than 90%% of the committed ASVS nodes",
     )
     args = parser.parse_args()
     refresh(args)

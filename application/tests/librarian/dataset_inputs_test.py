@@ -18,6 +18,7 @@ _SUPPLEMENT = os.path.join(
 
 
 def _load(path):
+    """Load JSON fixture data from a file."""
     with open(path, encoding="utf-8") as fh:
         return json.load(fh)
 
@@ -25,12 +26,14 @@ def _load(path):
 class TestDatasetInputs(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        """Load source and curated fixtures for this test class."""
         cls.source_nodes = _load(os.path.join(_INPUTS, "source_nodes.json"))
         cls.curated = _load(os.path.join(_INPUTS, "curated.json"))
         cls.manifest = _load(os.path.join(_INPUTS, "manifest.json"))
         cls.supplement = _load(_SUPPLEMENT)
 
     def test_source_nodes_have_required_fields(self):
+        """Verify that source nodes contain all required fields."""
         required = {"standard", "name", "section_id", "section", "cre_ids"}
 
         for index, node in enumerate(self.source_nodes):
@@ -50,6 +53,7 @@ class TestDatasetInputs(unittest.TestCase):
                 )
 
     def test_source_node_keys_are_unique(self):
+        """Verify that source node keys are unique."""
         keys = [
             (node["standard"], node["name"], node["section_id"])
             for node in self.source_nodes
@@ -57,12 +61,14 @@ class TestDatasetInputs(unittest.TestCase):
         self.assertEqual(len(keys), len(set(keys)))
 
     def test_cre_ids_are_sorted_and_deduplicated(self):
+        """Verify that CRE IDs are sorted and contain no duplicates."""
         for node in self.source_nodes:
             with self.subTest(standard=node["standard"], section_id=node["section_id"]):
                 cre_ids = node["cre_ids"]
                 self.assertEqual(cre_ids, sorted(set(cre_ids)))
 
     def test_curated_sections_and_fields_exist(self):
+        """Verify that curated sections and required fields exist."""
         expected_sections = {
             "explicit",
             "update",
@@ -93,6 +99,7 @@ class TestDatasetInputs(unittest.TestCase):
                     self.assertTrue(required_fields[section].issubset(record))
 
     def test_multilink_pins_resolve_to_two_to_four_cre_ids(self):
+        """Verify that multi-link pins resolve to two to four CRE IDs."""
         nodes_by_key = {
             (node["name"], node["section_id"]): node for node in self.source_nodes
         }
@@ -110,6 +117,7 @@ class TestDatasetInputs(unittest.TestCase):
                 self.assertLessEqual(len(cre_ids), 4)
 
     def test_cheatsheet_fixtures_have_supplement_mappings(self):
+        """Verify that Cheat Sheet fixtures have supplement mappings."""
         mapped_sections = {
             entry["section"] for entry in self.supplement if entry.get("cre_ids")
         }
@@ -119,6 +127,7 @@ class TestDatasetInputs(unittest.TestCase):
                 self.assertIn(fixture["section"], mapped_sections)
 
     def test_manifest_counts_match_fixture_contents(self):
+        """Verify that manifest counts match the fixture contents."""
         counts = self.manifest["record_counts"]
 
         expected = {
