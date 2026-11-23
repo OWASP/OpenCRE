@@ -449,6 +449,62 @@ class TestDB(unittest.TestCase):
         # ensure original description
         self.assertEqual(newCRE.description, original_desc)
 
+    def test_add_cre_conflict_and_update_commit(self) -> None:
+        name = str(uuid.uuid4())
+        initial_cre = defs.CRE(
+            id="100-001",
+            doctype=defs.Credoctypes.CRE,
+            name=name,
+            description="Initial description",
+            tags=["tag1"],
+        )
+        self.collection.add_cre(initial_cre)
+
+        # 1. Verify conflicting external_id on existing CRE name raises ValueError
+        conflicting_cre = defs.CRE(
+            id="100-999",
+            doctype=defs.Credoctypes.CRE,
+            name=name,
+            description="Conflicting description",
+        )
+        with self.assertRaises(ValueError):
+            self.collection.add_cre(conflicting_cre)
+
+        # 2. Verify partial CRE with empty description/tags fills missing fields and commits
+        name_empty_fields = str(uuid.uuid4())
+        partial_cre = defs.CRE(
+            id="100-002",
+            doctype=defs.Credoctypes.CRE,
+            name=name_empty_fields,
+            description="",
+            tags=[],
+        )
+        self.collection.add_cre(partial_cre)
+
+        # Update with missing description and tags
+        fill_cre = defs.CRE(
+            id="100-002",
+            doctype=defs.Credoctypes.CRE,
+            name=name_empty_fields,
+            description="Filled description",
+            tags=["new_tag"],
+        )
+        updated = self.collection.add_cre(fill_cre)
+        self.assertEqual(updated.external_id, "100-002")
+        self.assertEqual(updated.description, "Filled description")
+        self.assertIn("new_tag", updated.tags)
+
+        # Verify persisted in database (rollback discards uncommitted session changes)
+        self.collection.session.rollback()
+        db_cre = (
+            self.collection.session.query(db.CRE)
+            .filter(db.CRE.name == name_empty_fields)
+            .first()
+        )
+        self.assertEqual(db_cre.external_id, "100-002")
+        self.assertEqual(db_cre.description, "Filled description")
+        self.assertIn("new_tag", db_cre.tags)
+
     def test_add_node(self) -> None:
         original_section = str(uuid.uuid4())
         name = str(uuid.uuid4())
