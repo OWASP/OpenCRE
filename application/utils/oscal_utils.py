@@ -5,14 +5,16 @@ logger = get_logger(__name__)
 import random
 from trestle.oscal import catalog
 from trestle.oscal import common
-from datetime import datetime
+from datetime import datetime, timezone
 from application.defs import cre_defs as defs
 from uuid import uuid4
 from typing import List, Optional, Union
 
 
 def document_to_oscal(
-    document: defs.Document, uuid: Optional[str], last_modified: Optional[str]
+    document: defs.Document,
+    uuid: Optional[str] = None,
+    last_modified: Optional[Union[str, datetime]] = None,
 ) -> str:
     """
     document_to_oscal takes a single document
@@ -32,7 +34,7 @@ def document_to_oscal(
         hyperlink = f"https://opencre.org/cre/{document.id}"
 
     if not last_modified:
-        last_modified = datetime.utcnow()
+        last_modified = datetime.now(timezone.utc)
     m = None
     if document.description:
         m = common.Metadata(
@@ -76,15 +78,17 @@ def document_to_oscal(
                 title=link.document.name,
                 links=[common.Link(href=link.document.hyperlink)],
             )
-        controls.append(ctrl)
-    c.controls = controls
+        if ctrl is not None:
+            controls.append(ctrl)
+    if controls:
+        c.controls = controls
     return c.json()
 
 
 def list_to_oscal(documents: List[defs.Standard | defs.Tool]) -> str:
     """
-    list_to_oscal takes a list of standards or tooling rules
-    (they all need to be the same type and the same name)
+    list_to_oscal takes a list of standards, tooling rules or CREs
+    (they all need to be the same type; standards and tools the same name)
     and creates a set of controls from them
     """
     version = "0.0"
@@ -98,7 +102,16 @@ def list_to_oscal(documents: List[defs.Standard | defs.Tool]) -> str:
     c = catalog.Catalog(metadata=m, uuid=str(uuid4()))
     controls: List[catalog.Control] = []
 
-    if documents[0].doctype == defs.Credoctypes.Standard:
+    if documents[0].doctype == defs.Credoctypes.CRE:
+        for doc in documents:
+            controls.append(
+                catalog.Control(
+                    id=f"_{doc.id}",
+                    title=doc.name,
+                    links=[common.Link(href=f"https://opencre.org/cre/{doc.id}")],
+                )
+            )
+    elif documents[0].doctype == defs.Credoctypes.Standard:
         for doc in documents:
             props = []
 
@@ -133,5 +146,6 @@ def list_to_oscal(documents: List[defs.Standard | defs.Tool]) -> str:
                     links=[common.Link(href=doc.hyperlink)],
                 )
             )
-    c.controls = controls
+    if controls:
+        c.controls = controls
     return c.json()
