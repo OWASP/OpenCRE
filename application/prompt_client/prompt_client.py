@@ -831,7 +831,7 @@ class PromptHandler:
     def __init__(self, database: db.Node_collection, load_all_embeddings=False) -> None:
         self._litellm = litellm_router.get_litellm()
         self.chat_model = os.environ.get(
-            "CRE_LLM_CHAT_MODEL", "gemini/gemini-2.5-flash"
+            "CRE_LLM_CHAT_MODEL", "gemini/gemini-3.5-flash"
         )
         self.embed_model = os.environ.get(
             "CRE_EMBED_MODEL", "gemini/gemini-embedding-001"

@@ -46,7 +46,7 @@ def default_metadata_llm_fn(model: Optional[str] = None) -> LlmFn:
     )
     fallback = os.environ.get(
         "CRE_LIBRARIAN_METADATA_FALLBACK_MODEL",
-        "gemini/gemini-2.5-flash",
+        "gemini/gemini-3.5-flash",
     )
 
     def _once(name: str, system: str, user: str) -> str:

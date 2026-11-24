@@ -84,7 +84,7 @@ make install-python   # or: pip install -r requirements.txt -r requirements-dev.
 | `OWASP_AGENT_CRAWL_REPOS=1` | Extra GitHub chapter/project markdown crawl | Optional; slower |
 | `GEMINI_API_KEY` | CRE RAG / chat fallthrough | LiteLLM `gemini/…` models (default chat model) |
 | `OPENAI_API_KEY` | Alternate LLM provider | Only if you set `CRE_LLM_CHAT_MODEL` / embed models to `openai/…` |
-| `CRE_LLM_CHAT_MODEL` | Chat fallthrough model | Default `gemini/gemini-2.5-flash` |
+| `CRE_LLM_CHAT_MODEL` | Chat fallthrough model | Default `gemini/gemini-3.5-flash` |
 | `CRE_LLM_EMBED_MODEL` | Embeddings (full OpenCRE chat) | Needed for rich CRE RAG, not for agent-path synth scoring |
 | `DATABASE_URL` / local Postgres | Full Flask + CRE RAG | Agent-path synth eval does **not** need Postgres |
 
@@ -105,7 +105,7 @@ export NEST_API_KEY=…          # recommended
 export GITHUB_TOKEN=…          # recommended
 # optional for CRE fallthrough / OWASP_SYNTH_FULL=1:
 export GEMINI_API_KEY=…
-# export CRE_LLM_CHAT_MODEL=gemini/gemini-2.5-flash
+# export CRE_LLM_CHAT_MODEL=gemini/gemini-3.5-flash
 ```
 
 ### 3. Build the metadata index

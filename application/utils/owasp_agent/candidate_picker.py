@@ -221,7 +221,7 @@ def default_completion_fn() -> Optional[CompletionFn]:
             resp = litellm_router.resilient_completion(
                 model=handler.chat_model,
                 fallback_model=os.environ.get(
-                    "OWASP_ANSWER_FALLBACK_MODEL", "gemini/gemini-2.5-flash-lite"
+                    "OWASP_ANSWER_FALLBACK_MODEL", "gemini/gemini-3.5-flash-lite"
                 ),
                 messages=with_history(list(messages)),
                 client=handler._litellm,

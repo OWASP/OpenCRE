@@ -331,8 +331,8 @@ Recommended minimal example:
 
 ```bash
 # Chat / completion models (LiteLLM model strings)
-CRE_LLM_CHAT_MODEL=gemini/gemini-2.5-flash
-CRE_EMBED_ALIGN_MODEL=gemini/gemini-2.5-flash
+CRE_LLM_CHAT_MODEL=gemini/gemini-3.5-flash
+CRE_EMBED_ALIGN_MODEL=gemini/gemini-3.5-flash
 
 # Embedding model used for persisted vectors
 CRE_EMBED_MODEL=gemini/gemini-embedding-001
