@@ -22,6 +22,10 @@ from application.mcp.catalog import PUBLIC_TOOLS, ToolSpec, get_tool
 # Response-format switchers that can leave JSON; omit from MCP v1 inputs.
 _JSON_UNSAFE_QUERY_PARAMS: Set[str] = {"format"}
 
+# Analytics-only switches for integrations such as WSTG links; omit so agents
+# don't fill them in and get counted as that integration.
+_ANALYTICS_QUERY_PARAMS: Set[str] = {"source"}
+
 # Argument name carrying an operation's JSON request body.
 BODY_ARG = "body"
 
@@ -129,7 +133,9 @@ def operation_input_schema(
         name = param.get("name")
         if not name or location not in ("path", "query"):
             continue
-        if location == "query" and name in _JSON_UNSAFE_QUERY_PARAMS:
+        if location == "query" and (
+            name in _JSON_UNSAFE_QUERY_PARAMS or name in _ANALYTICS_QUERY_PARAMS
+        ):
             continue
         properties[name] = _parameter_to_json_schema(document, param)
         if param.get("required"):

@@ -166,6 +166,13 @@ class McpPublicToolsTest(unittest.TestCase):
         with self.assertRaises(RestRequestError):
             client.call_tool("text_search", {"text": "x", "format": "md"})
 
+    def test_analytics_source_param_rejected(self) -> None:
+        client = self._rest()
+        with self.assertRaises(RestRequestError):
+            client.call_tool("get_cre_by_id", {"creid": "111-111", "source": "wstg"})
+        with self.assertRaises(RestRequestError):
+            client.call_tool("get_cre_by_name", {"crename": "x", "source": "wstg"})
+
     # --- B. OpenAPI source of truth ---
 
     def test_every_catalog_entry_resolves_openapi_operation(self) -> None:
@@ -182,9 +189,12 @@ class McpPublicToolsTest(unittest.TestCase):
         cre_schema = input_schema_for_tool("get_cre_by_id")
         self.assertIn("creid", cre_schema["required"])
         self.assertIn("creid", cre_schema["properties"])
-        self.assertIn("source", cre_schema["properties"])
         self.assertIn("include_only", cre_schema["properties"])
         self.assertNotIn("format", cre_schema["properties"])
+        self.assertNotIn("source", cre_schema["properties"])
+        self.assertNotIn(
+            "source", input_schema_for_tool("get_cre_by_name")["properties"]
+        )
 
         tag_schema = input_schema_for_tool("get_documents_by_tag")
         self.assertIn("tag", tag_schema["required"])
@@ -203,6 +213,25 @@ class McpPublicToolsTest(unittest.TestCase):
 
         emptyish = input_schema_for_tool("list_ga_standards")
         self.assertEqual(emptyish.get("properties"), {})
+
+    def test_every_openapi_source_param_is_the_analytics_one(self) -> None:
+        """MCP drops `source` by name, so a `source` with another meaning must fail here."""
+        spec = load_openapi_spec()
+        found = []
+        for path, path_item in spec["paths"].items():
+            for method, operation in path_item.items():
+                if not isinstance(operation, dict):
+                    continue
+                for raw_param in operation.get("parameters") or []:
+                    param = _resolve_ref(spec, raw_param)
+                    if param.get("name") == "source":
+                        found.append(f"{method.upper()} {path}")
+                        self.assertEqual(param.get("in"), "query")
+                        self.assertIn(
+                            "source identifier for metrics",
+                            param.get("description", ""),
+                        )
+        self.assertTrue(found)
 
     def test_missing_allowlisted_openapi_path_fails_clearly(self) -> None:
         fake = catalog.ToolSpec(
