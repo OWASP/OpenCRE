@@ -223,6 +223,11 @@ def main() -> None:
         help="import dsomm from their repo (https://raw.githubusercontent.com/devsecopsmaturitymodel/DevSecOps-MaturityModel-data/main/src/assets/YAML/generated/generated.yaml)",
     )
     parser.add_argument(
+        "--agent_evidence_vocabulary_in",
+        action="store_true",
+        help="import the agent-evidence-vocabulary terms and their CRE links from vocabulary.yaml at its newest release tag (https://github.com/probityai/agent-evidence/tree/main/packages/vocabulary)",
+    )
+    parser.add_argument(
         "--cloud_native_security_controls_in",
         action="store_true",
         help="import cloud native security controls from their repo (https://raw.githubusercontent.com/cloud-native-security-controls/controls-catalog/main/controls/controls_catalog.csv)",
