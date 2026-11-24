@@ -1046,9 +1046,18 @@ class TestDB(unittest.TestCase):
         }
 
         # happy path
-        self.collection.add_internal_link(
+        link = self.collection.add_internal_link(
             higher=cres["dbca"], lower=cres["dbcb"], ltype=defs.LinkTypes.Related
         )
+        self.assertIsInstance(link.document, defs.CRE)
+        self.assertIsInstance(link.todict(), dict)
+
+        # existing link branch returns hydrated domain Link
+        existing_link = self.collection.add_internal_link(
+            higher=cres["dbca"], lower=cres["dbcb"], ltype=defs.LinkTypes.Related
+        )
+        self.assertIsInstance(existing_link.document, defs.CRE)
+        self.assertIsInstance(existing_link.todict(), dict)
 
         #   "happy path, internal link exists"
         res = (

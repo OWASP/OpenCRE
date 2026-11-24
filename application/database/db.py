@@ -2656,7 +2656,7 @@ class Node_collection:
                 InternalLinks(type=ltype.value, cre=lower.id, group=higher.id)
             )
             self.session.commit()
-            return cre_defs.Link(document=lower, ltype=ltype)
+            return link_to
         except inmemory_graph.CycleDetectedError as cde:
             # cycle detected, do nothing
             pass
