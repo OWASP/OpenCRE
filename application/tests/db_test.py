@@ -1180,6 +1180,60 @@ class TestDB(unittest.TestCase):
             res = self.collection.text_search(k)
             self.assertCountEqual(res, val)
 
+    def test_text_search_standard_section_ids(self) -> None:
+        """A standard name followed by a section ID, written the way people
+        usually write it ("CWE-79", "CWE 79", "ASVS V2.1.1"), finds that
+        section. A query of that shape that names no section still falls back
+        to the free text search."""
+        cwe_79 = defs.Standard(
+            name="CWE",
+            section="Improper Neutralization of Input During Web Page Generation",
+            sectionID="79",
+            hyperlink="https://cwe.mitre.org/data/definitions/79.html",
+        )
+        cwe_798 = defs.Standard(
+            name="CWE",
+            section="Use of Hard-coded Credentials",
+            sectionID="798",
+            hyperlink="https://cwe.mitre.org/data/definitions/798.html",
+        )
+        capec_61 = defs.Standard(
+            name="CAPEC",
+            section="Session Fixation",
+            sectionID="61",
+            hyperlink="https://capec.mitre.org/data/definitions/61.html",
+        )
+        asvs = defs.Standard(
+            name="ASVS",
+            section="Verify that user set passwords are at least 12 characters",
+            sectionID="V2.1.1",
+            hyperlink="https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/x.md",
+        )
+        top10 = defs.Standard(
+            name="Some Standard",
+            section="Top 10 risks",
+            hyperlink="https://example.com/top10",
+        )
+        for node in (cwe_79, cwe_798, capec_61, asvs, top10):
+            self.collection.add_node(node)
+        self.collection.session.commit()
+
+        expected: Dict[str, List[Any]] = {
+            "CWE-79": [cwe_79],
+            "CWE 79": [cwe_79],
+            "CWE:79": [cwe_79],
+            "cwe-79": [cwe_79],
+            " CWE-798 ": [cwe_798],
+            "CAPEC-61": [capec_61],
+            "ASVS V2.1.1": [asvs],
+            "Top 10": [top10],
+            "CWE-99999": [],
+        }
+        self.maxDiff = None
+        for query, val in expected.items():
+            with self.subTest(query=query):
+                self.assertCountEqual(self.collection.text_search(query), val)
+
     def test_text_search_expands_xxe_aliases(self) -> None:
         xxe_cre = defs.CRE(
             id="764-507",
