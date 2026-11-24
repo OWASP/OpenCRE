@@ -44,6 +44,10 @@ Or point the MCP server at a hosted instance such as `https://opencre.org`.
 Tool arguments cannot override the base URL, and no credential can be passed
 as a tool argument.
 
+On Windows, a custom `OPENCRE_MCP_TOKEN_FILE` inherits the permissions of its
+parent folder. If you set this override, choose a folder that only your account
+can access, rather than a shared or synced folder.
+
 ## Start the MCP server
 
 ```bash
