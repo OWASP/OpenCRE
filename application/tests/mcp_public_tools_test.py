@@ -214,6 +214,25 @@ class McpPublicToolsTest(unittest.TestCase):
         emptyish = input_schema_for_tool("list_ga_standards")
         self.assertEqual(emptyish.get("properties"), {})
 
+    def test_every_openapi_source_param_is_the_analytics_one(self) -> None:
+        """MCP drops `source` by name, so a `source` with another meaning must fail here."""
+        spec = load_openapi_spec()
+        found = []
+        for path, path_item in spec["paths"].items():
+            for method, operation in path_item.items():
+                if not isinstance(operation, dict):
+                    continue
+                for raw_param in operation.get("parameters") or []:
+                    param = _resolve_ref(spec, raw_param)
+                    if param.get("name") == "source":
+                        found.append(f"{method.upper()} {path}")
+                        self.assertEqual(param.get("in"), "query")
+                        self.assertIn(
+                            "source identifier for metrics",
+                            param.get("description", ""),
+                        )
+        self.assertTrue(found)
+
     def test_missing_allowlisted_openapi_path_fails_clearly(self) -> None:
         fake = catalog.ToolSpec(
             name="ghost",
