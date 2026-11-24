@@ -2384,27 +2384,27 @@ class Node_collection:
     def add_cre(self, cre: cre_defs.CRE) -> CRE:
         """Add a CRE with metadata, or fill missing fields on an existing CRE."""
         entry: CRE = None
-        query = self.session.query(CRE).filter(func.lower(CRE.name) == cre.name.lower())
-        if cre.id:
-            entry = query.filter(CRE.external_id == cre.id).first()
-        else:
-            entry = query.filter(
-                func.lower(CRE.description) == cre.description.lower()
-            ).first()
+        query = (
+            self.session.query(CRE)
+            .filter(func.lower(CRE.name) == cre.name.lower())
+            .order_by(CRE.external_id.desc().nulls_last(), CRE.id.asc())
+        )
+        entry = query.first()
 
         if entry is not None:
             logger.info(f"knew of CRE {cre.name} ,updating")
-            if not entry.external_id:
-                if entry.external_id != cre.id:
-                    raise ValueError(
-                        f"Attempting to register existing CRE"
-                        f"{entry.external_id}:{entry.name} with other ID {cre.id}"
-                    )
+            if entry.external_id and cre.id and entry.external_id != cre.id:
+                raise ValueError(
+                    f"Attempting to register existing CRE "
+                    f"{entry.external_id}:{entry.name} with other ID {cre.id}"
+                )
+            if not entry.external_id and cre.id:
                 entry.external_id = cre.id
-            if not entry.description:
+            if not entry.description and cre.description:
                 entry.description = cre.description
-            if not entry.tags:
-                entry.tags = ",".join(cre.tags)
+            if not entry.tags and cre.tags:
+                entry.tags = ",".join([str(t) for t in cre.tags])
+            self.session.commit()
             return entry
         else:
             logger.info("did not know of cre %s ,adding" % cre.name)
