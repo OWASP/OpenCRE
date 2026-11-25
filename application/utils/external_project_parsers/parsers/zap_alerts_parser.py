@@ -164,7 +164,7 @@ class ZAP(ParserInterface):
         alerts = []
         for mdfile in os.listdir(os.path.join(repo.working_dir, self.alerts_path)):
             pth = os.path.join(repo.working_dir, self.alerts_path, mdfile)
-            with open(pth) as mdf:
+            with open(pth, encoding="utf-8") as mdf:
                 mdtext = mdf.read()
                 alert = self.__parse_md_file(mdtext=mdtext, cache=cache)
                 if alert:
