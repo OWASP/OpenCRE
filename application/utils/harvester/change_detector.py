@@ -2,6 +2,7 @@ from cre_logging import get_logger
 
 logger = get_logger(__name__)
 
+import os
 import subprocess
 
 from .git_repository_client import GitRepositoryClient
@@ -54,11 +55,11 @@ class ChangeDetector:
                     str(self.repository_client.get_local_path()),
                     "diff",
                     "--name-only",
+                    "-z",
                     base,
                     target,
                 ],
                 capture_output=True,
-                text=True,
                 check=True,
                 timeout=60,
             )
@@ -66,9 +67,9 @@ class ChangeDetector:
             logger.error("Git command failed: %s", exc.stderr)
             raise
 
-        files = [
-            file_path for file_path in result.stdout.splitlines() if file_path.strip()
-        ]
+        # Git quotes special filenames in line-delimited output. NUL-delimited
+        # bytes retain the original paths, including non-ASCII and control chars.
+        files = [os.fsdecode(path) for path in result.stdout.split(b"\0") if path]
 
         return sorted(set(files))
 
