@@ -21,11 +21,17 @@ logger = get_logger(__name__)
 import contextlib
 import importlib.util
 import io
+import json
 import os
+import tempfile
 import unittest
-from typing import Iterator, List, Optional
+from typing import Iterator, List, Optional, Tuple
 
-from application.utils.librarian.schemas import CreCandidate, RetrievalAudit
+from application.utils.librarian.schemas import (
+    CreCandidate,
+    GoldenDatasetRow,
+    RetrievalAudit,
+)
 
 # The harness is a standalone script, not an importable package module.
 _HARNESS_PATH = os.path.join(
@@ -50,8 +56,6 @@ def _golden_row(
     ``cre_ids`` while ``review`` requires a ``reason_code``, so both are derived:
     rows with expected ids are linked, rows without route to review below the bar.
     """
-    from application.utils.librarian.schemas import GoldenDatasetRow
-
     expected: dict = {
         "decision": "linked" if cre_ids else "review",
         "cre_ids": cre_ids or None,
@@ -338,6 +342,86 @@ class BoundaryGateTest(unittest.TestCase):
 
         self.assertEqual(status, 1, "a boundary that rejects everything must fail")
         self.assertIn("FAILED (gates did not run)", out.getvalue())
+
+
+class ExplicitBoundaryGateTest(unittest.TestCase):
+    """Every selected explicit row must count toward the resolver gate."""
+
+    def _evaluate(
+        self, rows: List[GoldenDatasetRow], *selection: str
+    ) -> Tuple[int, str]:
+        with tempfile.TemporaryDirectory() as directory:
+            dataset = os.path.join(directory, "golden.json")
+            with open(dataset, "w", encoding="utf-8") as stream:
+                json.dump([row.model_dump(mode="json") for row in rows], stream)
+            with _captured_stdout() as out:
+                status = harness.main(["--dataset", dataset, *selection])
+        return status, out.getvalue()
+
+    def test_valid_explicit_rows_pass(self) -> None:
+        rows = [
+            _golden_row("e1", "explicit", "CRE 616-305", ["616-305"]),
+            _golden_row("e2", "explicit", "See CRE 616-305", ["616-305"]),
+        ]
+
+        status, report = self._evaluate(rows)
+
+        self.assertEqual(status, 0)
+        self.assertIn("2/2 — gate 100%: PASS", report)
+
+    def test_partial_explicit_boundary_rejection_fails(self) -> None:
+        rows = [
+            _golden_row("e1", "explicit", "CRE 616-305", ["616-305"]),
+            _golden_row("e2", "explicit", "   ", ["616-305"]),
+        ]
+
+        status, report = self._evaluate(rows)
+
+        self.assertEqual(status, 1)
+        self.assertIn("1/2 — gate 100%: FAIL", report)
+        self.assertIn("reached resolver: 1/2", report)
+
+    def test_all_explicit_rejections_fail_with_other_valid_rows(self) -> None:
+        rows = [
+            _golden_row("e1", "explicit", "   ", ["616-305"]),
+            _golden_row("p1", "positive", "alpha", ["616-305"]),
+        ]
+
+        status, report = self._evaluate(rows)
+
+        self.assertEqual(status, 1)
+        self.assertIn("0/1 reached the resolver", report)
+        self.assertIn("FAILED (gate did not run)", report)
+
+    def test_gate_counts_only_selected_explicit_rows(self) -> None:
+        rows = [
+            _golden_row("p1", "positive", "alpha", ["616-305"]),
+            _golden_row("e1", "explicit", "See CRE 616-305", ["616-305"]),
+            _golden_row("e2", "explicit", "   ", ["616-305"]),
+        ]
+        selections = [
+            (("--limit", "2"), 0, "1/1 — gate 100%: PASS"),
+            (("--slice", "explicit", "--limit", "1"), 0, "1/1 — gate 100%: PASS"),
+            (("--slice", "explicit"), 1, "1/2 — gate 100%: FAIL"),
+        ]
+        for selection, expected_status, expected_report in selections:
+            with self.subTest(selection=selection):
+                status, report = self._evaluate(rows, *selection)
+
+                self.assertEqual(status, expected_status)
+                self.assertIn(expected_report, report)
+
+    def test_nonexplicit_rejection_does_not_fail_explicit_gate(self) -> None:
+        rows = [
+            _golden_row("e1", "explicit", "CRE 616-305", ["616-305"]),
+            _golden_row("p1", "positive", "   ", ["616-305"]),
+        ]
+
+        status, report = self._evaluate(rows)
+
+        self.assertEqual(status, 0)
+        self.assertIn("1/1 — gate 100%: PASS", report)
+        self.assertIn("positive       0/1 (0%)", report)
 
 
 if __name__ == "__main__":
