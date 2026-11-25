@@ -120,7 +120,7 @@ Schema and DB access methods for user-owned standards and their sections.
 - Add to `Node_collection`:
   - `create_user_standard(user_id, name) → UserStandard`
   - `get_user_standards(user_id) → List[UserStandard]`
-  - `upsert_user_standard_sections(standard_id, sections) → None`
+  - `upsert_user_standard_sections(standard_id, user_id, sections) → int`
   - `get_user_standard_sections(standard_id, user_id) → List[UserStandardSection]`
   - `confirm_section_mapping(section_id, cre_db_id, user_id) → None`
   - `reject_section_mapping(section_id, user_id) → None`
@@ -203,7 +203,7 @@ A standalone mapping function and rq job that takes PENDING sections and produce
   2. Check for duplicate `standard_name` for this user → 409 if exists and no `overwrite=true`
   3. Call `create_user_standard(user_id, standard_name)`
   4. Parse CSV using existing `parse_export_format()` — reuse existing parser
-  5. Call `upsert_user_standard_sections(standard_id, sections)`
+  5. Call `upsert_user_standard_sections(standard_id, user_id, sections)`
   6. Enqueue `run_mapping(standard_id)` via rq
   7. Return 202
 
