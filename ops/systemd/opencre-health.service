@@ -1,0 +1,8 @@
+[Unit]
+Description=OpenCRE staging health check
+
+[Service]
+Type=oneshot
+# Alert endpoints live in this file, never in git:  ALERT_WEBHOOK_URL=...  NTFY_URL=https://ntfy.sh/<random-topic>
+EnvironmentFile=-/etc/opencre-health.env
+ExecStart=/usr/bin/python3 /home/sg/Projects/OpenCRE/scripts/ops/staging_host_health.py --notify
