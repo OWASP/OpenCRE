@@ -26,10 +26,10 @@ _REPO_ROOT = os.path.abspath(os.path.join(_HERE, "..", "..", ".."))
 _DATASET = os.path.join(_HERE, "fixtures", "golden_dataset.json")
 _JSON_SCHEMA = os.path.join(_HERE, "fixtures", "golden_dataset.schema.json")
 _BUILD_SCRIPT = os.path.join(_REPO_ROOT, "scripts", "build_golden_dataset.py")
-_DB = os.path.join(_REPO_ROOT, "standards_cache.sqlite")
 
 
 def _load(path):
+    """Load JSON fixture data from a file."""
     with open(path, encoding="utf-8") as fh:
         return json.load(fh)
 
@@ -37,10 +37,12 @@ def _load(path):
 class TestGoldenDatasetShape(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        """Load the dataset and validation schemas for this test class."""
         cls.rows = _load(_DATASET)
         cls.json_schema = _load(_JSON_SCHEMA)
 
     def test_has_at_least_the_asvs_core(self):
+        """Verify that the dataset contains the expected ASVS core."""
         # Master guide §9.3 + golden-dataset-plan §3: at least 277 ASVS-core rows.
         positive_asvs = [
             r
@@ -53,6 +55,7 @@ class TestGoldenDatasetShape(unittest.TestCase):
         self.assertGreaterEqual(len(positive_asvs), 277)
 
     def test_all_five_slices_present(self):
+        """Verify that all five dataset slices are present."""
         slices = Counter(r["slice"] for r in self.rows)
         self.assertEqual(
             set(slices),
@@ -63,6 +66,7 @@ class TestGoldenDatasetShape(unittest.TestCase):
             self.assertGreaterEqual(n, 5, msg=f"slice {s} only has {n} rows")
 
     def test_multilink_positive_rows_exist(self):
+        """Verify that positive multi-link rows are included."""
         # The Q-D scoring rule has nothing to exercise unless multi-link
         # ground truth is actually present somewhere.
         multi = [
@@ -74,6 +78,7 @@ class TestGoldenDatasetShape(unittest.TestCase):
         self.assertGreater(len(multi), 0, "no multi-link positive rows present")
 
     def test_every_row_validates_against_pydantic_model(self):
+        """Validate every dataset row against the Pydantic model."""
         errors = []
         for r in self.rows:
             try:
@@ -83,6 +88,7 @@ class TestGoldenDatasetShape(unittest.TestCase):
         self.assertEqual(errors, [], msg=f"first failure: {errors[:1]}")
 
     def test_every_row_validates_against_json_schema(self):
+        """Validate every dataset row against the JSON schema."""
         validator = jsonschema.Draft202012Validator(self.json_schema)
         first_errors = []
         for r in self.rows:
@@ -94,6 +100,7 @@ class TestGoldenDatasetShape(unittest.TestCase):
         self.assertEqual(first_errors, [])
 
     def test_provenance_is_recorded_per_row(self):
+        """Verify that each dataset row records its provenance."""
         for r in self.rows:
             self.assertTrue(
                 r["provenance"].get("ground_truth_source"),
@@ -101,6 +108,7 @@ class TestGoldenDatasetShape(unittest.TestCase):
             )
 
     def test_ids_are_unique(self):
+        """Verify that dataset row IDs are unique."""
         ids = [r["id"] for r in self.rows]
         self.assertEqual(len(ids), len(set(ids)))
 
@@ -115,6 +123,7 @@ class TestLoadDatasetRejectsDuplicateIds(unittest.TestCase):
     """
 
     def _load_harness(self):
+        """Load the dataset validation harness."""
         # The harness is a standalone script, not an importable module, so it is
         # loaded by path. spec_from_file_location returns None when the path is
         # not there, and a spec without a loader is possible too. The harness is
@@ -133,10 +142,12 @@ class TestLoadDatasetRejectsDuplicateIds(unittest.TestCase):
         return module
 
     def test_committed_dataset_loads(self):
+        """Verify that the committed dataset loads successfully."""
         harness = self._load_harness()
         self.assertEqual(len(harness.load_dataset(_DATASET)), len(_load(_DATASET)))
 
     def test_duplicate_id_is_rejected(self):
+        """Verify that duplicate dataset IDs are rejected."""
         import tempfile
 
         harness = self._load_harness()
@@ -156,11 +167,10 @@ class TestLoadDatasetRejectsDuplicateIds(unittest.TestCase):
 
 
 class TestDatasetDeterminism(unittest.TestCase):
-    """The committed JSON must re-derive identically from the DB."""
+    """The committed JSON must re-derive from fixture inputs."""
 
     def test_build_check_matches_committed_dataset(self):
-        if not os.path.exists(_DB):
-            self.skipTest("standards_cache.sqlite not present")
+        """Verify that builder check mode matches the committed dataset."""
         result = subprocess.run(
             [sys.executable, _BUILD_SCRIPT, "--check"],
             capture_output=True,
