@@ -1,6 +1,7 @@
 """Local storage for the MCP refresh token.
 
-OS keyring when one is usable, otherwise a 0600 file. Never writes to stdout:
+OS keyring when one is usable, otherwise a local file (mode 0600 on POSIX).
+Never writes to stdout:
 that stream carries JSON-RPC when the stdio server is running.
 """
 

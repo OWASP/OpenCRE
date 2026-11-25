@@ -44,9 +44,10 @@ Or point the MCP server at a hosted instance such as `https://opencre.org`.
 Tool arguments cannot override the base URL, and no credential can be passed
 as a tool argument.
 
-On Windows, a custom `OPENCRE_MCP_TOKEN_FILE` inherits the permissions of its
-parent folder. If you set this override, choose a folder that only your account
-can access, rather than a shared or synced folder.
+On Windows, a new custom `OPENCRE_MCP_TOKEN_FILE` inherits the ACL of its parent
+folder. An existing file keeps its own ACL. If you set this override, use a
+folder that only your account can access and check the file's ACL if it already
+exists.
 
 ## Start the MCP server
 
@@ -123,7 +124,8 @@ python -m application.mcp status
 python -m application.mcp logout
 ```
 
-The refresh token is stored in the OS keyring, falling back to a `0600` file.
+The refresh token is stored in the OS keyring, falling back to a file. On POSIX
+systems the file has mode `0600`; on Windows it uses the ACL described above.
 It is never written to stdout, never passed as a tool argument, and is redacted
 from any error text an MCP client can see.
 
