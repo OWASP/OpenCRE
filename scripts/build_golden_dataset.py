@@ -194,6 +194,83 @@ CURATED_AMBIGUOUS = [
 ]
 
 
+# Text mirrors the Cheat Sheet excerpts added to the fixture in #1036 (intro snippet + section headings).
+CHEATSHEET_FIXTURES = [
+    {
+        "id": "gold:cheatsheet:authorization:positive",
+        "section": "Authorization Cheat Sheet",
+        "section_path": "Authorization_Cheat_Sheet",
+        "title_hint": "Authorization Cheat Sheet",
+        "text": 'Authorization may be defined as "the process of verifying that a requested '
+        'action or service is approved for a specific entity" '
+        "([NIST](https://csrc.nist.gov/glossary/term/authorization)). Authorization "
+        "is distinct from authentication which is the process of verifying an "
+        "entity's identity. When designing and developing a software solution, it is "
+        "important to keep these distinctions in mind. A user who has been "
+        "authenticated (perhaps by providing a username and password) is often not "
+        "authorized t\n"
+        "Introduction\n"
+        "Recommendations\n"
+        "References",
+    },
+    {
+        "id": "gold:cheatsheet:rest-security:positive",
+        "section": "REST Security Cheat Sheet",
+        "section_path": "REST_Security_Cheat_Sheet",
+        "title_hint": "REST Security Cheat Sheet",
+        "text": "[REST](https://en.wikipedia.org/wiki/REST) (or **RE**presentational "
+        "**S**tate **T**ransfer) is an architectural style first described in [Roy "
+        "Fielding](https://en.wikipedia.org/wiki/Roy_Fielding)'s Ph.D. dissertation "
+        "on [Architectural Styles and the Design of Network-based Software "
+        "Architectures](https://www.ics.uci.edu/~fielding/pubs/dissertation/top.htm).\n"
+        "\n"
+        "It evolved as Fielding wrote the HTTP/1.1 and URI specs and has been proven "
+        "to be well-suited for developing distributed hypermedia applica\n"
+        "Introduction\n"
+        "HTTPS\n"
+        "Access Control\n"
+        "JWT\n"
+        "API Keys\n"
+        "Restrict HTTP methods\n"
+        "Preventing Out-of-Order API Execution\n"
+        "Input validation\n"
+        "Validate content types\n"
+        "Management endpoints\n"
+        "Error handling\n"
+        "Audit logs\n"
+        "Security Headers\n"
+        "CORS\n"
+        "Sensitive information in HTTP requests\n"
+        "HTTP Return Code",
+    },
+    {
+        "id": "gold:cheatsheet:ssrf-prevention:positive",
+        "section": "Server Side Request Forgery Prevention Cheat Sheet",
+        "section_path": "Server_Side_Request_Forgery_Prevention_Cheat_Sheet",
+        "title_hint": "Server-Side Request Forgery Prevention Cheat Sheet",
+        "text": "The objective of the cheat sheet is to provide advice regarding the "
+        "protection against [Server Side Request "
+        "Forgery](https://www.acunetix.com/blog/articles/server-side-request-forgery-vulnerability/) "
+        "(SSRF) attack.\n"
+        "\n"
+        "This cheat sheet will focus on the defensive point of view and will not "
+        "explain how to perform this attack. This "
+        "[talk](../assets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet_Orange_Tsai_Talk.pdf) "
+        "from the security researcher [Orange Tsai](https://twitter.com/orange_8361) "
+        "as we\n"
+        "Introduction\n"
+        "Context\n"
+        "Overview of a SSRF common flow\n"
+        "Cases\n"
+        "IMDSv2 in AWS\n"
+        "Deny-list (Last Resort)\n"
+        "Semgrep Rules\n"
+        "References\n"
+        "Tools and code used for schemas",
+    },
+]
+
+
 def _fetch_asvs_cre(conn: sqlite3.Connection, section_id: str) -> Optional[str]:
     rows = conn.execute(
         """
@@ -287,6 +364,48 @@ def build_positive_multilink(conn: sqlite3.Connection) -> List[Dict]:
                 },
             }
         )
+    return out
+
+
+def build_positive_cheatsheets() -> List[Dict]:
+    """Build positive golden rows from the OWASP Cheat Sheet supplement."""
+    supplement_path = (
+        REPO_ROOT
+        / "application/tests/fixtures/owasp_mappings/owasp_cheatsheets_supplement.json"
+    )
+
+    supplement = json.loads(supplement_path.read_text(encoding="utf-8"))
+    mappings = {entry["section"]: entry["cre_ids"] for entry in supplement}
+
+    out = []
+    for entry in CHEATSHEET_FIXTURES:
+        cre_ids = mappings.get(entry["section"])
+        if not cre_ids:
+            raise ValueError(
+                f"No CRE mapping found for Cheat Sheet {entry['section']!r}"
+            )
+
+        out.append(
+            {
+                "id": entry["id"],
+                "schema_version": SCHEMA_VERSION,
+                "slice": "positive",
+                "input": {
+                    "text": entry["text"],
+                    "title_hint": entry["title_hint"],
+                    "source_standard": "OWASP_CHEATSHEET",
+                },
+                "expected": {
+                    "decision": "linked",
+                    "cre_ids": cre_ids,
+                },
+                "provenance": {
+                    "section_path": entry["section_path"],
+                    "ground_truth_source": "owasp_cheatsheets_supplement.json",
+                },
+            }
+        )
+
     return out
 
 
@@ -430,6 +549,7 @@ def build(conn: sqlite3.Connection) -> List[Dict]:
     rows.extend(build_hard_negative(conn))
     rows.extend(build_update(conn))
     rows.extend(build_ambiguous())
+    rows.extend(build_positive_cheatsheets())
     return rows
 
 
