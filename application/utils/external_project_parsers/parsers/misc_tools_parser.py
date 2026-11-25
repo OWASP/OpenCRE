@@ -54,7 +54,7 @@ class MiscTools(ParserInterface):
         title_regexp = r"# (?P<title>(\w+ ?)+)"
         cre_link = r".*\[.*\]\((?P<url>(https\:\/\/www\.)?opencre\.org\/cre\/(?P<cre>\d+-\d+).*)"
         tool_entries: List[defs.Tool] = []
-        with open(readme) as rdf:
+        with open(readme, encoding="utf-8") as rdf:
             mdtext = rdf.read()
 
             if "opencre.org" not in mdtext:

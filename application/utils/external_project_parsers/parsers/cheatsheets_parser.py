@@ -85,7 +85,7 @@ class Cheatsheets(ParserInterface):
             pth = os.path.join(repo.working_dir, cheatsheets_path, mdfile)
             name = None
 
-            with open(pth) as mdf:
+            with open(pth, encoding="utf-8") as mdf:
                 mdtext = mdf.read()
                 if "opencre.org" not in mdtext:
                     continue
