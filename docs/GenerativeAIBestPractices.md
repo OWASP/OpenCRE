@@ -17,13 +17,13 @@ Essentially you will need to set a score threshold for your embedding, this is h
 import openai
 
 def handle_query(query, score_threshold=0.5):
-    response = openai.Completion.create(engine="davinci-codex", prompt=query, max_tokens=50, n=1, stop=None, temperature=0.5)
-    results, score = response.choices[0].text.strip(), response.choices[0].confidence
-
+    response = search_private_database(query)
+    results = response
+score = results[0]["similarity"] if results else 0
     if score < score_threshold:
         return "We found no relevant information."
     else:
-        return f"From private knowledge: {results}" if is_private_data(query) else f"From general knowledge: {results}"
+        return f"From private knowledge: {results[0]['content']}"
 </code></pre>
 
 
@@ -63,7 +63,9 @@ def get_tiered_data(user_id):
 
 def process_query_with_tiered_data(query, user_id):
     public_data, user_specific_data = get_tiered_data(user_id)
-    combined_prompt = generate_prompt_from_data(public_data, user_specific_data)
+    combined_prompt = generate_prompt_from_data(
+    public_data, user_specific_data, persona_data
+)
     response = openai.Completion.create(engine="davinci-codex", prompt=combined_prompt + query, max_tokens=50, n=1, stop=None, temperature=0.5)
     return response.choices[0].text.strip()
 </code></pre>
