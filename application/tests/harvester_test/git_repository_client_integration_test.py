@@ -247,6 +247,30 @@ class GitRepositoryClientIntegrationTests(unittest.TestCase):
         self.assertEqual(files, ["file.txt"])
         self.assertEqual(commits, [target])
 
+    def test_change_detector_skips_files_deleted_at_target_commit(self):
+        client = self.create_client()
+        client.clone()
+        detector = ChangeDetector(client)
+
+        (self.work / "kept.md").write_text("before")
+        (self.work / "deleted.md").write_text("remove me")
+        git("add", ".", cwd=self.work)
+        git("commit", "-m", "add documentation", cwd=self.work)
+        git("push", "origin", "main", cwd=self.work)
+        client.fetch()
+        base = client.get_current_commit_sha()
+
+        (self.work / "kept.md").write_text("after")
+        (self.work / "deleted.md").unlink()
+        git("add", "-A", cwd=self.work)
+        git("commit", "-m", "edit and delete documentation", cwd=self.work)
+        git("push", "origin", "main", cwd=self.work)
+        client.fetch()
+        target = client.get_current_commit_sha()
+
+        self.assertEqual(detector.get_modified_files_since(base, target), ["kept.md"])
+        self.assertEqual(client.get_file_at_commit(target, "kept.md"), "after")
+
     def test_change_detector_returns_commits_oldest_first(self):
         client = self.create_client()
         client.clone()
