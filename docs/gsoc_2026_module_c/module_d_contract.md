@@ -115,6 +115,17 @@ Review rows carry one, in this precedence order:
 | `UPDATE_AMBIGUOUS` | it restates an existing link, ambiguously |
 | `BELOW_THRESHOLD` | the calibrated confidence did not clear τ |
 
+A nonempty shortlist of fewer than two candidates — i.e. one candidate — with
+no blocking safety flag is sent to review as `BELOW_THRESHOLD` with
+`confidence = 0.0`. One logit carries no signal that softmax can calibrate
+against (its top-1 mass is 1.0 by construction), so the pipeline does not score
+it and this reason code also covers the "nothing to calibrate" case. At τ = 0
+the recorded 0.0 would otherwise clear the bar, so the rule is enforced in the
+decision step itself rather than through the threshold. The precedence table
+above still rules the other cases: an empty shortlist is `NO_CANDIDATES`, and a
+one-candidate shortlist with the safety guard flagging adversarial content or
+an ambiguous update carries that reason instead.
+
 `ADVERSARIAL_FLAG` and `UPDATE_AMBIGUOUS` cannot fire yet: the seam is wired into
 `decide()`, but it ships with `NullSafetyGuard`, which evaluates nothing and
 reports `evaluated=False`. Every real run today says so in its `RunSummary`
