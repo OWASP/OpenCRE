@@ -10,6 +10,8 @@ export interface Document {
   hyperlink?: string;
   /** Resolved URL used for embedding fetch (e.g. with #fragment); optional chatbot-only field */
   embeddingsUrl?: string;
+  /** Chatbot only: the number the answer cites this reference by, as [n] */
+  rank?: number;
   section?: string;
   subsection?: string;
   tags?: string[];

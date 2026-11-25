@@ -195,6 +195,6 @@ This deletes every row in the `embeddings` table, then runs the same full pass a
 
 ### Chatbot and deep links
 
-The chatbot matches your question to a **standard node embedding**, then answers using that node’s `embeddings_content`. When **`embeddings_url`** is set (e.g. OWASP AI Exchange with a `#fragment`), the API adds it as **`embeddingsUrl`** on the reference row alongside the unchanged catalog **`hyperlink`**; the UI shows a separate “Scoped source (embedding URL)” link. The LLM context includes an `Embeddings_URL` line for citations.
+The chatbot finds the top matching **Standard** and **CRE** embeddings for your question, keeps the best section of each document, and sends up to 5 numbered passages to the model, which cites them as `[n]`. Standards supply the text from `embeddings_content`. A CRE supplies only its description, so a question that matches nothing but name-only CREs gets an ungrounded answer. When **`embeddings_url`** is set (e.g. OWASP AI Exchange with a `#fragment`), the API adds it as **`embeddingsUrl`** on the reference row alongside the unchanged catalog **`hyperlink`**; the UI shows a separate “Scoped source (embedding URL)” link, and the passage header carries the URL for citations. The `CHATBOT_*` settings are listed in `.env.example`.
 
 This is it, please follow the [CONTRIBUTING](./CONTRIBUTING.md) guidelines while contributing and thank you for your interest in OpenCRE.
