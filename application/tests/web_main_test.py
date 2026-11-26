@@ -104,6 +104,37 @@ class TestMain(unittest.TestCase):
         self.assertEqual(503, response.status_code)
         connect_mock.assert_called_once()
 
+    @patch.object(rq.job.Job, "fetch")
+    @patch.object(app_redis, "connect")
+    def test_job_results_returns_503_when_result_read_fails(
+        self, connect_mock, fetch_mock
+    ) -> None:
+        fetch_mock.return_value.get_status.return_value = rq.job.JobStatus.FINISHED
+        fetch_mock.return_value.latest_result.side_effect = (
+            redis_client.exceptions.ConnectionError("connection lost")
+        )
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/ma_job_results?id=job-123")
+        self.assertEqual(503, response.status_code)
+        connect_mock.return_value.exists.assert_not_called()
+
+    @patch.object(rq.job.Job, "fetch")
+    @patch.object(app_redis, "connect")
+    def test_job_results_returns_503_when_cache_read_fails(
+        self, connect_mock, fetch_mock
+    ) -> None:
+        fetch_mock.return_value.get_status.return_value = rq.job.JobStatus.FINISHED
+        result = fetch_mock.return_value.latest_result.return_value
+        result.type = result.Type.SUCCESSFUL
+        result.return_value = [["CWE", "ASVS"], {}]
+        connect_mock.return_value.exists.side_effect = (
+            redis_client.exceptions.ConnectionError("connection lost")
+        )
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/ma_job_results?id=job-123")
+        self.assertEqual(503, response.status_code)
+        connect_mock.return_value.exists.assert_called_once()
+
     def test_extend_cre_with_tag_links(self) -> None:
         """
         Given:
