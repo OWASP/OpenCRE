@@ -14,6 +14,7 @@ from types import SimpleNamespace
 from unittest.mock import patch, Mock
 
 import rq
+import redis as redis_client
 import os
 import networkx as nx
 
@@ -54,6 +55,85 @@ class TestMain(unittest.TestCase):
         self.collection.graph.with_graph(
             graph=nx.DiGraph(), graph_data=[]
         )  # initialize the graph singleton for the tests to be unique
+
+    @patch.object(app_redis, "connect")
+    def test_job_results_requires_id(self, connect_mock) -> None:
+        with self.app.test_client() as client:
+            for query in ("", "?id=", "?id=%20"):
+                with self.subTest(query=query):
+                    response = client.get(f"/rest/v1/ma_job_results{query}")
+                    self.assertEqual(400, response.status_code)
+        connect_mock.assert_not_called()
+
+    @patch.object(rq.job.Job, "fetch")
+    @patch.object(app_redis, "connect")
+    def test_job_results_returns_503_when_redis_is_unavailable(
+        self, connect_mock, fetch_mock
+    ) -> None:
+        fetch_mock.side_effect = redis_client.exceptions.ConnectionError(
+            "connection refused"
+        )
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/ma_job_results?id=job-123")
+        self.assertEqual(503, response.status_code)
+        fetch_mock.assert_called_once_with(
+            id="job-123", connection=connect_mock.return_value
+        )
+
+    @patch.object(rq.job.Job, "fetch")
+    @patch.object(app_redis, "connect")
+    def test_job_results_keeps_unknown_job_as_404(
+        self, connect_mock, fetch_mock
+    ) -> None:
+        fetch_mock.side_effect = rq.exceptions.NoSuchJobError("missing")
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/ma_job_results?id=missing")
+        self.assertEqual(404, response.status_code)
+        connect_mock.assert_called_once()
+
+    @patch.object(rq.job.Job, "fetch")
+    @patch.object(app_redis, "connect")
+    def test_job_results_returns_503_when_redis_drops_after_fetch(
+        self, connect_mock, fetch_mock
+    ) -> None:
+        fetch_mock.return_value.get_status.side_effect = (
+            redis_client.exceptions.ConnectionError("connection lost")
+        )
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/ma_job_results?id=job-123")
+        self.assertEqual(503, response.status_code)
+        connect_mock.assert_called_once()
+
+    @patch.object(rq.job.Job, "fetch")
+    @patch.object(app_redis, "connect")
+    def test_job_results_returns_503_when_result_read_fails(
+        self, connect_mock, fetch_mock
+    ) -> None:
+        fetch_mock.return_value.get_status.return_value = rq.job.JobStatus.FINISHED
+        fetch_mock.return_value.latest_result.side_effect = (
+            redis_client.exceptions.ConnectionError("connection lost")
+        )
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/ma_job_results?id=job-123")
+        self.assertEqual(503, response.status_code)
+        connect_mock.return_value.exists.assert_not_called()
+
+    @patch.object(rq.job.Job, "fetch")
+    @patch.object(app_redis, "connect")
+    def test_job_results_returns_503_when_cache_read_fails(
+        self, connect_mock, fetch_mock
+    ) -> None:
+        fetch_mock.return_value.get_status.return_value = rq.job.JobStatus.FINISHED
+        result = fetch_mock.return_value.latest_result.return_value
+        result.type = result.Type.SUCCESSFUL
+        result.return_value = [["CWE", "ASVS"], {}]
+        connect_mock.return_value.exists.side_effect = (
+            redis_client.exceptions.ConnectionError("connection lost")
+        )
+        with self.app.test_client() as client:
+            response = client.get("/rest/v1/ma_job_results?id=job-123")
+        self.assertEqual(503, response.status_code)
+        connect_mock.return_value.exists.assert_called_once()
 
     def test_extend_cre_with_tag_links(self) -> None:
         """

@@ -17,6 +17,7 @@ from typing import Any
 
 from rq import job, exceptions
 from rq import Queue
+from redis.exceptions import RedisError
 
 from application.utils import redis
 from application.database import db
@@ -498,33 +499,47 @@ def map_analysis_weak_links() -> Any:
 def fetch_job() -> Any:
     logger.debug("fetching job results")
     jobid = request.args.get("id")
+    if not jobid or not jobid.strip():
+        abort(400, "id is required")
     try:
         conn = redis.connect()
-    except Exception as exc:
-        abort(503, f"Job queue unavailable: {exc}")
+    except Exception:
+        logger.exception("Job queue connection failed")
+        abort(503, "Job queue unavailable")
+    if conn is None:
+        abort(503, "Job queue unavailable")
     try:
         res = job.Job.fetch(id=jobid, connection=conn)
-    except exceptions.NoSuchJobError as nje:
+    except exceptions.NoSuchJobError:
         abort(404, "No such job")
+    except RedisError:
+        logger.exception("Job queue request failed")
+        abort(503, "Job queue unavailable")
 
     logger.debug("job exists")
-    if res.get_status() == job.JobStatus.FAILED:
+    try:
+        status = res.get_status()
+    except RedisError:
+        logger.exception("Job queue status request failed")
+        abort(503, "Job queue unavailable")
+    if status == job.JobStatus.FAILED:
         abort(500, "background job failed")
-    elif res.get_status() == job.JobStatus.STOPPED:
+    elif status == job.JobStatus.STOPPED:
         abort(500, "background job stopped")
-    elif res.get_status() == job.JobStatus.CANCELED:
+    elif status == job.JobStatus.CANCELED:
         abort(500, "background job canceled")
-    elif (
-        res.get_status() == job.JobStatus.STARTED
-        or res.get_status() == job.JobStatus.QUEUED
-    ):
+    elif status == job.JobStatus.STARTED or status == job.JobStatus.QUEUED:
         logger.debug("but hasn't finished")
-        return jsonify({"status": res.get_status()})
+        return jsonify({"status": status})
 
-    result = res.latest_result()
+    try:
+        result = res.latest_result()
+    except RedisError:
+        logger.exception("Job queue result request failed")
+        abort(503, "Job queue unavailable")
     logger.debug("and has finished")
 
-    if res.latest_result().type == result.Type.SUCCESSFUL:
+    if result.type == result.Type.SUCCESSFUL:
         ga_result = result.return_value
         logger.debug("and has results")
 
@@ -532,7 +547,12 @@ def fetch_job() -> Any:
             standards = ga_result[0]
             standards_hash = gap_analysis.make_resources_key(standards)
 
-            if conn.exists(standards_hash):
+            try:
+                cached = conn.exists(standards_hash)
+            except RedisError:
+                logger.exception("Job queue cache request failed")
+                abort(503, "Job queue unavailable")
+            if cached:
                 logger.debug("and hash is already in cache")
                 # ga = conn.get(standards_hash)
                 database = db.Node_collection()
@@ -547,12 +567,12 @@ def fetch_job() -> Any:
                             "Finished job does not have a result object, this is a bug!"
                         )
                         abort(500, "this is a bug, please raise a ticket")
-        return jsonify({"status": res.get_status()})
-    elif res.latest_result().type == result.Type.FAILED:
-        logger.error(res.latest_result().exc_string)
+        return jsonify({"status": status})
+    elif result.type == result.Type.FAILED:
+        logger.error(result.exc_string)
         abort(500)
     else:
-        logger.warning(f"job stopped? {res.latest_result().type}")
+        logger.warning(f"job stopped? {result.type}")
         abort(500)
 
 
