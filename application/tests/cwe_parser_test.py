@@ -11,6 +11,8 @@ from application import create_app, sqla  # type: ignore
 from application.database import db
 from unittest.mock import Mock, patch
 import os
+import builtins
+from tempfile import TemporaryDirectory
 
 from application.utils.external_project_parsers.parsers import cwe
 from application.prompt_client import prompt_client
@@ -28,12 +30,35 @@ class TestCWEParser(unittest.TestCase):
         sqla.create_all()
         self.collection = db.Node_collection()
 
+    def test_xml_encoding_is_independent_of_system_locale(self) -> None:
+        real_open = builtins.open
+
+        def windows_open(path, mode="r", **kwargs):
+            if "b" not in mode and "encoding" not in kwargs:
+                kwargs["encoding"] = "cp1254"
+            return real_open(path, mode, **kwargs)
+
+        for encoding, name in (("UTF-8", "Quote ” and dash –"), ("ISO-8859-1", "Café")):
+            with self.subTest(encoding=encoding), TemporaryDirectory() as directory:
+                source = Path(directory) / "cwe.xml"
+                source.write_bytes(
+                    (
+                        f'<?xml version="1.0" encoding="{encoding}"?>'
+                        "<Weakness_Catalog><Weaknesses>"
+                        f'<Weakness ID="999999" Name="{name}" Status="Stable"/>'
+                        "</Weaknesses></Weakness_Catalog>"
+                    ).encode(encoding)
+                )
+                with patch.object(cwe, "open", windows_open, create=True):
+                    entries = cwe.CWE().register_cwe(self.collection, str(source))
+                self.assertEqual([name], [entry.section for entry in entries])
+
     @patch.object(requests, "get")
     def test_register_CWE(self, mock_requests) -> None:
         tmpdir = mkdtemp()
         tmpFile = os.path.join(tmpdir, "cwe.xml")
         tmpzip = os.path.join(tmpdir, "cwe.zip")
-        with open(tmpFile, "w") as cx:
+        with open(tmpFile, "w", encoding="utf-8") as cx:
             cx.write(self.CWE_xml)
         with zipfile.ZipFile(tmpzip, "w", zipfile.ZIP_DEFLATED) as zipf:
             zipf.write(tmpFile, arcname="cwe.xml")
