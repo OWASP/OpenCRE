@@ -254,7 +254,7 @@ class CWE(ParserInterface):
         entries = []
         entries_by_id = {}
         related_ids_by_cwe = {}
-        with open(xml_file, "r") as xml:
+        with open(xml_file, "rb") as xml:
             weakness_catalog = xmltodict.parse(xml.read()).get("Weakness_Catalog")
         prohibited_ids = self.collect_prohibited_cwe_ids(weakness_catalog)
         self.delete_cwe_entries(cache, prohibited_ids)
