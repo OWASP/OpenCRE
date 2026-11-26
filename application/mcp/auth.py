@@ -121,17 +121,26 @@ def login(on_code: Callable[[str, str], None]) -> Dict[str, Any]:
     interval = device.get("interval", 5)
     deadline = time.time() + device["expires_in"]
     while time.time() < deadline:
-        time.sleep(interval)
-        polled = _post_google(
-            TOKEN_URL,
-            {
-                "client_id": client_id,
-                "client_secret": client_secret,
-                "device_code": device["device_code"],
-                "grant_type": DEVICE_GRANT,
-            },
-            "device authorization polling",
-        )
+        time.sleep(min(interval, max(0, deadline - time.time())))
+        if time.time() >= deadline:
+            break
+        try:
+            polled = _post_google(
+                TOKEN_URL,
+                {
+                    "client_id": client_id,
+                    "client_secret": client_secret,
+                    "device_code": device["device_code"],
+                    "grant_type": DEVICE_GRANT,
+                },
+                "device authorization polling",
+            )
+        except AuthError as exc:
+            if isinstance(exc.__cause__, requests.Timeout):
+                # RFC 8628 section 3.5: reduce polling frequency on timeout.
+                interval *= 2
+                continue
+            raise
         try:
             body = polled.json()
         except ValueError:

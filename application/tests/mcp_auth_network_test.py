@@ -2,7 +2,7 @@
 
 import os
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, call, patch
 
 import requests
 
@@ -29,7 +29,7 @@ class McpAuthNetworkTest(unittest.TestCase):
             "Login failed: device authorization could not reach Google"
         )
 
-    def test_login_reports_poll_timeout(self) -> None:
+    def test_login_retries_poll_timeouts_with_backoff(self) -> None:
         class DeviceResponse:
             status_code = 200
 
@@ -37,7 +37,7 @@ class McpAuthNetworkTest(unittest.TestCase):
                 return {
                     "verification_url": "https://example.invalid/verify",
                     "user_code": "CODE",
-                    "interval": 0,
+                    "interval": 5,
                     "expires_in": 60,
                     "device_code": "device-code",
                 }
@@ -45,14 +45,44 @@ class McpAuthNetworkTest(unittest.TestCase):
         with patch.object(
             auth.requests,
             "post",
-            side_effect=[DeviceResponse(), requests.Timeout("secret")],
+            side_effect=[
+                DeviceResponse(),
+                requests.ConnectTimeout("secret"),
+                requests.ConnectTimeout("secret"),
+                Mock(status_code=200, json=lambda: {"refresh_token": "refresh"}),
+            ],
         ):
-            with patch.object(auth.time, "sleep"):
-                with self.assertRaisesRegex(
-                    auth.AuthError, "device authorization polling timed out after 30s"
-                ) as error:
+            with patch.object(auth.time, "sleep") as sleep:
+                with patch.object(token_store, "save") as save:
                     auth.login(lambda url, code: None)
-        self.assertNotIn("secret", str(error.exception))
+        self.assertEqual(sleep.call_args_list, [call(5), call(10), call(20)])
+        save.assert_called_once_with("refresh")
+
+    def test_poll_timeout_stops_when_code_expires(self) -> None:
+        device = Mock(status_code=200)
+        device.json.return_value = {
+            "verification_url": "https://example.invalid/verify",
+            "user_code": "CODE",
+            "interval": 5,
+            "expires_in": 60,
+            "device_code": "device-code",
+        }
+        with patch.object(
+            auth.requests,
+            "post",
+            side_effect=[device] + [requests.ConnectTimeout("secret")] * 3,
+        ) as post:
+            with patch.object(auth.time, "time", return_value=0) as clock:
+
+                def advance(seconds):
+                    clock.return_value += seconds
+
+                with patch.object(auth.time, "sleep", side_effect=advance) as sleep:
+                    with self.assertRaisesRegex(auth.AuthError, "code expired"):
+                        auth.login(lambda url, code: None)
+        self.assertEqual(post.call_count, 4)
+        self.assertEqual(sleep.call_args_list, [call(5), call(10), call(20), call(25)])
+        self.assertEqual(clock.return_value, 60)
 
     def test_status_reports_refresh_connection_failure(self) -> None:
         with patch.object(token_store, "load", return_value="stored-refresh-token"):
