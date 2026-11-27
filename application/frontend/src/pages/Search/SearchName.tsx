@@ -1,6 +1,7 @@
 import axios from 'axios';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { Message } from 'semantic-ui-react';
 
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
 import { useEnvironment } from '../../hooks';
@@ -15,7 +16,7 @@ const NODES = ['Standard', 'Tool', 'Code'];
 export const SearchName = () => {
   const { searchTerm } = useParams<{ searchTerm: string }>();
   const { apiUrl } = useEnvironment();
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [error, setError] = useState<string | Object | null>(null);
 
@@ -57,21 +58,44 @@ export const SearchName = () => {
     }
   }
 
+  const hasCres = Boolean(cres && cres.length > 0);
+  const hasNodes = Boolean(nodes && nodes.length > 0);
+  const hasResults = hasCres || hasNodes;
+
   return (
     <div className="cre-page">
       <h1 className="standard-page__heading">
         Results matching : <i>{searchTerm}</i>
       </h1>
       <LoadingAndErrorIndicator loading={loading} error={error} />
-      {!loading && !error && (
+      <div role="status" aria-live="polite">
+        {!loading && !error && !hasResults && (
+          <Message info>
+            <Message.Header>No results match your search.</Message.Header>
+            <p>No CREs or sources were found for &ldquo;{searchTerm}&rdquo;.</p>
+          </Message>
+        )}
+        {!loading && !error && hasResults && (!hasCres || !hasNodes) && (
+          <span className="sr-only">
+            {!hasCres
+              ? 'Search complete: no matching CREs found.'
+              : 'Search complete: no matching sources found.'}
+          </span>
+        )}
+      </div>
+      {!loading && !error && hasResults && (
         <div className="ui grid">
           <div className="eight wide column">
             <h1 className="standard-page__heading">Matching CREs</h1>
-            {cres && <SearchResults results={cres} />}
+            {hasCres ? <SearchResults results={cres} /> : <Message info>No CREs match this search.</Message>}
           </div>
           <div className="eight wide column">
             <h1 className="standard-page__heading">Matching sources</h1>
-            {nodes && <SearchResults results={nodes} />}
+            {hasNodes ? (
+              <SearchResults results={nodes} />
+            ) : (
+              <Message info>No sources match this search.</Message>
+            )}
           </div>
         </div>
       )}
