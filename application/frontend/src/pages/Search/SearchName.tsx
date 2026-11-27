@@ -1,6 +1,7 @@
 import axios from 'axios';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { Message } from 'semantic-ui-react';
 
 import { LoadingAndErrorIndicator } from '../../components/LoadingAndErrorIndicator';
 import { useEnvironment } from '../../hooks';
@@ -57,6 +58,10 @@ export const SearchName = () => {
     }
   }
 
+  const hasCres = Boolean(cres && cres.length > 0);
+  const hasNodes = Boolean(nodes && nodes.length > 0);
+  const hasResults = hasCres || hasNodes;
+
   return (
     <div className="cre-page">
       <h1 className="standard-page__heading">
@@ -64,16 +69,33 @@ export const SearchName = () => {
       </h1>
       <LoadingAndErrorIndicator loading={loading} error={error} />
       {!loading && !error && (
-        <div className="ui grid">
-          <div className="eight wide column">
-            <h1 className="standard-page__heading">Matching CREs</h1>
-            {cres && <SearchResults results={cres} />}
-          </div>
-          <div className="eight wide column">
-            <h1 className="standard-page__heading">Matching sources</h1>
-            {nodes && <SearchResults results={nodes} />}
-          </div>
-        </div>
+        <>
+          {!hasResults ? (
+            <Message info>
+              <Message.Header>No results match your search.</Message.Header>
+              <p>No CREs or sources were found for &ldquo;{searchTerm}&rdquo;.</p>
+            </Message>
+          ) : (
+            <div className="ui grid">
+              <div className="eight wide column">
+                <h1 className="standard-page__heading">Matching CREs</h1>
+                {hasCres ? (
+                  <SearchResults results={cres} />
+                ) : (
+                  <Message info>No CREs match this search.</Message>
+                )}
+              </div>
+              <div className="eight wide column">
+                <h1 className="standard-page__heading">Matching sources</h1>
+                {hasNodes ? (
+                  <SearchResults results={nodes} />
+                ) : (
+                  <Message info>No sources match this search.</Message>
+                )}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
