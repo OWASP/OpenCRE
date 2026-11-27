@@ -169,8 +169,7 @@ class ExportSheet:
         """
         Given a cre to inject and a list of higher_cres to look for in order to inject afterwards, will inject the cre in the body
         """
-        lineIndex = 0
-        for line in self.body:
+        for lineIndex, line in enumerate(self.body):
             for key in line.keys():
                 ancestor_id = line[key].split(defs.ExportFormat.separator)[0]
                 if key.startswith("CRE") and ancestor_id in [
@@ -194,7 +193,6 @@ class ExportSheet:
                             entry.update(new_entry)
                     self.body.insert(lineIndex + 1, entry)
                     return None
-        lineIndex += 1
 
     def prepare_spreadsheet(
         self, docs: List[defs.Document], storage: db.Node_collection

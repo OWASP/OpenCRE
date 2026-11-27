@@ -764,6 +764,49 @@ class TestMain(unittest.TestCase):
         )
         # mocked_export.assert_called_with(loc) #we don't export anymore
 
+    @patch("application.utils.spreadsheet.write_spreadsheet")
+    def test_create_spreadsheet_uses_export_sheet_and_collection(
+        self, mocked_write_spreadsheet: Mock
+    ) -> None:
+        root_a = defs.CRE(id="000-001", name="Root A")
+        root_b = defs.CRE(id="000-002", name="Root B")
+        child_b = defs.CRE(
+            id="100-002",
+            name="Child B",
+            links=[defs.Link(document=root_b, ltype=defs.LinkTypes.Contains)],
+        )
+        collection = Mock(spec=db.Node_collection)
+        collection.get_root_cres.return_value = [root_a, root_b]
+        collection.get_cre_hierarchy.side_effect = lambda cre: (
+            0 if cre.id.startswith("000") else 1
+        )
+        collection.get_cre_path.side_effect = lambda fromID, toID: (
+            [root_b, child_b] if (fromID, toID) == ("100-002", "000-002") else []
+        )
+
+        mocked_write_spreadsheet.return_value = "https://example.com/sheet"
+        url = main.create_spreadsheet(
+            collection=collection,
+            exported_documents=[root_a, root_b, child_b],
+            title="Test Export",
+            share_with=["reviewer@example.com"],
+        )
+
+        self.assertEqual(url, "https://example.com/sheet")
+        mocked_write_spreadsheet.assert_called_once()
+        kwargs = mocked_write_spreadsheet.call_args.kwargs
+        self.assertEqual(kwargs["title"], "Test Export")
+        self.assertEqual(kwargs["emails"], ["reviewer@example.com"])
+        ordered_cres = [row.get("CRE 0") or row.get("CRE 1") for row in kwargs["docs"]]
+        self.assertEqual(
+            ordered_cres,
+            [
+                "000-001|Root A",
+                "000-002|Root B",
+                "100-002|Child B",
+            ],
+        )
+
     # @patch("application.cmd.cre_main.prepare_for_review")
     # @patch("application.cmd.cre_main.db_connect")
     # @patch("application.cmd.cre_main.get_cre_files_from_disk")

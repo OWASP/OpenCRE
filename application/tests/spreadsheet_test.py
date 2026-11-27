@@ -259,3 +259,43 @@ class TestDB(unittest.TestCase):
         )
 
         self.assertEqual(result, {})
+
+    def test_inject_cre_in_processed_body_inserts_after_parent_row(self) -> None:
+        sheet = ExportSheet()
+        parent_a = defs.CRE(id="000-001", name="First Root")
+        parent_b = defs.CRE(id="000-002", name="Second Root")
+        parent_c = defs.CRE(id="000-003", name="Third Root")
+        sheet.body = [
+            sheet.write_cre_entry(parent_a, depth=0),
+            sheet.write_cre_entry(parent_b, depth=0),
+            sheet.write_cre_entry(parent_c, depth=0),
+        ]
+
+        child = defs.CRE(
+            id="100-001",
+            name="Child Of Second",
+            links=[
+                defs.Link(
+                    document=defs.Standard(name="ASVS", section="V1.1"),
+                    ltype=defs.LinkTypes.LinkedTo,
+                ),
+                defs.Link(
+                    document=defs.Standard(name="ASVS", section="V1.2"),
+                    ltype=defs.LinkTypes.LinkedTo,
+                ),
+            ],
+        )
+
+        sheet.inject_cre_in_processed_body(cre=child, higher_cres=[parent_b])
+
+        cre_columns = [row.get("CRE 0") or row.get("CRE 1") for row in sheet.body]
+        self.assertEqual(
+            cre_columns,
+            [
+                "000-001|First Root",
+                "000-002|Second Root",
+                "100-001|Child Of Second",
+                "100-001|Child Of Second",
+                "000-003|Third Root",
+            ],
+        )

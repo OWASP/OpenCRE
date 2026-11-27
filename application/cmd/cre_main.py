@@ -1152,7 +1152,9 @@ def create_spreadsheet(
 ) -> Any:
     """Reads cre docs exported from a standards_collection.export()
     dumps each doc into a workbook"""
-    flat_dicts = sheet_utils.prepare_spreadsheet(docs=exported_documents)
+    flat_dicts = sheet_utils.ExportSheet().prepare_spreadsheet(
+        docs=exported_documents, storage=collection
+    )
     return sheet_utils.write_spreadsheet(
         title=title, docs=flat_dicts, emails=share_with
     )
