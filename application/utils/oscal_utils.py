@@ -112,7 +112,7 @@ def list_to_oscal(documents: List[defs.Standard | defs.Tool]) -> str:
                 props.append(
                     common.Property(
                         name="sectionID",
-                        value="".join(doc.section.splitlines()).strip(),
+                        value="".join(doc.sectionID.splitlines()).strip(),
                     )
                 )
             controls.append(
