@@ -5,7 +5,7 @@ logger = get_logger(__name__)
 import os
 import requests
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from application.utils import redis
 from flask import json as flask_json
 import json
@@ -22,6 +22,8 @@ PENALTIES = {
 }
 
 GAP_ANALYSIS_TIMEOUT = "129600s"  # 36 hours
+PRELOAD_MAX_FAILURES = 10
+PRELOAD_POLL_SECONDS = 30
 OPENCRE_STANDARD_NAME = "OpenCRE"
 OPENCRE_OVERLAP_LINK_TYPES = (
     defs.LinkTypes.LinkedTo,
@@ -400,42 +402,85 @@ def schedule(standards: List[str], database):
     return {"result": res.get("result") if isinstance(res, dict) else res}
 
 
-def preload(target_url: str):
-    waiting = []
+def preload(target_url: str) -> List[str]:
+    """
+    Poll map_analysis until every standard pair is cached or given up on.
+
+    A pair still running under the same job id is left alone, since GA jobs may
+    run for GAP_ANALYSIS_TIMEOUT. A pair counts a failure on a non-200 response,
+    on a 200 with neither result nor job id, and when its job id changes, because
+    map_analysis enqueues a new job when the last one ended without a result (or
+    its in-flight key expired). Seeing the same job again clears the count. After
+    PRELOAD_MAX_FAILURES failures in a row a pair is dropped, so one bad pair
+    cannot block the run forever.
+
+    Returns the dropped pairs as ``A->B`` strings.
+    """
     standards_request = requests.get(f"{target_url}/rest/v1/standards")
     standards = standards_request.json()
 
-    def calculate_a_to_b(sa: str, sb: str) -> bool:
+    def poll_pair(sa: str, sb: str) -> Tuple[bool, Optional[str]]:
+        """Returns (cached, job_id)."""
         res = requests.get(
             f"{target_url}/rest/v1/map_analysis?standard={sa}&standard={sb}"
         )
         if res.status_code != 200:
             logger.warning("%s->%s returned %s", sa, sb, res.status_code)
-            return False
+            return False, None
 
         tojson = res.json()
         if tojson.get("result"):
-            return True
+            return True, None
         if tojson.get("job_id"):
             logger.info("%s->%s waiting", sa, sb)
-            return False
+            return False, tojson["job_id"]
         logger.warning(
             "%s->%s returned 200 but has no 'result' or 'job_id' key", sa, sb
         )
-        return False
+        return False, None
 
-    for sa in standards:
-        for sb in standards:
-            if sa == sb:
+    waiting = [(sa, sb) for sa in standards for sb in standards if sa != sb]
+    failures: Dict[Tuple[str, str], int] = {pair: 0 for pair in waiting}
+    last_job_ids: Dict[Tuple[str, str], str] = {}
+    dropped: List[str] = []
+
+    while waiting:
+        for pair in list(waiting):
+            cached, job_id = poll_pair(*pair)
+            if cached:
+                waiting.remove(pair)
                 continue
-            waiting.append(f"{sa}->{sb}")
-    while len(waiting):
-        for sa in standards:
-            for sb in standards:
-                if sa == sb:
+
+            previous_job_id = last_job_ids.get(pair)
+            if job_id:
+                last_job_ids[pair] = job_id
+                if previous_job_id is None or previous_job_id == job_id:
+                    # A job that is still alive clears earlier blips, so ten
+                    # scattered 503s cannot drop a healthy long-running job.
+                    failures[pair] = 0
                     continue
-                if calculate_a_to_b(sa, sb):
-                    waiting.remove(f"{sa}->{sb}") if f"{sa}->{sb}" in waiting else ""
-        logger.info("calculating %s gap analyses", len(waiting))
-        time.sleep(30)
-    logger.info("map analysis preloaded successfully")
+
+            failures[pair] += 1
+            if failures[pair] >= PRELOAD_MAX_FAILURES:
+                logger.warning(
+                    "%s->%s failed %s times, dropping it",
+                    pair[0],
+                    pair[1],
+                    failures[pair],
+                )
+                waiting.remove(pair)
+                dropped.append(f"{pair[0]}->{pair[1]}")
+
+        if waiting:
+            logger.info("calculating %s gap analyses", len(waiting))
+            time.sleep(PRELOAD_POLL_SECONDS)
+
+    if dropped:
+        logger.error(
+            "map analysis preload gave up on %s pairs: %s",
+            len(dropped),
+            ", ".join(dropped),
+        )
+    else:
+        logger.info("map analysis preloaded successfully")
+    return dropped
