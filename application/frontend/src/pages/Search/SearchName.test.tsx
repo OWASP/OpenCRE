@@ -93,7 +93,9 @@ describe('SearchName', () => {
         })
     );
 
-    const { container, findByText, queryByText } = render(<SearchName />);
+    const { container, findByText, getByRole, queryByText } = render(<SearchName />);
+    const liveRegion = getByRole('status');
+    expect(liveRegion.getAttribute('aria-live')).toBe('polite');
     expect(container.querySelector('.ui.loader')).toBeTruthy();
     expect(queryByText('No results match your search.')).toBeNull();
 
@@ -101,5 +103,6 @@ describe('SearchName', () => {
     await waitFor(() => expect(container.querySelector('.ui.negative.message')).toBeTruthy());
     expect(await findByText('Document could not be loaded')).toBeTruthy();
     expect(queryByText('No results match your search.')).toBeNull();
+    expect(getByRole('status')).toBe(liveRegion);
   });
 });
