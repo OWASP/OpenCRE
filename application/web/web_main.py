@@ -1263,7 +1263,9 @@ def chat_cre() -> Any:
         )
 
     try:
-        response = prompt.generate_text(message.get("prompt"))
+        response = prompt.generate_text(
+            message.get("prompt"), instructions=message.get("instructions")
+        )
     except Exception as e:
         if llm_error_utils.is_rate_limit_error(e):
             return (
