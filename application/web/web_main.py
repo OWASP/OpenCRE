@@ -462,9 +462,11 @@ def map_analysis() -> Any:
         )
         try:
             return jsonify(_compute_ga_without_redis(database, standards))
-        except Exception as fallback_exc:
+        except Exception:
             logger.exception("Synchronous GA fallback failed for %s", cache_key)
-            abort(503, f"Gap analysis unavailable: {fallback_exc}")
+            abort(
+                503, "Gap analysis is temporarily unavailable. Please try again later."
+            )
 
 
 @openapi_documented("map_analysis_weak_links")
@@ -1064,8 +1066,26 @@ def admin_imports_enabled_required(f):
 @admin_imports_enabled_required
 def admin_import_runs() -> Any:
     source = request.args.get("source")
-    limit = int(request.args.get("limit") or 50)
-    offset = int(request.args.get("offset") or 0)
+    raw_limit = request.args.get("limit")
+    raw_offset = request.args.get("offset")
+    try:
+        limit = int(raw_limit) if raw_limit not in (None, "") else 50
+    except ValueError:
+        abort(400, description="Invalid 'limit' parameter: must be a positive integer.")
+    try:
+        offset = int(raw_offset) if raw_offset not in (None, "") else 0
+    except ValueError:
+        abort(
+            400,
+            description="Invalid 'offset' parameter: must be a non-negative integer.",
+        )
+    if limit < 1:
+        abort(400, description="Invalid 'limit' parameter: must be a positive integer.")
+    if offset < 0:
+        abort(
+            400,
+            description="Invalid 'offset' parameter: must be a non-negative integer.",
+        )
     runs = db.list_import_runs(source=source, limit=limit, offset=offset)
     out = []
     for r in runs:
@@ -1239,6 +1259,14 @@ def admin_import_run_apply(run_id: str) -> Any:
 @login_required
 def chat_cre() -> Any:
     message = request.get_json(force=True)
+    if not isinstance(message, dict):
+        return jsonify({"error": "Request body must be a JSON object."}), 400
+    prompt_text = message.get("prompt")
+    if not isinstance(prompt_text, str) or not prompt_text.strip():
+        return (
+            jsonify({"error": "Missing or invalid 'prompt' field."}),
+            400,
+        )
     if posthog:
         posthog.capture("chat_cre", "")
 
@@ -1263,7 +1291,7 @@ def chat_cre() -> Any:
         )
 
     try:
-        response = prompt.generate_text(message.get("prompt"))
+        response = prompt.generate_text(prompt_text)
     except Exception as e:
         if llm_error_utils.is_rate_limit_error(e):
             return (
@@ -1277,9 +1305,17 @@ def chat_cre() -> Any:
                 ),
                 503,
             )
+        logger.exception("Chat completion failed")
         status_code = _llm_error_status_code(e) or 500
         return (
-            jsonify({"error": f"AI Service Error: {str(e)}"}),
+            jsonify(
+                {
+                    "error": (
+                        "AI Service Error: an unexpected error occurred. "
+                        "Please try again later."
+                    )
+                }
+            ),
             status_code,
         )
     return jsonify(response)
@@ -1664,7 +1700,7 @@ def import_from_cre_csv() -> Any:
 
         parse_result = myopencre_parser.parse_rows_to_documents(rows)
     except cre_exceptions.DuplicateLinkException as dle:
-        abort(500, f"error during parsing of the incoming CSV, err:{dle}")
+        abort(400, f"Invalid CSV contents: {dle}")
     except ValueError as ve:
         abort(400, f"invalid CSV contents: {ve}")
 
