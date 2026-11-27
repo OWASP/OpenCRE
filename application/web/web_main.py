@@ -1293,6 +1293,7 @@ def chat_cre() -> Any:
     try:
         response = prompt.generate_text(prompt_text)
     except Exception as e:
+        logger.exception("Chat completion failed")
         if llm_error_utils.is_rate_limit_error(e):
             return (
                 jsonify(
@@ -1305,7 +1306,6 @@ def chat_cre() -> Any:
                 ),
                 503,
             )
-        logger.exception("Chat completion failed")
         status_code = _llm_error_status_code(e) or 500
         return (
             jsonify(
