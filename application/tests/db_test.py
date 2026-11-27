@@ -1207,6 +1207,50 @@ class TestDB(unittest.TestCase):
             )
         )
 
+    def test_text_search_escapes_wildcards_skips_single_char_and_limits_fuzzy(
+        self,
+    ) -> None:
+        cre = defs.CRE(id="900-001", name="Rate limiting", description="protect login")
+        self.collection.add_cre(cre)
+        pct_node = defs.Standard(
+            name="TestStd",
+            section="100% pass_rate check",
+            subsection="sub1",
+            hyperlink="https://example.com/100",
+        )
+        plain_node = defs.Standard(
+            name="OtherStd",
+            section="completely unrelated text",
+            subsection="sub2",
+            hyperlink="https://example.com/other",
+        )
+        self.collection.add_node(pct_node)
+        self.collection.add_node(plain_node)
+
+        # Single-character fuzzy queries must not scan the whole DB
+        self.assertEqual([], self.collection.text_search("e"))
+        self.assertEqual([], self.collection.text_search("%"))
+        self.assertEqual([], self.collection.text_search("_"))
+
+        # Multi-char queries containing LIKE wildcards must match literally
+        pct_results = self.collection.text_search("100%")
+        self.assertEqual(1, len(pct_results))
+        self.assertEqual("100% pass_rate check", pct_results[0].section)
+
+        underscore_results = self.collection.text_search("pass_rate")
+        self.assertEqual(1, len(underscore_results))
+        self.assertEqual("100% pass_rate check", underscore_results[0].section)
+
+        # Fuzzy results are capped at MAX_FUZZY_SEARCH_RESULTS
+        for idx in range(db.MAX_FUZZY_SEARCH_RESULTS + 15):
+            self.collection.add_cre(
+                defs.CRE(id=f"910-{idx:03d}", name=f"bulktarget item {idx}")
+            )
+        self.collection.session.commit()
+
+        capped = self.collection.text_search("bulktarget")
+        self.assertEqual(db.MAX_FUZZY_SEARCH_RESULTS, len(capped))
+
     def test_dbNodeFromNode(self) -> None:
         data = {
             "tool": defs.Tool(

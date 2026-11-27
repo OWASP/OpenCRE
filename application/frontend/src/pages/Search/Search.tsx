@@ -59,7 +59,7 @@ export const SearchPage = () => {
         description: `Searching for: ${search.term}`,
       });
       setSearch({ term: '', error: '' });
-      history.push(`${SEARCH}/${search.term}`);
+      history.push(`${SEARCH}/${encodeURIComponent(search.term)}`);
     } else {
       setSearch({
         ...search,

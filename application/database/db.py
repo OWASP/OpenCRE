@@ -56,8 +56,15 @@ from application.utils.gap_analysis import (
 
 from .. import sqla  # type: ignore
 
-
 BaseModel: DefaultMeta = sqla.Model
+
+MIN_FUZZY_SEARCH_LENGTH = 2
+MAX_FUZZY_SEARCH_RESULTS = 100
+
+
+def _escape_like_term(term: str) -> str:
+    """Escape SQL LIKE wildcards so user input is matched literally."""
+    return term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 def generate_uuid():
@@ -2794,37 +2801,58 @@ class Node_collection:
             if results:
                 return list(set(results))
         # fuzzy matches second
-        results = {}
+        fuzzy_results: Dict[str, cre_defs.Document] = {}
         for search_term in search_terms:
-            args = [f"%{search_term}%", "", "", "", "", ""]
-            s = set([p for p in permutations(args, 6)])
-            for combo in s:
-                nodes = self.get_nodes(
-                    name=combo[0],
-                    section=combo[1],
-                    subsection=combo[2],
-                    link=combo[3],
-                    description=combo[4],
-                    partial=True,
-                    ntype=None,  # type: ignore
-                    sectionID=combo[5],
+            normalized_term = search_term.strip()
+            if len(normalized_term) < MIN_FUZZY_SEARCH_LENGTH:
+                continue
+            remaining = MAX_FUZZY_SEARCH_RESULTS - len(fuzzy_results)
+            if remaining <= 0:
+                break
+            escaped = _escape_like_term(normalized_term)
+            lowered_pattern = f"%{escaped.lower()}%"
+
+            dbnodes = (
+                self.session.query(Node)
+                .filter(
+                    or_(
+                        func.lower(Node.name).like(lowered_pattern, escape="\\"),
+                        func.lower(Node.section).like(lowered_pattern, escape="\\"),
+                        func.lower(Node.subsection).like(lowered_pattern, escape="\\"),
+                        func.lower(Node.link).like(lowered_pattern, escape="\\"),
+                        func.lower(Node.description).like(lowered_pattern, escape="\\"),
+                        func.lower(Node.section_id).like(lowered_pattern, escape="\\"),
+                    )
                 )
-                if nodes:
-                    for node in nodes:
-                        node_key = f"{node.name}:{node.version}:{node.section}:{node.sectionID}:{node.subsection}:"
-                        results[node_key] = node
-            args = [f"%{search_term}%", None, None]
-            for combo in permutations(args, 3):
-                cres = self.get_CREs(
-                    name=combo[0],
-                    external_id=combo[1],
-                    description=combo[2],
-                    partial=True,
+                .limit(remaining)
+                .all()
+            )
+            for node in self._hydrate_nodes_batch(dbnodes):
+                node_key = (
+                    f"{node.name}:{node.version}:{node.section}:"
+                    f"{node.sectionID}:{node.subsection}:"
                 )
-                if cres:
-                    for cre in cres:
-                        results[cre.id] = cre
-        return list(results.values())
+                fuzzy_results[node_key] = node
+
+            remaining = MAX_FUZZY_SEARCH_RESULTS - len(fuzzy_results)
+            if remaining <= 0:
+                break
+
+            dbcres = (
+                self.session.query(CRE)
+                .filter(
+                    or_(
+                        func.lower(CRE.name).like(lowered_pattern, escape="\\"),
+                        func.lower(CRE.external_id).like(lowered_pattern, escape="\\"),
+                        func.lower(CRE.description).like(lowered_pattern, escape="\\"),
+                    )
+                )
+                .limit(remaining)
+                .all()
+            )
+            for cre in self._hydrate_cres_batch(dbcres):
+                fuzzy_results[cre.id] = cre
+        return list(fuzzy_results.values())
 
     def _expand_text_search_aliases(self, text: str) -> List[str]:
         normalized = text.strip()
