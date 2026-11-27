@@ -23,7 +23,7 @@ export const SearchBar = () => {
 
     if (term.trim()) {
       setSearch(DEFAULT_SEARCH_BAR_STATE);
-      history.push(`${SEARCH}/${term}`);
+      history.push(`${SEARCH}/${encodeURIComponent(term)}`);
     } else {
       setSearch({
         ...search,
