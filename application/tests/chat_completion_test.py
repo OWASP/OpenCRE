@@ -122,6 +122,49 @@ class TestChatCompletion(unittest.TestCase):
                         content_type="application/json",
                     )
 
+    def test_completion_returns_400_for_non_object_json_body(self) -> None:
+        os.environ["NO_LOGIN"] = "1"
+        with self.app.test_client() as client:
+            response = client.post(
+                "/rest/v1/completion",
+                json=["hi"],
+                content_type="application/json",
+            )
+        self.assertEqual(400, response.status_code)
+        data = json.loads(response.data)
+        self.assertIn("error", data)
+
+    def test_completion_returns_400_for_missing_or_blank_prompt(self) -> None:
+        os.environ["NO_LOGIN"] = "1"
+        with self.app.test_client() as client:
+            for payload in ({}, {"prompt": ""}, {"prompt": "   "}, {"prompt": 123}):
+                response = client.post(
+                    "/rest/v1/completion",
+                    json=payload,
+                    content_type="application/json",
+                )
+                self.assertEqual(400, response.status_code)
+                data = json.loads(response.data)
+                self.assertIn("error", data)
+
+    def test_completion_hides_internal_exception_details(self) -> None:
+        os.environ["NO_LOGIN"] = "1"
+        with patch("application.prompt_client.prompt_client.PromptHandler") as mock_ph:
+            mock_ph.return_value.generate_text.side_effect = RuntimeError(
+                "connection to postgres://cre:hunter2@db:5432 failed"
+            )
+            with self.app.test_client() as client:
+                response = client.post(
+                    "/rest/v1/completion",
+                    json={"prompt": "test"},
+                    content_type="application/json",
+                )
+        self.assertEqual(500, response.status_code)
+        data = json.loads(response.data)
+        self.assertIn("AI Service Error", data["error"])
+        self.assertNotIn("hunter2", data["error"])
+        self.assertNotIn("postgres://", data["error"])
+
 
 if __name__ == "__main__":
     unittest.main()

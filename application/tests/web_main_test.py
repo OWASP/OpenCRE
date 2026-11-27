@@ -892,7 +892,9 @@ class TestMain(unittest.TestCase):
         self, redis_conn_mock, db_gap_analysis_mock, db_mock
     ) -> None:
         redis_conn_mock.side_effect = RuntimeError("redis down")
-        db_gap_analysis_mock.side_effect = RuntimeError("neo unavailable")
+        db_gap_analysis_mock.side_effect = RuntimeError(
+            "neo4j://neo4j:s3cret@10.0.0.5:7687 refused"
+        )
         db_mock.return_value.get_gap_analysis_result.return_value = None
         db_mock.return_value.gap_analysis_exists.return_value = False
         with self.app.test_client() as client:
@@ -904,6 +906,8 @@ class TestMain(unittest.TestCase):
                     headers={"Content-Type": "application/json"},
                 )
             self.assertEqual(503, response.status_code)
+            self.assertNotIn(b"s3cret", response.data)
+            self.assertNotIn(b"10.0.0.5", response.data)
             db_gap_analysis_mock.assert_called_once()
 
     @patch.dict(os.environ, {"HEROKU": "True"}, clear=False)
@@ -1626,6 +1630,26 @@ class TestMain(unittest.TestCase):
                 )
                 self.assertEqual(400, response.status_code)
                 self.assertIn(b"triple-quoted", response.data)
+
+    def test_import_from_cre_csv_rejects_duplicate_rows_with_400(self) -> None:
+        """Duplicate rows raising DuplicateLinkException must return 400, not 500."""
+        workspace = tempfile.mkdtemp()
+        path = os.path.join(workspace, "dup.csv")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("CRE 0,standard|name,standard|id\n")
+            f.write("123-456|A,ASVS,1.1.1\n")
+            f.write("123-456|A,ASVS,1.1.1\n")
+        with patch.dict(os.environ, {"CRE_ALLOW_IMPORT": "True"}):
+            with self.app.test_client() as client:
+                with open(path, "rb") as fh:
+                    response = client.post(
+                        "/rest/v1/cre_csv_import",
+                        data={"cre_csv": fh},
+                        buffered=True,
+                        content_type="multipart/form-data",
+                    )
+                self.assertEqual(400, response.status_code)
+                self.assertIn(b"Cannot link the same document twice", response.data)
 
     def test_get_cre_csv(self) -> None:
         # empty string means temporary db
