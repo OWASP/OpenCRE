@@ -19,32 +19,37 @@ export const SearchPage = () => {
 
   useEffect(() => {
     const mobileMenu = document.querySelector('.navbar__mobile-menu');
-    const observer = new MutationObserver(() => {
-      if (mobileMenu?.classList.contains('is-open')) {
-        setIsArrowVisible(false);
-      } else {
-        setIsArrowVisible(true);
-      }
-    });
-    if (mobileMenu) {
-      observer.observe(mobileMenu, { attributes: true, attributeFilter: ['class'] });
-    }
+    const scrollContainer = document.getElementById('mount') ?? window;
 
     const handleScroll = () => {
+      if (mobileMenu?.classList.contains('is-open')) {
+        setIsArrowVisible(false);
+        return;
+      }
+
       const footer = document.getElementById('page-footer');
       if (footer) {
         const footerTop = footer.getBoundingClientRect().top;
         const windowHeight = window.innerHeight;
-        if (footerTop < windowHeight) {
+        if (footerTop <= windowHeight) {
           setIsArrowVisible(false);
         } else {
           setIsArrowVisible(true);
         }
       }
     };
-    window.addEventListener('scroll', handleScroll);
+
+    const observer = new MutationObserver(handleScroll);
+    if (mobileMenu) {
+      observer.observe(mobileMenu, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    handleScroll();
+    scrollContainer.addEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleScroll);
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      scrollContainer.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
       observer.disconnect();
     };
   }, []);
