@@ -14,6 +14,8 @@ from application.utils.external_project_parsers.base_parser_defs import (
     ParseResult,
 )
 
+DEFAULT_HTTP_TIMEOUT: int = 60
+
 
 class DSOMM(ParserInterface):
     name = "DevSecOps Maturity Model (DSOMM)"
@@ -97,7 +99,8 @@ class DSOMM(ParserInterface):
         ph: prompt_client.PromptHandler,
     ):
         resp = requests.get(
-            "https://raw.githubusercontent.com/devsecopsmaturitymodel/DevSecOps-MaturityModel-data/main/src/assets/YAML/generated/generated.yaml"
+            "https://raw.githubusercontent.com/devsecopsmaturitymodel/DevSecOps-MaturityModel-data/main/src/assets/YAML/generated/generated.yaml",
+            timeout=DEFAULT_HTTP_TIMEOUT,
         )
         if resp.status_code != 200:
             err_str = f"could not retrieve dsomm yaml, status code {resp.status_code}"

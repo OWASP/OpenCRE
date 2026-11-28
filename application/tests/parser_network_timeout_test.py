@@ -31,7 +31,11 @@ except ImportError:
     sys.modules["sqlalchemy.exc"] = mock.MagicMock()
 
 from application.utils.external_project_parsers.parsers import capec_parser
+from application.utils.external_project_parsers.parsers import (
+    cloud_native_security_controls,
+)
 from application.utils.external_project_parsers.parsers import cwe
+from application.utils.external_project_parsers.parsers import dsomm
 from application.utils.external_project_parsers.parsers import juiceshop
 
 
@@ -91,6 +95,40 @@ class TestParserNetworkTimeouts(unittest.TestCase):
             timeout=juiceshop.DEFAULT_HTTP_TIMEOUT,
         )
         self.assertEqual(juiceshop.DEFAULT_HTTP_TIMEOUT, 60)
+
+    @mock.patch(
+        "application.utils.external_project_parsers.parsers.cloud_native_security_controls.requests.get"
+    )
+    def test_cnsc_request_uses_timeout(self, mock_get: mock.MagicMock) -> None:
+        mock_resp = mock.MagicMock()
+        mock_resp.status_code = 500
+        mock_get.return_value = mock_resp
+
+        with self.assertRaises(RuntimeError):
+            cloud_native_security_controls.CloudNativeSecurityControls().parse(
+                cache=self.mock_cache, ph=self.mock_ph
+            )
+
+        mock_get.assert_called_once_with(
+            "https://raw.githubusercontent.com/cloud-native-security-controls/controls-catalog/main/controls/controls_catalog.csv",
+            timeout=cloud_native_security_controls.DEFAULT_HTTP_TIMEOUT,
+        )
+        self.assertEqual(cloud_native_security_controls.DEFAULT_HTTP_TIMEOUT, 60)
+
+    @mock.patch("application.utils.external_project_parsers.parsers.dsomm.requests.get")
+    def test_dsomm_request_uses_timeout(self, mock_get: mock.MagicMock) -> None:
+        mock_resp = mock.MagicMock()
+        mock_resp.status_code = 500
+        mock_get.return_value = mock_resp
+
+        with self.assertRaises(RuntimeError):
+            dsomm.DSOMM().parse(cache=self.mock_cache, ph=self.mock_ph)
+
+        mock_get.assert_called_once_with(
+            "https://raw.githubusercontent.com/devsecopsmaturitymodel/DevSecOps-MaturityModel-data/main/src/assets/YAML/generated/generated.yaml",
+            timeout=dsomm.DEFAULT_HTTP_TIMEOUT,
+        )
+        self.assertEqual(dsomm.DEFAULT_HTTP_TIMEOUT, 60)
 
 
 if __name__ == "__main__":
