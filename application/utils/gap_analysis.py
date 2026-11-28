@@ -11,7 +11,6 @@ from flask import json as flask_json
 import json
 from application.defs import cre_defs as defs
 
-
 PENALTIES = {
     "RELATED": 2,
     "CONTAINS_UP": 2,
@@ -22,6 +21,7 @@ PENALTIES = {
 }
 
 GAP_ANALYSIS_TIMEOUT = "129600s"  # 36 hours
+DEFAULT_HTTP_TIMEOUT: int = 60
 OPENCRE_STANDARD_NAME = "OpenCRE"
 OPENCRE_OVERLAP_LINK_TYPES = (
     defs.LinkTypes.LinkedTo,
@@ -402,12 +402,15 @@ def schedule(standards: List[str], database):
 
 def preload(target_url: str):
     waiting = []
-    standards_request = requests.get(f"{target_url}/rest/v1/standards")
+    standards_request = requests.get(
+        f"{target_url}/rest/v1/standards", timeout=DEFAULT_HTTP_TIMEOUT
+    )
     standards = standards_request.json()
 
     def calculate_a_to_b(sa: str, sb: str) -> bool:
         res = requests.get(
-            f"{target_url}/rest/v1/map_analysis?standard={sa}&standard={sb}"
+            f"{target_url}/rest/v1/map_analysis?standard={sa}&standard={sb}",
+            timeout=DEFAULT_HTTP_TIMEOUT,
         )
         if res.status_code != 200:
             logger.warning("%s->%s returned %s", sa, sb, res.status_code)
