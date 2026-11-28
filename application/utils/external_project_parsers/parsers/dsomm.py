@@ -46,6 +46,14 @@ class DSOMM(ParserInterface):
         "Usage of edge encryption at transit": "435-702",
     }
 
+    @staticmethod
+    def _link(standard, cre):
+        # one activity can reach the same CRE through several references
+        link = defs.Link(document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo)
+        if not standard.has_link(link):
+            standard.add_link(link)
+        return standard
+
     def link_to_samm(self, activity, cache, standard):
         for sectionID in activity.get("references").get("samm2"):
             if sectionID in self.means_none:
@@ -60,18 +68,13 @@ class DSOMM(ParserInterface):
                     )
             for samm in samms:
                 for c_link in samm.links:
-                    standard = standard.add_link(
-                        defs.Link(
-                            document=c_link.document,
-                            ltype=defs.LinkTypes.AutomaticallyLinkedTo,
-                        )
-                    )
+                    standard = self._link(standard, c_link.document)
         return standard
 
     def link_to_iso(self, aname, activity, cache, standard):
         if not activity.get("references").get("iso27001-2022"):
             logger.error(f"Activity {aname} does not link to ISO")
-            return
+            return standard
         for sectionID in activity.get("references").get("iso27001-2022"):
             if sectionID in self.means_none:
                 continue
@@ -80,15 +83,10 @@ class DSOMM(ParserInterface):
                 logger.error(
                     f"could not find iso with sectionID '{sectionID}' in the db"
                 )
-                return
+                return standard
             for iso in isos:
                 for c_link in iso.links:
-                    standard = standard.add_link(
-                        defs.Link(
-                            document=c_link.document,
-                            ltype=defs.LinkTypes.AutomaticallyLinkedTo,
-                        )
-                    )
+                    standard = self._link(standard, c_link.document)
         return standard
 
     def parse(
@@ -97,13 +95,18 @@ class DSOMM(ParserInterface):
         ph: prompt_client.PromptHandler,
     ):
         resp = requests.get(
-            "https://raw.githubusercontent.com/devsecopsmaturitymodel/DevSecOps-MaturityModel-data/main/src/assets/YAML/generated/generated.yaml"
+            "https://raw.githubusercontent.com/devsecopsmaturitymodel/DevSecOps-MaturityModel-data/main/generated/model.yaml"
         )
         if resp.status_code != 200:
             err_str = f"could not retrieve dsomm yaml, status code {resp.status_code}"
             logger.fatal(err_str)
             raise RuntimeError(err_str)
-        dsomm = yaml.safe_load(resp.text)
+        # the model starts with a "meta" document (version, release date),
+        # the dimensions follow in the next one
+        dsomm = {}
+        for document in yaml.safe_load_all(resp.text):
+            if document and "meta" not in document:
+                dsomm.update(document)
         standard_entries = []
         for _, dimension in dsomm.items():
             for sname, subdimension in dimension.items():
@@ -144,12 +147,7 @@ class DSOMM(ParserInterface):
                     if self.manual_mappings.get(aname):
                         cs = cache.get_CREs(self.manual_mappings.get(aname))
                         for c in cs:
-                            standard.add_link(
-                                defs.Link(
-                                    document=c,
-                                    ltype=defs.LinkTypes.AutomaticallyLinkedTo,
-                                )
-                            )
+                            self._link(standard, c)
                     # use SAMM as Glue
                     if activity.get("references").get("samm2"):
                         standard = self.link_to_samm(activity, cache, standard)
