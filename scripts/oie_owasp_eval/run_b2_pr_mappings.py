@@ -325,6 +325,26 @@ def load_gold(harness: Dict[str, Any]) -> List[Dict[str, Any]]:
     return load_owasp_mapping_fixture(str(harness["fixture_name"]))
 
 
+def gold_evidence(row: Dict[str, Any]) -> Dict[str, Any]:
+    """Return score gold plus authored/remap provenance for one fixture row.
+
+    ``gold`` remains the expanded answer key used by B2 scoring. Rows without
+    an explicit direct mapping report that same list as ``gold_original`` so
+    every detail record has a stable, auditable shape.
+    """
+    gold = sorted({str(cre_id) for cre_id in row.get("cre_ids") or [] if cre_id})
+    original_raw = row.get("cre_ids_original")
+    original = sorted({str(cre_id) for cre_id in original_raw or [] if cre_id}) or gold
+    remap = row.get("gold_remap")
+    remap_name = str(remap) if isinstance(remap, str) and remap else None
+    return {
+        "gold": gold,
+        "gold_original": original,
+        "gold_remap": remap_name,
+        "gold_is_expanded": bool(remap_name and set(gold) != set(original)),
+    }
+
+
 def top_k_cre_external_ids(
     envelope: Dict[str, Any],
     uuid_to_ext: Dict[str, str],
@@ -649,6 +669,8 @@ def score_run(run_id: str, cache: str) -> Dict[str, Any]:
     details: List[Dict[str, Any]] = []
     by_resource: Dict[str, Dict[str, int]] = {}
     hits = scorable = unaligned = 0
+    remap_counts: Dict[str, int] = {}
+    expanded_rows = 0
 
     for harness in HARNESSES:
         resource = source_stem(harness)
@@ -659,9 +681,15 @@ def score_run(run_id: str, cache: str) -> Dict[str, Any]:
         )
         for row in gold_rows:
             sid = str(row.get("section_id") or "").strip()
-            gold = {c for c in (row.get("cre_ids") or []) if c}
+            evidence = gold_evidence(row)
+            gold = set(evidence["gold"])
             if not gold:
                 continue
+            if evidence["gold_is_expanded"]:
+                expanded_rows += 1
+            if evidence["gold_remap"]:
+                remap_name = evidence["gold_remap"]
+                remap_counts[remap_name] = remap_counts.get(remap_name, 0) + 1
             key = f"{resource}::{sid}"
             suggested = pred.get(key) or set()
             if key not in pred:
@@ -673,7 +701,7 @@ def score_run(run_id: str, cache: str) -> Dict[str, Any]:
                         "pr": harness["pr"],
                         "section_id": sid,
                         "aligned": False,
-                        "gold": sorted(gold),
+                        **evidence,
                         "predicted": [],
                         "hit": False,
                     }
@@ -691,7 +719,7 @@ def score_run(run_id: str, cache: str) -> Dict[str, Any]:
                     "pr": harness["pr"],
                     "section_id": sid,
                     "aligned": True,
-                    "gold": sorted(gold),
+                    **evidence,
                     "predicted": sorted(suggested),
                     "hit": hit,
                 }
@@ -720,6 +748,10 @@ def score_run(run_id: str, cache: str) -> Dict[str, Any]:
         "hits": hits,
         "accuracy": round(rate, 4),
         "pass_gt_60": rate > 0.60,
+        "gold_remap_summary": {
+            "expanded_rows": expanded_rows,
+            "by_remap": remap_counts,
+        },
         "by_resource": by_resource,
         "details": details,
     }
