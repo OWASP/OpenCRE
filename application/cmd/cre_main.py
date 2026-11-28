@@ -34,6 +34,7 @@ if TYPE_CHECKING:
 
 
 app = None
+DEFAULT_HTTP_TIMEOUT: int = 60
 
 
 def fetch_upstream_json(
@@ -680,7 +681,9 @@ def download_gap_analysis_from_upstream(cache: str) -> None:
     upstream_url = os.environ.get("CRE_UPSTREAM_API_URL", "https://opencre.org/rest/v1")
 
     logger.info("Fetching gap analysis from upstream for comparison")
-    standards_response = requests.get(f"{upstream_url}/standards")
+    standards_response = requests.get(
+        f"{upstream_url}/standards", timeout=DEFAULT_HTTP_TIMEOUT
+    )
     if standards_response.status_code == 200:
         standards = standards_response.json()
         pairs = [(sa, sb) for sa in standards for sb in standards if sa != sb]
@@ -691,7 +694,8 @@ def download_gap_analysis_from_upstream(cache: str) -> None:
             with alive_bar(len(pairs), title="Fetching upstream Gap Analysis") as bar:
                 for sa, sb in pairs:
                     res = requests.get(
-                        f"{upstream_url}/map_analysis?standard={sa}&standard={sb}"
+                        f"{upstream_url}/map_analysis?standard={sa}&standard={sb}",
+                        timeout=DEFAULT_HTTP_TIMEOUT,
                     )
                     if res.status_code == 200:
                         tojson = res.json()
@@ -708,7 +712,8 @@ def download_gap_analysis_from_upstream(cache: str) -> None:
         else:
             for sa, sb in pairs:
                 res = requests.get(
-                    f"{upstream_url}/map_analysis?standard={sa}&standard={sb}"
+                    f"{upstream_url}/map_analysis?standard={sa}&standard={sb}",
+                    timeout=DEFAULT_HTTP_TIMEOUT,
                 )
                 if res.status_code == 200:
                     tojson = res.json()
