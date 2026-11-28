@@ -64,6 +64,11 @@ class TestCWEParser(unittest.TestCase):
             cache=self.collection,
             ph=prompt_client.PromptHandler(database=self.collection),
         )
+        mock_requests.assert_called_once_with(
+            cwe.CWE.cwe_zip,
+            stream=True,
+            timeout=cwe.DEFAULT_HTTP_TIMEOUT,
+        )
         expected = [
             defs.Standard(
                 name="CWE",
@@ -146,6 +151,11 @@ class TestCWEParser(unittest.TestCase):
             cache=self.collection,
             ph=prompt_client.PromptHandler(database=self.collection),
         )
+        mock_requests.assert_called_once_with(
+            cwe.CWE.cwe_zip,
+            stream=True,
+            timeout=cwe.DEFAULT_HTTP_TIMEOUT,
+        )
         imported_cwes = {node.sectionID: node for node in entries.results["CWE"]}
 
         self.assertEqual(imported_cwes["2001"].links[0].document.todict(), cre.todict())
@@ -210,6 +220,11 @@ class TestCWEParser(unittest.TestCase):
         entries = cwe.CWE().parse(
             cache=self.collection,
             ph=prompt_client.PromptHandler(database=self.collection),
+        )
+        mock_requests.assert_called_once_with(
+            cwe.CWE.cwe_zip,
+            stream=True,
+            timeout=cwe.DEFAULT_HTTP_TIMEOUT,
         )
         imported_cwes = {node.sectionID: node for node in entries.results["CWE"]}
 
@@ -291,6 +306,11 @@ class TestCWEParser(unittest.TestCase):
         entries = cwe.CWE().parse(
             cache=self.collection,
             ph=prompt_client.PromptHandler(database=self.collection),
+        )
+        mock_requests.assert_called_once_with(
+            cwe.CWE.cwe_zip,
+            stream=True,
+            timeout=cwe.DEFAULT_HTTP_TIMEOUT,
         )
         imported_cwes = {node.sectionID: node for node in entries.results["CWE"]}
 

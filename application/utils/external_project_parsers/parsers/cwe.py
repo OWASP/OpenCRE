@@ -21,6 +21,8 @@ from application.utils.external_project_parsers.base_parser_defs import (
     ParseResult,
 )
 
+DEFAULT_HTTP_TIMEOUT: int = 60
+
 
 class CWE(ParserInterface):
     name = "CWE"
@@ -44,7 +46,7 @@ class CWE(ParserInterface):
         return mappings
 
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
-        response = requests.get(self.cwe_zip, stream=True)
+        response = requests.get(self.cwe_zip, stream=True, timeout=DEFAULT_HTTP_TIMEOUT)
         tmp_dir = tempfile.mkdtemp()
         handle, fname = tempfile.mkstemp(suffix=".zip", dir=tmp_dir)
 

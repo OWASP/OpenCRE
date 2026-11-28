@@ -14,13 +14,16 @@ from application.utils.external_project_parsers.base_parser_defs import (
 )
 import requests
 
+DEFAULT_HTTP_TIMEOUT: int = 60
+
 
 class CloudNativeSecurityControls(ParserInterface):
     name = "Cloud Native Security Controls"
 
     def parse(self, cache: db.Node_collection, ph: prompt_client.PromptHandler):
         resp = requests.get(
-            "https://raw.githubusercontent.com/cloud-native-security-controls/controls-catalog/main/controls/controls_catalog.csv"
+            "https://raw.githubusercontent.com/cloud-native-security-controls/controls-catalog/main/controls/controls_catalog.csv",
+            timeout=DEFAULT_HTTP_TIMEOUT,
         )
 
         if resp.status_code != 200:

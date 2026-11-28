@@ -57,6 +57,10 @@ class TestJuiceshopParser(unittest.TestCase):
             cache=self.collection,
             ph=prompt_client.PromptHandler(database=self.collection),
         )
+        mock_requests.assert_called_once_with(
+            juiceshop.JuiceShop.url,
+            timeout=juiceshop.DEFAULT_HTTP_TIMEOUT,
+        )
 
         # NOTE: tags are asserted as literal strings on purpose so tests
         # verify the external tagging convention, not just enum wiring.
