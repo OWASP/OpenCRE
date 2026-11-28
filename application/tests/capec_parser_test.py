@@ -96,6 +96,20 @@ class TestCapecParser(unittest.TestCase):
             self.assertCountEqual(nodes[0].todict(), expected[0].todict())
             self.assertCountEqual(nodes[1].todict(), expected[1].todict())
 
+    def test_register_capec_two_cwes_sharing_a_cre(self) -> None:
+        cre = self.collection.add_cre(cre=defs.CRE(id="111-111", name="shared"))
+        for cwe in [276, 285]:
+            dbnode = self.collection.add_node(defs.Standard(name="CWE", sectionID=cwe))
+            self.collection.add_link(
+                cre=cre, node=dbnode, ltype=defs.LinkTypes.LinkedTo
+            )
+
+        entries = capec_parser.Capec().register_capec(
+            cache=self.collection, xml_contents=self.capec_xml
+        )
+
+        self.assertEqual([link.document.id for link in entries[0].links], ["111-111"])
+
     capec_xml = """<?xml version="1.0" encoding="UTF-8"?>
 <Attack_Pattern_Catalog xmlns="http://capec.mitre.org/capec-3"
                         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

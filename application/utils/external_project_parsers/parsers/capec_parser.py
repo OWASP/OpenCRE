@@ -46,12 +46,15 @@ class Capec(ParserInterface):
                 for c in cwes[0].links
                 if c.document.doctype == defs.Credoctypes.CRE
             ]:
-                logger.debug(
-                    f"linked CAPEC with id {capec.section} to CRE with ID {cre.id}"
+                link = defs.Link(
+                    document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo
                 )
-                capec = capec.add_link(
-                    defs.Link(document=cre, ltype=defs.LinkTypes.AutomaticallyLinkedTo)
-                )
+                # related weaknesses often share a CRE, link it only once
+                if not capec.has_link(link):
+                    logger.debug(
+                        f"linked CAPEC with id {capec.section} to CRE with ID {cre.id}"
+                    )
+                    capec = capec.add_link(link)
         return capec
 
     def register_capec(self, cache: db.Node_collection, xml_contents: str):
