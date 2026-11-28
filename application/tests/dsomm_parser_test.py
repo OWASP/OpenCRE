@@ -130,6 +130,73 @@ class TestDSOMM(unittest.TestCase):
             self.assertCountEqual(nodes[0].todict(), expected[0].todict())
             self.assertCountEqual(nodes[1].todict(), expected[1].todict())
 
+    @patch.object(requests, "get")
+    def test_parse_model_yaml_with_meta_document(self, mock_requests) -> None:
+        # DSOMM now publishes generated/model.yaml: a "meta" document followed
+        # by the dimensions
+        class fakeRequest:
+            status_code = 200
+            text = (
+                "---"
+                + chr(10)
+                + "meta:"
+                + chr(10)
+                + "  version: 5.0.2"
+                + chr(10)
+                + gen_yaml
+            )
+
+        mock_requests.return_value = fakeRequest()
+        for n, item in enumerate(["I-SB-2-A", "5.37"], start=1):
+            dbcre = self.collection.add_cre(
+                defs.CRE(id=f"{n}{n}{n}-{n}{n}{n}", name=f"CRE-{item}")
+            )
+            for standard in ["SAMM", "ISO 27001"]:
+                dbnode = self.collection.add_node(
+                    defs.Standard(name=standard, sectionID=item)
+                )
+                self.collection.add_link(
+                    cre=dbcre, node=dbnode, ltype=defs.LinkTypes.LinkedTo
+                )
+
+        result = dsomm.DSOMM().parse(
+            cache=self.collection,
+            ph=prompt_client.PromptHandler(database=self.collection),
+        )
+
+        mock_requests.assert_called_once()
+        self.assertTrue(mock_requests.call_args[0][0].endswith("/generated/model.yaml"))
+        self.assertEqual(len(result.results[dsomm.DSOMM().name]), 2)
+
+    @patch.object(requests, "get")
+    def test_parse_links_a_shared_cre_once_and_keeps_unmapped_activities(
+        self, mock_requests
+    ) -> None:
+        class fakeRequest:
+            status_code = 200
+            text = small_model
+
+        mock_requests.return_value = fakeRequest()
+        cre = self.collection.add_cre(defs.CRE(id="111-111", name="shared"))
+        for section in ["A-1", "A-2"]:
+            dbnode = self.collection.add_node(
+                defs.Standard(name="SAMM", sectionID=section)
+            )
+            self.collection.add_link(
+                cre=cre, node=dbnode, ltype=defs.LinkTypes.LinkedTo
+            )
+
+        result = dsomm.DSOMM().parse(
+            cache=self.collection,
+            ph=prompt_client.PromptHandler(database=self.collection),
+        )
+
+        entries = {e.subsection: e for e in result.results[dsomm.DSOMM().name]}
+        # two SAMM references, one CRE: linked once
+        self.assertEqual([l.document.id for l in entries["Act one"].links], ["111-111"])
+        # its ISO reference is not in the database: kept, without links
+        self.assertEqual(entries["Act two"].links, [])
+
 
 gen_yaml = """
 ---
@@ -225,4 +292,29 @@ Build and Deployment:
         Default: false
         B: false
         C: false
+"""
+
+
+small_model = """
+---
+Dim:
+  Sub:
+    Act one:
+      uuid: u1
+      description: d
+      risk: r
+      measure: m
+      references:
+        samm2:
+        - A-1
+        - A-2
+    Act two:
+      uuid: u2
+      description: d
+      risk: r
+      measure: m
+      references:
+        samm2: []
+        iso27001-2022:
+        - 9.9
 """
